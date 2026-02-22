@@ -1,0 +1,116 @@
+name: Slack Notification
+
+on:
+  pull_request:
+    types: [review_requested]
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  slack-notify:
+    runs-on: ubuntu-latest
+    if: ${{ !endsWith(github.actor, '[bot]') }}
+    steps:
+      - name: Map GitHub User to Slack Member ID
+        id: slack-mapper
+        shell: bash
+        run: |
+          # ---------------------------------------------------
+          # [1] 데이터 추출 및 초기화
+          # ---------------------------------------------------
+          TARGET_GITHUB_ID=""
+          EVENT_TYPE="${{ github.event_name }}"
+          COMMENT_BODY=""
+          MSG_HEADER=""
+          PREVIEW_TEXT=""
+          SHOULD_SEND="false"
+          
+          # Case A: 사이드바에서 리뷰어로 지정 (Re-request 포함)
+          if [[ "$EVENT_TYPE" == "pull_request" ]]; then
+            TARGET_GITHUB_ID="${{ github.event.requested_reviewer.login }}"
+            MSG_HEADER="📢 리뷰 요청이 도착했습니다!"
+            PREVIEW_TEXT="리뷰어로 지정되었습니다."
+            SHOULD_SEND="true" # 리뷰어 지정은 무조건 전송
+          
+          # Case B: 리뷰 제출 (Approve, Request Changes, Review Comment)
+          elif [[ "$EVENT_TYPE" == "pull_request_review" ]]; then
+            COMMENT_BODY="${{ github.event.review.body }}"
+            STATE="${{ github.event.review.state }}"
+          
+            if [[ "$STATE" == "APPROVED" ]]; then
+              MSG_HEADER="✅ PR이 승인되었습니다!"
+            elif [[ "$STATE" == "CHANGES_REQUESTED" ]]; then
+              MSG_HEADER="🚧 변경 요청이 있습니다!"
+            else
+              MSG_HEADER="💬 리뷰 코멘트가 달렸습니다!"
+            fi
+
+          # Case C: 일반 댓글 / 코드 라인 댓글
+          elif [[ "$EVENT_TYPE" == "issue_comment" || "$EVENT_TYPE" == "pull_request_review_comment" ]]; then
+            COMMENT_BODY="${{ github.event.comment.body }}"
+            MSG_HEADER="💬 새로운 멘션/댓글이 있습니다!"
+          fi
+
+          # 텍스트 요약 처리 (내용이 있을 경우)
+          if [[ -n "$COMMENT_BODY" ]]; then
+            if [ ${#COMMENT_BODY} -gt 100 ]; then
+              PREVIEW_TEXT="${COMMENT_BODY:0:100} ..."
+            else
+              PREVIEW_TEXT="$COMMENT_BODY"
+            fi
+          fi
+
+          # ---------------------------------------------------
+          # [2] 팀원 매핑 및 전송 여부 결정
+          # ---------------------------------------------------
+          SLACK_MENTION=""
+
+          # 매핑 함수
+          check_mention() {
+            local github_id=$1
+            local slack_id=$2
+            # 리뷰어로 지정됐거나 본문에 @아이디가 포함된 경우
+            if [[ "$TARGET_GITHUB_ID" == "$github_id" ]] || [[ "$COMMENT_BODY" == *"$github_id"* ]]; then
+              SLACK_MENTION="$SLACK_MENTION <@$slack_id>"
+              SHOULD_SEND="true" # 매칭되는 멘션이 있다면 전송 확정
+            fi
+          }
+
+          check_mention "godqhrenf" "U0ACQ0WAY3T"
+          check_mention "ParkGoeun00" "U0AC8LPUHKP"
+          check_mention "zoo-brong" "U0AC8LPD093"
+          check_mention "jk-Nam" "U0ACA29BKBQ"
+
+          # ---------------------------------------------------
+          # [3] 환경 변수 내보내기
+          # ---------------------------------------------------
+          echo "SLACK_MENTION=$SLACK_MENTION" >> $GITHUB_ENV
+          echo "MSG_HEADER=$MSG_HEADER" >> $GITHUB_ENV
+          echo "SHOULD_SEND=$SHOULD_SEND" >> $GITHUB_ENV
+          echo "PREVIEW_TEXT<<EOF" >> $GITHUB_ENV
+          echo "${PREVIEW_TEXT:-내용 없음}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Send Slack Notification
+        if: ${{ env.SHOULD_SEND == 'true' }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_USERNAME: GitBot
+          SLACK_COLOR: '#36a64f'
+          SLACK_TITLE: "${{ env.MSG_HEADER }}"
+          SLACK_MESSAGE: |
+            *PR:* ${{ github.event.pull_request.title || github.event.issue.title }}
+            *링크:* ${{ github.event.pull_request.html_url || github.event.review.html_url || github.event.comment.html_url }}
+            *작성자:* ${{ github.actor }}
+            
+            *내용:*
+            > ${{ env.PREVIEW_TEXT }}
+            
+            ${{ env.SLACK_MENTION }} 확인 부탁드려요!
+
+          SLACK_FOOTER: 'Powered by GitHub Actions'

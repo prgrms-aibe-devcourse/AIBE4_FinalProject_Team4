@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: AIBE4_FinalProject_Team4
+  profiles:
+    active: dev
+  config:
+    import: optional:file:.env
+
+  # 파일 업로드 용량 설정
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB

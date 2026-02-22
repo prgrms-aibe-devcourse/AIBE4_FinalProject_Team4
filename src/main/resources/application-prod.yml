@@ -1,0 +1,62 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:documind_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate # 스키마 자동 변경 방지
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+
+  ai:
+    model:
+      chat: ollama
+      embedding: ollama
+    ollama:
+      chat:
+        options:
+          model: hf.co/rippertnt/HyperCLOVAX-SEED-Text-Instruct-1.5B-Q4_K_M-GGUF
+      embedding:
+        options:
+          model: bge-m3
+      init:
+        pull-model-strategy: when_missing
+    vectorstore:
+      pgvector:
+        table-name: document_vector_store
+        initialize-schema: false # 배포 시에는 스키마 초기화 방지
+        dimensions: 1024
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    export:
+      influx:
+        enabled: ${INFLUX_ENABLED:true}
+        uri: http://${INFLUX_HOST:influxdb}:${INFLUX_PORT:8086}
+        db: ${INFLUX_DB:k6}
+
+app:
+  upload:
+    dir: /app/local-storage # 컨테이너 환경 절대 경로
+  chat:
+    system-message: >
+      당신은 업로드된 문서를 기반으로 질문에 답변하는 한국어 QA 도우미입니다.
+      제공된 문서 컨텍스트만을 사용하여 정확하게 답변하세요.
+      문서에 관련 정보가 없으면 답변할 수 없다고 안내하세요.
+
+logging:
+  level:
+    org.springframework.ai.chat.client.advisor: info

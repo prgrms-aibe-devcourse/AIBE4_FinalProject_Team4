@@ -1,0 +1,11 @@
+# AI에게 부여하는 기본 지침
+instructions: |
+  You are an expert software engineer and code reviewer.
+  Answer all questions and comments strictly in Korean. (모든 답변은 반드시 한국어로 해주세요.)
+  When reviewing code, focus on potential bugs, security vulnerabilities, and context-aware issues.
+  If the code change affects other files, please mention them.
+
+# 자동 리뷰 설정 (원하면 true로 변경, 기본은 false 추천)
+auto_review:
+  enabled: false
+#  trigger: ["pull_request"] # PR 생성 시 자동 리뷰

@@ -1,0 +1,91 @@
+services:
+  # Spring Boot API (배포용)
+  api:
+    build: .
+    image: documind-api:latest
+    container_name: documind-api
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod # 배포 시에는 prod 사용
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      - redis
+      - postgres
+      - influxdb
+
+  # Database (PostgreSQL + PGVector)
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: documind-postgres
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_DB=${DB_NAME:-documind_db}
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+
+  # Redis
+  redis:
+    image: redis:alpine
+    container_name: documind-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - ./redis-data:/data
+
+  # InfluxDB
+  influxdb:
+    image: influxdb:1.8
+    container_name: documind-influxdb
+    ports:
+      - "${INFLUX_PORT:-8086}:8086"
+    environment:
+      - INFLUXDB_DB=k6
+    volumes:
+      - ./influxdb-data:/var/lib/influxdb
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: documind-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+
+  # K6 (수동 실행용)
+  k6:
+    image: grafana/k6:latest
+    container_name: log-k6
+    volumes:
+      - ./k6-scripts:/scripts
+    environment:
+      - K6_OUT=influxdb=http://influxdb:8086/k6
+
+  # Prometheus & Redis Exporter
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis

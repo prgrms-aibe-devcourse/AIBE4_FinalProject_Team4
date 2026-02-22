@@ -1,0 +1,73 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.11'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'kr.java'
+version = '0.0.1-SNAPSHOT'
+description = 'AIBE4_FinalProject_Team4'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springAiVersion', "1.1.2")
+}
+
+dependencies {
+    // Spring Boot Core
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Database & Cache
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.session:spring-session-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    runtimeOnly 'org.postgresql:postgresql'
+    // Source: https://mvnrepository.com/artifact/io.hypersistence/hypersistence-utils-hibernate-63
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.15.2'
+
+    // Spring AI & RAG
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+    implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
+    implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
+    implementation 'org.springframework.ai:spring-ai-tika-document-reader'
+    implementation 'org.springframework.ai:spring-ai-rag'
+    implementation 'org.springframework.ai:spring-ai-advisors-vector-store'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+
+    // Monitoring
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-influx'
+
+    // Utils & Test
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
