@@ -17,24 +17,29 @@ spring:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
 
+  # Ollama 자동 구성 비활성화 (운영 환경에서 미사용)
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.ollama.autoconfigure.OllamaApiAutoConfiguration
+      - org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
+      - org.springframework.ai.model.ollama.autoconfigure.OllamaEmbeddingAutoConfiguration
+
   ai:
     model:
-      chat: ollama
-      embedding: ollama
-    ollama:
-      chat:
-        options:
-          model: hf.co/rippertnt/HyperCLOVAX-SEED-Text-Instruct-1.5B-Q4_K_M-GGUF
+      embedding: openai
+
+    # OpenAI API
+    openai:
+      api-key: ${OPENAI_API_KEY}
       embedding:
         options:
-          model: bge-m3
-      init:
-        pull-model-strategy: when_missing
+          model: text-embedding-3-large
+          dimensions: 1536 # 3072 → 1536 차원 축소 (HNSW 인덱스 최대 2000)
+
     vectorstore:
       pgvector:
-        table-name: document_vector_store
-        initialize-schema: false # 배포 시에는 스키마 초기화 방지
-        dimensions: 1024
+        initialize-schema: false # 운영 환경에서는 수동 스키마 관리
+        dimensions: 1536 # 임베딩 벡터 차원 (text-embedding-3-large 축소)
 
 management:
   endpoints:
@@ -51,11 +56,36 @@ management:
 app:
   upload:
     dir: /app/local-storage # 컨테이너 환경 절대 경로
+
   chat:
-    system-message: >
-      당신은 업로드된 문서를 기반으로 질문에 답변하는 한국어 QA 도우미입니다.
-      제공된 문서 컨텍스트만을 사용하여 정확하게 답변하세요.
-      문서에 관련 정보가 없으면 답변할 수 없다고 안내하세요.
+    default-model: gpt-4.1-mini # 기본 선택 모델 (alias)
+    models:
+      - provider: openai
+        model-id: gpt-4.1-nano
+        alias: gpt-4.1-nano
+        display-name: GPT-4.1 Nano
+      - provider: openai
+        model-id: gpt-4.1-mini
+        alias: gpt-4.1-mini
+        display-name: GPT-4.1 Mini
+      - provider: openai
+        model-id: gpt-5-nano
+        alias: gpt-5-nano
+        display-name: GPT-5 Nano
+        reasoning: true
+      - provider: openai
+        model-id: gpt-5-mini
+        alias: gpt-5-mini
+        display-name: GPT-5 Mini
+        reasoning: true
+      - provider: google-genai
+        model-id: gemini-2.5-flash
+        alias: gemini-2.5-flash
+        display-name: Gemini 2.5 Flash
+      - provider: google-genai
+        model-id: gemini-2.5-flash-lite
+        alias: gemini-2.5-flash-lite
+        display-name: Gemini 2.5 Flash-Lite
 
 logging:
   level:
