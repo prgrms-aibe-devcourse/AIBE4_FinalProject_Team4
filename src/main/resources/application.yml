@@ -11,3 +11,13 @@ spring:
     multipart:
       max-file-size: 20MB
       max-request-size: 20MB
+
+  ai:
+    chat:
+      client:
+        enabled: false # Spring AI 기본 ChatClient 자동 구성 비활성화 (직접 생성)
+
+    google:
+      genai:
+        api-key: ${GENAI_API_KEY}
+        
