@@ -22,22 +22,29 @@ spring:
   # Spring AI 및 RAG 설정
   ai:
     model:
-      chat: ollama
-      embedding: ollama
+      embedding: openai
+
     ollama:
-      chat:
-        options:
-          model: hf.co/rippertnt/HyperCLOVAX-SEED-Text-Instruct-1.5B-Q4_K_M-GGUF
-      embedding:
-        options:
-          model: bge-m3
       init:
-        pull-model-strategy: when_missing
+        pull-model-strategy: never # 모델 자동 다운로드 비활성화
+
+    # OpenAI 호환 API (GitHub Models 경유)
+    openai:
+      api-key: ${GITHUB_PAT}
+      chat:
+        base-url: https://models.github.ai/inference
+        completions-path: /chat/completions
+      embedding:
+        base-url: https://models.github.ai/inference
+        embeddings-path: /embeddings
+        options:
+          model: openai/text-embedding-3-large
+          dimensions: 1536 # 3072 → 1536 차원 축소 (HNSW 인덱스 최대 2000)
+
     vectorstore:
       pgvector:
-        table-name: document_vector_store
-        initialize-schema: true
-        dimensions: 1024
+        initialize-schema: true # 앱 시작 시 벡터 테이블 자동 생성
+        dimensions: 1536 # 임베딩 벡터 차원 (text-embedding-3-large 축소)
 
 # 모니터링/메트릭 설정 (InfluxDB 연동)
 management:
@@ -57,10 +64,28 @@ app:
   upload:
     dir: ./local-storage
   chat:
-    system-message: >
-      당신은 업로드된 문서를 기반으로 질문에 답변하는 한국어 QA 도우미입니다.
-      제공된 문서 컨텍스트만을 사용하여 정확하게 답변하세요.
-      문서에 관련 정보가 없으면 답변할 수 없다고 안내하세요.
+    default-model: gpt-4.1-mini # 기본 선택 모델 (alias)
+    models:
+      - provider: ollama
+        model-id: hf.co/rippertnt/HyperCLOVAX-SEED-Text-Instruct-1.5B-Q4_K_M-GGUF
+        alias: hyperclova-x
+        display-name: HyperCLOVA X
+      - provider: openai
+        model-id: openai/gpt-4.1-nano
+        alias: gpt-4.1-nano
+        display-name: GPT-4.1 Nano
+      - provider: openai
+        model-id: openai/gpt-4.1-mini
+        alias: gpt-4.1-mini
+        display-name: GPT-4.1 Mini
+      - provider: google-genai
+        model-id: gemini-2.5-flash
+        alias: gemini-2.5-flash
+        display-name: Gemini 2.5 Flash
+      - provider: google-genai
+        model-id: gemini-2.5-flash-lite
+        alias: gemini-2.5-flash-lite
+        display-name: Gemini 2.5 Flash-Lite
 
 logging:
   level:
