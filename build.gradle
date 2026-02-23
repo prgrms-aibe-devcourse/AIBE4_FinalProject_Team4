@@ -22,6 +22,7 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 ext {
@@ -42,11 +43,19 @@ dependencies {
     // Source: https://mvnrepository.com/artifact/io.hypersistence/hypersistence-utils-hibernate-63
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.15.2'
 
-    // Spring AI & RAG
-    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+    // Spring AI & ETL & RAG
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
-    implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
+    
+    implementation 'org.apache.pdfbox:pdfbox:3.0.5'
+    implementation('com.github.tabulapdf:tabula-java:master-SNAPSHOT') {
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
+    implementation 'org.apache.poi:poi:5.4.1'
+    implementation 'org.apache.poi:poi-ooxml:5.4.1'
     implementation 'org.springframework.ai:spring-ai-tika-document-reader'
+    
     implementation 'org.springframework.ai:spring-ai-rag'
     implementation 'org.springframework.ai:spring-ai-advisors-vector-store'
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
