@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exception Handler Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 32px; color: #333; }
+        h1 { margin-bottom: 8px; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .section { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .section h2 { margin-bottom: 4px; font-size: 1.2rem; }
+        .section .desc { color: #888; font-size: 0.9rem; margin-bottom: 16px; }
+        .group-label { font-size: 0.85rem; font-weight: 600; color: #555; margin: 16px 0 8px; padding-left: 4px; border-left: 3px solid #ddd; padding-left: 8px; }
+        .group-label:first-of-type { margin-top: 0; }
+        .btn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; margin-bottom: 8px; }
+        button { padding: 12px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #fff; transition: opacity 0.2s; text-align: left; }
+        button:hover { opacity: 0.85; }
+        button small { display: block; font-weight: 400; font-size: 0.75rem; opacity: 0.85; margin-top: 2px; }
+        .btn-validation { background: #0ea5e9; }
+        .btn-parse { background: #14b8a6; }
+        .btn-400 { background: #f59e0b; }
+        .btn-401 { background: #8b5cf6; }
+        .btn-403 { background: #ec4899; }
+        .btn-404 { background: #6366f1; }
+        .btn-405 { background: #a855f7; }
+        .btn-409 { background: #f97316; }
+        .btn-413 { background: #e11d48; }
+        .btn-500 { background: #ef4444; }
+        #result-panel { display: none; background: #1e1e1e; color: #d4d4d4; border-radius: 12px; padding: 24px; margin-top: 24px; }
+        #result-panel h3 { color: #fff; margin-bottom: 12px; }
+        .result-meta { display: flex; gap: 16px; margin-bottom: 12px; font-size: 0.9rem; flex-wrap: wrap; }
+        .result-meta span { padding: 4px 10px; border-radius: 4px; font-weight: 600; }
+        .status-4xx { background: #f59e0b33; color: #f59e0b; }
+        .status-5xx { background: #ef444433; color: #ef4444; }
+        .status-ok { background: #22c55e33; color: #22c55e; }
+        #result-body { background: #2d2d2d; border-radius: 8px; padding: 16px; white-space: pre-wrap; font-family: 'Consolas', monospace; font-size: 0.85rem; max-height: 400px; overflow-y: auto; }
+        .close-btn { float: right; background: transparent; color: #888; font-size: 1.2rem; padding: 4px 8px; }
+        .close-btn:hover { color: #fff; opacity: 1; }
+        .handler-tag { display: inline-block; font-size: 0.7rem; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+    </style>
+</head>
+<body>
+    <h1>Exception Handler Test</h1>
+    <p class="subtitle">각 버튼을 클릭하여 예외 핸들러 동작을 확인하세요. API 응답은 하단 패널에, View 응답은 새 탭에서 확인할 수 있습니다.</p>
+
+    <!-- ============================================================ -->
+    <!-- Pre-Dispatch Exception Tests (GlobalPreDispatchExceptionHandler) -->
+    <!-- ============================================================ -->
+    <div class="section">
+        <h2>Pre-Dispatch Exceptions <span class="handler-tag">GlobalPreDispatchExceptionHandler</span></h2>
+        <p class="desc">핸들러 선택 전에 발생하는 예외 (DispatcherServlet 레벨) — Accept 헤더로 JSON/HTML 분기</p>
+
+        <div class="group-label">API (JSON 응답)</div>
+        <div class="btn-grid">
+            <button class="btn-404" onclick="callApi('/api/test/exception/this-path-does-not-exist')">
+                NoResourceFoundException
+                <small>404 존재하지 않는 URL</small>
+            </button>
+            <button class="btn-405" onclick="callApiMethod('/api/test/exception/bad-request', 'DELETE')">
+                HttpRequestMethodNotSupportedException
+                <small>405 지원하지 않는 HTTP 메서드</small>
+            </button>
+            <button class="btn-413" onclick="uploadLargeFile()">
+                MaxUploadSizeExceededException
+                <small>413 파일 크기 초과</small>
+            </button>
+        </div>
+
+        <div class="group-label">View (에러 페이지)</div>
+        <div class="btn-grid">
+            <button class="btn-404" onclick="openView('/this-view-path-does-not-exist')">
+                NoResourceFoundException
+                <small>404 존재하지 않는 URL</small>
+            </button>
+            <button class="btn-405" onclick="openView('/test/exception/view/method-not-allowed-via-post')">
+                HttpRequestMethodNotSupportedException
+                <small>405 지원하지 않는 HTTP 메서드 (GET→POST 전용)</small>
+            </button>
+            <button class="btn-413" onclick="uploadLargeFileView()">
+                MaxUploadSizeExceededException
+                <small>413 파일 크기 초과</small>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- View Exception Tests (GlobalViewExceptionHandler)            -->
+    <!-- ============================================================ -->
+    <div class="section">
+        <h2>View Exceptions <span class="handler-tag">GlobalViewExceptionHandler</span></h2>
+        <p class="desc">@Controller에서 발생하는 예외 — 에러 페이지가 새 탭에서 열림</p>
+
+        <div class="group-label">Validation 예외</div>
+        <div class="btn-grid">
+            <button class="btn-validation" onclick="postForm('/test/exception/view/method-argument-not-valid', {name:'', age:0})">
+                MethodArgumentNotValidException
+                <small>@Valid @ModelAttribute 유효성 실패</small>
+            </button>
+            <button class="btn-validation" onclick="openView('/test/exception/view/constraint-violation?value=-1')">
+                ConstraintViolationException
+                <small>@Validated @RequestParam 제약 위반</small>
+            </button>
+            <button class="btn-validation" onclick="openView('/test/exception/view/missing-param')">
+                MissingServletRequestParameterException
+                <small>필수 @RequestParam 누락</small>
+            </button>
+            <button class="btn-validation" onclick="openView('/test/exception/view/type-mismatch?number=abc')">
+                MethodArgumentTypeMismatchException
+                <small>@RequestParam 타입 불일치</small>
+            </button>
+        </div>
+
+        <div class="group-label">BusinessException 하위 예외</div>
+        <div class="btn-grid">
+            <button class="btn-400" onclick="openView('/test/exception/view/bad-request')">
+                BadRequestException
+                <small>400 Bad Request</small>
+            </button>
+            <button class="btn-401" onclick="openView('/test/exception/view/unauthorized')">
+                UnauthorizedException
+                <small>401 Unauthorized</small>
+            </button>
+            <button class="btn-403" onclick="openView('/test/exception/view/forbidden')">
+                ForbiddenException
+                <small>403 Forbidden</small>
+            </button>
+            <button class="btn-404" onclick="openView('/test/exception/view/not-found')">
+                NotFoundException
+                <small>404 Not Found</small>
+            </button>
+            <button class="btn-409" onclick="openView('/test/exception/view/conflict')">
+                ConflictException
+                <small>409 Conflict</small>
+            </button>
+        </div>
+
+        <div class="group-label">일반 Exception</div>
+        <div class="btn-grid">
+            <button class="btn-500" onclick="openView('/test/exception/view/internal-error')">
+                RuntimeException
+                <small>500 Internal Server Error</small>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- API Exception Tests (GlobalApiExceptionHandler)              -->
+    <!-- ============================================================ -->
+    <div class="section">
+        <h2>API Exceptions <span class="handler-tag">GlobalApiExceptionHandler</span></h2>
+        <p class="desc">@RestController에서 발생하는 예외 — JSON 응답을 아래 패널에서 확인</p>
+
+        <div class="group-label">Validation / Parsing 예외</div>
+        <div class="btn-grid">
+            <button class="btn-validation" onclick="callApiJson('/api/test/exception/method-argument-not-valid', 'POST', JSON.stringify({name:'', age:0}))">
+                MethodArgumentNotValidException
+                <small>@Valid @RequestBody 유효성 실패</small>
+            </button>
+            <button class="btn-validation" onclick="callApi('/api/test/exception/constraint-violation?value=-1')">
+                ConstraintViolationException
+                <small>@Validated @RequestParam 제약 위반</small>
+            </button>
+            <button class="btn-parse" onclick="callApiJson('/api/test/exception/http-message-not-readable', 'POST', '{invalid json!!')">
+                HttpMessageNotReadableException
+                <small>잘못된 JSON 형식</small>
+            </button>
+            <button class="btn-validation" onclick="callApi('/api/test/exception/missing-param')">
+                MissingServletRequestParameterException
+                <small>필수 @RequestParam 누락</small>
+            </button>
+            <button class="btn-validation" onclick="callApi('/api/test/exception/type-mismatch?number=abc')">
+                MethodArgumentTypeMismatchException
+                <small>@RequestParam 타입 불일치</small>
+            </button>
+        </div>
+
+        <div class="group-label">BusinessException 하위 예외</div>
+        <div class="btn-grid">
+            <button class="btn-400" onclick="callApi('/api/test/exception/bad-request')">
+                BadRequestException
+                <small>400 Bad Request</small>
+            </button>
+            <button class="btn-401" onclick="callApi('/api/test/exception/unauthorized')">
+                UnauthorizedException
+                <small>401 Unauthorized</small>
+            </button>
+            <button class="btn-403" onclick="callApi('/api/test/exception/forbidden')">
+                ForbiddenException
+                <small>403 Forbidden</small>
+            </button>
+            <button class="btn-404" onclick="callApi('/api/test/exception/not-found')">
+                NotFoundException
+                <small>404 Not Found</small>
+            </button>
+            <button class="btn-409" onclick="callApi('/api/test/exception/conflict')">
+                ConflictException
+                <small>409 Conflict</small>
+            </button>
+        </div>
+
+        <div class="group-label">일반 Exception</div>
+        <div class="btn-grid">
+            <button class="btn-500" onclick="callApi('/api/test/exception/internal-error')">
+                RuntimeException
+                <small>500 Internal Server Error</small>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- Result Panel                                                 -->
+    <!-- ============================================================ -->
+    <div id="result-panel">
+        <button class="close-btn" onclick="closeResult()">✕</button>
+        <h3>API Response</h3>
+        <div class="result-meta">
+            <span id="result-status"></span>
+            <span id="result-url" style="color:#888;"></span>
+        </div>
+        <pre id="result-body"></pre>
+    </div>
+
+    <script>
+        // GET 요청
+        async function callApi(url) {
+            await callApiMethod(url, 'GET');
+        }
+
+        // 임의 메서드 요청
+        async function callApiMethod(url, method) {
+            try {
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Accept': 'application/json' }
+                });
+                const status = response.status;
+                const text = await response.text();
+                showResult(status, method + ' ' + url, formatBody(text));
+            } catch (err) {
+                showResult(0, method + ' ' + url, 'Network Error: ' + err.message);
+            }
+        }
+
+        // JSON body POST 요청
+        async function callApiJson(url, method, body) {
+            try {
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body
+                });
+                const status = response.status;
+                const text = await response.text();
+                showResult(status, method + ' ' + url, formatBody(text));
+            } catch (err) {
+                showResult(0, method + ' ' + url, 'Network Error: ' + err.message);
+            }
+        }
+
+        // Form POST → 새 탭에서 결과 확인 (MethodArgumentNotValidException for View)
+        function postForm(url, data) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            form.target = '_blank';
+            for (const [key, value] of Object.entries(data)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        // 대용량 파일 업로드 시뮬레이션 (API - JSON 응답)
+        function uploadLargeFile() {
+            const formData = new FormData();
+            const blob = new Blob([new ArrayBuffer(20 * 1024 * 1024)], { type: 'application/octet-stream' });
+            formData.append('file', blob, 'large-test-file.bin');
+
+            fetch('/api/test/exception/missing-param', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body: formData
+            }).then(async res => {
+                const text = await res.text();
+                showResult(res.status, 'POST multipart (20MB) → JSON', formatBody(text));
+            }).catch(err => {
+                showResult(0, 'POST multipart (20MB) → JSON', 'Network Error: ' + err.message);
+            });
+        }
+
+        // 대용량 파일 업로드 시뮬레이션 (View - 에러 페이지)
+        function uploadLargeFileView() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/test/exception/view/missing-param';
+            form.enctype = 'multipart/form-data';
+            form.target = '_blank';
+
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.name = 'file';
+            form.appendChild(fileInput);
+
+            // DataTransfer로 더미 파일 주입
+            const dt = new DataTransfer();
+            const blob = new Blob([new ArrayBuffer(20 * 1024 * 1024)], { type: 'application/octet-stream' });
+            dt.items.add(new File([blob], 'large-test-file.bin'));
+            fileInput.files = dt.files;
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function formatBody(text) {
+            try {
+                return JSON.stringify(JSON.parse(text), null, 2);
+            } catch {
+                return text;
+            }
+        }
+
+        function showResult(status, url, body) {
+            const panel = document.getElementById('result-panel');
+            const statusEl = document.getElementById('result-status');
+            const urlEl = document.getElementById('result-url');
+            const bodyEl = document.getElementById('result-body');
+
+            panel.style.display = 'block';
+            statusEl.textContent = 'HTTP ' + status;
+            if (status >= 500) statusEl.className = 'status-5xx';
+            else if (status >= 400) statusEl.className = 'status-4xx';
+            else statusEl.className = 'status-ok';
+            urlEl.textContent = url;
+            bodyEl.textContent = body;
+            panel.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeResult() {
+            document.getElementById('result-panel').style.display = 'none';
+        }
+
+        function openView(url) {
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
