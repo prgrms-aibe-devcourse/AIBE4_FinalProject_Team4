@@ -147,7 +147,7 @@ public class MemberApiController {
     @PostMapping
     public CommonResponse<MemberSignupResponse> signup(
         @RequestBody MemberSignupRequest request) {
-        
+
         return CommonResponse.success(memberService.signup(request));
     }
 
@@ -156,7 +156,7 @@ public class MemberApiController {
     public CommonResponse<MemberResponse> getMember(
         @Parameter(description = "회원 ID", example = "1", required = true) // 4. 파라미터 설명
         @PathVariable Long memberId) {
-        
+
         return CommonResponse.success(memberService.findById(memberId));
     }
 }

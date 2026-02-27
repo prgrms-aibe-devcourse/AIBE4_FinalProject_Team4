@@ -2,11 +2,32 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.11'
     id 'io.spring.dependency-management' version '1.1.7'
+    id "com.diffplug.spotless" version "6.23.3"
 }
 
 group = 'kr.java'
 version = '0.0.1-SNAPSHOT'
 description = 'AIBE4_FinalProject_Team4'
+
+spotless {
+    java {
+        target '**/*.java'
+        // 구글 스타일(AOSP) = 들여쓰기 4칸 적용
+        googleJavaFormat().aosp()
+
+        importOrder() // import 순서 정의
+        removeUnusedImports() // 안 쓰는 import 제거
+        trimTrailingWhitespace() // 끝 공백 제거
+        endWithNewline() // 파일 끝 빈 줄 추가
+    }
+    // [중요] 윈도우/맥 사용자 간 충돌 방지를 위해 LF로 통일
+    lineEndings 'UNIX'
+}
+
+// 컴파일 시 자동으로 포맷팅 적용 (선택)
+tasks.named('compileJava') {
+    dependsOn 'spotlessApply'
+}
 
 java {
     toolchain {
