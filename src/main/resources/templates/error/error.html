@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Error</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { text-align: center; padding: 48px; }
+        .code { font-size: 6rem; font-weight: 800; color: #64748b; line-height: 1; }
+        .title { font-size: 1.5rem; color: #334155; margin: 8px 0 16px; }
+        .message { color: #475569; background: #e2e8f0; padding: 12px 20px; border-radius: 8px; margin-bottom: 24px; }
+        a { color: #6366f1; text-decoration: none; font-weight: 600; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="code" th:text="${status} ?: 'Error'">Error</div>
+        <div class="title">오류가 발생했습니다</div>
+        <div class="message" th:text="${message} ?: '요청을 처리하는 중 오류가 발생했습니다.'">요청을 처리하는 중 오류가 발생했습니다.</div>
+        <a href="/test/exception">테스트 페이지로 돌아가기</a>
+    </div>
+</body>
+</html>

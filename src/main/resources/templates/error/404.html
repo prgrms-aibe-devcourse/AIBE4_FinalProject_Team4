@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>404 Not Found</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { text-align: center; padding: 48px; }
+        .code { font-size: 6rem; font-weight: 800; color: #6366f1; line-height: 1; }
+        .title { font-size: 1.5rem; color: #3730a3; margin: 8px 0 16px; }
+        .message { color: #4338ca; background: #e0e7ff; padding: 12px 20px; border-radius: 8px; margin-bottom: 24px; }
+        a { color: #4f46e5; text-decoration: none; font-weight: 600; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="code">404</div>
+        <div class="title">Not Found</div>
+        <div class="message" th:text="${message} ?: '요청한 페이지를 찾을 수 없습니다.'">요청한 페이지를 찾을 수 없습니다.</div>
+        <a href="/test/exception">테스트 페이지로 돌아가기</a>
+    </div>
+</body>
+</html>

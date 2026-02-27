@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>400 Bad Request</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #fffbeb; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { text-align: center; padding: 48px; }
+        .code { font-size: 6rem; font-weight: 800; color: #f59e0b; line-height: 1; }
+        .title { font-size: 1.5rem; color: #92400e; margin: 8px 0 16px; }
+        .message { color: #a16207; background: #fef3c7; padding: 12px 20px; border-radius: 8px; margin-bottom: 24px; }
+        a { color: #d97706; text-decoration: none; font-weight: 600; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="code">400</div>
+        <div class="title">Bad Request</div>
+        <div class="message" th:text="${message} ?: '잘못된 요청입니다.'">잘못된 요청입니다.</div>
+        <a href="/test/exception">테스트 페이지로 돌아가기</a>
+    </div>
+</body>
+</html>

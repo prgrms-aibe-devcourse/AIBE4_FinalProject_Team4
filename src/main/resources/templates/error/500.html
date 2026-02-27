@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>500 Internal Server Error</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #fef2f2; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { text-align: center; padding: 48px; }
+        .code { font-size: 6rem; font-weight: 800; color: #ef4444; line-height: 1; }
+        .title { font-size: 1.5rem; color: #991b1b; margin: 8px 0 16px; }
+        .message { color: #b91c1c; background: #fee2e2; padding: 12px 20px; border-radius: 8px; margin-bottom: 24px; }
+        a { color: #dc2626; text-decoration: none; font-weight: 600; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="code">500</div>
+        <div class="title">Internal Server Error</div>
+        <div class="message" th:text="${message} ?: '서버 내부 오류가 발생했습니다.'">서버 내부 오류가 발생했습니다.</div>
+        <a href="/test/exception">테스트 페이지로 돌아가기</a>
+    </div>
+</body>
+</html>
