@@ -6,6 +6,16 @@ spring:
   config:
     import: optional:file:.env
 
+  cloud:
+    aws:
+      s3:
+        bucket: ${AWS_S3_BUCKET}
+      region:
+        static: ${AWS_S3_REGION}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY}
+
   # 파일 업로드 용량 설정
   servlet:
     multipart:
@@ -20,4 +30,3 @@ spring:
     google:
       genai:
         api-key: ${GENAI_API_KEY}
-        

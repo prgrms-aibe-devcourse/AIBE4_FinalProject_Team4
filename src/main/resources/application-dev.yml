@@ -63,6 +63,7 @@ management:
 app:
   upload:
     dir: ./local-storage
+
   chat:
     default-model: gpt-4.1-mini # 기본 선택 모델 (alias)
     models:

@@ -54,9 +54,6 @@ management:
         db: ${INFLUX_DB:k6}
 
 app:
-  upload:
-    dir: /app/local-storage # 컨테이너 환경 절대 경로
-
   chat:
     default-model: gpt-4.1-mini # 기본 선택 모델 (alias)
     models:
