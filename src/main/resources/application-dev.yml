@@ -19,6 +19,13 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+# Redis Stream 설정
+redis:
+  stream:
+    key: ${REDIS_STREAM_KEY:log-stream}
+    group: ${REDIS_STREAM_GROUP:log-group}
+    consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
+
   # Spring AI 및 RAG 설정
   ai:
     model:
@@ -86,6 +93,54 @@ app:
         model-id: gemini-2.5-flash-lite
         alias: gemini-2.5-flash-lite
         display-name: Gemini 2.5 Flash-Lite
+
+worker:
+    # 배치 처리 설정
+    bulk:
+        size: ${WORKER_BULK_SIZE:1000}  # 배치 크기
+        flush-interval-ms: ${WORKER_BULK_FLUSH_INTERVAL_MS:1000}  # 플러시 주기 (1초)
+
+    # 버퍼 설정
+    buffer:
+        max-size: ${WORKER_BUFFER_MAX_SIZE:10000}  # 최대 버퍼 크기
+
+    # JDBC 배치 설정
+    jdbc:
+        batch-size: ${WORKER_JDBC_BATCH_SIZE:1000}  # JDBC 배치 크기
+
+    # Redis Streams 폴링 설정
+    poll-interval-ms: ${POLL_INTERVAL_MS:5000}  # 폴링 주기 (5초)
+    poll-block-ms: ${POLL_BLOCK_MS:2000}        # XREADGROUP BLOCK 시간 (2초)
+
+    # Lag 모니터링 설정
+    lag-monitor:
+        # Redis Stream Lag 수집 주기 (밀리초)
+        interval-ms: ${LAG_MONITOR_INTERVAL_MS:5000}
+
+    # Backpressure 설정
+    backpressure:
+        # DB Insert 평균 지연이 이 값 이상이면 WARN 상태로 전환
+        warn-threshold-ms: ${BACKPRESSURE_WARN_THRESHOLD_MS:500}
+        # DB Insert 평균 지연이 이 값 이상이면 CRITICAL 상태로 전환
+        critical-threshold-ms: ${BACKPRESSURE_CRITICAL_THRESHOLD_MS:2000}
+        # WARN 상태에서 Redis 소비 스레드가 대기하는 시간
+        warn-sleep-ms: ${BACKPRESSURE_WARN_SLEEP_MS:200}
+        # CRITICAL 상태에서 Redis 소비 스레드가 대기하는 시간
+        critical-sleep-ms: ${BACKPRESSURE_CRITICAL_SLEEP_MS:1000}
+        # 배치 크기 동적 조절 설정
+        initial-batch-size: ${BACKPRESSURE_INITIAL_BATCH_SIZE:100}
+        min-batch-size: ${BACKPRESSURE_MIN_BATCH_SIZE:10}
+        max-batch-size: ${BACKPRESSURE_MAX_BATCH_SIZE:500}
+        # 배치 크기 증가 임계값 (처리 시간이 이 값 미만이면 증가)
+        increase-threshold-ms: ${BACKPRESSURE_INCREASE_THRESHOLD_MS:1000}
+        # 배치 크기 감소 임계값 (처리 시간이 이 값 이상이면 감소)
+        decrease-threshold-ms: ${BACKPRESSURE_DECREASE_THRESHOLD_MS:5000}
+    dlq:
+        # Dead Letter Queue 최대 재시도 횟수
+        max-retry: ${DLQ_MAX_RETRY:5}
+        # DLQ 재시도 주기 (밀리초)
+        retry-interval-ms: ${DLQ_RETRY_INTERVAL_MS:5000}
+
 
 logging:
   level:
