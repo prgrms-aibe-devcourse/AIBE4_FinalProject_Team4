@@ -79,11 +79,7 @@ public class BackpressureManager {
                 currentBatchSize);
     }
 
-    /**
-     * 처리 시간 기반 배치 크기 동적 조절
-     * - 5초 초과: 배치 크기 50% 감소
-     * - 1초 미만: 배치 크기 증가
-     */
+    /** 처리 시간 기반 배치 크기 동적 조절 - 5초 초과: 배치 크기 50% 감소 - 1초 미만: 배치 크기 증가 */
     private void adjustBatchSize(long latencyMs) {
         int previousBatchSize = currentBatchSize;
 

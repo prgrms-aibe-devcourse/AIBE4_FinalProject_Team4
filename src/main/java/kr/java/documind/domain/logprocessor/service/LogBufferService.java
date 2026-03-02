@@ -3,14 +3,14 @@ package kr.java.documind.domain.logprocessor.service;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
-import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
-import kr.java.documind.domain.logprocessor.model.entity.Log;
-import kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
+import kr.java.documind.domain.logprocessor.model.entity.Log;
+import kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,8 +31,7 @@ public class LogBufferService {
     private final MeterRegistry meterRegistry;
     private final LogMapper logMapper;
     private final ConcurrentLinkedQueue<LogWrapper> buffer = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<LogWrapper> deadLetterQueue =
-            new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<LogWrapper> deadLetterQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isFlushing = new AtomicBoolean(false);
     private final AtomicBoolean isRetrying = new AtomicBoolean(false);
 
@@ -113,8 +112,7 @@ public class LogBufferService {
             int dynamicBatchSize = backpressureManager.getCurrentBatchSize();
             List<LogWrapper> wrappersToSave = new ArrayList<>();
             LogWrapper wrapper;
-            while (wrappersToSave.size() < dynamicBatchSize
-                    && (wrapper = buffer.poll()) != null) {
+            while (wrappersToSave.size() < dynamicBatchSize && (wrapper = buffer.poll()) != null) {
                 wrappersToSave.add(wrapper);
             }
 
@@ -141,7 +139,8 @@ public class LogBufferService {
                 if (!recordIds.isEmpty()) {
                     redisTemplate
                             .opsForStream()
-                            .acknowledge(streamKey, consumerGroup, recordIds.toArray(new RecordId[0]));
+                            .acknowledge(
+                                    streamKey, consumerGroup, recordIds.toArray(new RecordId[0]));
                 }
 
                 log.info(
@@ -151,11 +150,13 @@ public class LogBufferService {
                         backpressureManager.getState(),
                         recordIds.size());
             } catch (Exception e) {
-                log.error("Failed to flush {} logs to DB. Moving to DLQ for retry.", logs.size(), e);
+                log.error(
+                        "Failed to flush {} logs to DB. Moving to DLQ for retry.", logs.size(), e);
                 // 실패한 로그들을 Dead Letter Queue에 추가
                 wrappersToSave.forEach(
                         w -> {
-                            LogWrapper retryWrapper = new LogWrapper(w.log(), w.recordId(), w.retryCount());
+                            LogWrapper retryWrapper =
+                                    new LogWrapper(w.log(), w.recordId(), w.retryCount());
                             deadLetterQueue.offer(retryWrapper);
                         });
             }
@@ -207,7 +208,8 @@ public class LogBufferService {
                 if (!recordIds.isEmpty()) {
                     redisTemplate
                             .opsForStream()
-                            .acknowledge(streamKey, consumerGroup, recordIds.toArray(new RecordId[0]));
+                            .acknowledge(
+                                    streamKey, consumerGroup, recordIds.toArray(new RecordId[0]));
                 }
 
                 log.info(

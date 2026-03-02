@@ -3,10 +3,10 @@ package kr.java.documind.domain.logprocessor.model.repository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
-import kr.java.documind.domain.logprocessor.model.entity.Log;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+import kr.java.documind.domain.logprocessor.model.entity.Log;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -35,8 +35,8 @@ public class LogJdbcRepository {
     public void saveAll(List<Log> logs) {
         String sql =
                 "INSERT INTO log (log_id, project_id, session_id, user_id, severity, body,"
-                    + " occurred_at, ingested_at, trace_id, span_id, fingerprint, resource,"
-                    + " attributes) "
+                        + " occurred_at, ingested_at, trace_id, span_id, fingerprint, resource,"
+                        + " attributes) "
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)";
 
         int totalSize = logs.size();
@@ -53,7 +53,7 @@ public class LogJdbcRepository {
                             ps.setString(2, log.getProjectId());
                             ps.setString(3, log.getSessionId());
                             ps.setString(4, log.getUserId());
-                            ps.setString(5, log.getSeverity());
+                            ps.setString(5, log.getSeverity().toString());
                             ps.setString(6, log.getBody());
                             ps.setObject(7, log.getOccurredAt());
                             ps.setObject(8, log.getIngestedAt());

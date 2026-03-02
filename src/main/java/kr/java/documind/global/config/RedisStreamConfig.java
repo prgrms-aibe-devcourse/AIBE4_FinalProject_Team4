@@ -21,10 +21,7 @@ public class RedisStreamConfig {
 
     private final RedisConnectionFactory redisConnectionFactory;
 
-    /**
-     * Consumer Group 초기화
-     * Scheduled 폴링 방식에서도 Consumer Group이 필요하므로 초기화
-     */
+    /** Consumer Group 초기화 Scheduled 폴링 방식에서도 Consumer Group이 필요하므로 초기화 */
     @PostConstruct
     public void initConsumerGroup() {
         createConsumerGroupIfNotExists();

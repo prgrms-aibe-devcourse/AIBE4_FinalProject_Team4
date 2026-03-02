@@ -3,12 +3,15 @@ package kr.java.documind.domain.logprocessor.model.entity;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
+import kr.java.documind.domain.logprocessor.model.enums.LogLevel;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,8 +27,7 @@ import org.hibernate.annotations.Type;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Log {
 
-    @Id
-    private UUID logId;
+    @Id private UUID logId;
 
     @Column(nullable = false)
     private String projectId;
@@ -35,8 +37,9 @@ public class Log {
 
     private String userId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String severity;
+    private LogLevel severity;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;

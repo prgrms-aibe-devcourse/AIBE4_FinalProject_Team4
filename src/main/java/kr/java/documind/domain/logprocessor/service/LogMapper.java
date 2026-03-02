@@ -3,11 +3,12 @@ package kr.java.documind.domain.logprocessor.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
-import kr.java.documind.domain.logprocessor.model.entity.Log;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
+import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
+import kr.java.documind.domain.logprocessor.model.entity.Log;
+import kr.java.documind.domain.logprocessor.model.enums.LogLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -44,7 +45,7 @@ public class LogMapper {
                 .projectId(map.get("projectId"))
                 .sessionId(sessionId)
                 .userId(map.get("userId"))
-                .severity(map.getOrDefault("severity", "INFO"))
+                .severity(LogLevel.fromString(map.getOrDefault("severity", "INFO")))
                 .body(map.get("body"))
                 .occurredAt(parseTime(map.get("occurredAt")))
                 .ingestedAt(parseTime(map.get("ingestedAt")))

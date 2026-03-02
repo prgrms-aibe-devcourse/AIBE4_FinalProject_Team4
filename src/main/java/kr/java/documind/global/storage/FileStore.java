@@ -2,7 +2,6 @@ package kr.java.documind.global.storage;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.springframework.core.io.Resource;
 
 public interface FileStore {

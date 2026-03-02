@@ -1,8 +1,8 @@
 package kr.java.documind.domain.logprocessor.service;
 
-import kr.java.documind.domain.logprocessor.model.entity.Log;
 import java.time.Duration;
 import java.util.List;
+import kr.java.documind.domain.logprocessor.model.entity.Log;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,8 +82,7 @@ public class LogStreamListener {
                     logBufferService.add(logEntity, message.getId());
                 } catch (Exception e) {
                     // 보안: 민감 정보(value)는 로그에 남기지 않고 Message ID만 기록
-                    log.error(
-                            "Failed to process Redis Stream message. ID: {}", message.getId(), e);
+                    log.error("Failed to process Redis Stream message. ID: {}", message.getId(), e);
                 }
             }
 

@@ -40,6 +40,9 @@ out/
 .env
 *.pem
 
+### Claude Code ###
+.claude/
+
 # Docker data directories
 db-data/
 grafana-data/
