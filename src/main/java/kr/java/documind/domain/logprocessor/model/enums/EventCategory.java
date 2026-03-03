@@ -9,26 +9,26 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * <p>게임 내에서 발생한 사건의 종류를 분류
  */
 public enum EventCategory {
-    SYSTEM("시스템", "SYSTEM"),             // 부팅, 종료, 크래시, OS 시그널
-    ERROR("에러", "ERROR"),                // 예외, 런타임 오류, 핸들링 실패
-    PERFORMANCE("성능", "PERFORMANCE"),    // FPS, 메모리, 프레임타임, 온도
-    NETWORK("네트워크", "NETWORK"),        // 연결 상태, RTT, 타임아웃, 패킷 손실
+    SYSTEM("시스템", "SYSTEM"), // 부팅, 종료, 크래시, OS 시그널
+    ERROR("에러", "ERROR"), // 예외, 런타임 오류, 핸들링 실패
+    PERFORMANCE("성능", "PERFORMANCE"), // FPS, 메모리, 프레임타임, 온도
+    NETWORK("네트워크", "NETWORK"), // 연결 상태, RTT, 타임아웃, 패킷 손실
 
-    GAMEPLAY("게임플레이", "GAMEPLAY"),    // 장르 공통 플레이 이벤트 상위 도메인
-    COMBAT("전투", "COMBAT"),              // 공격, 피격, 데미지 계산
-    SKILL("스킬", "SKILL"),                // 스킬 사용, 쿨타임, 버프/디버프
-    ITEM("아이템", "ITEM"),                // 획득, 사용, 장착, 강화
-    QUEST("퀘스트", "QUEST"),              // 수락, 완료, 실패
-    STAGE("스테이지", "STAGE"),            // 던전 입장, 클리어, 실패
-    MATCH("매치", "MATCH"),                // 매칭 시작/완료/취소
-    SOCIAL("소셜", "SOCIAL"),              // 친구, 파티, 길드, 채팅
+    GAMEPLAY("게임플레이", "GAMEPLAY"), // 장르 공통 플레이 이벤트 상위 도메인
+    COMBAT("전투", "COMBAT"), // 공격, 피격, 데미지 계산
+    SKILL("스킬", "SKILL"), // 스킬 사용, 쿨타임, 버프/디버프
+    ITEM("아이템", "ITEM"), // 획득, 사용, 장착, 강화
+    QUEST("퀘스트", "QUEST"), // 수락, 완료, 실패
+    STAGE("스테이지", "STAGE"), // 던전 입장, 클리어, 실패
+    MATCH("매치", "MATCH"), // 매칭 시작/완료/취소
+    SOCIAL("소셜", "SOCIAL"), // 친구, 파티, 길드, 채팅
 
-    ECONOMY("재화", "ECONOMY"),            // 골드, 재화 획득/소비
-    PAYMENT("결제", "PAYMENT"),            // 인앱 결제, PG 응답
+    ECONOMY("재화", "ECONOMY"), // 골드, 재화 획득/소비
+    PAYMENT("결제", "PAYMENT"), // 인앱 결제, PG 응답
 
-    AUTH("인증", "AUTH"),                  // 로그인, 토큰 갱신
-    ADMIN("관리", "ADMIN"),                // 운영툴, GM 액션
-    CHEAT("치트", "CHEAT");                // 비정상 행위 탐지
+    AUTH("인증", "AUTH"), // 로그인, 토큰 갱신
+    ADMIN("관리", "ADMIN"), // 운영툴, GM 액션
+    CHEAT("치트", "CHEAT"); // 비정상 행위 탐지
 
     private final String description;
     private final String value;

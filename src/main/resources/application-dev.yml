@@ -65,6 +65,9 @@ management:
         enabled: ${INFLUX_ENABLED:true}
         uri: http://${INFLUX_HOST:localhost}:${INFLUX_PORT:8086}
         db: ${INFLUX_DB:k6}
+  health:
+    circuitbreakers:
+      enabled: true                                   # Circuit Breaker Health Check
 
 # 애플리케이션 커스텀 속성
 app:
@@ -145,3 +148,30 @@ worker:
 logging:
   level:
     org.springframework.ai.chat.client.advisor: debug
+
+# Resilience4j Circuit Breaker & Retry 설정
+resilience4j:
+  circuitbreaker:
+    instances:
+      redisStreamConsumer:
+        failure-rate-threshold: 50                    # 실패율 50% 초과 → OPEN
+        minimum-number-of-calls: 3                    # 최소 3회 호출 후 평가
+        sliding-window-size: 10                       # 최근 10회 기준
+        wait-duration-in-open-state: 10s              # OPEN 상태 10초 유지
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - org.springframework.data.redis.RedisConnectionFailureException
+          - org.springframework.data.redis.RedisSystemException
+          - java.io.IOException
+
+  retry:
+    instances:
+      redisStreamConsumer:
+        max-attempts: 5                               # 최대 5회 재시도
+        wait-duration: 1s                             # 초기 대기 1초
+        enable-exponential-backoff: true              # 지수 백오프
+        exponential-backoff-multiplier: 2             # 2배씩 증가
+        exponential-max-wait-duration: 30s            # 최대 30초
+        retry-exceptions:
+          - org.springframework.data.redis.RedisConnectionFailureException

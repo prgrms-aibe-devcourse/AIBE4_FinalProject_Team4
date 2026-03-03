@@ -3,6 +3,7 @@ package kr.java.documind.domain.logprocessor.service;
 import java.time.Duration;
 import java.util.List;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
+import kr.java.documind.domain.logprocessor.service.resilience.RedisStreamCircuitBreakerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +12,6 @@ import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.connection.stream.StreamReadOptions;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +23,7 @@ public class LogStreamListener {
     private final LogBufferService logBufferService;
     private final LogMapper logMapper;
     private final BackpressureManager backpressureManager;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisStreamCircuitBreakerService circuitBreakerService;
 
     @Value("${redis.stream.key}")
     private String streamKey;
@@ -42,7 +42,6 @@ public class LogStreamListener {
 
     /** Scheduled Job: 설정된 주기마다 Redis Streams에서 로그 배치를 읽어옴 */
     @Scheduled(fixedDelayString = "${worker.poll-interval-ms}")
-    @SuppressWarnings("unchecked")
     public void pollMessages() {
         applyBackpressure();
 
@@ -56,17 +55,12 @@ public class LogStreamListener {
                             .count(batchSize)
                             .block(Duration.ofMillis(pollBlockMs));
 
-            // XREADGROUP: Consumer Group 방식으로 메시지 읽기
+            // Circuit Breaker를 통한 Redis Stream 메시지 읽기
             List<MapRecord<String, String, String>> messages =
-                    (List<MapRecord<String, String, String>>)
-                            (List<?>)
-                                    redisTemplate
-                                            .opsForStream()
-                                            .read(
-                                                    Consumer.from(consumerGroup, consumerName),
-                                                    readOptions,
-                                                    StreamOffset.create(
-                                                            streamKey, ReadOffset.lastConsumed()));
+                    circuitBreakerService.readMessages(
+                            Consumer.from(consumerGroup, consumerName),
+                            readOptions,
+                            StreamOffset.create(streamKey, ReadOffset.lastConsumed()));
 
             if (messages == null || messages.isEmpty()) {
                 log.debug("[Poll] No messages available (batchSize={})", batchSize);
