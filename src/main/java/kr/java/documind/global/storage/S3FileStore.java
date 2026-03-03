@@ -9,6 +9,7 @@ import java.util.UUID;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -18,6 +19,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 @Component
+@ConditionalOnExpression("'${spring.cloud.aws.s3.bucket:}' != ''")
 public class S3FileStore implements FileStore {
 
     private static final List<String> ALLOWED_MIME_TYPES =
