@@ -74,9 +74,9 @@ public class BackpressureManager {
         avgLatencyMs = EMA_ALPHA * latencyMs + (1 - EMA_ALPHA) * avgLatencyMs;
         adjustBatchSize(latencyMs);
         log.debug(
-                "[Backpressure] latency={}ms, avg={:.1f}ms, batchSize={}",
+                "[Backpressure] latency={}ms, avg={}ms, batchSize={}",
                 latencyMs,
-                avgLatencyMs,
+                String.format("%.1f", avgLatencyMs),
                 currentBatchSize);
     }
 

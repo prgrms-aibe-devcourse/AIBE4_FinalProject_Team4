@@ -94,16 +94,36 @@ public class RedisStreamCircuitBreakerService {
      * @param options Stream 읽기 옵션
      * @param offset Stream Offset
      * @return 읽어온 메시지 목록
+     * @throws ClassCastException RedisTemplate 제네릭이 일치하지 않을 경우
      */
     @SuppressWarnings("unchecked")
     private List<MapRecord<String, String, String>> executeRedisRead(
             Consumer consumer, StreamReadOptions options, StreamOffset<String> offset) {
 
-        List<MapRecord<String, String, String>> messages =
-                (List<MapRecord<String, String, String>>)
-                        (List<?>) redisTemplate.opsForStream().read(consumer, options, offset);
+        try {
+            List<?> rawMessages = redisTemplate.opsForStream().read(consumer, options, offset);
 
-        return messages != null ? messages : List.of();
+            if (rawMessages == null || rawMessages.isEmpty()) {
+                return List.of();
+            }
+
+            // 타입 안전성 검증: 첫 번째 요소가 MapRecord인지 확인
+            Object firstElement = rawMessages.get(0);
+            if (!(firstElement instanceof MapRecord)) {
+                log.error(
+                        "[Type Safety] Unexpected type from Redis Stream: {}. Expected MapRecord.",
+                        firstElement.getClass().getName());
+                return List.of();
+            }
+
+            return (List<MapRecord<String, String, String>>) (List<?>) rawMessages;
+        } catch (ClassCastException e) {
+            log.error(
+                    "[Type Safety] ClassCastException during Redis Stream read. "
+                            + "Check RedisTemplate serializer configuration.",
+                    e);
+            throw e; // Circuit Breaker가 감지하도록 예외 전파
+        }
     }
 
     /**
