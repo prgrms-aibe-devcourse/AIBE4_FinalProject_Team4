@@ -3,6 +3,7 @@ package kr.java.documind.domain.logprocessor.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -248,7 +249,7 @@ class LogBufferServiceTest {
         verify(logJdbcRepository, times(1)).saveAll(anyList());
         verify(streamOperations, times(1))
                 .acknowledge(eq(STREAM_KEY), eq(CONSUMER_GROUP), any(RecordId[].class));
-        verify(backpressureManager, times(1)).recordLatency(any(Long.class));
+        verify(backpressureManager, times(1)).recordLatency(anyLong());
     }
 
     @Test

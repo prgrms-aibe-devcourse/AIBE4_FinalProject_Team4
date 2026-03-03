@@ -73,7 +73,11 @@ public class LogBufferService {
 
     public void add(GameLog logEntity, RecordId recordId) {
         if (buffer.size() >= maxBufferSize) {
-            log.warn("Buffer is full (size: {}). Dropping log.", buffer.size());
+            log.warn("Buffer is full (size: {}). Dropping log and ACKing message.", buffer.size());
+            // 버퍼 오버플로우 시 메시지를 ACK하여 PEL에서 제거
+            if (recordId != null) {
+                acknowledgeFailedMessage(recordId);
+            }
             return;
         }
 
@@ -250,5 +254,26 @@ public class LogBufferService {
                 wrapper.recordId(),
                 wrapper.log());
         // TODO: 파일에 기록하거나 별도 알림 시스템 연동
+
+        // 최종 실패 후에도 ACK 처리하여 PEL에서 제거
+        if (wrapper.recordId() != null) {
+            acknowledgeFailedMessage(wrapper.recordId());
+        }
+    }
+
+    /**
+     * 처리 실패한 메시지를 ACK하여 PEL에서 제거
+     *
+     * @param recordId 실패한 메시지의 RecordId
+     */
+    public void acknowledgeFailedMessage(RecordId recordId) {
+        try {
+            redisTemplate.opsForStream().acknowledge(streamKey, consumerGroup, recordId);
+            log.warn(
+                    "[ACK] Failed message acknowledged to prevent PEL buildup. RecordId: {}",
+                    recordId);
+        } catch (Exception e) {
+            log.error("[ACK] Failed to acknowledge message. RecordId: {}", recordId, e);
+        }
     }
 }

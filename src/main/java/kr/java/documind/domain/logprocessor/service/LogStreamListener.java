@@ -77,6 +77,8 @@ public class LogStreamListener {
                 } catch (Exception e) {
                     // 보안: 민감 정보(value)는 로그에 남기지 않고 Message ID만 기록
                     log.error("Failed to process Redis Stream message. ID: {}", message.getId(), e);
+                    // 파싱 실패한 메시지를 ACK하여 PEL 무한 증가 방지
+                    logBufferService.acknowledgeFailedMessage(message.getId());
                 }
             }
 
