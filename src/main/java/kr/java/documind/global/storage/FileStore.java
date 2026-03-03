@@ -3,14 +3,15 @@ package kr.java.documind.global.storage;
 import java.io.IOException;
 import java.io.InputStream;
 import org.springframework.core.io.Resource;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface FileStore {
 
-    String save(InputStream inputStream, String originalFilename) throws IOException;
+    String save(MultipartFile file) throws IOException;
 
     Resource load(String storedKey);
 
     void delete(String storedKey);
 
-    String detectContentType(String storedKey);
+    String getAccessUrl(String storedKey);
 }
