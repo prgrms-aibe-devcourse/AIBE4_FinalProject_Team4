@@ -3,6 +3,7 @@ package kr.java.documind.domain.logprocessor.service;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
+import kr.java.documind.domain.logprocessor.model.enums.BackpressureState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -133,11 +134,5 @@ public class BackpressureManager {
 
     public int getCurrentBatchSize() {
         return currentBatchSize;
-    }
-
-    public enum BackpressureState {
-        NORMAL,
-        WARN,
-        CRITICAL
     }
 }

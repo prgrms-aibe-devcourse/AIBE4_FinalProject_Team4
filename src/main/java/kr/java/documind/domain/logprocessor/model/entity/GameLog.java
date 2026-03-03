@@ -11,7 +11,8 @@ import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
-import kr.java.documind.domain.logprocessor.model.enums.LogLevel;
+import kr.java.documind.domain.logprocessor.model.enums.EventCategory;
+import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,13 +20,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 
-@Entity(name = "log")
-@Table(name = "log", indexes = @Index(name = "idx_occurred_at", columnList = "occurred_at"))
+@Entity(name = "game_log")
+@Table(name = "game_log", indexes = @Index(name = "idx_occurred_at", columnList = "occurred_at"))
 @Getter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Log {
+public class GameLog {
 
     @Id private UUID logId;
 
@@ -39,7 +40,11 @@ public class Log {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LogLevel severity;
+    private LogSeverity severity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, name = "event_category")
+    private EventCategory eventCategory;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;

@@ -7,8 +7,9 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
-import kr.java.documind.domain.logprocessor.model.entity.Log;
-import kr.java.documind.domain.logprocessor.model.enums.LogLevel;
+import kr.java.documind.domain.logprocessor.model.entity.GameLog;
+import kr.java.documind.domain.logprocessor.model.enums.EventCategory;
+import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class LogMapper {
 
     private final ObjectMapper objectMapper;
 
-    public Log toEntity(Map<String, String> map) throws JsonProcessingException {
+    public GameLog toEntity(Map<String, String> map) throws JsonProcessingException {
         if (map.get("projectId") == null || map.get("body") == null) {
             throw new IllegalArgumentException(
                     "Missing required fields: projectId and body are mandatory");
@@ -40,12 +41,14 @@ public class LogMapper {
             log.warn("sessionId is null or empty. Using default value: 'unknown-session'");
         }
 
-        return Log.builder()
+        return GameLog.builder()
                 .logId(logId)
                 .projectId(map.get("projectId"))
                 .sessionId(sessionId)
                 .userId(map.get("userId"))
-                .severity(LogLevel.fromString(map.getOrDefault("severity", "INFO")))
+                .severity(LogSeverity.fromString(map.getOrDefault("severity", "INFO")))
+                .eventCategory(
+                        EventCategory.fromString(map.getOrDefault("eventCategory", "SYSTEM")))
                 .body(map.get("body"))
                 .occurredAt(parseTime(map.get("occurredAt")))
                 .ingestedAt(parseTime(map.get("ingestedAt")))
@@ -63,13 +66,14 @@ public class LogMapper {
                 .build();
     }
 
-    public Log toEntity(RawLogRequest dto) {
-        return Log.builder()
+    public GameLog toEntity(RawLogRequest dto) {
+        return GameLog.builder()
                 .logId(UUID.randomUUID())
                 .projectId(dto.projectId())
                 .sessionId(dto.sessionId())
                 .userId(dto.userId())
                 .severity(dto.severity())
+                .eventCategory(dto.eventCategory())
                 .body(dto.body())
                 .occurredAt(parseTime(dto.occurredAt()))
                 .ingestedAt(OffsetDateTime.now())

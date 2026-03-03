@@ -2,7 +2,7 @@ package kr.java.documind.domain.logprocessor.service;
 
 import java.time.Duration;
 import java.util.List;
-import kr.java.documind.domain.logprocessor.model.entity.Log;
+import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,7 +78,7 @@ public class LogStreamListener {
             // 각 메시지 처리
             for (MapRecord<String, String, String> message : messages) {
                 try {
-                    Log logEntity = logMapper.toEntity(message.getValue());
+                    GameLog logEntity = logMapper.toEntity(message.getValue());
                     logBufferService.add(logEntity, message.getId());
                 } catch (Exception e) {
                     // 보안: 민감 정보(value)는 로그에 남기지 않고 Message ID만 기록

@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
-import kr.java.documind.domain.logprocessor.model.entity.Log;
+import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,11 +67,11 @@ public class LogBufferService {
     }
 
     // API 요청용 (RecordId 없음)
-    public void add(Log logEntity) {
+    public void add(GameLog logEntity) {
         add(logEntity, null);
     }
 
-    public void add(Log logEntity, RecordId recordId) {
+    public void add(GameLog logEntity, RecordId recordId) {
         if (buffer.size() >= maxBufferSize) {
             log.warn("Buffer is full (size: {}). Dropping log.", buffer.size());
             return;
@@ -87,7 +87,7 @@ public class LogBufferService {
 
     // API 요청용 - DTO를 받아서 변환 (Service Layer에서 변환 처리)
     public void addFromDto(RawLogRequest dto) {
-        Log logEntity = logMapper.toEntity(dto);
+        GameLog logEntity = logMapper.toEntity(dto);
         add(logEntity);
     }
 
@@ -120,7 +120,7 @@ public class LogBufferService {
                 return;
             }
 
-            List<Log> logs =
+            List<GameLog> logs =
                     wrappersToSave.stream().map(LogWrapper::log).collect(Collectors.toList());
 
             try {
@@ -190,7 +190,7 @@ public class LogBufferService {
                 return;
             }
 
-            List<Log> logs =
+            List<GameLog> logs =
                     wrappersToRetry.stream().map(LogWrapper::log).collect(Collectors.toList());
 
             try {
@@ -250,12 +250,5 @@ public class LogBufferService {
                 wrapper.recordId(),
                 wrapper.log());
         // TODO: 파일에 기록하거나 별도 알림 시스템 연동
-    }
-
-    public record LogWrapper(Log log, RecordId recordId, int retryCount) {
-        // retryCount를 포함하지 않는 생성자 (기존 호환성 유지)
-        public LogWrapper(Log log, RecordId recordId) {
-            this(log, recordId, 0);
-        }
     }
 }

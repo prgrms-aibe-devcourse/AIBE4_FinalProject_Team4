@@ -6,7 +6,7 @@ import jakarta.annotation.PostConstruct;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
-import kr.java.documind.domain.logprocessor.model.entity.Log;
+import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -32,40 +32,41 @@ public class LogJdbcRepository {
     }
 
     @Transactional
-    public void saveAll(List<Log> logs) {
+    public void saveAll(List<GameLog> logs) {
         String sql =
-                "INSERT INTO log (log_id, project_id, session_id, user_id, severity, body,"
-                        + " occurred_at, ingested_at, trace_id, span_id, fingerprint, resource,"
-                        + " attributes) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)";
+                "INSERT INTO game_log (log_id, project_id, session_id, user_id, severity,"
+                        + " event_category, body, occurred_at, ingested_at, trace_id, span_id,"
+                        + " fingerprint, resource, attributes) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)";
 
         int totalSize = logs.size();
         for (int i = 0; i < totalSize; i += batchSize) {
-            List<Log> batchList = logs.subList(i, Math.min(totalSize, i + batchSize));
+            List<GameLog> batchList = logs.subList(i, Math.min(totalSize, i + batchSize));
 
             jdbcTemplate.batchUpdate(
                     sql,
                     new BatchPreparedStatementSetter() {
                         @Override
                         public void setValues(PreparedStatement ps, int j) throws SQLException {
-                            Log log = batchList.get(j);
+                            GameLog log = batchList.get(j);
                             ps.setObject(1, log.getLogId());
                             ps.setString(2, log.getProjectId());
                             ps.setString(3, log.getSessionId());
                             ps.setString(4, log.getUserId());
                             ps.setString(5, log.getSeverity().toString());
-                            ps.setString(6, log.getBody());
-                            ps.setObject(7, log.getOccurredAt());
-                            ps.setObject(8, log.getIngestedAt());
-                            ps.setString(9, log.getTraceId());
-                            ps.setString(10, log.getSpanId());
-                            ps.setString(11, log.getFingerprint());
+                            ps.setString(6, log.getEventCategory().toString());
+                            ps.setString(7, log.getBody());
+                            ps.setObject(8, log.getOccurredAt());
+                            ps.setObject(9, log.getIngestedAt());
+                            ps.setString(10, log.getTraceId());
+                            ps.setString(11, log.getSpanId());
+                            ps.setString(12, log.getFingerprint());
 
                             try {
                                 ps.setString(
-                                        12, objectMapper.writeValueAsString(log.getResource()));
+                                        13, objectMapper.writeValueAsString(log.getResource()));
                                 ps.setString(
-                                        13, objectMapper.writeValueAsString(log.getAttributes()));
+                                        14, objectMapper.writeValueAsString(log.getAttributes()));
                             } catch (JsonProcessingException e) {
                                 throw new SQLException("Error converting map to json", e);
                             }
