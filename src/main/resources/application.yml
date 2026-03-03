@@ -9,7 +9,7 @@ spring:
   cloud:
     aws:
       s3:
-        bucket: ${AWS_S3_BUCKET}
+        bucket: ${AWS_S3_BUCKET:team4-documind-bucket}
 
   # 파일 업로드 용량 설정
   servlet:
