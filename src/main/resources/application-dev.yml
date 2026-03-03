@@ -26,6 +26,18 @@ redis:
     group: ${REDIS_STREAM_GROUP:log-group}
     consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
 
+  # S3 설정
+  cloud:
+    aws:
+      region:
+        static: ${AWS_S3_REGION}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY}
+      s3:
+        endpoint: http://localhost:4566
+        path-style-access-enabled: true
+
   # Spring AI 및 RAG 설정
   ai:
     model:
