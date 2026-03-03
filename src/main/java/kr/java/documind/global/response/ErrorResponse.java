@@ -1,7 +1,6 @@
 package kr.java.documind.global.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import lombok.Getter;
 
 @Getter

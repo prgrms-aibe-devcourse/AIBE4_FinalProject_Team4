@@ -7,7 +7,5 @@ import org.springframework.boot.test.context.SpringBootTest;
 class Aibe4FinalProjectTeam4ApplicationTests {
 
     @Test
-    void contextLoads() {
-    }
-
+    void contextLoads() {}
 }

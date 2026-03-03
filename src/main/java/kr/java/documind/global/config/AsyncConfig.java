@@ -20,9 +20,9 @@ public class AsyncConfig implements AsyncConfigurer {
     @Override
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(CORE_POOL_SIZE);   // 기본 유지 스레드 수
-        executor.setMaxPoolSize(MAX_POOL_SIZE);     // 큐 초과 시 최대 확장 스레드 수
-        executor.setQueueCapacity(QUEUE_CAPACITY);  // Core 초과 시 대기 큐 크기
+        executor.setCorePoolSize(CORE_POOL_SIZE); // 기본 유지 스레드 수
+        executor.setMaxPoolSize(MAX_POOL_SIZE); // 큐 초과 시 최대 확장 스레드 수
+        executor.setQueueCapacity(QUEUE_CAPACITY); // Core 초과 시 대기 큐 크기
         executor.setThreadNamePrefix(THREAD_NAME_PREFIX);
         executor.setTaskDecorator(new MdcTaskDecorator()); // MDC 컨텍스트 전달
         executor.initialize();
