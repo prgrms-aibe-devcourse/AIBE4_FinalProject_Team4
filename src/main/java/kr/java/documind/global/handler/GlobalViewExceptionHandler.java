@@ -26,12 +26,13 @@ public class GlobalViewExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public String handleMethodArgumentNotValid(
-        MethodArgumentNotValidException e, RedirectAttributes redirectAttributes,
-        HttpServletRequest request
-    ) {
-        String errorMessage = e.getBindingResult().getFieldErrors().stream()
-            .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
-            .collect(Collectors.joining(", "));
+            MethodArgumentNotValidException e,
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest request) {
+        String errorMessage =
+                e.getBindingResult().getFieldErrors().stream()
+                        .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                        .collect(Collectors.joining(", "));
 
         log.warn("ViewValidationException [{}]: {}", request.getRequestURI(), errorMessage);
 
@@ -43,10 +44,12 @@ public class GlobalViewExceptionHandler {
      * @Validated on @RequestParam, @PathVariable
      */
     @ExceptionHandler(ConstraintViolationException.class)
-    public ModelAndView handleConstraintViolation(ConstraintViolationException e,
-        HttpServletRequest request) {
-        log.warn("ViewConstraintViolationException [{}]: {}", request.getRequestURI(),
-            e.getMessage());
+    public ModelAndView handleConstraintViolation(
+            ConstraintViolationException e, HttpServletRequest request) {
+        log.warn(
+                "ViewConstraintViolationException [{}]: {}",
+                request.getRequestURI(),
+                e.getMessage());
 
         ModelAndView mav = new ModelAndView("error/400");
         mav.addObject("status", HttpStatus.BAD_REQUEST.value());
@@ -55,13 +58,10 @@ public class GlobalViewExceptionHandler {
         return mav;
     }
 
-    /**
-     * 필수 @RequestParam 누락
-     */
+    /** 필수 @RequestParam 누락 */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ModelAndView handleMissingServletRequestParameter(
-        MissingServletRequestParameterException e, HttpServletRequest request
-    ) {
+            MissingServletRequestParameterException e, HttpServletRequest request) {
         log.warn("ViewMissingParamException [{}]: {}", request.getRequestURI(), e.getMessage());
 
         ModelAndView mav = new ModelAndView("error/400");
@@ -76,8 +76,7 @@ public class GlobalViewExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ModelAndView handleMethodArgumentTypeMismatch(
-        MethodArgumentTypeMismatchException e, HttpServletRequest request
-    ) {
+            MethodArgumentTypeMismatchException e, HttpServletRequest request) {
         log.warn("ViewTypeMismatchException [{}]: {}", request.getRequestURI(), e.getMessage());
 
         ModelAndView mav = new ModelAndView("error/400");
@@ -87,22 +86,21 @@ public class GlobalViewExceptionHandler {
         return mav;
     }
 
-    /**
-     * 비즈니스 예외 (BusinessException 및 하위 예외) HTTP 상태 코드에 따라 전용 에러 페이지로 포워드
-     */
+    /** 비즈니스 예외 (BusinessException 및 하위 예외) HTTP 상태 코드에 따라 전용 에러 페이지로 포워드 */
     @ExceptionHandler(BusinessException.class)
     public ModelAndView handleBusinessException(BusinessException e, HttpServletRequest request) {
         log.warn("ViewBusinessException [{}]: {}", request.getRequestURI(), e.getMessage());
 
         int statusCode = e.getStatus().value();
-        String viewName = switch (statusCode) {
-            case 400 -> "error/400";
-            case 401 -> "error/401";
-            case 403 -> "error/403";
-            case 404 -> "error/404";
-            case 409 -> "error/409";
-            default -> "error/error";
-        };
+        String viewName =
+                switch (statusCode) {
+                    case 400 -> "error/400";
+                    case 401 -> "error/401";
+                    case 403 -> "error/403";
+                    case 404 -> "error/404";
+                    case 409 -> "error/409";
+                    default -> "error/error";
+                };
 
         ModelAndView mav = new ModelAndView(viewName);
         mav.addObject("status", statusCode);
@@ -111,9 +109,7 @@ public class GlobalViewExceptionHandler {
         return mav;
     }
 
-    /**
-     * 그 외 모든 예외 (500)
-     */
+    /** 그 외 모든 예외 (500) */
     @ExceptionHandler(Exception.class)
     public ModelAndView handleException(Exception e, HttpServletRequest request) {
         log.error("Unhandled view exception [{}]", request.getRequestURI(), e);
@@ -125,9 +121,7 @@ public class GlobalViewExceptionHandler {
         return mav;
     }
 
-    /**
-     * Referer 헤더에서 path만 추출 (오픈 리다이렉트 방지) http://malicious.com/evil → /evil (자체 서버로만 리다이렉트)
-     */
+    /** Referer 헤더에서 path만 추출 (오픈 리다이렉트 방지) http://malicious.com/evil → /evil (자체 서버로만 리다이렉트) */
     private String extractSafePath(String referer) {
         if (referer == null) {
             return "/";

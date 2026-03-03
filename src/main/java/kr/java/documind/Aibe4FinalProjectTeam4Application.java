@@ -9,5 +9,4 @@ public class Aibe4FinalProjectTeam4Application {
     public static void main(String[] args) {
         SpringApplication.run(Aibe4FinalProjectTeam4Application.class, args);
     }
-
 }
