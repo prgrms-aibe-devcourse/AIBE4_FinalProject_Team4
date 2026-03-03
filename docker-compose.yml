@@ -2,6 +2,7 @@ services:
   # Spring Boot API (배포용)
   api:
     build: .
+    profiles: ["prod-test"]
     image: documind-api:latest
     container_name: documind-api
     ports:
@@ -18,14 +19,15 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: documind-postgres
+    env_file: .env
     ports:
       - "${DB_PORT:-5432}:5432"
     environment:
-      - POSTGRES_DB=${DB_NAME:-documind_db}
-      - POSTGRES_USER=${DB_USERNAME:-postgres}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
-      - ./db-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
 
   # Redis
   redis:
@@ -35,7 +37,7 @@ services:
       - "${REDIS_PORT:-6379}:6379"
     command: redis-server --appendonly yes
     volumes:
-      - ./redis-data:/data
+      - redis-data:/data
 
   # InfluxDB
   influxdb:
@@ -46,7 +48,7 @@ services:
     environment:
       - INFLUXDB_DB=k6
     volumes:
-      - ./influxdb-data:/var/lib/influxdb
+      - influxdb-data:/var/lib/influxdb
 
   # Grafana
   grafana:
@@ -56,9 +58,9 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     volumes:
-      - ./grafana-data:/var/lib/grafana
+      - grafana-data:/var/lib/grafana
     depends_on:
       - influxdb
 
@@ -66,6 +68,7 @@ services:
   k6:
     image: grafana/k6:latest
     container_name: log-k6
+    profiles: ["prod-test"]
     volumes:
       - ./k6-scripts:/scripts
     environment:
@@ -77,6 +80,7 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
     ports:
       - "9090:9090"
 
@@ -89,3 +93,25 @@ services:
       - "9121:9121"
     depends_on:
       - redis
+
+  # LocalStack (S3)
+  localstack:
+      image: localstack/localstack:latest
+      container_name: documind-s3-local
+      ports:
+          - "4566:4566"
+      environment:
+          - SERVICES=s3
+          - DEFAULT_REGION=ap-northeast-2
+      volumes:
+          - localstack-data:/var/lib/localstack
+          # 초기화 스크립트: 컨테이너 실행 시 자동으로 버킷 생성
+          - "./init-s3.sh:/etc/localstack/init/ready.d/init-s3.sh"
+
+volumes:
+    postgres-data:
+    redis-data:
+    influxdb-data:
+    grafana-data:
+    prometheus-data:
+    localstack-data:
