@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
+import kr.java.documind.global.exception.StorageException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.core.io.Resource;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
@@ -60,8 +62,13 @@ public class S3FileStore implements FileStore {
     public Resource load(String storedKey) {
         try {
             return s3Template.download(bucket, storedKey);
+        } catch (S3Exception e) {
+            if ("NoSuchKey".equals(e.awsErrorDetails().errorCode())) {
+                throw new NotFoundException("S3 파일을 찾을 수 없습니다: " + storedKey, e);
+            }
+            throw new StorageException("S3 파일 조회 중 오류가 발생했습니다: " + storedKey, e);
         } catch (Exception e) {
-            throw new NotFoundException("S3 파일 조회 오류: " + storedKey, e);
+            throw new StorageException("S3 파일 조회 중 알 수 없는 오류가 발생했습니다: " + storedKey, e);
         }
     }
 

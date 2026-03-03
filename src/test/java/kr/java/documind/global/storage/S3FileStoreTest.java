@@ -18,6 +18,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
+import kr.java.documind.global.exception.StorageException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -36,10 +39,8 @@ class S3FileStoreTest {
     private S3FileStore s3FileStore;
 
     private static final String BUCKET = "test-bucket";
-    @Mock
-    private S3Presigner s3Presigner;
-    @Mock
-    private S3Template s3Template;
+    @Mock private S3Presigner s3Presigner;
+    @Mock private S3Template s3Template;
 
     @BeforeEach
     void setUp() {
@@ -66,12 +67,12 @@ class S3FileStoreTest {
             assertThat(storedKey).matches("[a-f0-9\\-]+\\.pdf");
 
             then(s3Template)
-                .should()
-                .upload(
-                    eq(BUCKET),
-                    eq(storedKey),
-                    any(InputStream.class),
-                    any(ObjectMetadata.class));
+                    .should()
+                    .upload(
+                            eq(BUCKET),
+                            eq(storedKey),
+                            any(InputStream.class),
+                            any(ObjectMetadata.class));
         }
 
         @Test
@@ -82,8 +83,8 @@ class S3FileStoreTest {
             given(file.isEmpty()).willReturn(true);
 
             assertThatThrownBy(() -> s3FileStore.save(file))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("비어 있습니다");
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("비어 있습니다");
         }
 
         @Test
@@ -96,8 +97,8 @@ class S3FileStoreTest {
             given(file.getContentType()).willReturn("text/plain");
 
             assertThatThrownBy(() -> s3FileStore.save(file))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("파일 형식");
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("파일 형식");
         }
 
         @Test
@@ -111,8 +112,8 @@ class S3FileStoreTest {
             given(file.getOriginalFilename()).willReturn("file.exe");
 
             assertThatThrownBy(() -> s3FileStore.save(file))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("확장자");
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("확장자");
         }
     }
 
@@ -124,7 +125,7 @@ class S3FileStoreTest {
         @DisplayName("저장키로 파일을 조회한다")
         void loadsResource() {
             S3Resource expected = mock(S3Resource.class);
-            
+
             given(s3Template.download(BUCKET, "test-key")).willReturn(expected);
 
             var result = s3FileStore.load("test-key");
@@ -135,12 +136,55 @@ class S3FileStoreTest {
         @Test
         @DisplayName("파일이 존재하지 않으면 NotFoundException을 던진다")
         void throwsNotFoundExceptionWhenFileNotExists() {
-            given(s3Template.download(BUCKET, "invalid-key"))
-                .willThrow(new RuntimeException("NoSuchKey"));
+            S3Exception noSuchKeyException =
+                    (S3Exception)
+                            S3Exception.builder()
+                                    .awsErrorDetails(
+                                            AwsErrorDetails.builder()
+                                                    .errorCode("NoSuchKey")
+                                                    .errorMessage(
+                                                            "The specified key does not exist.")
+                                                    .build())
+                                    .message("NoSuchKey")
+                                    .build();
+
+            given(s3Template.download(BUCKET, "invalid-key")).willThrow(noSuchKeyException);
 
             assertThatThrownBy(() -> s3FileStore.load("invalid-key"))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("invalid-key");
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessageContaining("invalid-key");
+        }
+
+        @Test
+        @DisplayName("S3 인프라 오류이면 BusinessException(500)을 던진다")
+        void throwsBusinessExceptionOnS3InfraError() {
+            S3Exception accessDeniedException =
+                    (S3Exception)
+                            S3Exception.builder()
+                                    .awsErrorDetails(
+                                            AwsErrorDetails.builder()
+                                                    .errorCode("AccessDenied")
+                                                    .errorMessage("Access Denied")
+                                                    .build())
+                                    .message("AccessDenied")
+                                    .build();
+
+            given(s3Template.download(BUCKET, "test-key")).willThrow(accessDeniedException);
+
+            assertThatThrownBy(() -> s3FileStore.load("test-key"))
+                    .isInstanceOf(StorageException.class)
+                    .hasMessageContaining("test-key");
+        }
+
+        @Test
+        @DisplayName("알 수 없는 예외이면 StorageException(500)을 던진다")
+        void throwsStorageExceptionOnUnexpectedError() {
+            given(s3Template.download(BUCKET, "test-key"))
+                    .willThrow(new RuntimeException("unexpected"));
+
+            assertThatThrownBy(() -> s3FileStore.load("test-key"))
+                    .isInstanceOf(StorageException.class)
+                    .hasMessageContaining("test-key");
         }
     }
 
@@ -167,11 +211,11 @@ class S3FileStoreTest {
             PresignedGetObjectRequest presigned = mock(PresignedGetObjectRequest.class);
 
             given(presigned.url())
-                .willReturn(
-                    new URL(
-                        "https://test-bucket.s3.amazonaws.com/test-key?X-Amz-Signature=abc"));
+                    .willReturn(
+                            new URL(
+                                    "https://test-bucket.s3.amazonaws.com/test-key?X-Amz-Signature=abc"));
             given(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class)))
-                .willReturn(presigned);
+                    .willReturn(presigned);
 
             String url = s3FileStore.getAccessUrl("test-key");
 
