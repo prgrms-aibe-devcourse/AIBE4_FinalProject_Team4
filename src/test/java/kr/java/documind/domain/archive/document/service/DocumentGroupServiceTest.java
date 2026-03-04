@@ -17,6 +17,8 @@ import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupSummary;
 import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
+import kr.java.documind.global.entity.DomainSource;
+import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,6 +87,7 @@ class DocumentGroupServiceTest {
             DocumentGroup group = DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
             DocumentMetadata metadata =
                     DocumentMetadata.create(
+                            DomainSource.create(SourceType.DOCUMENT),
                             group,
                             "doc",
                             "",

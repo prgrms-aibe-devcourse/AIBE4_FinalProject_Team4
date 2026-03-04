@@ -2,31 +2,47 @@ package kr.java.documind.domain.archive.document.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
-import kr.java.documind.global.entity.BaseEntity;
+import kr.java.documind.global.entity.DomainSource;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(
-        uniqueConstraints = {
-            @UniqueConstraint(
-                    columnNames = {
-                        "document_group_id",
-                        "major_version",
-                        "minor_version",
-                        "patch_version"
-                    })
-        })
+    uniqueConstraints = {
+        @UniqueConstraint(
+            columnNames = {
+                "document_group_id",
+                "major_version",
+                "minor_version",
+                "patch_version"
+            })
+    })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class DocumentMetadata extends BaseEntity {
+@EntityListeners(AuditingEntityListener.class)
+public class DocumentMetadata {
+
+    @Id
+    private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId
+    @JoinColumn(name = "id")
+    private DomainSource domainSource;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_group_id", nullable = false)
@@ -67,18 +83,27 @@ public class DocumentMetadata extends BaseEntity {
 
     private LocalDateTime reuploadedAt;
 
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+
     private DocumentMetadata(
-            DocumentGroup documentGroup,
-            String documentName,
-            String choseong,
-            String extension,
-            int majorVersion,
-            int minorVersion,
-            int patchVersion,
-            String hash,
-            long size,
-            String storedKey,
-            LocalDateTime uploadedAt) {
+        DomainSource domainSource,
+        DocumentGroup documentGroup,
+        String documentName,
+        String choseong,
+        String extension,
+        int majorVersion,
+        int minorVersion,
+        int patchVersion,
+        String hash,
+        long size,
+        String storedKey,
+        LocalDateTime uploadedAt) {
+        this.domainSource = domainSource;
         this.documentGroup = documentGroup;
         this.documentName = documentName;
         this.choseong = choseong;
@@ -94,29 +119,31 @@ public class DocumentMetadata extends BaseEntity {
     }
 
     public static DocumentMetadata create(
-            DocumentGroup documentGroup,
-            String documentName,
-            String choseong,
-            String extension,
-            int majorVersion,
-            int minorVersion,
-            int patchVersion,
-            String hash,
-            long size,
-            String storedKey,
-            LocalDateTime uploadedAt) {
+        DomainSource domainSource,
+        DocumentGroup documentGroup,
+        String documentName,
+        String choseong,
+        String extension,
+        int majorVersion,
+        int minorVersion,
+        int patchVersion,
+        String hash,
+        long size,
+        String storedKey,
+        LocalDateTime uploadedAt) {
         return new DocumentMetadata(
-                documentGroup,
-                documentName,
-                choseong,
-                extension,
-                majorVersion,
-                minorVersion,
-                patchVersion,
-                hash,
-                size,
-                storedKey,
-                uploadedAt);
+            domainSource,
+            documentGroup,
+            documentName,
+            choseong,
+            extension,
+            majorVersion,
+            minorVersion,
+            patchVersion,
+            hash,
+            size,
+            storedKey,
+            uploadedAt);
     }
 
     public String getVersionString() {
@@ -130,13 +157,13 @@ public class DocumentMetadata extends BaseEntity {
     }
 
     public void updateFile(
-            String documentName,
-            String choseong,
-            String extension,
-            String hash,
-            long size,
-            String storedKey,
-            LocalDateTime reuploadedAt) {
+        String documentName,
+        String choseong,
+        String extension,
+        String hash,
+        long size,
+        String storedKey,
+        LocalDateTime reuploadedAt) {
         this.documentName = documentName;
         this.choseong = choseong;
         this.extension = extension;

@@ -14,10 +14,13 @@ import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
 import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
+import kr.java.documind.global.entity.DomainSource;
+import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
 import kr.java.documind.global.exception.StorageException;
+import kr.java.documind.global.repository.DomainSourceRepository;
 import kr.java.documind.global.storage.FileStore;
 import kr.java.documind.global.util.FileUtil;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,7 @@ public class DocumentMetadataService {
 
     private final DocumentGroupRepository documentGroupRepository;
     private final DocumentMetadataRepository documentMetadataRepository;
+    private final DomainSourceRepository domainSourceRepository;
     private final FileStore fileStore;
 
     // ==================== DocumentViewController ====================
@@ -43,12 +47,12 @@ public class DocumentMetadataService {
         DocumentGroup group = metadata.getDocumentGroup();
 
         List<DocumentMetadataResponse> versions =
-                documentMetadataRepository
-                        .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(
-                                group)
-                        .stream()
-                        .map(DocumentMetadataResponse::from)
-                        .toList();
+            documentMetadataRepository
+                .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(
+                    group)
+                .stream()
+                .map(DocumentMetadataResponse::from)
+                .toList();
 
         return DocumentDetailResponse.of(metadata, group, versions);
     }
@@ -63,29 +67,29 @@ public class DocumentMetadataService {
 
     @Transactional
     public DocumentMetadataResponse uploadDocument(
-            UUID projectId, DocumentUploadRequest request, MultipartFile file) {
+        UUID projectId, DocumentUploadRequest request, MultipartFile file) {
         validateFile(file);
 
         if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                projectId, request.category(), request.groupName())) {
+            projectId, request.category(), request.groupName())) {
             throw new ConflictException(
-                    String.format(
-                            "카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.",
-                            request.category(), request.groupName()));
+                String.format(
+                    "카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.",
+                    request.category(), request.groupName()));
         }
 
         // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
         DocumentGroup group =
-                documentGroupRepository.save(
-                        DocumentGroup.create(
-                                projectId, request.category(), request.groupName(), ""));
+            documentGroupRepository.save(
+                DocumentGroup.create(
+                    projectId, request.category(), request.groupName(), ""));
 
         return saveFileAndCreateMetadata(
-                group,
-                file,
-                request.majorVersion(),
-                request.minorVersion(),
-                request.patchVersion());
+            group,
+            file,
+            request.majorVersion(),
+            request.minorVersion(),
+            request.patchVersion());
     }
 
     @Transactional
@@ -93,9 +97,9 @@ public class DocumentMetadataService {
         DocumentMetadata metadata = findMetadataById(documentId);
 
         boolean versionChanged =
-                metadata.getMajorVersion() != request.majorVersion()
-                        || metadata.getMinorVersion() != request.minorVersion()
-                        || metadata.getPatchVersion() != request.patchVersion();
+            metadata.getMajorVersion() != request.majorVersion()
+                || metadata.getMinorVersion() != request.minorVersion()
+                || metadata.getPatchVersion() != request.patchVersion();
 
         boolean fileChanged = false;
         String newHash = null;
@@ -116,17 +120,17 @@ public class DocumentMetadataService {
 
         if (versionChanged) {
             if (documentMetadataRepository
-                    .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                            group,
-                            request.majorVersion(),
-                            request.minorVersion(),
-                            request.patchVersion())) {
+                .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
+                    group,
+                    request.majorVersion(),
+                    request.minorVersion(),
+                    request.patchVersion())) {
                 throw new ConflictException(
-                        String.format(
-                                "문서 그룹 내에 이미 존재하는 버전(v%d.%d.%d)입니다.",
-                                request.majorVersion(),
-                                request.minorVersion(),
-                                request.patchVersion()));
+                    String.format(
+                        "문서 그룹 내에 이미 존재하는 버전(v%d.%d.%d)입니다.",
+                        request.majorVersion(),
+                        request.minorVersion(),
+                        request.patchVersion()));
             }
         }
 
@@ -151,13 +155,13 @@ public class DocumentMetadataService {
 
                 // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
                 metadata.updateFile(
-                        filename,
-                        "",
-                        extension,
-                        newHash,
-                        file.getSize(),
-                        storedKey,
-                        LocalDateTime.now());
+                    filename,
+                    "",
+                    extension,
+                    newHash,
+                    file.getSize(),
+                    storedKey,
+                    LocalDateTime.now());
 
                 fileStore.delete(oldStoredKey);
             } catch (IOException e) {
@@ -167,7 +171,7 @@ public class DocumentMetadataService {
 
         if (versionChanged) {
             metadata.updateVersion(
-                    request.majorVersion(), request.minorVersion(), request.patchVersion());
+                request.majorVersion(), request.minorVersion(), request.patchVersion());
         }
     }
 
@@ -176,7 +180,9 @@ public class DocumentMetadataService {
         DocumentMetadata metadata = findMetadataById(documentId);
         DocumentGroup group = metadata.getDocumentGroup();
 
+        DomainSource domainSource = metadata.getDomainSource();
         documentMetadataRepository.delete(metadata);
+        domainSourceRepository.delete(domainSource);
         fileStore.delete(metadata.getStoredKey());
 
         if (documentMetadataRepository.countByDocumentGroup(group) == 0) {
@@ -188,49 +194,49 @@ public class DocumentMetadataService {
 
     @Transactional
     public DocumentMetadataResponse uploadNewVersion(
-            Long groupId, NewVersionDocumentUploadRequest request, MultipartFile file) {
+        Long groupId, NewVersionDocumentUploadRequest request, MultipartFile file) {
         validateFile(file);
 
         DocumentGroup group =
-                documentGroupRepository
-                        .findById(groupId)
-                        .orElseThrow(
-                                () ->
-                                        new NotFoundException(
-                                                String.format(
-                                                        "문서 그룹(id=%d)을 찾을 수 없습니다.", groupId)));
+            documentGroupRepository
+                .findById(groupId)
+                .orElseThrow(
+                    () ->
+                        new NotFoundException(
+                            String.format(
+                                "문서 그룹(id=%d)을 찾을 수 없습니다.", groupId)));
 
         if (documentMetadataRepository
-                .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                        group,
-                        request.majorVersion(),
-                        request.minorVersion(),
-                        request.patchVersion())) {
+            .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
+                group,
+                request.majorVersion(),
+                request.minorVersion(),
+                request.patchVersion())) {
             throw new ConflictException(
-                    String.format(
-                            "문서 그룹 내에 이미 존재하는 버전(v%d.%d.%d)입니다.",
-                            request.majorVersion(),
-                            request.minorVersion(),
-                            request.patchVersion()));
+                String.format(
+                    "문서 그룹 내에 이미 존재하는 버전(v%d.%d.%d)입니다.",
+                    request.majorVersion(),
+                    request.minorVersion(),
+                    request.patchVersion()));
         }
 
         return saveFileAndCreateMetadata(
-                group,
-                file,
-                request.majorVersion(),
-                request.minorVersion(),
-                request.patchVersion());
+            group,
+            file,
+            request.majorVersion(),
+            request.minorVersion(),
+            request.patchVersion());
     }
 
     // ==================== private ====================
 
     private DocumentMetadata findMetadataById(Long documentId) {
         return documentMetadataRepository
-                .findById(documentId)
-                .orElseThrow(
-                        () ->
-                                new NotFoundException(
-                                        String.format("문서(id=%d)를 찾을 수 없습니다.", documentId)));
+            .findById(documentId)
+            .orElseThrow(
+                () ->
+                    new NotFoundException(
+                        String.format("문서(id=%d)를 찾을 수 없습니다.", documentId)));
     }
 
     private void validateFile(MultipartFile file) {
@@ -240,11 +246,11 @@ public class DocumentMetadataService {
     }
 
     private DocumentMetadataResponse saveFileAndCreateMetadata(
-            DocumentGroup group,
-            MultipartFile file,
-            int majorVersion,
-            int minorVersion,
-            int patchVersion) {
+        DocumentGroup group,
+        MultipartFile file,
+        int majorVersion,
+        int minorVersion,
+        int patchVersion) {
         try {
             String storedKey = fileStore.save(file);
             fileStore.registerRollback(storedKey);
@@ -263,20 +269,23 @@ public class DocumentMetadataService {
             }
 
             // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
+            DomainSource domainSource =
+                domainSourceRepository.save(DomainSource.create(SourceType.DOCUMENT));
             DocumentMetadata metadata =
-                    documentMetadataRepository.save(
-                            DocumentMetadata.create(
-                                    group,
-                                    filename,
-                                    "",
-                                    extension,
-                                    majorVersion,
-                                    minorVersion,
-                                    patchVersion,
-                                    hash,
-                                    file.getSize(),
-                                    storedKey,
-                                    LocalDateTime.now()));
+                documentMetadataRepository.save(
+                    DocumentMetadata.create(
+                        domainSource,
+                        group,
+                        filename,
+                        "",
+                        extension,
+                        majorVersion,
+                        minorVersion,
+                        patchVersion,
+                        hash,
+                        file.getSize(),
+                        storedKey,
+                        LocalDateTime.now()));
 
             return DocumentMetadataResponse.from(metadata);
         } catch (IOException e) {
