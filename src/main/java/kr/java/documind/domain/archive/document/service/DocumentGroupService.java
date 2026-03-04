@@ -26,11 +26,12 @@ public class DocumentGroupService {
     private final DocumentMetadataRepository documentMetadataRepository;
 
     // ==================== DocumentViewController ====================
+    // ==================== DocumentGroupApiController ====================
 
     public Page<DocumentGroupResponse> getDocumentGroups(UUID projectId, Pageable pageable) {
         return documentGroupRepository
-                .findGroupSummariesByProjectId(projectId, pageable)
-                .map(DocumentGroupResponse::from);
+            .findGroupSummariesByProjectId(projectId, pageable)
+            .map(DocumentGroupResponse::from);
     }
 
     // ==================== DocumentGroupApiController ====================
@@ -38,23 +39,17 @@ public class DocumentGroupService {
     public List<DocumentMetadataResponse> getDocumentVersions(Long groupId) {
         DocumentGroup group = findGroupById(groupId);
         return documentMetadataRepository
-                .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(group)
-                .stream()
-                .map(DocumentMetadataResponse::from)
-                .toList();
+            .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(group)
+            .stream()
+            .map(DocumentMetadataResponse::from)
+            .toList();
     }
 
     @Transactional
     public void updateGroupName(Long groupId, GroupNameUpdateRequest request) {
         DocumentGroup group = findGroupById(groupId);
 
-        if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                group.getProjectId(), group.getCategory(), request.groupName())) {
-            throw new ConflictException(
-                    String.format(
-                            "카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.",
-                            group.getCategory(), request.groupName()));
-        }
+        validateGroupNameUniqueness(group.getProjectId(), group.getCategory(), request.groupName());
 
         // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
         group.updateGroupName(request.groupName(), "");
@@ -64,25 +59,27 @@ public class DocumentGroupService {
     public void updateGroupCategory(Long groupId, CategoryUpdateRequest request) {
         DocumentGroup group = findGroupById(groupId);
 
-        if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                group.getProjectId(), request.category(), group.getGroupName())) {
-            throw new ConflictException(
-                    String.format(
-                            "카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.",
-                            request.category(), group.getGroupName()));
-        }
+        validateGroupNameUniqueness(group.getProjectId(), request.category(), group.getGroupName());
 
         group.updateCategory(request.category());
     }
 
     // ==================== private ====================
 
+    private void validateGroupNameUniqueness(UUID projectId, String category, String groupName) {
+        if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
+            projectId, category, groupName)) {
+            throw new ConflictException(
+                String.format("카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.", category, groupName));
+        }
+    }
+
     private DocumentGroup findGroupById(Long groupId) {
         return documentGroupRepository
-                .findById(groupId)
-                .orElseThrow(
-                        () ->
-                                new NotFoundException(
-                                        String.format("문서 그룹(id=%d)을 찾을 수 없습니다.", groupId)));
+            .findById(groupId)
+            .orElseThrow(
+                () ->
+                    new NotFoundException(
+                        String.format("문서 그룹(id=%d)을 찾을 수 없습니다.", groupId)));
     }
 }

@@ -153,10 +153,14 @@ class DocumentGroupServiceTest {
             GroupNameUpdateRequest request = new GroupNameUpdateRequest("설계문서");
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
+            given(
+                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
+                                    PROJECT_ID, "기술", "설계문서"))
+                    .willReturn(true);
 
             assertThatThrownBy(() -> documentGroupService.updateGroupName(GROUP_ID, request))
                     .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("동일");
+                    .hasMessageContaining("이미 존재하는");
         }
 
         @Test
@@ -217,10 +221,14 @@ class DocumentGroupServiceTest {
             CategoryUpdateRequest request = new CategoryUpdateRequest("기술");
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
+            given(
+                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
+                                    PROJECT_ID, "기술", "설계문서"))
+                    .willReturn(true);
 
             assertThatThrownBy(() -> documentGroupService.updateGroupCategory(GROUP_ID, request))
                     .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("동일");
+                    .hasMessageContaining("이미 존재하는");
         }
 
         @Test
