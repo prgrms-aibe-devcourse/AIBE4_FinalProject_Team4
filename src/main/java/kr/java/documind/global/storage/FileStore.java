@@ -13,4 +13,6 @@ public interface FileStore {
     void delete(String storedKey);
 
     String getAccessUrl(String storedKey);
+
+    default void registerRollback(String storedKey) {}
 }
