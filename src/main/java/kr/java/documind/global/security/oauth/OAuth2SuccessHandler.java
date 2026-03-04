@@ -72,7 +72,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         clearAuthenticationAttributes(request);
 
         log.info("OAuth2 로그인 성공: memberId={} role={}", member.getId(), member.getGlobalRole());
-        response.sendRedirect("/dashboard");
+        response.sendRedirect("/member/dashboard");
     }
 
     private void deletePendingRoleCookie(HttpServletResponse response) {

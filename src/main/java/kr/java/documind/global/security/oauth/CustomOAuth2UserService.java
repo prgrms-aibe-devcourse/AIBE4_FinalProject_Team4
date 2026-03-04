@@ -15,9 +15,12 @@ import kr.java.documind.global.util.CookieUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -34,17 +37,39 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final MemberService memberService;
     private final CookieUtil cookieUtil;
 
+    private final OidcUserService oidcUserService = new OidcUserService();
+
     private final RestClient githubRestClient =
             RestClient.builder().baseUrl("https://api.github.com").build();
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
+        return processOAuthLogin(
+                userRequest.getClientRegistration().getRegistrationId(),
+                oAuth2User.getAttributes(),
+                userRequest);
+    }
 
-        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+    public OidcUser loadOidcUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
+        OidcUser oidcUser = oidcUserService.loadUser(userRequest);
+        CustomUserDetails processed =
+                processOAuthLogin(
+                        userRequest.getClientRegistration().getRegistrationId(),
+                        oidcUser.getAttributes(),
+                        userRequest);
+        return new CustomUserDetails(
+                processed.getMemberId(),
+                processed.getGlobalRole(),
+                oidcUser.getAttributes(),
+                oidcUser.getIdToken(),
+                oidcUser.getUserInfo());
+    }
+
+    private CustomUserDetails processOAuthLogin(
+            String registrationId, Map<String, Object> attributes, OAuth2UserRequest userRequest) {
         OAuth2UserProfile userProfile =
-                OAuthUserProfileFactory.createOAuth2UserProfile(
-                        registrationId, oAuth2User.getAttributes());
+                OAuthUserProfileFactory.createOAuth2UserProfile(registrationId, attributes);
 
         String resolvedEmail = resolveEmail(userProfile, userRequest);
         GlobalRole role = resolveRoleFromCookie();
@@ -65,8 +90,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                         nickname,
                         role);
 
-        return new CustomUserDetails(
-                member.getId(), member.getGlobalRole(), oAuth2User.getAttributes());
+        return new CustomUserDetails(member.getId(), member.getGlobalRole(), attributes);
     }
 
     private String resolveEmail(OAuth2UserProfile userProfile, OAuth2UserRequest userRequest) {
