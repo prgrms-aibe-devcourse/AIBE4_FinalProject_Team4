@@ -30,8 +30,8 @@ public class DocumentGroupService {
 
     public Page<DocumentGroupResponse> getDocumentGroups(UUID projectId, Pageable pageable) {
         return documentGroupRepository
-            .findGroupSummariesByProjectId(projectId, pageable)
-            .map(DocumentGroupResponse::from);
+                .findGroupSummariesByProjectId(projectId, pageable)
+                .map(DocumentGroupResponse::from);
     }
 
     // ==================== DocumentGroupApiController ====================
@@ -39,10 +39,10 @@ public class DocumentGroupService {
     public List<DocumentMetadataResponse> getDocumentVersions(Long groupId) {
         DocumentGroup group = findGroupById(groupId);
         return documentMetadataRepository
-            .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(group)
-            .stream()
-            .map(DocumentMetadataResponse::from)
-            .toList();
+                .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(group)
+                .stream()
+                .map(DocumentMetadataResponse::from)
+                .toList();
     }
 
     @Transactional
@@ -68,18 +68,18 @@ public class DocumentGroupService {
 
     private void validateGroupNameUniqueness(UUID projectId, String category, String groupName) {
         if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-            projectId, category, groupName)) {
+                projectId, category, groupName)) {
             throw new ConflictException(
-                String.format("카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.", category, groupName));
+                    String.format("카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.", category, groupName));
         }
     }
 
     private DocumentGroup findGroupById(Long groupId) {
         return documentGroupRepository
-            .findById(groupId)
-            .orElseThrow(
-                () ->
-                    new NotFoundException(
-                        String.format("문서 그룹(id=%d)을 찾을 수 없습니다.", groupId)));
+                .findById(groupId)
+                .orElseThrow(
+                        () ->
+                                new NotFoundException(
+                                        String.format("문서 그룹(id=%d)을 찾을 수 없습니다.", groupId)));
     }
 }

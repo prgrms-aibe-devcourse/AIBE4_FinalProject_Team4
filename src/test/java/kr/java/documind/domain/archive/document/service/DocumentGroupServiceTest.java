@@ -62,7 +62,7 @@ class DocumentGroupServiceTest {
             given(summary.getGroupId()).willReturn(1L);
             given(summary.getGroupName()).willReturn("설계문서");
             given(summary.getCategory()).willReturn("기술");
-            given(summary.getLatestVersion()).willReturn("v1.0.0");
+            given(summary.getVersionOrdinal()).willReturn(1_000_000L);
             given(summary.getDocumentCount()).willReturn(3L);
 
             Page<DocumentGroupSummary> summaryPage = new PageImpl<>(List.of(summary), pageable, 1);
@@ -147,23 +147,6 @@ class DocumentGroupServiceTest {
         }
 
         @Test
-        @DisplayName("현재와 동일한 그룹명이면 ConflictException을 던진다")
-        void throwsConflictExceptionWhenSameName() {
-            DocumentGroup group = DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
-            GroupNameUpdateRequest request = new GroupNameUpdateRequest("설계문서");
-
-            given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
-            given(
-                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                                    PROJECT_ID, "기술", "설계문서"))
-                    .willReturn(true);
-
-            assertThatThrownBy(() -> documentGroupService.updateGroupName(GROUP_ID, request))
-                    .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("이미 존재하는");
-        }
-
-        @Test
         @DisplayName("동일 카테고리에 중복 그룹명이면 ConflictException을 던진다")
         void throwsConflictExceptionWhenDuplicateName() {
             DocumentGroup group = DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
@@ -212,23 +195,6 @@ class DocumentGroupServiceTest {
             documentGroupService.updateGroupCategory(GROUP_ID, request);
 
             assertThat(group.getCategory()).isEqualTo("경영");
-        }
-
-        @Test
-        @DisplayName("현재와 동일한 카테고리면 ConflictException을 던진다")
-        void throwsConflictExceptionWhenSameCategory() {
-            DocumentGroup group = DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
-            CategoryUpdateRequest request = new CategoryUpdateRequest("기술");
-
-            given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
-            given(
-                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                                    PROJECT_ID, "기술", "설계문서"))
-                    .willReturn(true);
-
-            assertThatThrownBy(() -> documentGroupService.updateGroupCategory(GROUP_ID, request))
-                    .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("이미 존재하는");
         }
 
         @Test

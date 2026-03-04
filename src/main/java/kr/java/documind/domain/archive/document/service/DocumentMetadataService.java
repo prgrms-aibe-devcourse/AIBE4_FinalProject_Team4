@@ -91,16 +91,8 @@ public class DocumentMetadataService {
                         || metadata.getMinorVersion() != request.minorVersion()
                         || metadata.getPatchVersion() != request.patchVersion();
 
-        boolean fileChanged = false;
-        String newHash = null;
-        if (file != null && !file.isEmpty()) {
-            try {
-                newHash = FileUtil.computeSha256(file);
-            } catch (IOException e) {
-                throw new StorageException("파일 해시 계산에 실패했습니다.", e);
-            }
-            fileChanged = !newHash.equals(metadata.getHash());
-        }
+        String newHash = computeHashIfChanged(metadata, file);
+        boolean fileChanged = newHash != null;
 
         if (!versionChanged && !fileChanged) {
             throw new ConflictException("문서 정보가 현재와 동일합니다.");
@@ -113,33 +105,7 @@ public class DocumentMetadataService {
         }
 
         if (fileChanged) {
-            UUID projectId = group.getProjectId();
-            if (documentMetadataRepository.existsByProjectIdAndHash(projectId, newHash)) {
-                throw new ConflictException("동일한 내용의 파일이 프로젝트 내에 이미 존재합니다.");
-            }
-
-            try {
-                String storedKey = fileStore.save(file);
-                fileStore.registerRollback(storedKey);
-
-                String oldStoredKey = metadata.getStoredKey();
-
-                ParsedFile parsed = parseFilename(file);
-
-                // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
-                metadata.updateFile(
-                        parsed.filename(),
-                        "",
-                        parsed.extension(),
-                        newHash,
-                        file.getSize(),
-                        storedKey,
-                        LocalDateTime.now());
-
-                fileStore.delete(oldStoredKey);
-            } catch (IOException e) {
-                throw new StorageException("파일 업로드에 실패했습니다.", e);
-            }
+            replaceFile(metadata, file, newHash);
         }
 
         if (versionChanged) {
@@ -222,6 +188,47 @@ public class DocumentMetadataService {
     private void validateFile(MultipartFile file) {
         if (file.isEmpty() || !StringUtils.hasText(file.getOriginalFilename())) {
             throw new BadRequestException("파일이 비어있거나 파일명이 없습니다.");
+        }
+    }
+
+    private String computeHashIfChanged(DocumentMetadata metadata, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+        try {
+            String hash = FileUtil.computeSha256(file);
+            return hash.equals(metadata.getHash()) ? null : hash;
+        } catch (IOException e) {
+            throw new StorageException("파일 해시 계산에 실패했습니다.", e);
+        }
+    }
+
+    private void replaceFile(DocumentMetadata metadata, MultipartFile file, String newHash) {
+        UUID projectId = metadata.getDocumentGroup().getProjectId();
+        if (documentMetadataRepository.existsByProjectIdAndHash(projectId, newHash)) {
+            throw new ConflictException("동일한 내용의 파일이 프로젝트 내에 이미 존재합니다.");
+        }
+
+        try {
+            String storedKey = fileStore.save(file);
+            fileStore.registerRollback(storedKey);
+
+            String oldStoredKey = metadata.getStoredKey();
+            ParsedFile parsed = parseFilename(file);
+
+            // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
+            metadata.updateFile(
+                    parsed.filename(),
+                    "",
+                    parsed.extension(),
+                    newHash,
+                    file.getSize(),
+                    storedKey,
+                    LocalDateTime.now());
+
+            fileStore.delete(oldStoredKey);
+        } catch (IOException e) {
+            throw new StorageException("파일 업로드에 실패했습니다.", e);
         }
     }
 

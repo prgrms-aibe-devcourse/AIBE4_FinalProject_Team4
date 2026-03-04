@@ -35,24 +35,22 @@ public class DocumentMetadataApiController {
     @GetMapping("/{documentId}/download")
     public ResponseEntity<Resource> downloadDocument(
             @ProjectId UUID projectId, @PathVariable Long documentId) {
-        DocumentDownloadResult result = documentMetadataService.downloadDocument(documentId);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(result.contentType()))
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + result.downloadFilename() + "\"")
-                .body(result.resource());
+        return buildFileResponse(documentId, "attachment");
     }
 
     @GetMapping("/{documentId}/preview")
     public ResponseEntity<Resource> previewDocument(
             @ProjectId UUID projectId, @PathVariable Long documentId) {
+        return buildFileResponse(documentId, "inline");
+    }
+
+    private ResponseEntity<Resource> buildFileResponse(Long documentId, String disposition) {
         DocumentDownloadResult result = documentMetadataService.downloadDocument(documentId);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(result.contentType()))
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + result.downloadFilename() + "\"")
+                        disposition + "; filename=\"" + result.downloadFilename() + "\"")
                 .body(result.resource());
     }
 

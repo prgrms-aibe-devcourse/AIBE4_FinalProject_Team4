@@ -396,25 +396,8 @@ class DocumentMetadataServiceTest {
     class DeleteDocument {
 
         @Test
-        @DisplayName("문서를 삭제한다")
-        void deletesDocument() {
-            DocumentGroup group = createGroup();
-            DocumentMetadata metadata = createMetadata(group);
-
-            given(documentMetadataRepository.findById(DOCUMENT_ID))
-                    .willReturn(Optional.of(metadata));
-            given(documentMetadataRepository.countByDocumentGroup(group)).willReturn(1L);
-
-            documentMetadataService.deleteDocument(DOCUMENT_ID);
-
-            then(documentMetadataRepository).should().delete(metadata);
-            then(domainSourceRepository).should().delete(metadata.getDomainSource());
-            then(fileStore).should().delete("stored-key");
-        }
-
-        @Test
         @DisplayName("마지막 문서면 그룹도 함께 삭제한다")
-        void deletesGroupWhenLastDocument() {
+        void deletesDocumentAndGroupWhenLastDocument() {
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
@@ -425,6 +408,8 @@ class DocumentMetadataServiceTest {
             documentMetadataService.deleteDocument(DOCUMENT_ID);
 
             then(documentMetadataRepository).should().delete(metadata);
+            then(domainSourceRepository).should().delete(metadata.getDomainSource());
+            then(fileStore).should().delete("stored-key");
             then(documentGroupRepository).should().delete(group);
         }
 
