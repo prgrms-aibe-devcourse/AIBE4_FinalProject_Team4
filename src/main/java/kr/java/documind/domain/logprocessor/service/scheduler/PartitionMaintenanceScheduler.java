@@ -27,6 +27,9 @@ public class PartitionMaintenanceScheduler {
     @PostConstruct
     public void init() {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+
+        // 애플리케이션 시작 시 누락된 파티션 자동 생성
+        createMissingPartitions();
     }
 
     /**
@@ -53,12 +56,11 @@ public class PartitionMaintenanceScheduler {
     }
 
     /**
-     * 애플리케이션 시작 시 실행: 누락된 파티션 자동 생성
+     * 누락된 파티션 자동 생성
      *
      * <p>현재 월 기준 -1개월 ~ +2개월 파티션을 확인하고 누락 시 생성
      */
-    @PostConstruct
-    public void createMissingPartitions() {
+    private void createMissingPartitions() {
         try {
             YearMonth currentMonth = YearMonth.now();
 
@@ -163,7 +165,7 @@ public class PartitionMaintenanceScheduler {
         // attributes 컬럼 GIN 인덱스
         String attributesIndexSql =
                 String.format(
-                        "CREATE INDEX idx_%s_attributes ON %s USING GIN (attributes"
+                        "CREATE INDEX IF NOT EXISTS idx_%s_attributes ON %s USING GIN (attributes"
                                 + " jsonb_path_ops)",
                         tableName, tableName);
         jdbcTemplate.execute(attributesIndexSql);
@@ -171,7 +173,8 @@ public class PartitionMaintenanceScheduler {
         // resource 컬럼 GIN 인덱스
         String resourceIndexSql =
                 String.format(
-                        "CREATE INDEX idx_%s_resource ON %s USING GIN (resource jsonb_path_ops)",
+                        "CREATE INDEX IF NOT EXISTS idx_%s_resource ON %s USING GIN (resource"
+                                + " jsonb_path_ops)",
                         tableName, tableName);
         jdbcTemplate.execute(resourceIndexSql);
 
@@ -186,7 +189,7 @@ public class PartitionMaintenanceScheduler {
     private void createOccurredAtIndex(String tableName) {
         String sql =
                 String.format(
-                        "CREATE INDEX idx_%s_occurred_at ON %s (occurred_at)",
+                        "CREATE INDEX IF NOT EXISTS idx_%s_occurred_at ON %s (occurred_at)",
                         tableName, tableName);
         jdbcTemplate.execute(sql);
 

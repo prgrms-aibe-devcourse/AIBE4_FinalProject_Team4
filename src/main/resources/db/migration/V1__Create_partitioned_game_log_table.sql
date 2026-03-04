@@ -1,9 +1,6 @@
 -- V1: game_log 테이블을 Range Partitioning으로 생성
 -- 파티션 키: occurred_at (월별 파티션)
 
--- 기존 테이블이 있다면 삭제 (개발 환경용, 운영 환경에서는 주의)
-DROP TABLE IF EXISTS game_log CASCADE;
-
 -- 파티션 부모 테이블 생성
 CREATE TABLE game_log (
     log_id UUID NOT NULL,
