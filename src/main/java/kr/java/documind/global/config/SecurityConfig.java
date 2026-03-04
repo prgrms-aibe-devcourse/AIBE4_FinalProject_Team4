@@ -20,7 +20,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -62,9 +61,7 @@ public class SecurityConfig {
                                 csrf.csrfTokenRepository(csrfTokenRepository())
                                         .csrfTokenRequestHandler(
                                                 new CsrfTokenRequestAttributeHandler())
-                                        .ignoringRequestMatchers(
-                                                new AntPathRequestMatcher("/oauth2/**"),
-                                                new AntPathRequestMatcher("/login/oauth2/**")))
+                                        .ignoringRequestMatchers("/oauth2/**", "/login/oauth2/**"))
                 .authorizeHttpRequests(
                         auth ->
                                 auth.requestMatchers(PUBLIC_GET_PATHS)
@@ -96,7 +93,10 @@ public class SecurityConfig {
                                         .userInfoEndpoint(
                                                 userInfo ->
                                                         userInfo.userService(
-                                                                customOAuth2UserService))
+                                                                        customOAuth2UserService)
+                                                                .oidcUserService(
+                                                                        customOAuth2UserService
+                                                                                ::loadOidcUser))
                                         .successHandler(oAuth2SuccessHandler)
                                         .failureHandler(oAuth2FailureHandler))
                 .formLogin(form -> form.disable())
