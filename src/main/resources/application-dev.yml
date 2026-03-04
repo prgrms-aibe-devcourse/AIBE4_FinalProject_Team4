@@ -14,7 +14,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update  # 개발 환경에서는 편의성 유지 (Flyway와 혼용)
     properties:
       hibernate:
         format_sql: true
@@ -77,6 +77,13 @@ spring:
                     client-id: ${GOOGLE_CLIENT_ID}
                     client-secret: ${GOOGLE_CLIENT_SECRET}
                     scope: [ openid, profile, email ]
+
+# Redis Stream 설정
+redis:
+    stream:
+        key: ${REDIS_STREAM_KEY:log-stream}
+        group: ${REDIS_STREAM_GROUP:log-group}
+        consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
 
 # Redis Stream 설정
 redis:
