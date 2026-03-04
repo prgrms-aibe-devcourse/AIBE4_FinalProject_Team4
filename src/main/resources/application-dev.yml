@@ -6,9 +6,15 @@ spring:
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
+  # Flyway 마이그레이션 설정
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true  # 기존 스키마가 있어도 마이그레이션 적용
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: update  # 개발 환경에서는 편의성 유지 (Flyway와 혼용)
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -18,13 +24,6 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-
-# Redis Stream 설정
-redis:
-  stream:
-    key: ${REDIS_STREAM_KEY:log-stream}
-    group: ${REDIS_STREAM_GROUP:log-group}
-    consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
 
   # S3 설정
   cloud:
@@ -64,6 +63,13 @@ redis:
       pgvector:
         initialize-schema: true # 앱 시작 시 벡터 테이블 자동 생성
         dimensions: 1536 # 임베딩 벡터 차원 (text-embedding-3-large 축소)
+
+# Redis Stream 설정
+redis:
+    stream:
+        key: ${REDIS_STREAM_KEY:log-stream}
+        group: ${REDIS_STREAM_GROUP:log-group}
+        consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
 
 # 모니터링/메트릭 설정 (InfluxDB 연동)
 management:

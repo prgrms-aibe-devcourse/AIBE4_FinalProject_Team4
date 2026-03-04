@@ -6,7 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -21,7 +21,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 
 @Entity(name = "game_log")
-@Table(name = "game_log", indexes = @Index(name = "idx_occurred_at", columnList = "occurred_at"))
+@Table(name = "game_log")
+@IdClass(GameLogId.class)
 @Getter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -49,8 +50,9 @@ public class GameLog {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
+    @Id
     @Column(nullable = false, updatable = false) // 수정 방지
-    private OffsetDateTime occurredAt; // 파티션 키
+    private OffsetDateTime occurredAt; // 파티션 키 (복합 PK)
 
     @Column(nullable = false, updatable = false) // 수정 방지
     private OffsetDateTime ingestedAt; // 서버 수집 시각

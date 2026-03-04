@@ -61,6 +61,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
     runtimeOnly 'org.postgresql:postgresql'
     // Source: https://mvnrepository.com/artifact/io.hypersistence/hypersistence-utils-hibernate-63
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.15.2'

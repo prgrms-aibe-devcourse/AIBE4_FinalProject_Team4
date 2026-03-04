@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/documind_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  session:
+    store-type: none  # 테스트에서 Spring Session 비활성화
+
+  ai:
+    google:
+      genai:
+        enabled: false
+    openai:
+      enabled: false
+
+  cloud:
+    aws:
+      region:
+        static: ap-northeast-2
+      credentials:
+        access-key: test
+        secret-key: test
+      s3:
+        enabled: false
+
+worker:
+  jdbc:
+    batch-size: 1000
+  bulk:
+    size: 100
+    flush-interval-ms: 1000
+  buffer:
+    max-size: 1000
+
+logging:
+  level:
+    kr.java.documind: DEBUG
+    org.springframework.jdbc.core: DEBUG
