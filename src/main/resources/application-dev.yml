@@ -25,13 +25,6 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
-# Redis Stream 설정
-redis:
-  stream:
-    key: ${REDIS_STREAM_KEY:log-stream}
-    group: ${REDIS_STREAM_GROUP:log-group}
-    consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
-
   # Spring AI 및 RAG 설정
   ai:
     model:
@@ -58,6 +51,13 @@ redis:
       pgvector:
         initialize-schema: true # 앱 시작 시 벡터 테이블 자동 생성
         dimensions: 1536 # 임베딩 벡터 차원 (text-embedding-3-large 축소)
+
+# Redis Stream 설정
+redis:
+    stream:
+        key: ${REDIS_STREAM_KEY:log-stream}
+        group: ${REDIS_STREAM_GROUP:log-group}
+        consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
 
 # 모니터링/메트릭 설정 (InfluxDB 연동)
 management:

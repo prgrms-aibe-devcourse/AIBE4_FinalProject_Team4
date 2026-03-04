@@ -25,8 +25,7 @@ public class GameLogId implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof GameLogId that)) return false;
-        return Objects.equals(logId, that.logId)
-                && Objects.equals(occurredAt, that.occurredAt);
+        return Objects.equals(logId, that.logId) && Objects.equals(occurredAt, that.occurredAt);
     }
 
     @Override

@@ -108,8 +108,7 @@ public class PartitionMaintenanceScheduler {
      * @return 파티션 테이블 이름 (예: game_log_2024_03)
      */
     private String buildPartitionTableName(YearMonth yearMonth) {
-        return String.format(
-                "game_log_%d_%02d", yearMonth.getYear(), yearMonth.getMonthValue());
+        return String.format("game_log_%d_%02d", yearMonth.getYear(), yearMonth.getMonthValue());
     }
 
     /**
