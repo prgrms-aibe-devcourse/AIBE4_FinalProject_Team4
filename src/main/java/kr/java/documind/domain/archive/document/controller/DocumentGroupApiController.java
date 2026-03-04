@@ -6,12 +6,16 @@ import java.util.UUID;
 import kr.java.documind.domain.archive.document.model.dto.request.CategoryUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.GroupNameUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.NewVersionDocumentUploadRequest;
+import kr.java.documind.domain.archive.document.model.dto.response.DocumentGroupResponse;
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetadataResponse;
 import kr.java.documind.domain.archive.document.service.DocumentGroupService;
 import kr.java.documind.domain.archive.document.service.DocumentMetadataService;
 import kr.java.documind.global.annotation.ProjectId;
 import kr.java.documind.global.response.ApiResponse;
+import kr.java.documind.global.response.PageResponses;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +35,12 @@ public class DocumentGroupApiController {
 
     private final DocumentGroupService documentGroupService;
     private final DocumentMetadataService documentMetadataService;
+
+    @GetMapping
+    public ApiResponse<List<DocumentGroupResponse>> getDocumentGroups(
+            @ProjectId UUID projectId, @PageableDefault(sort = "groupName") Pageable pageable) {
+        return PageResponses.of(documentGroupService.getDocumentGroups(projectId, pageable));
+    }
 
     @GetMapping("/{groupId}/documents")
     public ApiResponse<List<DocumentMetadataResponse>> getDocumentVersions(

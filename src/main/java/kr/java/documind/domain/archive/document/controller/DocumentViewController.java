@@ -14,17 +14,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@RequestMapping("/projects/{publicId}/documents")
 @RequiredArgsConstructor
 public class DocumentViewController {
 
     private final DocumentGroupService documentGroupService;
     private final DocumentMetadataService documentMetadataService;
 
-    @GetMapping
+    @GetMapping("/projects/{publicId}/groups")
     public String documentMainPage(
             @PathVariable String publicId, @ProjectId UUID projectId, Model model) {
         Page<DocumentGroupResponse> groups =
@@ -40,7 +38,7 @@ public class DocumentViewController {
         return "document/main";
     }
 
-    @GetMapping("/{documentId}")
+    @GetMapping("/projects/{publicId}/documents/{documentId}")
     public String documentDetailPage(
             @PathVariable String publicId, @PathVariable Long documentId, Model model) {
         DocumentDetailResponse detail = documentMetadataService.getDocumentDetail(documentId);
