@@ -152,8 +152,24 @@ public class PartitionMaintenanceScheduler {
                         """,
                         tableName, startDate.format(formatter), endDate.format(formatter));
 
-        jdbcTemplate.execute(sql);
-        log.debug("[Partition] Created partition table: {}", tableName);
+        try {
+            jdbcTemplate.execute(sql);
+            log.debug("[Partition] Created partition table: {}", tableName);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // 멀티 인스턴스 환경에서 동시 생성 시 발생 가능 (정상 케이스)
+            log.debug(
+                    "[Partition] Partition table already exists (created by another instance): {}",
+                    tableName);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // PostgreSQL의 "duplicate_table" 에러 처리
+            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
+                log.debug(
+                        "[Partition] Partition table already exists (concurrent creation): {}",
+                        tableName);
+            } else {
+                throw e; // 다른 종류의 에러는 재발생
+            }
+        }
     }
 
     /**
