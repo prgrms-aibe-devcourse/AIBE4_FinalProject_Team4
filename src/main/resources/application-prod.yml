@@ -23,6 +23,14 @@ spring:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
 
+  cloud:
+    aws:
+      region:
+        static: ${AWS_S3_REGION}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY}
+
   # Ollama 자동 구성 비활성화 (운영 환경에서 미사용)
   autoconfigure:
     exclude:
