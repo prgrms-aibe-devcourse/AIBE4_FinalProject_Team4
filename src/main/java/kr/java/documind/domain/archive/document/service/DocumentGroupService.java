@@ -48,10 +48,6 @@ public class DocumentGroupService {
     public void updateGroupName(Long groupId, GroupNameUpdateRequest request) {
         DocumentGroup group = findGroupById(groupId);
 
-        if (group.getGroupName().equals(request.groupName())) {
-            throw new ConflictException("문서 그룹명이 현재와 동일합니다.");
-        }
-
         if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
                 group.getProjectId(), group.getCategory(), request.groupName())) {
             throw new ConflictException(
@@ -67,10 +63,6 @@ public class DocumentGroupService {
     @Transactional
     public void updateGroupCategory(Long groupId, CategoryUpdateRequest request) {
         DocumentGroup group = findGroupById(groupId);
-
-        if (group.getCategory().equals(request.category())) {
-            throw new ConflictException("카테고리가 현재와 동일합니다.");
-        }
 
         if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
                 group.getProjectId(), request.category(), group.getGroupName())) {

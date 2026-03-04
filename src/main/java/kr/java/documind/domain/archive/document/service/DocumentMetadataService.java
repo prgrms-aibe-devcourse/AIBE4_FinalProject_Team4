@@ -149,9 +149,6 @@ public class DocumentMetadataService {
                 String originalFilename = file.getOriginalFilename();
                 String filename = StringUtils.stripFilenameExtension(originalFilename);
                 String extension = StringUtils.getFilenameExtension(originalFilename);
-                if (extension == null) {
-                    extension = "";
-                }
 
                 // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
                 metadata.updateFile(
@@ -258,9 +255,6 @@ public class DocumentMetadataService {
             String originalFilename = file.getOriginalFilename();
             String filename = StringUtils.stripFilenameExtension(originalFilename);
             String extension = StringUtils.getFilenameExtension(originalFilename);
-            if (extension == null) {
-                extension = "";
-            }
             String hash = FileUtil.computeSha256(file);
 
             UUID projectId = group.getProjectId();
