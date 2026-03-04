@@ -47,14 +47,10 @@ class DocumentMetadataServiceTest {
 
     private DocumentMetadataService documentMetadataService;
 
-    @Mock
-    private DocumentGroupRepository documentGroupRepository;
-    @Mock
-    private DocumentMetadataRepository documentMetadataRepository;
-    @Mock
-    private DomainSourceRepository domainSourceRepository;
-    @Mock
-    private FileStore fileStore;
+    @Mock private DocumentGroupRepository documentGroupRepository;
+    @Mock private DocumentMetadataRepository documentMetadataRepository;
+    @Mock private DomainSourceRepository domainSourceRepository;
+    @Mock private FileStore fileStore;
 
     private static final UUID PROJECT_ID = UUID.randomUUID();
     private static final Long DOCUMENT_ID = 1L;
@@ -63,11 +59,11 @@ class DocumentMetadataServiceTest {
     @BeforeEach
     void setUp() {
         documentMetadataService =
-            new DocumentMetadataService(
-                documentGroupRepository,
-                documentMetadataRepository,
-                domainSourceRepository,
-                fileStore);
+                new DocumentMetadataService(
+                        documentGroupRepository,
+                        documentMetadataRepository,
+                        domainSourceRepository,
+                        fileStore);
     }
 
     private DocumentGroup createGroup() {
@@ -80,18 +76,18 @@ class DocumentMetadataServiceTest {
 
     private DocumentMetadata createMetadata(DocumentGroup group) {
         return DocumentMetadata.create(
-            createDomainSource(),
-            group,
-            "document",
-            "",
-            "pdf",
-            1,
-            0,
-            0,
-            "abc123hash",
-            1024L,
-            "stored-key",
-            LocalDateTime.of(2025, 1, 1, 0, 0));
+                createDomainSource(),
+                group,
+                "document",
+                "",
+                "pdf",
+                1,
+                0,
+                0,
+                "abc123hash",
+                1024L,
+                "stored-key",
+                LocalDateTime.of(2025, 1, 1, 0, 0));
     }
 
     private MultipartFile mockFile(String filename) {
@@ -112,12 +108,12 @@ class DocumentMetadataServiceTest {
             DocumentMetadata metadata = createMetadata(group);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
             given(
-                documentMetadataRepository
-                    .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(
-                        group))
-                .willReturn(List.of(metadata));
+                            documentMetadataRepository
+                                    .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(
+                                            group))
+                    .willReturn(List.of(metadata));
 
             DocumentDetailResponse result = documentMetadataService.getDocumentDetail(DOCUMENT_ID);
 
@@ -132,8 +128,8 @@ class DocumentMetadataServiceTest {
             given(documentMetadataRepository.findById(DOCUMENT_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> documentMetadataService.getDocumentDetail(DOCUMENT_ID))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining(String.valueOf(DOCUMENT_ID));
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessageContaining(String.valueOf(DOCUMENT_ID));
         }
     }
 
@@ -149,7 +145,7 @@ class DocumentMetadataServiceTest {
             Resource resource = mock(Resource.class);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
             given(fileStore.load("stored-key")).willReturn(resource);
 
             DocumentDownloadResult result = documentMetadataService.downloadDocument(DOCUMENT_ID);
@@ -164,8 +160,8 @@ class DocumentMetadataServiceTest {
             given(documentMetadataRepository.findById(DOCUMENT_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> documentMetadataService.downloadDocument(DOCUMENT_ID))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining(String.valueOf(DOCUMENT_ID));
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessageContaining(String.valueOf(DOCUMENT_ID));
         }
     }
 
@@ -183,25 +179,25 @@ class DocumentMetadataServiceTest {
             DocumentMetadata metadata = createMetadata(group);
 
             given(
-                documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                    PROJECT_ID, "기술", "설계문서"))
-                .willReturn(false);
+                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
+                                    PROJECT_ID, "기술", "설계문서"))
+                    .willReturn(false);
             given(documentGroupRepository.save(any(DocumentGroup.class))).willReturn(group);
             given(fileStore.save(file)).willReturn("new-stored-key");
             given(domainSourceRepository.save(any(DomainSource.class)))
-                .willReturn(createDomainSource());
+                    .willReturn(createDomainSource());
             given(documentMetadataRepository.existsByProjectIdAndHash(any(), any()))
-                .willReturn(false);
+                    .willReturn(false);
             given(documentMetadataRepository.save(any(DocumentMetadata.class)))
-                .willReturn(metadata);
+                    .willReturn(metadata);
 
             try (MockedStatic<kr.java.documind.global.util.FileUtil> fileUtil =
-                Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
+                    Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
                 fileUtil.when(() -> kr.java.documind.global.util.FileUtil.computeSha256(file))
-                    .thenReturn("newhash123");
+                        .thenReturn("newhash123");
 
                 DocumentMetadataResponse result =
-                    documentMetadataService.uploadDocument(PROJECT_ID, request, file);
+                        documentMetadataService.uploadDocument(PROJECT_ID, request, file);
 
                 assertThat(result).isNotNull();
                 then(fileStore).should().save(file);
@@ -217,9 +213,9 @@ class DocumentMetadataServiceTest {
             DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0);
 
             assertThatThrownBy(
-                () -> documentMetadataService.uploadDocument(PROJECT_ID, request, file))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("비어있거나");
+                            () -> documentMetadataService.uploadDocument(PROJECT_ID, request, file))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("비어있거나");
         }
 
         @Test
@@ -229,14 +225,14 @@ class DocumentMetadataServiceTest {
             DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0);
 
             given(
-                documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                    PROJECT_ID, "기술", "설계문서"))
-                .willReturn(true);
+                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
+                                    PROJECT_ID, "기술", "설계문서"))
+                    .willReturn(true);
 
             assertThatThrownBy(
-                () -> documentMetadataService.uploadDocument(PROJECT_ID, request, file))
-                .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("이미 존재");
+                            () -> documentMetadataService.uploadDocument(PROJECT_ID, request, file))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessageContaining("이미 존재");
         }
 
         @Test
@@ -247,25 +243,25 @@ class DocumentMetadataServiceTest {
             DocumentGroup group = createGroup();
 
             given(
-                documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                    PROJECT_ID, "기술", "설계문서"))
-                .willReturn(false);
+                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
+                                    PROJECT_ID, "기술", "설계문서"))
+                    .willReturn(false);
             given(documentGroupRepository.save(any(DocumentGroup.class))).willReturn(group);
             given(fileStore.save(file)).willReturn("new-stored-key");
             given(documentMetadataRepository.existsByProjectIdAndHash(PROJECT_ID, "duphash"))
-                .willReturn(true);
+                    .willReturn(true);
 
             try (MockedStatic<kr.java.documind.global.util.FileUtil> fileUtil =
-                Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
+                    Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
                 fileUtil.when(() -> kr.java.documind.global.util.FileUtil.computeSha256(file))
-                    .thenReturn("duphash");
+                        .thenReturn("duphash");
 
                 assertThatThrownBy(
-                    () ->
-                        documentMetadataService.uploadDocument(
-                            PROJECT_ID, request, file))
-                    .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("동일한 내용");
+                                () ->
+                                        documentMetadataService.uploadDocument(
+                                                PROJECT_ID, request, file))
+                        .isInstanceOf(ConflictException.class)
+                        .hasMessageContaining("동일한 내용");
             }
         }
     }
@@ -282,12 +278,12 @@ class DocumentMetadataServiceTest {
             DocumentUpdateRequest request = new DocumentUpdateRequest(2, 0, 0);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
             given(
-                documentMetadataRepository
-                    .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                        group, 2, 0, 0))
-                .willReturn(false);
+                            documentMetadataRepository
+                                    .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
+                                            group, 2, 0, 0))
+                    .willReturn(false);
 
             documentMetadataService.updateDocument(DOCUMENT_ID, request, null);
 
@@ -305,15 +301,15 @@ class DocumentMetadataServiceTest {
             given(file.getSize()).willReturn(2048L);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
             given(fileStore.save(file)).willReturn("new-key");
             given(documentMetadataRepository.existsByProjectIdAndHash(PROJECT_ID, "newhash"))
-                .willReturn(false);
+                    .willReturn(false);
 
             try (MockedStatic<kr.java.documind.global.util.FileUtil> fileUtil =
-                Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
+                    Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
                 fileUtil.when(() -> kr.java.documind.global.util.FileUtil.computeSha256(file))
-                    .thenReturn("newhash");
+                        .thenReturn("newhash");
 
                 documentMetadataService.updateDocument(DOCUMENT_ID, request, file);
 
@@ -332,15 +328,15 @@ class DocumentMetadataServiceTest {
             DocumentUpdateRequest request = new DocumentUpdateRequest(1, 0, 0);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
 
             // no file provided → fileChanged=false, version same → versionChanged=false
             assertThatThrownBy(
-                () ->
-                    documentMetadataService.updateDocument(
-                        DOCUMENT_ID, request, null))
-                .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("동일");
+                            () ->
+                                    documentMetadataService.updateDocument(
+                                            DOCUMENT_ID, request, null))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessageContaining("동일");
         }
 
         @Test
@@ -351,19 +347,19 @@ class DocumentMetadataServiceTest {
             DocumentUpdateRequest request = new DocumentUpdateRequest(2, 0, 0);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
             given(
-                documentMetadataRepository
-                    .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                        group, 2, 0, 0))
-                .willReturn(true);
+                            documentMetadataRepository
+                                    .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
+                                            group, 2, 0, 0))
+                    .willReturn(true);
 
             assertThatThrownBy(
-                () ->
-                    documentMetadataService.updateDocument(
-                        DOCUMENT_ID, request, null))
-                .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("이미 존재하는 버전");
+                            () ->
+                                    documentMetadataService.updateDocument(
+                                            DOCUMENT_ID, request, null))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessageContaining("이미 존재하는 버전");
         }
 
         @Test
@@ -376,21 +372,21 @@ class DocumentMetadataServiceTest {
             given(file.isEmpty()).willReturn(false);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
             given(documentMetadataRepository.existsByProjectIdAndHash(PROJECT_ID, "duphash"))
-                .willReturn(true);
+                    .willReturn(true);
 
             try (MockedStatic<kr.java.documind.global.util.FileUtil> fileUtil =
-                Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
+                    Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
                 fileUtil.when(() -> kr.java.documind.global.util.FileUtil.computeSha256(file))
-                    .thenReturn("duphash");
+                        .thenReturn("duphash");
 
                 assertThatThrownBy(
-                    () ->
-                        documentMetadataService.updateDocument(
-                            DOCUMENT_ID, request, file))
-                    .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("동일한 내용");
+                                () ->
+                                        documentMetadataService.updateDocument(
+                                                DOCUMENT_ID, request, file))
+                        .isInstanceOf(ConflictException.class)
+                        .hasMessageContaining("동일한 내용");
             }
         }
     }
@@ -406,7 +402,7 @@ class DocumentMetadataServiceTest {
             DocumentMetadata metadata = createMetadata(group);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
             given(documentMetadataRepository.countByDocumentGroup(group)).willReturn(1L);
 
             documentMetadataService.deleteDocument(DOCUMENT_ID);
@@ -423,7 +419,7 @@ class DocumentMetadataServiceTest {
             DocumentMetadata metadata = createMetadata(group);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
             given(documentMetadataRepository.countByDocumentGroup(group)).willReturn(0L);
 
             documentMetadataService.deleteDocument(DOCUMENT_ID);
@@ -439,7 +435,7 @@ class DocumentMetadataServiceTest {
             DocumentMetadata metadata = createMetadata(group);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
-                .willReturn(Optional.of(metadata));
+                    .willReturn(Optional.of(metadata));
             given(documentMetadataRepository.countByDocumentGroup(group)).willReturn(2L);
 
             documentMetadataService.deleteDocument(DOCUMENT_ID);
@@ -453,8 +449,8 @@ class DocumentMetadataServiceTest {
             given(documentMetadataRepository.findById(DOCUMENT_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> documentMetadataService.deleteDocument(DOCUMENT_ID))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining(String.valueOf(DOCUMENT_ID));
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessageContaining(String.valueOf(DOCUMENT_ID));
         }
     }
 
@@ -473,25 +469,25 @@ class DocumentMetadataServiceTest {
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
             given(
-                documentMetadataRepository
-                    .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                        group, 2, 0, 0))
-                .willReturn(false);
+                            documentMetadataRepository
+                                    .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
+                                            group, 2, 0, 0))
+                    .willReturn(false);
             given(fileStore.save(file)).willReturn("new-stored-key");
             given(domainSourceRepository.save(any(DomainSource.class)))
-                .willReturn(createDomainSource());
+                    .willReturn(createDomainSource());
             given(documentMetadataRepository.existsByProjectIdAndHash(any(), any()))
-                .willReturn(false);
+                    .willReturn(false);
             given(documentMetadataRepository.save(any(DocumentMetadata.class)))
-                .willReturn(metadata);
+                    .willReturn(metadata);
 
             try (MockedStatic<kr.java.documind.global.util.FileUtil> fileUtil =
-                Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
+                    Mockito.mockStatic(kr.java.documind.global.util.FileUtil.class)) {
                 fileUtil.when(() -> kr.java.documind.global.util.FileUtil.computeSha256(file))
-                    .thenReturn("newhash123");
+                        .thenReturn("newhash123");
 
                 DocumentMetadataResponse result =
-                    documentMetadataService.uploadNewVersion(GROUP_ID, request, file);
+                        documentMetadataService.uploadNewVersion(GROUP_ID, request, file);
 
                 assertThat(result).isNotNull();
                 then(fileStore).should().save(file);
@@ -506,9 +502,9 @@ class DocumentMetadataServiceTest {
             NewVersionDocumentUploadRequest request = new NewVersionDocumentUploadRequest(2, 0, 0);
 
             assertThatThrownBy(
-                () -> documentMetadataService.uploadNewVersion(GROUP_ID, request, file))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("비어있거나");
+                            () -> documentMetadataService.uploadNewVersion(GROUP_ID, request, file))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("비어있거나");
         }
 
         @Test
@@ -520,15 +516,15 @@ class DocumentMetadataServiceTest {
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
             given(
-                documentMetadataRepository
-                    .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                        group, 1, 0, 0))
-                .willReturn(true);
+                            documentMetadataRepository
+                                    .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
+                                            group, 1, 0, 0))
+                    .willReturn(true);
 
             assertThatThrownBy(
-                () -> documentMetadataService.uploadNewVersion(GROUP_ID, request, file))
-                .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("이미 존재하는 버전");
+                            () -> documentMetadataService.uploadNewVersion(GROUP_ID, request, file))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessageContaining("이미 존재하는 버전");
         }
 
         @Test
@@ -540,9 +536,9 @@ class DocumentMetadataServiceTest {
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(
-                () -> documentMetadataService.uploadNewVersion(GROUP_ID, request, file))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining(String.valueOf(GROUP_ID));
+                            () -> documentMetadataService.uploadNewVersion(GROUP_ID, request, file))
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessageContaining(String.valueOf(GROUP_ID));
         }
     }
 }

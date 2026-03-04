@@ -22,22 +22,21 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(
-    uniqueConstraints = {
-        @UniqueConstraint(
-            columnNames = {
-                "document_group_id",
-                "major_version",
-                "minor_version",
-                "patch_version"
-            })
-    })
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    columnNames = {
+                        "document_group_id",
+                        "major_version",
+                        "minor_version",
+                        "patch_version"
+                    })
+        })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
 public class DocumentMetadata {
 
-    @Id
-    private Long id;
+    @Id private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
@@ -87,22 +86,21 @@ public class DocumentMetadata {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+    @LastModifiedDate private LocalDateTime updatedAt;
 
     private DocumentMetadata(
-        DomainSource domainSource,
-        DocumentGroup documentGroup,
-        String documentName,
-        String choseong,
-        String extension,
-        int majorVersion,
-        int minorVersion,
-        int patchVersion,
-        String hash,
-        long size,
-        String storedKey,
-        LocalDateTime uploadedAt) {
+            DomainSource domainSource,
+            DocumentGroup documentGroup,
+            String documentName,
+            String choseong,
+            String extension,
+            int majorVersion,
+            int minorVersion,
+            int patchVersion,
+            String hash,
+            long size,
+            String storedKey,
+            LocalDateTime uploadedAt) {
         this.domainSource = domainSource;
         this.documentGroup = documentGroup;
         this.documentName = documentName;
@@ -119,31 +117,31 @@ public class DocumentMetadata {
     }
 
     public static DocumentMetadata create(
-        DomainSource domainSource,
-        DocumentGroup documentGroup,
-        String documentName,
-        String choseong,
-        String extension,
-        int majorVersion,
-        int minorVersion,
-        int patchVersion,
-        String hash,
-        long size,
-        String storedKey,
-        LocalDateTime uploadedAt) {
+            DomainSource domainSource,
+            DocumentGroup documentGroup,
+            String documentName,
+            String choseong,
+            String extension,
+            int majorVersion,
+            int minorVersion,
+            int patchVersion,
+            String hash,
+            long size,
+            String storedKey,
+            LocalDateTime uploadedAt) {
         return new DocumentMetadata(
-            domainSource,
-            documentGroup,
-            documentName,
-            choseong,
-            extension,
-            majorVersion,
-            minorVersion,
-            patchVersion,
-            hash,
-            size,
-            storedKey,
-            uploadedAt);
+                domainSource,
+                documentGroup,
+                documentName,
+                choseong,
+                extension,
+                majorVersion,
+                minorVersion,
+                patchVersion,
+                hash,
+                size,
+                storedKey,
+                uploadedAt);
     }
 
     public String getVersionString() {
@@ -157,13 +155,13 @@ public class DocumentMetadata {
     }
 
     public void updateFile(
-        String documentName,
-        String choseong,
-        String extension,
-        String hash,
-        long size,
-        String storedKey,
-        LocalDateTime reuploadedAt) {
+            String documentName,
+            String choseong,
+            String extension,
+            String hash,
+            long size,
+            String storedKey,
+            LocalDateTime reuploadedAt) {
         this.documentName = documentName;
         this.choseong = choseong;
         this.extension = extension;
