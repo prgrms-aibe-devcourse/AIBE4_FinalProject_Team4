@@ -1,0 +1,224 @@
+spring:
+  # Database 설정
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:documind_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  # Flyway 마이그레이션 설정
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true  # 기존 스키마가 있어도 마이그레이션 적용
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Redis 설정
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  # S3 설정
+  cloud:
+    aws:
+      region:
+        static: ${AWS_S3_REGION}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY}
+      s3:
+        endpoint: http://localhost:4566
+        path-style-access-enabled: true
+
+  # Spring AI 및 RAG 설정
+  ai:
+    model:
+      embedding: openai
+
+    ollama:
+      init:
+        pull-model-strategy: never # 모델 자동 다운로드 비활성화
+
+    # OpenAI 호환 API (GitHub Models 경유)
+    openai:
+      api-key: ${GITHUB_PAT:not-configured}
+      chat:
+        base-url: https://models.github.ai/inference
+        completions-path: /chat/completions
+      embedding:
+        base-url: https://models.github.ai/inference
+        embeddings-path: /embeddings
+        options:
+          model: openai/text-embedding-3-large
+          dimensions: 1536 # 3072 → 1536 차원 축소 (HNSW 인덱스 최대 2000)
+
+    vectorstore:
+      pgvector:
+        initialize-schema: true # 앱 시작 시 벡터 테이블 자동 생성
+        dimensions: 1536 # 임베딩 벡터 차원 (text-embedding-3-large 축소)
+  security:
+    oauth2:
+        client:
+            registration:
+                github:
+                    client-id: ${GITHUB_CLIENT_ID}
+                    client-secret: ${GITHUB_CLIENT_SECRET}
+                    scope: [ read:user,user:email ]
+
+                google:
+                    client-id: ${GOOGLE_CLIENT_ID}
+                    client-secret: ${GOOGLE_CLIENT_SECRET}
+                    scope: [ openid, profile, email ]
+
+# Redis Stream 설정
+redis:
+    stream:
+        key: ${REDIS_STREAM_KEY:log-stream}
+        group: ${REDIS_STREAM_GROUP:log-group}
+        consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
+
+# 모니터링/메트릭 설정 (InfluxDB 연동)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    export:
+      influx:
+        enabled: ${INFLUX_ENABLED:false}  # 로컬 개발 시 기본 비활성화, InfluxDB 사용 시 .env에서 INFLUX_ENABLED=true 설정
+        uri: http://${INFLUX_HOST:localhost}:${INFLUX_PORT:8086}
+        db: ${INFLUX_DB:k6}
+  health:
+    circuitbreakers:
+      enabled: true                                   # Circuit Breaker Health Check
+
+# 애플리케이션 커스텀 속성
+app:
+  upload:
+    dir: ./local-storage
+
+  jwt:
+    secret: ${JWT_SECRET:ZG9jdW1pbmQtZGV2LXNlY3JldC1rZXktbXVzdC1iZS1hdC1sZWFzdC0yNTYtYml0cy1sb25nLXBsZWFzZQ==}
+    access-expiration-seconds: 1800     # 30분
+    refresh-expiration-seconds: 604800  # 7일
+    access-cookie-name: access_token
+    refresh-cookie-name: refresh_token
+    cookie-secure: false   # 개발 환경: HTTP이므로 false (운영: true)
+
+  oauth2:
+      redirect-base-url: http://localhost:8080
+
+  chat:
+    default-model: gpt-4.1-mini # 기본 선택 모델 (alias)
+    models:
+      - provider: ollama
+        model-id: hf.co/rippertnt/HyperCLOVAX-SEED-Text-Instruct-1.5B-Q4_K_M-GGUF
+        alias: hyperclova-x
+        display-name: HyperCLOVA X
+      - provider: openai
+        model-id: openai/gpt-4.1-nano
+        alias: gpt-4.1-nano
+        display-name: GPT-4.1 Nano
+      - provider: openai
+        model-id: openai/gpt-4.1-mini
+        alias: gpt-4.1-mini
+        display-name: GPT-4.1 Mini
+      - provider: google-genai
+        model-id: gemini-2.5-flash
+        alias: gemini-2.5-flash
+        display-name: Gemini 2.5 Flash
+      - provider: google-genai
+        model-id: gemini-2.5-flash-lite
+        alias: gemini-2.5-flash-lite
+        display-name: Gemini 2.5 Flash-Lite
+
+worker:
+    # 배치 처리 설정
+    bulk:
+        size: ${WORKER_BULK_SIZE:1000}  # 배치 크기
+        flush-interval-ms: ${WORKER_BULK_FLUSH_INTERVAL_MS:1000}  # 플러시 주기 (1초)
+
+    # 버퍼 설정
+    buffer:
+        max-size: ${WORKER_BUFFER_MAX_SIZE:10000}  # 최대 버퍼 크기
+
+    # JDBC 배치 설정
+    jdbc:
+        batch-size: ${WORKER_JDBC_BATCH_SIZE:1000}  # JDBC 배치 크기
+
+    # Redis Streams 폴링 설정
+    poll-interval-ms: ${POLL_INTERVAL_MS:5000}  # 폴링 주기 (5초)
+    poll-block-ms: ${POLL_BLOCK_MS:2000}        # XREADGROUP BLOCK 시간 (2초)
+
+    # Lag 모니터링 설정
+    lag-monitor:
+        # Redis Stream Lag 수집 주기 (밀리초)
+        interval-ms: ${LAG_MONITOR_INTERVAL_MS:5000}
+
+    # Backpressure 설정
+    backpressure:
+        # DB Insert 평균 지연이 이 값 이상이면 WARN 상태로 전환
+        warn-threshold-ms: ${BACKPRESSURE_WARN_THRESHOLD_MS:500}
+        # DB Insert 평균 지연이 이 값 이상이면 CRITICAL 상태로 전환
+        critical-threshold-ms: ${BACKPRESSURE_CRITICAL_THRESHOLD_MS:2000}
+        # WARN 상태에서 Redis 소비 스레드가 대기하는 시간
+        warn-sleep-ms: ${BACKPRESSURE_WARN_SLEEP_MS:200}
+        # CRITICAL 상태에서 Redis 소비 스레드가 대기하는 시간
+        critical-sleep-ms: ${BACKPRESSURE_CRITICAL_SLEEP_MS:1000}
+        # 배치 크기 동적 조절 설정
+        initial-batch-size: ${BACKPRESSURE_INITIAL_BATCH_SIZE:100}
+        min-batch-size: ${BACKPRESSURE_MIN_BATCH_SIZE:10}
+        max-batch-size: ${BACKPRESSURE_MAX_BATCH_SIZE:500}
+        # 배치 크기 증가 임계값 (처리 시간이 이 값 미만이면 증가)
+        increase-threshold-ms: ${BACKPRESSURE_INCREASE_THRESHOLD_MS:1000}
+        # 배치 크기 감소 임계값 (처리 시간이 이 값 이상이면 감소)
+        decrease-threshold-ms: ${BACKPRESSURE_DECREASE_THRESHOLD_MS:5000}
+    dlq:
+        # Dead Letter Queue 최대 재시도 횟수
+        max-retry: ${DLQ_MAX_RETRY:5}
+        # DLQ 재시도 주기 (밀리초)
+        retry-interval-ms: ${DLQ_RETRY_INTERVAL_MS:5000}
+
+
+logging:
+  level:
+    kr.java.documind: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.ai.chat.client.advisor: debug
+
+# Resilience4j Circuit Breaker & Retry 설정
+resilience4j:
+  circuitbreaker:
+    instances:
+      redisStreamConsumer:
+        failure-rate-threshold: 50                    # 실패율 50% 초과 → OPEN
+        minimum-number-of-calls: 3                    # 최소 3회 호출 후 평가
+        sliding-window-size: 10                       # 최근 10회 기준
+        wait-duration-in-open-state: 10s              # OPEN 상태 10초 유지
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - org.springframework.data.redis.RedisConnectionFailureException
+          - org.springframework.data.redis.RedisSystemException
+          - java.io.IOException
+
+  retry:
+    instances:
+      redisStreamConsumer:
+        max-attempts: 5                               # 최대 5회 재시도
+        wait-duration: 1s                             # 초기 대기 1초
+        enable-exponential-backoff: true              # 지수 백오프
+        exponential-backoff-multiplier: 2             # 2배씩 증가
+        exponential-max-wait-duration: 30s            # 최대 30초
+        retry-exceptions:
+          - org.springframework.data.redis.RedisConnectionFailureException
