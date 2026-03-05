@@ -40,7 +40,10 @@ public class DocumentViewController {
 
     @GetMapping("/projects/{publicId}/documents/{documentId}")
     public String documentDetailPage(
-            @PathVariable String publicId, @PathVariable Long documentId, Model model) {
+            @PathVariable String publicId,
+            @ProjectId UUID projectId,
+            @PathVariable Long documentId,
+            Model model) {
         DocumentDetailResponse detail = documentMetadataService.getDocumentDetail(documentId);
 
         model.addAttribute("publicId", publicId);
