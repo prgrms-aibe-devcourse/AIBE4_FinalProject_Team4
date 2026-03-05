@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import kr.java.documind.domain.issue.service.fingerprint.FingerprintGenerator;
 import kr.java.documind.domain.issue.service.fingerprint.FingerprintResult;
+import kr.java.documind.domain.logprocessor.model.dto.LogWithFingerprint;
 import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.enums.EventCategory;

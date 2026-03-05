@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import kr.java.documind.domain.logprocessor.model.dto.LogWrapper;
 import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository;
