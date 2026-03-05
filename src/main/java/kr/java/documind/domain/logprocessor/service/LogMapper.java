@@ -22,9 +22,9 @@ public class LogMapper {
     private final ObjectMapper objectMapper;
 
     public GameLog toEntity(Map<String, String> map) throws JsonProcessingException {
-        if (map.get("projectId") == null || map.get("body") == null) {
+        if (map.get("projectId") == null || map.get("archive") == null) {
             throw new IllegalArgumentException(
-                    "Missing required fields: projectId and body are mandatory");
+                    "Missing required fields: projectId and archive are mandatory");
         }
 
         // logId 처리: null이거나 빈 문자열이면 새 UUID 생성
@@ -41,15 +41,17 @@ public class LogMapper {
             log.warn("sessionId is null or empty. Using default value: 'unknown-session'");
         }
 
+        OffsetDateTime now = OffsetDateTime.now();
+
         return GameLog.builder()
                 .logId(logId)
-                .projectId(map.get("projectId"))
+                .projectId(UUID.fromString(map.get("projectId")))
                 .sessionId(sessionId)
                 .userId(map.get("userId"))
                 .severity(LogSeverity.fromString(map.getOrDefault("severity", "INFO")))
                 .eventCategory(
                         EventCategory.fromString(map.getOrDefault("eventCategory", "SYSTEM")))
-                .body(map.get("body"))
+                .archive(map.get("archive"))
                 .occurredAt(parseTime(map.get("occurredAt")))
                 .ingestedAt(parseTime(map.get("ingestedAt")))
                 .traceId(map.get("traceId"))
@@ -63,10 +65,14 @@ public class LogMapper {
                         objectMapper.readValue(
                                 map.getOrDefault("attributes", "{}"),
                                 new TypeReference<Map<String, Object>>() {}))
+                .createdAt(parseTime(map.get("createdAt"), now))
+                .updatedAt(parseTime(map.get("updatedAt"), now))
                 .build();
     }
 
     public GameLog toEntity(RawLogRequest dto) {
+        OffsetDateTime now = OffsetDateTime.now();
+
         return GameLog.builder()
                 .logId(UUID.randomUUID())
                 .projectId(dto.projectId())
@@ -74,14 +80,16 @@ public class LogMapper {
                 .userId(dto.userId())
                 .severity(dto.severity())
                 .eventCategory(dto.eventCategory())
-                .body(dto.body())
-                .occurredAt(parseTime(dto.occurredAt()))
-                .ingestedAt(OffsetDateTime.now())
+                .archive(dto.archive())
+                .occurredAt(parseTime(dto.occurredAt(), now))
+                .ingestedAt(now)
                 .traceId(dto.traceId())
                 .spanId(dto.spanId())
                 .fingerprint(null)
                 .resource(dto.resource() != null ? dto.resource() : Map.of())
                 .attributes(dto.attributes() != null ? dto.attributes() : Map.of())
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
     }
 
@@ -95,6 +103,19 @@ public class LogMapper {
                     timeStr,
                     e.getMessage());
             return OffsetDateTime.now();
+        }
+    }
+
+    private OffsetDateTime parseTime(String timeStr, OffsetDateTime defaultTime) {
+        if (timeStr == null) return defaultTime;
+        try {
+            return OffsetDateTime.parse(timeStr);
+        } catch (Exception e) {
+            log.warn(
+                    "Failed to parse timestamp '{}'. Falling back to default time. Error: {}",
+                    timeStr,
+                    e.getMessage());
+            return defaultTime;
         }
     }
 }

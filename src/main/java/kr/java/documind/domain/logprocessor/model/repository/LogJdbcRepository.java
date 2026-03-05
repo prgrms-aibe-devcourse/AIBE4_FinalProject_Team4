@@ -110,9 +110,9 @@ public class LogJdbcRepository {
     private void saveBatch(List<GameLog> logs, int startIndex, int endIndex, int currentBatchSize) {
         String sql =
                 "INSERT INTO game_log (log_id, project_id, session_id, user_id, severity,"
-                        + " event_category, body, occurred_at, ingested_at, trace_id, span_id,"
-                        + " fingerprint, resource, attributes) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)";
+                        + " event_category, archive, occurred_at, ingested_at, trace_id, span_id,"
+                        + " fingerprint, resource, attributes, created_at, updated_at) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?)";
 
         int rangeSize = endIndex - startIndex;
         for (int i = startIndex; i < endIndex; i += currentBatchSize) {
@@ -126,12 +126,12 @@ public class LogJdbcRepository {
                         public void setValues(PreparedStatement ps, int j) throws SQLException {
                             GameLog log = batchList.get(j);
                             ps.setObject(1, log.getLogId());
-                            ps.setString(2, log.getProjectId());
+                            ps.setObject(2, log.getProjectId());
                             ps.setString(3, log.getSessionId());
                             ps.setString(4, log.getUserId());
                             ps.setString(5, log.getSeverity().toString());
                             ps.setString(6, log.getEventCategory().toString());
-                            ps.setString(7, log.getBody());
+                            ps.setString(7, log.getArchive());
                             ps.setObject(8, log.getOccurredAt());
                             ps.setObject(9, log.getIngestedAt());
                             ps.setString(10, log.getTraceId());
@@ -146,6 +146,9 @@ public class LogJdbcRepository {
                             } catch (JsonProcessingException e) {
                                 throw new SQLException("Error converting map to json", e);
                             }
+
+                            ps.setObject(15, log.getCreatedAt());
+                            ps.setObject(16, log.getUpdatedAt());
                         }
 
                         @Override
