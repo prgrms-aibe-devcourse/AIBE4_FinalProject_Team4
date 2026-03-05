@@ -140,16 +140,15 @@ async function submitEdit() {
     }
 
     try {
-        const response = await fetch(`/api/projects/${projectId}/documents/${documentId}`, {
+        const result = await callApi(`/api/projects/${projectId}/documents/${documentId}`, {
             method: 'PATCH',
             body: formData
         });
-        const body = await response.json();
-        if (body.success) {
+        if (result.success) {
             closeModal('editModal');
             window.location.reload();
         } else {
-            showModalError('editError', body.error?.message || '수정에 실패했습니다.');
+            showModalError('editError', result.error?.message || '수정에 실패했습니다.');
         }
     } catch (e) {
         showModalError('editError', '수정에 실패했습니다.');

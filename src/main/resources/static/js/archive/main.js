@@ -109,16 +109,15 @@ async function submitUpload() {
     formData.append('file', fileInput.files[0]);
 
     try {
-        const response = await fetch(`/api/projects/${projectId}/documents`, {
+        const result = await callApi(`/api/projects/${projectId}/documents`, {
             method: 'POST',
             body: formData
         });
-        const body = await response.json();
-        if (body.success) {
+        if (result.success) {
             closeModal('uploadModal');
             loadGroups(currentPage);
         } else {
-            showModalError('uploadError', body.error?.message || '업로드에 실패했습니다.');
+            showModalError('uploadError', result.error?.message || '업로드에 실패했습니다.');
         }
     } catch (e) {
         showModalError('uploadError', '업로드에 실패했습니다.');
@@ -187,16 +186,15 @@ async function submitNewVersion() {
     formData.append('file', fileInput.files[0]);
 
     try {
-        const response = await fetch(`/api/projects/${projectId}/groups/${groupId}/documents`, {
+        const result = await callApi(`/api/projects/${projectId}/groups/${groupId}/documents`, {
             method: 'POST',
             body: formData
         });
-        const body = await response.json();
-        if (body.success) {
+        if (result.success) {
             closeModal('newVersionModal');
             loadGroups(currentPage);
         } else {
-            showModalError('newVersionError', body.error?.message || '업로드에 실패했습니다.');
+            showModalError('newVersionError', result.error?.message || '업로드에 실패했습니다.');
         }
     } catch (e) {
         showModalError('newVersionError', '업로드에 실패했습니다.');
@@ -273,16 +271,15 @@ async function submitEdit() {
     }
 
     try {
-        const response = await fetch(`/api/projects/${projectId}/documents/${documentId}`, {
+        const result = await callApi(`/api/projects/${projectId}/documents/${documentId}`, {
             method: 'PATCH',
             body: formData
         });
-        const body = await response.json();
-        if (body.success) {
+        if (result.success) {
             closeModal('editModal');
             loadGroups(currentPage);
         } else {
-            showModalError('editError', body.error?.message || '수정에 실패했습니다.');
+            showModalError('editError', result.error?.message || '수정에 실패했습니다.');
         }
     } catch (e) {
         showModalError('editError', '수정에 실패했습니다.');
