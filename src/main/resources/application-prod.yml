@@ -68,6 +68,17 @@ management:
         db: ${INFLUX_DB:k6}
 
 app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-expiration-seconds: 1800     # 30분
+    refresh-expiration-seconds: 604800  # 7일
+    access-cookie-name: access_token
+    refresh-cookie-name: refresh_token
+    cookie-secure: true   # 운영 환경: HTTPS 필수
+
+  oauth2:
+    redirect-base-url: ${APP_BASE_URL}
+
   chat:
     default-model: gpt-4.1-mini # 기본 선택 모델 (alias)
     models:

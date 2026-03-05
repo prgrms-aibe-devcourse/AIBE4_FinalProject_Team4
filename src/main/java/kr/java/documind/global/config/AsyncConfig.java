@@ -1,7 +1,7 @@
 package kr.java.documind.global.config;
 
 import java.util.concurrent.Executor;
-import kr.java.documind.global.exception.CustomAsyncExceptionHandler;
+import kr.java.documind.global.handler.CustomAsyncExceptionHandler;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
