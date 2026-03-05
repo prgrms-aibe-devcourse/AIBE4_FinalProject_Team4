@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -66,6 +67,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 oidcUser.getUserInfo());
     }
 
+    static final String EMAIL_CONFLICT_ERROR = "email_conflict";
+
     private CustomUserDetails processOAuthLogin(
             String registrationId, Map<String, Object> attributes, OAuth2UserRequest userRequest) {
         OAuth2UserProfile userProfile =
@@ -80,6 +83,20 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 Optional.ofNullable(userProfile.getNickname())
                         .filter(n -> !n.isBlank())
                         .orElse(name);
+
+        memberService
+                .findConflictingProvider(resolvedEmail, userProfile.getProvider())
+                .ifPresent(
+                        existingProvider -> {
+                            log.warn(
+                                    "이메일 중복 provider 감지: email={} 시도={} 기존={}",
+                                    resolvedEmail,
+                                    userProfile.getProvider(),
+                                    existingProvider);
+                            throw new OAuth2AuthenticationException(
+                                    new OAuth2Error(
+                                            EMAIL_CONFLICT_ERROR, existingProvider.name(), null));
+                        });
 
         Member member =
                 memberService.findOrCreateOAuthMember(

@@ -12,9 +12,9 @@ description = 'AIBE4_FinalProject_Team4'
 spotless {
     java {
         target '**/*.java'
+        targetExclude '.clone/**/*.java'
         // 구글 스타일(AOSP) = 들여쓰기 4칸 적용
         googleJavaFormat().aosp()
-
         importOrder() // import 순서 정의
         removeUnusedImports() // 안 쓰는 import 제거
         trimTrailingWhitespace() // 끝 공백 제거
@@ -59,7 +59,6 @@ dependencies {
 
     // Database & Cache
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'

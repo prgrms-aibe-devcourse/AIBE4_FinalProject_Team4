@@ -4,6 +4,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.member.model.entity.Member;
+import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.enums.GlobalRole;
 import kr.java.documind.domain.member.model.enums.OAuthProvider;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
@@ -19,6 +20,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+
+    public Optional<OAuthProvider> findConflictingProvider(
+            String email, OAuthProvider currentProvider) {
+        if (email == null || email.endsWith("@oauth.placeholder")) {
+            return Optional.empty();
+        }
+        return memberRepository
+                .findActiveByEmailAndDifferentProvider(
+                        email, currentProvider, AccountStatus.DELETED)
+                .map(Member::getProvider);
+    }
 
     public Member getMemberWithCompany(UUID id) {
         return memberRepository

@@ -41,6 +41,7 @@ public class TokenProvider {
         Date expiry = new Date(now.getTime() + jwtProperties.getAccessExpirationSeconds() * 1000L);
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(memberId.toString())
                 .claim(CLAIM_ROLE, globalRole.name())
                 .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ACCESS)
@@ -55,6 +56,7 @@ public class TokenProvider {
         Date expiry = new Date(now.getTime() + jwtProperties.getRefreshExpirationSeconds() * 1000L);
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(memberId.toString())
                 .claim(CLAIM_ROLE, globalRole.name())
                 .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_REFRESH)
@@ -62,6 +64,14 @@ public class TokenProvider {
                 .expiration(expiry)
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public String getTokenId(String token) {
+        try {
+            return parseClaims(token).getId();
+        } catch (ExpiredJwtException e) {
+            return e.getClaims().getId();
+        }
     }
 
     public UUID getMemberId(String token) {
@@ -78,7 +88,14 @@ public class TokenProvider {
     }
 
     public long getRemainingMillis(String token) {
-        return getExpiration(token).getTime() - System.currentTimeMillis();
+        try {
+            return getExpiration(token).getTime() - System.currentTimeMillis();
+        } catch (ExpiredJwtException e) {
+            return e.getClaims().getExpiration().getTime() - System.currentTimeMillis();
+        } catch (JwtException e) {
+            log.warn("[JWT] 토큰 만료 시간 추출 실패: {}", e.getMessage());
+            return 0L;
+        }
     }
 
     public boolean validateToken(String token) {

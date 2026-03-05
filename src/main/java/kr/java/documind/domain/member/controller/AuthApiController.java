@@ -56,10 +56,12 @@ public class AuthApiController {
         UUID memberId = jwtProvider.getMemberId(refreshToken);
         GlobalRole globalRole = jwtProvider.getGlobalRole(refreshToken);
 
-        String storedToken = redisTokenService.getRefreshToken(memberId);
+        // GETDEL: 원자적으로 읽고 삭제. 동시 요청 중 첫 번째만 토큰 값을 얻음
+        String storedToken = redisTokenService.consumeRefreshToken(memberId);
         if (!refreshToken.equals(storedToken)) {
+            // storedToken == null  → 이미 사용됐거나 만료
+            // storedToken != null  → 토큰 값 불일치, 탈취 가능성
             log.warn("Refresh Token 불일치 — 탈취 가능성: memberId={}", memberId);
-            redisTokenService.deleteRefreshToken(memberId);
             deleteAuthCookies(response);
             return ResponseEntity.status(401)
                     .body(
@@ -105,7 +107,9 @@ public class AuthApiController {
 
             if (accessToken != null) {
                 long remainingMillis = jwtProvider.getRemainingMillis(accessToken);
-                redisTokenService.addToBlacklist(accessToken, remainingMillis);
+                if (remainingMillis > 0) {
+                    redisTokenService.addToBlacklist(accessToken, remainingMillis);
+                }
             }
 
             redisTokenService.deleteRefreshToken(authMember.getMemberId());
