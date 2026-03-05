@@ -3,7 +3,9 @@ package kr.java.documind.domain.member.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
+import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.GlobalRole;
+import kr.java.documind.domain.member.service.MemberService;
 import kr.java.documind.global.config.JwtProperties;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.response.ErrorResponse;
@@ -29,6 +31,7 @@ public class AuthApiController {
     private final JwtProperties jwtProperties;
     private final CookieUtil cookieUtil;
     private final RedisTokenService redisTokenService;
+    private final MemberService memberService;
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<Void>> refresh(
@@ -56,17 +59,22 @@ public class AuthApiController {
         UUID memberId = jwtProvider.getMemberId(refreshToken);
         GlobalRole globalRole = jwtProvider.getGlobalRole(refreshToken);
 
-        // GETDEL: 원자적으로 읽고 삭제. 동시 요청 중 첫 번째만 토큰 값을 얻음
         String storedToken = redisTokenService.consumeRefreshToken(memberId);
         if (!refreshToken.equals(storedToken)) {
-            // storedToken == null  → 이미 사용됐거나 만료
-            // storedToken != null  → 토큰 값 불일치, 탈취 가능성
             log.warn("Refresh Token 불일치 — 탈취 가능성: memberId={}", memberId);
             deleteAuthCookies(response);
             return ResponseEntity.status(401)
                     .body(
                             ApiResponse.error(
                                     ErrorResponse.of("유효하지 않은 Refresh Token입니다. 다시 로그인하세요.")));
+        }
+
+        Member member = memberService.getMemberWithCompany(memberId);
+        if (!member.isActive()) {
+            log.warn("비활성 계정의 토큰 갱신 시도: memberId={} status={}", memberId, member.getAccountStatus());
+            deleteAuthCookies(response);
+            return ResponseEntity.status(401)
+                    .body(ApiResponse.error(ErrorResponse.of("계정이 비활성화되었습니다. 다시 로그인하세요.")));
         }
 
         String newAccessToken = jwtProvider.generateAccessToken(memberId, globalRole);
