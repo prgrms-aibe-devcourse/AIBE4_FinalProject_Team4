@@ -23,8 +23,8 @@ import org.springframework.stereotype.Service;
  *
  * <p>Redis Streams에서 로그를 읽어와 LogBufferService에 전달하는 Consumer Worker
  *
- * <p>장애 격리 및 재시도 전략: - Circuit Breaker: Redis 장애 시 자동으로 회로 차단 - Exponential Backoff: 재연결
- * 시 지수 백오프로 부하 감소 - Health Check: Circuit Breaker 상태를 Spring Actuator에 노출
+ * <p>장애 격리 및 재시도 전략: - Circuit Breaker: Redis 장애 시 자동으로 회로 차단 - Exponential Backoff: 재연결 시 지수 백오프로
+ * 부하 감소 - Health Check: Circuit Breaker 상태를 Spring Actuator에 노출
  */
 @Slf4j
 @Service
@@ -66,8 +66,7 @@ public class RedisStreamConsumer {
             consumeLogsWithCircuitBreaker();
         } catch (Exception e) {
             // Circuit Breaker OPEN 상태이거나 예외 발생 시
-            log.debug(
-                    "Polling skipped or failed. Circuit may be OPEN. Error: {}", e.getMessage());
+            log.debug("Polling skipped or failed. Circuit may be OPEN. Error: {}", e.getMessage());
         }
     }
 
@@ -108,16 +107,14 @@ public class RedisStreamConsumer {
     /**
      * Redis Streams에서 메시지 읽기
      *
-     * <p>XREADGROUP 명령어 사용: - GROUP: Consumer Group 이름 - CONSUMER: 이 Consumer의 ID - COUNT: 최대 읽기
-     * 개수 - BLOCK: 데이터가 없으면 대기 시간 (밀리초)
+     * <p>XREADGROUP 명령어 사용: - GROUP: Consumer Group 이름 - CONSUMER: 이 Consumer의 ID - COUNT: 최대 읽기 개수
+     * - BLOCK: 데이터가 없으면 대기 시간 (밀리초)
      *
      * @return 읽어온 메시지 리스트
      */
     private List<MapRecord<String, Object, Object>> readFromStream() {
         StreamReadOptions options =
-                StreamReadOptions.empty()
-                        .count(batchSize)
-                        .block(Duration.ofMillis(pollBlockMs));
+                StreamReadOptions.empty().count(batchSize).block(Duration.ofMillis(pollBlockMs));
 
         return redisTemplate
                 .opsForStream()
@@ -183,10 +180,7 @@ public class RedisStreamConsumer {
             redisTemplate
                     .opsForStream()
                     .createGroup(streamKey, ReadOffset.from("0"), consumerGroup);
-            log.info(
-                    "✅ Redis Consumer Group created: {} for stream: {}",
-                    consumerGroup,
-                    streamKey);
+            log.info("✅ Redis Consumer Group created: {} for stream: {}", consumerGroup, streamKey);
         } catch (Exception e) {
             // 이미 Consumer Group이 존재하면 예외 발생 (정상)
             log.info("Redis Consumer Group already exists: {}", consumerGroup);

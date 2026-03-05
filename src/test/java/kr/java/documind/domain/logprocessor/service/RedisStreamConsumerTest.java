@@ -1,9 +1,7 @@
 package kr.java.documind.domain.logprocessor.service;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,10 +19,10 @@ import org.springframework.data.redis.connection.stream.Consumer;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.connection.stream.StreamOffset;
-import org.springframework.data.redis.connection.stream.StreamOperations;
+import org.springframework.data.redis.connection.stream.StreamReadOptions;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StreamOperations.StreamReadOptions;
+import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,9 +45,7 @@ class RedisStreamConsumerTest {
 
     @BeforeEach
     void setUp() {
-        redisStreamConsumer =
-                new RedisStreamConsumer(
-                        redisTemplate, logBufferService, logMapper);
+        redisStreamConsumer = new RedisStreamConsumer(redisTemplate, logBufferService, logMapper);
 
         // @Value 필드 초기화
         ReflectionTestUtils.setField(redisStreamConsumer, "streamKey", STREAM_KEY);
@@ -146,10 +142,7 @@ class RedisStreamConsumerTest {
                         "eventCategory", "SYSTEM",
                         "archive", "Test error message");
 
-        return StreamRecords.newRecord()
-                .in(STREAM_KEY)
-                .ofObject(value)
-                .withId(recordId);
+        return StreamRecords.mapBacked(value).withStreamKey(STREAM_KEY).withId(recordId);
     }
 
     // 헬퍼 메서드: Mock GameLog 생성

@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>Spring Boot Actuator의 /actuator/health 엔드포인트에 노출
  *
- * <p>체크 항목: - Redis 연결 상태 - Circuit Breaker 상태 (CLOSED/HALF_OPEN/OPEN) - Circuit Breaker 메트릭
- * (실패율, 호출 횟수 등)
+ * <p>체크 항목: - Redis 연결 상태 - Circuit Breaker 상태 (CLOSED/HALF_OPEN/OPEN) - Circuit Breaker 메트릭 (실패율,
+ * 호출 횟수 등)
  */
 @Slf4j
 @Component
@@ -66,8 +66,7 @@ public class RedisStreamHealthIndicator implements HealthIndicator {
                                             "Circuit Breaker is OPEN due to high failure rate");
                     break;
                 default:
-                    healthBuilder =
-                            Health.unknown().withDetail("reason", "Unknown circuit state");
+                    healthBuilder = Health.unknown().withDetail("reason", "Unknown circuit state");
             }
 
             // Circuit Breaker 메트릭 추가

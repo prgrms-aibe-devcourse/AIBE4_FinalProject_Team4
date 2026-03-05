@@ -16,8 +16,8 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>Circuit Breaker 상태 전환 및 에러 이벤트를 감지하여 로깅 및 알림 처리
  *
- * <p>주요 이벤트: - CLOSED → OPEN: 장애 발생 (긴급 알림) - OPEN → HALF_OPEN: 복구 시도 중 - HALF_OPEN →
- * CLOSED: 복구 완료 (정상화 알림) - ERROR: 개별 에러 발생 로그
+ * <p>주요 이벤트: - CLOSED → OPEN: 장애 발생 (긴급 알림) - OPEN → HALF_OPEN: 복구 시도 중 - HALF_OPEN → CLOSED: 복구 완료
+ * (정상화 알림) - ERROR: 개별 에러 발생 로그
  */
 @Slf4j
 @Configuration
@@ -67,8 +67,7 @@ public class CircuitBreakerEventListener {
             public void onEntryReplacedEvent(
                     EntryReplacedEvent<CircuitBreaker> entryReplacedEvent) {
                 log.info(
-                        "Circuit Breaker replaced: {}",
-                        entryReplacedEvent.getNewEntry().getName());
+                        "Circuit Breaker replaced: {}", entryReplacedEvent.getNewEntry().getName());
             }
         };
     }
@@ -76,8 +75,8 @@ public class CircuitBreakerEventListener {
     /**
      * Circuit Breaker 상태 전환 처리
      *
-     * <p>CLOSED → OPEN: 장애 발생 (실패율 50% 초과) OPEN → HALF_OPEN: 복구 시도 중 HALF_OPEN → CLOSED: 복구
-     * 완료 HALF_OPEN → OPEN: 복구 실패
+     * <p>CLOSED → OPEN: 장애 발생 (실패율 50% 초과) OPEN → HALF_OPEN: 복구 시도 중 HALF_OPEN → CLOSED: 복구 완료
+     * HALF_OPEN → OPEN: 복구 실패
      *
      * @param event 상태 전환 이벤트
      */
@@ -103,8 +102,7 @@ public class CircuitBreakerEventListener {
         }
 
         // HALF_OPEN → CLOSED: 복구 완료 알림
-        if (fromState == CircuitBreaker.State.HALF_OPEN
-                && toState == CircuitBreaker.State.CLOSED) {
+        if (fromState == CircuitBreaker.State.HALF_OPEN && toState == CircuitBreaker.State.CLOSED) {
             handleCircuitClosed(circuitBreakerName);
         }
 
@@ -137,8 +135,7 @@ public class CircuitBreakerEventListener {
                 2. 네트워크 연결 확인
                 3. 로그 확인 및 원인 파악
                 """,
-                circuitBreakerName,
-                circuitBreakerName);
+                circuitBreakerName, circuitBreakerName);
 
         // TODO: 긴급 알림 시스템 연동
         // sendSlackAlert(circuitBreakerName, "OPEN");
@@ -185,9 +182,6 @@ public class CircuitBreakerEventListener {
                 throwable.getMessage());
 
         // 상세 에러 로그 (디버그 레벨)
-        log.debug(
-                "Circuit Breaker [{}] error details: ",
-                circuitBreakerName,
-                throwable);
+        log.debug("Circuit Breaker [{}] error details: ", circuitBreakerName, throwable);
     }
 }
