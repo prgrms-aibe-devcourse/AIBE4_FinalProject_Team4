@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title layout:title-pattern="$CONTENT_TITLE - Documind">Documind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex">
+
+    <!-- 사이드바 -->
+    <div th:replace="~{common/fragments/sidebar :: sidebar}"></div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="ml-60 flex-1 flex flex-col">
+
+        <!-- 상단 헤더 -->
+        <div th:replace="~{common/fragments/header :: header}"></div>
+
+        <!-- 컨텐츠 영역 (각 페이지에서 대체) -->
+        <main layout:fragment="content" class="flex-1 p-8">
+        </main>
+
+        <!-- 푸터 -->
+        <div th:replace="~{common/fragments/footer :: footer}"></div>
+    </div>
+
+    <!-- 공통 스크립트 -->
+    <script th:src="@{/js/common/FetchUtil.js}"></script>
+
+    <!-- 페이지별 스크립트 (각 페이지에서 대체) -->
+    <th:block layout:fragment="scripts"></th:block>
+</body>
+</html>
