@@ -202,7 +202,7 @@ class LogJdbcRepositoryTest {
 
         // 파라미터 설정 검증
         verify(mockPs).setObject(1, log.getLogId()); // log_id
-        verify(mockPs).setString(2, log.getProjectId()); // project_id
+        verify(mockPs).setObject(2, log.getProjectId()); // project_id (UUID)
         verify(mockPs).setString(3, log.getSessionId()); // session_id
         verify(mockPs).setString(5, log.getSeverity().toString()); // severity
         verify(mockPs).setString(6, log.getEventCategory().toString()); // event_category
@@ -220,24 +220,27 @@ class LogJdbcRepositoryTest {
      * @return GameLog 리스트
      */
     private List<GameLog> createTestLogs(int count) {
+        OffsetDateTime now = OffsetDateTime.now();
         return IntStream.range(0, count)
                 .mapToObj(
                         i ->
                                 GameLog.builder()
                                         .logId(UUID.randomUUID())
-                                        .projectId("test-project")
+                                        .projectId(UUID.randomUUID())
                                         .sessionId("session-" + i)
                                         .userId("user-" + i)
                                         .severity(LogSeverity.INFO)
                                         .eventCategory(EventCategory.GAMEPLAY)
-                                        .body("Test log message " + i)
-                                        .occurredAt(OffsetDateTime.now())
-                                        .ingestedAt(OffsetDateTime.now())
+                                        .archive("Test log message " + i)
+                                        .occurredAt(now)
+                                        .ingestedAt(now)
                                         .traceId("trace-" + i)
                                         .spanId("span-" + i)
                                         .fingerprint("fingerprint-" + i)
                                         .resource(Map.of("key", "value"))
                                         .attributes(Map.of("action", "test"))
+                                        .createdAt(now)
+                                        .updatedAt(now)
                                         .build())
                 .toList();
     }
