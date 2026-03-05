@@ -50,6 +50,8 @@ class LogBufferServiceTest {
 
     @Mock private LogMapper logMapper;
 
+    @Mock private IssueGroupingBatchService issueGroupingBatchService;
+
     private MeterRegistry meterRegistry;
     private LogBufferService logBufferService;
 
@@ -69,7 +71,8 @@ class LogBufferServiceTest {
                         redisTemplate,
                         backpressureManager,
                         meterRegistry,
-                        logMapper);
+                        logMapper,
+                        issueGroupingBatchService);
 
         // @Value 필드 초기화
         ReflectionTestUtils.setField(logBufferService, "batchSize", BATCH_SIZE);

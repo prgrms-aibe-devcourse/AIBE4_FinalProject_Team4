@@ -74,6 +74,18 @@ public class LogMapper {
     }
 
     public GameLog toEntity(RawLogRequest dto) {
+        return toEntityWithFingerprint(dto).log();
+    }
+
+    /**
+     * RawLogRequest를 GameLog로 변환하고 FingerprintResult도 함께 반환
+     *
+     * <p>이슈 그룹핑 시 fingerprint quality 정보가 필요하므로 함께 반환
+     *
+     * @param dto RawLogRequest
+     * @return GameLog와 FingerprintResult
+     */
+    public LogWithFingerprint toEntityWithFingerprint(RawLogRequest dto) {
         OffsetDateTime now = OffsetDateTime.now();
 
         // 임시 엔티티 생성 (fingerprint 생성을 위해 archive 필요)
@@ -101,24 +113,27 @@ public class LogMapper {
         FingerprintResult fingerprintResult = fingerprintGenerator.generate(tempLog);
 
         // 최종 엔티티 생성 (fingerprint 포함)
-        return GameLog.builder()
-                .logId(tempLog.getLogId())
-                .projectId(tempLog.getProjectId())
-                .sessionId(tempLog.getSessionId())
-                .userId(tempLog.getUserId())
-                .severity(tempLog.getSeverity())
-                .eventCategory(tempLog.getEventCategory())
-                .archive(tempLog.getArchive())
-                .occurredAt(tempLog.getOccurredAt())
-                .ingestedAt(tempLog.getIngestedAt())
-                .traceId(tempLog.getTraceId())
-                .spanId(tempLog.getSpanId())
-                .fingerprint(fingerprintResult.getFingerprint())
-                .resource(tempLog.getResource())
-                .attributes(tempLog.getAttributes())
-                .createdAt(tempLog.getCreatedAt())
-                .updatedAt(tempLog.getUpdatedAt())
-                .build();
+        GameLog finalLog =
+                GameLog.builder()
+                        .logId(tempLog.getLogId())
+                        .projectId(tempLog.getProjectId())
+                        .sessionId(tempLog.getSessionId())
+                        .userId(tempLog.getUserId())
+                        .severity(tempLog.getSeverity())
+                        .eventCategory(tempLog.getEventCategory())
+                        .archive(tempLog.getArchive())
+                        .occurredAt(tempLog.getOccurredAt())
+                        .ingestedAt(tempLog.getIngestedAt())
+                        .traceId(tempLog.getTraceId())
+                        .spanId(tempLog.getSpanId())
+                        .fingerprint(fingerprintResult.getFingerprint())
+                        .resource(tempLog.getResource())
+                        .attributes(tempLog.getAttributes())
+                        .createdAt(tempLog.getCreatedAt())
+                        .updatedAt(tempLog.getUpdatedAt())
+                        .build();
+
+        return new LogWithFingerprint(finalLog, fingerprintResult);
     }
 
     private OffsetDateTime parseTime(String timeStr) {
