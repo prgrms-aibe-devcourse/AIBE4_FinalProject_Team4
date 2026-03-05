@@ -1,10 +1,15 @@
 package kr.java.documind.domain.archive.document.model.entity;
 
+import static jakarta.persistence.FetchType.LAZY;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
+import kr.java.documind.domain.member.model.entity.Project;
 import kr.java.documind.global.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,9 +23,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DocumentGroup extends BaseEntity {
 
-    // TODO: Project 엔티티 생성 후 @ManyToOne(fetch = LAZY) + @JoinColumn으로 전환
-    @Column(nullable = false)
-    private UUID projectId;
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
     @Column(nullable = false, length = 10)
     private String category;
@@ -31,16 +36,20 @@ public class DocumentGroup extends BaseEntity {
     @Column(nullable = false)
     private String choseong;
 
-    private DocumentGroup(UUID projectId, String category, String groupName, String choseong) {
-        this.projectId = projectId;
+    private DocumentGroup(Project project, String category, String groupName, String choseong) {
+        this.project = project;
         this.category = category;
         this.groupName = groupName;
         this.choseong = choseong;
     }
 
     public static DocumentGroup create(
-            UUID projectId, String category, String groupName, String choseong) {
-        return new DocumentGroup(projectId, category, groupName, choseong);
+            Project project, String category, String groupName, String choseong) {
+        return new DocumentGroup(project, category, groupName, choseong);
+    }
+
+    public UUID getProjectId() {
+        return project.getId();
     }
 
     public void updateCategory(String category) {

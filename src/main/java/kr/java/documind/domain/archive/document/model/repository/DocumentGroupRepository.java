@@ -10,15 +10,17 @@ import org.springframework.data.repository.query.Param;
 
 public interface DocumentGroupRepository extends JpaRepository<DocumentGroup, Long> {
 
-    boolean existsByProjectIdAndCategoryAndGroupName(
-            UUID projectId, String category, String groupName);
+    boolean existsByProjectAndCategoryAndGroupName(
+            kr.java.documind.domain.member.model.entity.Project project,
+            String category,
+            String groupName);
 
     @Query(
             "SELECT g.id AS groupId, g.groupName AS groupName, g.category AS category, "
                     + "MAX(dm.majorVersion * 1000000 + dm.minorVersion * 1000 + dm.patchVersion) AS versionOrdinal, "
                     + "COUNT(dm) AS documentCount "
                     + "FROM DocumentGroup g JOIN DocumentMetadata dm ON dm.documentGroup = g "
-                    + "WHERE g.projectId = :projectId "
+                    + "WHERE g.project.id = :projectId "
                     + "GROUP BY g.id, g.groupName, g.category")
     Page<DocumentGroupSummary> findGroupSummariesByProjectId(
             @Param("projectId") UUID projectId, Pageable pageable);

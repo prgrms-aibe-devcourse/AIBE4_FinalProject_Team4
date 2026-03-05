@@ -23,6 +23,8 @@ import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
 import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
+import kr.java.documind.domain.member.model.entity.Project;
+import kr.java.documind.domain.member.model.repository.ProjectRepository;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.BadRequestException;
@@ -50,9 +52,11 @@ class DocumentMetadataServiceTest {
     @Mock private DocumentGroupRepository documentGroupRepository;
     @Mock private DocumentMetadataRepository documentMetadataRepository;
     @Mock private DomainSourceRepository domainSourceRepository;
+    @Mock private ProjectRepository projectRepository;
     @Mock private FileStore fileStore;
 
     private static final UUID PROJECT_ID = UUID.randomUUID();
+    private static final Project PROJECT = Project.create("test-project");
     private static final Long DOCUMENT_ID = 1L;
     private static final Long GROUP_ID = 1L;
 
@@ -63,11 +67,12 @@ class DocumentMetadataServiceTest {
                         documentGroupRepository,
                         documentMetadataRepository,
                         domainSourceRepository,
+                        projectRepository,
                         fileStore);
     }
 
     private DocumentGroup createGroup() {
-        return DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
+        return DocumentGroup.create(PROJECT, "기술", "설계문서", "");
     }
 
     private DomainSource createDomainSource() {
@@ -179,9 +184,10 @@ class DocumentMetadataServiceTest {
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
+            given(projectRepository.findById(PROJECT_ID)).willReturn(Optional.of(PROJECT));
             given(
-                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                                    PROJECT_ID, "기술", "설계문서"))
+                            documentGroupRepository.existsByProjectAndCategoryAndGroupName(
+                                    PROJECT, "기술", "설계문서"))
                     .willReturn(false);
             given(documentGroupRepository.save(any(DocumentGroup.class))).willReturn(group);
             given(fileStore.save(file)).willReturn("new-stored-key");
@@ -225,9 +231,10 @@ class DocumentMetadataServiceTest {
             MultipartFile file = mockFile("document.pdf");
             DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0, null);
 
+            given(projectRepository.findById(PROJECT_ID)).willReturn(Optional.of(PROJECT));
             given(
-                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                                    PROJECT_ID, "기술", "설계문서"))
+                            documentGroupRepository.existsByProjectAndCategoryAndGroupName(
+                                    PROJECT, "기술", "설계문서"))
                     .willReturn(true);
 
             assertThatThrownBy(
@@ -243,13 +250,14 @@ class DocumentMetadataServiceTest {
             DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0, null);
             DocumentGroup group = createGroup();
 
+            given(projectRepository.findById(PROJECT_ID)).willReturn(Optional.of(PROJECT));
             given(
-                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                                    PROJECT_ID, "기술", "설계문서"))
+                            documentGroupRepository.existsByProjectAndCategoryAndGroupName(
+                                    PROJECT, "기술", "설계문서"))
                     .willReturn(false);
             given(documentGroupRepository.save(any(DocumentGroup.class))).willReturn(group);
             given(fileStore.save(file)).willReturn("new-stored-key");
-            given(documentMetadataRepository.existsByProjectIdAndHash(PROJECT_ID, "duphash"))
+            given(documentMetadataRepository.existsByProjectIdAndHash(any(), any()))
                     .willReturn(true);
 
             try (MockedStatic<kr.java.documind.global.util.FileUtil> fileUtil =
@@ -304,7 +312,7 @@ class DocumentMetadataServiceTest {
             given(documentMetadataRepository.findById(DOCUMENT_ID))
                     .willReturn(Optional.of(metadata));
             given(fileStore.save(file)).willReturn("new-key");
-            given(documentMetadataRepository.existsByProjectIdAndHash(PROJECT_ID, "newhash"))
+            given(documentMetadataRepository.existsByProjectIdAndHash(any(), any()))
                     .willReturn(false);
 
             try (MockedStatic<kr.java.documind.global.util.FileUtil> fileUtil =
@@ -374,7 +382,7 @@ class DocumentMetadataServiceTest {
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
                     .willReturn(Optional.of(metadata));
-            given(documentMetadataRepository.existsByProjectIdAndHash(PROJECT_ID, "duphash"))
+            given(documentMetadataRepository.existsByProjectIdAndHash(any(), any()))
                     .willReturn(true);
 
             try (MockedStatic<kr.java.documind.global.util.FileUtil> fileUtil =

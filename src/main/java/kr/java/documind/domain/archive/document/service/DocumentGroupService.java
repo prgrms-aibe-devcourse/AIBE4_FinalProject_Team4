@@ -9,6 +9,7 @@ import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetad
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
 import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
+import kr.java.documind.domain.member.model.entity.Project;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,7 @@ public class DocumentGroupService {
     public void updateGroupName(Long groupId, GroupNameUpdateRequest request) {
         DocumentGroup group = findGroupById(groupId);
 
-        validateGroupNameUniqueness(group.getProjectId(), group.getCategory(), request.groupName());
+        validateGroupNameUniqueness(group.getProject(), group.getCategory(), request.groupName());
 
         // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
         group.updateGroupName(request.groupName(), "");
@@ -59,16 +60,16 @@ public class DocumentGroupService {
     public void updateGroupCategory(Long groupId, CategoryUpdateRequest request) {
         DocumentGroup group = findGroupById(groupId);
 
-        validateGroupNameUniqueness(group.getProjectId(), request.category(), group.getGroupName());
+        validateGroupNameUniqueness(group.getProject(), request.category(), group.getGroupName());
 
         group.updateCategory(request.category());
     }
 
     // ==================== private ====================
 
-    private void validateGroupNameUniqueness(UUID projectId, String category, String groupName) {
-        if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                projectId, category, groupName)) {
+    private void validateGroupNameUniqueness(Project project, String category, String groupName) {
+        if (documentGroupRepository.existsByProjectAndCategoryAndGroupName(
+                project, category, groupName)) {
             throw new ConflictException(
                     String.format("카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.", category, groupName));
         }

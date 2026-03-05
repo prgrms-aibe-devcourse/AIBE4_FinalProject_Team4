@@ -15,6 +15,8 @@ import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
 import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
+import kr.java.documind.domain.member.model.entity.Project;
+import kr.java.documind.domain.member.model.repository.ProjectRepository;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.BadRequestException;
@@ -39,6 +41,7 @@ public class DocumentMetadataService {
     private final DocumentGroupRepository documentGroupRepository;
     private final DocumentMetadataRepository documentMetadataRepository;
     private final DomainSourceRepository domainSourceRepository;
+    private final ProjectRepository projectRepository;
     private final FileStore fileStore;
 
     // ==================== DocumentViewController ====================
@@ -71,13 +74,14 @@ public class DocumentMetadataService {
             UUID projectId, DocumentUploadRequest request, MultipartFile file) {
         validateFile(file);
 
-        validateGroupNameUniqueness(projectId, request.category(), request.groupName());
+        Project project = findProjectById(projectId);
+
+        validateGroupNameUniqueness(project, request.category(), request.groupName());
 
         // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
         DocumentGroup group =
                 documentGroupRepository.save(
-                        DocumentGroup.create(
-                                projectId, request.category(), request.groupName(), ""));
+                        DocumentGroup.create(project, request.category(), request.groupName(), ""));
 
         return saveFileAndCreateMetadata(group, file, request);
     }
@@ -171,12 +175,18 @@ public class DocumentMetadataService {
                                         String.format("문서(id=%d)를 찾을 수 없습니다.", documentId)));
     }
 
-    private void validateGroupNameUniqueness(UUID projectId, String category, String groupName) {
-        if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                projectId, category, groupName)) {
+    private void validateGroupNameUniqueness(Project project, String category, String groupName) {
+        if (documentGroupRepository.existsByProjectAndCategoryAndGroupName(
+                project, category, groupName)) {
             throw new ConflictException(
                     String.format("카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.", category, groupName));
         }
+    }
+
+    private Project findProjectById(UUID projectId) {
+        return projectRepository
+                .findById(projectId)
+                .orElseThrow(() -> new NotFoundException("프로젝트를 찾을 수 없습니다."));
     }
 
     private void validateVersionUniqueness(DocumentGroup group, VersionFields version) {

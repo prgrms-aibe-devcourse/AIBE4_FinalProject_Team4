@@ -17,6 +17,7 @@ import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupSummary;
 import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
+import kr.java.documind.domain.member.model.entity.Project;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.ConflictException;
@@ -42,6 +43,7 @@ class DocumentGroupServiceTest {
     @Mock private DocumentMetadataRepository documentMetadataRepository;
 
     private static final UUID PROJECT_ID = UUID.randomUUID();
+    private static final Project PROJECT = Project.create("test-project");
     private static final Long GROUP_ID = 1L;
 
     @BeforeEach
@@ -84,7 +86,7 @@ class DocumentGroupServiceTest {
         @Test
         @DisplayName("그룹 ID로 버전 목록을 조회한다")
         void returnsVersionsByGroupId() {
-            DocumentGroup group = DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
+            DocumentGroup group = DocumentGroup.create(PROJECT, "기술", "설계문서", "");
             DocumentMetadata metadata =
                     DocumentMetadata.create(
                             DomainSource.create(SourceType.DOCUMENT),
@@ -133,13 +135,13 @@ class DocumentGroupServiceTest {
         @Test
         @DisplayName("그룹명을 변경한다")
         void updatesGroupName() {
-            DocumentGroup group = DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
+            DocumentGroup group = DocumentGroup.create(PROJECT, "기술", "설계문서", "");
             GroupNameUpdateRequest request = new GroupNameUpdateRequest("API문서");
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
             given(
-                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                                    PROJECT_ID, "기술", "API문서"))
+                            documentGroupRepository.existsByProjectAndCategoryAndGroupName(
+                                    PROJECT, "기술", "API문서"))
                     .willReturn(false);
 
             documentGroupService.updateGroupName(GROUP_ID, request);
@@ -150,13 +152,13 @@ class DocumentGroupServiceTest {
         @Test
         @DisplayName("동일 카테고리에 중복 그룹명이면 ConflictException을 던진다")
         void throwsConflictExceptionWhenDuplicateName() {
-            DocumentGroup group = DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
+            DocumentGroup group = DocumentGroup.create(PROJECT, "기술", "설계문서", "");
             GroupNameUpdateRequest request = new GroupNameUpdateRequest("API문서");
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
             given(
-                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                                    PROJECT_ID, "기술", "API문서"))
+                            documentGroupRepository.existsByProjectAndCategoryAndGroupName(
+                                    PROJECT, "기술", "API문서"))
                     .willReturn(true);
 
             assertThatThrownBy(() -> documentGroupService.updateGroupName(GROUP_ID, request))
@@ -184,13 +186,13 @@ class DocumentGroupServiceTest {
         @Test
         @DisplayName("카테고리를 변경한다")
         void updatesCategory() {
-            DocumentGroup group = DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
+            DocumentGroup group = DocumentGroup.create(PROJECT, "기술", "설계문서", "");
             CategoryUpdateRequest request = new CategoryUpdateRequest("경영");
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
             given(
-                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                                    PROJECT_ID, "경영", "설계문서"))
+                            documentGroupRepository.existsByProjectAndCategoryAndGroupName(
+                                    PROJECT, "경영", "설계문서"))
                     .willReturn(false);
 
             documentGroupService.updateGroupCategory(GROUP_ID, request);
@@ -201,13 +203,13 @@ class DocumentGroupServiceTest {
         @Test
         @DisplayName("변경할 카테고리에 동일 그룹명 존재 시 ConflictException을 던진다")
         void throwsConflictExceptionWhenDuplicateNameInTargetCategory() {
-            DocumentGroup group = DocumentGroup.create(PROJECT_ID, "기술", "설계문서", "");
+            DocumentGroup group = DocumentGroup.create(PROJECT, "기술", "설계문서", "");
             CategoryUpdateRequest request = new CategoryUpdateRequest("경영");
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
             given(
-                            documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                                    PROJECT_ID, "경영", "설계문서"))
+                            documentGroupRepository.existsByProjectAndCategoryAndGroupName(
+                                    PROJECT, "경영", "설계문서"))
                     .willReturn(true);
 
             assertThatThrownBy(() -> documentGroupService.updateGroupCategory(GROUP_ID, request))
