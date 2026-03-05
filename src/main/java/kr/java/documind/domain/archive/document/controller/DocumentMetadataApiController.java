@@ -1,6 +1,7 @@
 package kr.java.documind.domain.archive.document.controller;
 
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUploadRequest;
@@ -11,6 +12,7 @@ import kr.java.documind.global.annotation.ProjectId;
 import kr.java.documind.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -46,11 +48,15 @@ public class DocumentMetadataApiController {
 
     private ResponseEntity<Resource> buildFileResponse(Long documentId, String disposition) {
         DocumentDownloadResult result = documentMetadataService.downloadDocument(documentId);
+        ContentDisposition contentDisposition =
+                ("inline".equals(disposition)
+                                ? ContentDisposition.inline()
+                                : ContentDisposition.attachment())
+                        .filename(result.downloadFilename(), StandardCharsets.UTF_8)
+                        .build();
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(result.contentType()))
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        disposition + "; filename=\"" + result.downloadFilename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .body(result.resource());
     }
 
