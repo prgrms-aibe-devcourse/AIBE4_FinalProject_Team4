@@ -2,7 +2,10 @@ package kr.java.documind.global.resolver;
 
 import java.util.Map;
 import java.util.UUID;
+import kr.java.documind.domain.member.model.repository.ProjectRepository;
 import kr.java.documind.global.annotation.ProjectId;
+import kr.java.documind.global.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -12,7 +15,10 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import org.springframework.web.servlet.HandlerMapping;
 
 @Component
+@RequiredArgsConstructor
 public class ProjectIdArgumentResolver implements HandlerMethodArgumentResolver {
+
+    private final ProjectRepository projectRepository;
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -33,7 +39,9 @@ public class ProjectIdArgumentResolver implements HandlerMethodArgumentResolver 
 
         String publicId = uriTemplateVars != null ? uriTemplateVars.get("publicId") : null;
 
-        // TODO: Project 엔티티 생성 후 projectRepository.findByPublicId(publicId) 변환 로직으로 교체
-        return UUID.fromString("00000000-0000-0000-0000-000000000000");
+        return projectRepository
+                .findByPublicId(publicId)
+                .orElseThrow(() -> new NotFoundException("프로젝트를 찾을 수 없습니다."))
+                .getId();
     }
 }
