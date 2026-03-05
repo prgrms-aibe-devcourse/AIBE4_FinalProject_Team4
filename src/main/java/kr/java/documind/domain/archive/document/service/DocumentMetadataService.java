@@ -86,15 +86,19 @@ public class DocumentMetadataService {
     public void updateDocument(Long documentId, DocumentUpdateRequest request, MultipartFile file) {
         DocumentMetadata metadata = findMetadataById(documentId);
 
+        boolean isProcessed = Boolean.TRUE.equals(request.isProcessed());
+
         boolean versionChanged =
                 metadata.getMajorVersion() != request.majorVersion()
                         || metadata.getMinorVersion() != request.minorVersion()
                         || metadata.getPatchVersion() != request.patchVersion();
 
+        boolean processedChanged = metadata.isProcessed() != isProcessed;
+
         String newHash = computeHashIfChanged(metadata, file);
         boolean fileChanged = newHash != null;
 
-        if (!versionChanged && !fileChanged) {
+        if (!versionChanged && !fileChanged && !processedChanged) {
             throw new ConflictException("문서 정보가 현재와 동일합니다.");
         }
 
@@ -111,6 +115,10 @@ public class DocumentMetadataService {
         if (versionChanged) {
             metadata.updateVersion(
                     request.majorVersion(), request.minorVersion(), request.patchVersion());
+        }
+
+        if (processedChanged) {
+            metadata.changeProcessed(isProcessed);
         }
     }
 
@@ -258,6 +266,7 @@ public class DocumentMetadataService {
             // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
             DomainSource domainSource =
                     domainSourceRepository.save(DomainSource.create(SourceType.DOCUMENT));
+            boolean isProcessed = Boolean.TRUE.equals(version.isProcessed());
             DocumentMetadata metadata =
                     documentMetadataRepository.save(
                             DocumentMetadata.create(
@@ -272,6 +281,7 @@ public class DocumentMetadataService {
                                     hash,
                                     file.getSize(),
                                     storedKey,
+                                    isProcessed,
                                     LocalDateTime.now()));
 
             return DocumentMetadataResponse.from(metadata);

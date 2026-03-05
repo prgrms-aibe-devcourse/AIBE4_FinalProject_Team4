@@ -8,6 +8,7 @@ public record DocumentMetadataResponse(
         String documentName,
         String extension,
         String version,
+        boolean isProcessed,
         LocalDateTime uploadedAt,
         LocalDateTime reuploadedAt) {
 
@@ -17,6 +18,7 @@ public record DocumentMetadataResponse(
                 metadata.getDocumentName(),
                 metadata.getExtension(),
                 metadata.getVersionString(),
+                metadata.isProcessed(),
                 metadata.getUploadedAt(),
                 metadata.getReuploadedAt());
     }

@@ -87,6 +87,7 @@ class DocumentMetadataServiceTest {
                 "abc123hash",
                 1024L,
                 "stored-key",
+                false,
                 LocalDateTime.of(2025, 1, 1, 0, 0));
     }
 
@@ -174,7 +175,7 @@ class DocumentMetadataServiceTest {
         void uploadsDocumentAndReturnsResponse() throws IOException {
             MultipartFile file = mockFile("document.pdf");
             given(file.getSize()).willReturn(2048L);
-            DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0);
+            DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0, null);
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
@@ -210,7 +211,7 @@ class DocumentMetadataServiceTest {
         void throwsBadRequestExceptionWhenFileIsEmpty() {
             MultipartFile file = mock(MultipartFile.class);
             given(file.isEmpty()).willReturn(true);
-            DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0);
+            DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0, null);
 
             assertThatThrownBy(
                             () -> documentMetadataService.uploadDocument(PROJECT_ID, request, file))
@@ -222,7 +223,7 @@ class DocumentMetadataServiceTest {
         @DisplayName("중복 그룹(카테고리+그룹명)이면 ConflictException을 던진다")
         void throwsConflictExceptionWhenDuplicateGroup() {
             MultipartFile file = mockFile("document.pdf");
-            DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0);
+            DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0, null);
 
             given(
                             documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
@@ -239,7 +240,7 @@ class DocumentMetadataServiceTest {
         @DisplayName("동일 해시 파일 존재 시 ConflictException을 던진다")
         void throwsConflictExceptionWhenDuplicateHash() throws IOException {
             MultipartFile file = mockFile("document.pdf");
-            DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0);
+            DocumentUploadRequest request = new DocumentUploadRequest("설계문서", "기술", 1, 0, 0, null);
             DocumentGroup group = createGroup();
 
             given(
@@ -275,7 +276,7 @@ class DocumentMetadataServiceTest {
         void updatesVersionOnly() {
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
-            DocumentUpdateRequest request = new DocumentUpdateRequest(2, 0, 0);
+            DocumentUpdateRequest request = new DocumentUpdateRequest(2, 0, 0, null);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
                     .willReturn(Optional.of(metadata));
@@ -296,7 +297,7 @@ class DocumentMetadataServiceTest {
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
             // same version as current (1, 0, 0)
-            DocumentUpdateRequest request = new DocumentUpdateRequest(1, 0, 0);
+            DocumentUpdateRequest request = new DocumentUpdateRequest(1, 0, 0, null);
             MultipartFile file = mockFile("newdoc.pdf");
             given(file.getSize()).willReturn(2048L);
 
@@ -325,7 +326,7 @@ class DocumentMetadataServiceTest {
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
             // same version
-            DocumentUpdateRequest request = new DocumentUpdateRequest(1, 0, 0);
+            DocumentUpdateRequest request = new DocumentUpdateRequest(1, 0, 0, null);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
                     .willReturn(Optional.of(metadata));
@@ -344,7 +345,7 @@ class DocumentMetadataServiceTest {
         void throwsConflictExceptionWhenDuplicateVersion() {
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
-            DocumentUpdateRequest request = new DocumentUpdateRequest(2, 0, 0);
+            DocumentUpdateRequest request = new DocumentUpdateRequest(2, 0, 0, null);
 
             given(documentMetadataRepository.findById(DOCUMENT_ID))
                     .willReturn(Optional.of(metadata));
@@ -367,7 +368,7 @@ class DocumentMetadataServiceTest {
         void throwsConflictExceptionWhenDuplicateHash() throws IOException {
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
-            DocumentUpdateRequest request = new DocumentUpdateRequest(1, 0, 0);
+            DocumentUpdateRequest request = new DocumentUpdateRequest(1, 0, 0, null);
             MultipartFile file = mock(MultipartFile.class);
             given(file.isEmpty()).willReturn(false);
 
@@ -448,7 +449,8 @@ class DocumentMetadataServiceTest {
         void uploadsNewVersionAndReturnsResponse() throws IOException {
             MultipartFile file = mockFile("document.pdf");
             given(file.getSize()).willReturn(2048L);
-            NewVersionDocumentUploadRequest request = new NewVersionDocumentUploadRequest(2, 0, 0);
+            NewVersionDocumentUploadRequest request =
+                    new NewVersionDocumentUploadRequest(2, 0, 0, null);
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
@@ -484,7 +486,8 @@ class DocumentMetadataServiceTest {
         void throwsBadRequestExceptionWhenFileIsEmpty() {
             MultipartFile file = mock(MultipartFile.class);
             given(file.isEmpty()).willReturn(true);
-            NewVersionDocumentUploadRequest request = new NewVersionDocumentUploadRequest(2, 0, 0);
+            NewVersionDocumentUploadRequest request =
+                    new NewVersionDocumentUploadRequest(2, 0, 0, null);
 
             assertThatThrownBy(
                             () -> documentMetadataService.uploadNewVersion(GROUP_ID, request, file))
@@ -496,7 +499,8 @@ class DocumentMetadataServiceTest {
         @DisplayName("중복 버전이면 ConflictException을 던진다")
         void throwsConflictExceptionWhenDuplicateVersion() {
             MultipartFile file = mockFile("document.pdf");
-            NewVersionDocumentUploadRequest request = new NewVersionDocumentUploadRequest(1, 0, 0);
+            NewVersionDocumentUploadRequest request =
+                    new NewVersionDocumentUploadRequest(1, 0, 0, null);
             DocumentGroup group = createGroup();
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));
@@ -516,7 +520,8 @@ class DocumentMetadataServiceTest {
         @DisplayName("존재하지 않는 그룹이면 NotFoundException을 던진다")
         void throwsNotFoundExceptionWhenGroupNotExists() {
             MultipartFile file = mockFile("document.pdf");
-            NewVersionDocumentUploadRequest request = new NewVersionDocumentUploadRequest(2, 0, 0);
+            NewVersionDocumentUploadRequest request =
+                    new NewVersionDocumentUploadRequest(2, 0, 0, null);
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.empty());
 

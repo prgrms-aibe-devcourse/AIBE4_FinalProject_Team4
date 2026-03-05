@@ -12,6 +12,7 @@ public record DocumentDetailResponse(
         String version,
         String groupName,
         String category,
+        boolean isProcessed,
         LocalDateTime uploadedAt,
         LocalDateTime reuploadedAt,
         List<DocumentMetadataResponse> versions) {
@@ -27,6 +28,7 @@ public record DocumentDetailResponse(
                 metadata.getVersionString(),
                 group.getGroupName(),
                 group.getCategory(),
+                metadata.isProcessed(),
                 metadata.getUploadedAt(),
                 metadata.getReuploadedAt(),
                 versions);

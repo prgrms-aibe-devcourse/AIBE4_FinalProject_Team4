@@ -98,6 +98,7 @@ class DocumentGroupServiceTest {
                             "hash1",
                             1024L,
                             "key1",
+                            false,
                             java.time.LocalDateTime.now());
 
             given(documentGroupRepository.findById(GROUP_ID)).willReturn(Optional.of(group));

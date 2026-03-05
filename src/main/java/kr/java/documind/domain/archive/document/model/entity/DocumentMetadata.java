@@ -100,6 +100,7 @@ public class DocumentMetadata {
             String hash,
             long size,
             String storedKey,
+            boolean isProcessed,
             LocalDateTime uploadedAt) {
         this.domainSource = domainSource;
         this.documentGroup = documentGroup;
@@ -112,7 +113,7 @@ public class DocumentMetadata {
         this.hash = hash;
         this.size = size;
         this.storedKey = storedKey;
-        this.isProcessed = false;
+        this.isProcessed = isProcessed;
         this.uploadedAt = uploadedAt;
     }
 
@@ -128,6 +129,7 @@ public class DocumentMetadata {
             String hash,
             long size,
             String storedKey,
+            boolean isProcessed,
             LocalDateTime uploadedAt) {
         return new DocumentMetadata(
                 domainSource,
@@ -141,6 +143,7 @@ public class DocumentMetadata {
                 hash,
                 size,
                 storedKey,
+                isProcessed,
                 uploadedAt);
     }
 
@@ -169,10 +172,9 @@ public class DocumentMetadata {
         this.size = size;
         this.storedKey = storedKey;
         this.reuploadedAt = reuploadedAt;
-        this.isProcessed = false;
     }
 
-    public void markAsProcessed() {
-        this.isProcessed = true;
+    public void changeProcessed(boolean isProcessed) {
+        this.isProcessed = isProcessed;
     }
 }

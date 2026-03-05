@@ -6,4 +6,8 @@ public interface VersionFields {
     Integer minorVersion();
 
     Integer patchVersion();
+
+    default Boolean isProcessed() {
+        return false;
+    }
 }
