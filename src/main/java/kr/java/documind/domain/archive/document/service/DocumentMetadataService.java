@@ -120,6 +120,8 @@ public class DocumentMetadataService {
         if (processedChanged) {
             metadata.changeProcessed(isProcessed);
         }
+
+        metadata.markModified();
     }
 
     @Transactional
@@ -226,13 +228,7 @@ public class DocumentMetadataService {
 
             // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
             metadata.updateFile(
-                    parsed.filename(),
-                    "",
-                    parsed.extension(),
-                    newHash,
-                    file.getSize(),
-                    storedKey,
-                    LocalDateTime.now());
+                    parsed.filename(), "", parsed.extension(), newHash, file.getSize(), storedKey);
 
             fileStore.delete(oldStoredKey);
         } catch (IOException e) {

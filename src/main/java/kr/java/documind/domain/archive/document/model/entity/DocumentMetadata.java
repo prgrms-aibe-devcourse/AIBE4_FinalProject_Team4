@@ -163,18 +163,20 @@ public class DocumentMetadata {
             String extension,
             String hash,
             long size,
-            String storedKey,
-            LocalDateTime reuploadedAt) {
+            String storedKey) {
         this.documentName = documentName;
         this.choseong = choseong;
         this.extension = extension;
         this.hash = hash;
         this.size = size;
         this.storedKey = storedKey;
-        this.reuploadedAt = reuploadedAt;
     }
 
     public void changeProcessed(boolean isProcessed) {
         this.isProcessed = isProcessed;
+    }
+
+    public void markModified() {
+        this.reuploadedAt = LocalDateTime.now();
     }
 }
