@@ -71,7 +71,8 @@ public class AuthApiController {
 
         Member member = memberService.getMemberWithCompany(memberId);
         if (!member.isActive()) {
-            log.warn("비활성 계정의 토큰 갱신 시도: memberId={} status={}", memberId, member.getAccountStatus());
+            log.warn(
+                    "비활성 계정의 토큰 갱신 시도: memberId={} status={}", memberId, member.getAccountStatus());
             deleteAuthCookies(response);
             return ResponseEntity.status(401)
                     .body(ApiResponse.error(ErrorResponse.of("계정이 비활성화되었습니다. 다시 로그인하세요.")));
