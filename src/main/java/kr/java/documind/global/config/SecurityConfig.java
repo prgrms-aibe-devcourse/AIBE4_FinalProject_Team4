@@ -1,6 +1,7 @@
 package kr.java.documind.global.config;
 
 import kr.java.documind.global.security.RedisTokenService;
+import kr.java.documind.global.security.filter.RateLimitFilter;
 import kr.java.documind.global.security.jwt.CustomAccessDeniedHandler;
 import kr.java.documind.global.security.jwt.CustomAuthenticationEntryPoint;
 import kr.java.documind.global.security.jwt.JwtAuthenticationFilter;
@@ -18,6 +19,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
@@ -27,6 +29,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final RateLimitFilter rateLimitFilter;
     private final TokenProvider jwtProvider;
     private final JwtProperties jwtProperties;
     private final CustomAuthenticationEntryPoint jwtAuthenticationEntryPoint;
@@ -54,7 +57,10 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.sessionManagement(
+        http
+                // TODO: [godqhrenf] API Key 검증 필터 구현. 가장 상위 필터로 등록
+                .addFilterBefore(rateLimitFilter, CsrfFilter.class)
+                .sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(
                         csrf ->
