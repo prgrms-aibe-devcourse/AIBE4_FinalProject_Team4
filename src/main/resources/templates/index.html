@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/head :: head('홈')}"></head>
+<body class="bg-white text-gray-900">
+
+<!-- 공개 헤더 -->
+<div th:replace="~{common/header-public :: header-public}"></div>
+
+<!-- 메인 콘텐츠 -->
+<main class="pt-16">
+
+    <!-- Hero 섹션 -->
+    <section class="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-indigo-50 py-24 md:py-32">
+        <div class="max-w-5xl mx-auto px-6 text-center">
+            <!-- 태그라인 -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-medium mb-8">
+                <span class="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></span>
+                게임사 전용 LiveOps 플랫폼
+            </div>
+
+            <!-- 헤드라인 -->
+            <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
+                문서와 인게임 로그를<br/>
+                <span class="text-primary-600">AI로 연결</span>하세요
+            </h1>
+
+            <!-- 서브카피 -->
+            <p class="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+                이슈 분석부터 패치노트 생성까지 자동화.<br/>
+                보안 걱정 없이 사내 문서를 AI가 학습하고 문서를 생성합니다.
+            </p>
+
+            <!-- CTA 버튼 -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/auth/login"
+                   class="px-8 py-3.5 bg-primary-600 hover:bg-primary-700 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary-200 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+                    무료로 시작하기
+                </a>
+                <a href="#features"
+                   class="px-8 py-3.5 bg-white hover:bg-gray-50 text-gray-700 text-base font-semibold rounded-xl border border-gray-200 shadow-sm transition-all duration-200">
+                    기능 살펴보기
+                </a>
+            </div>
+        </div>
+
+        <!-- 배경 장식 -->
+        <div class="absolute -top-40 -right-40 w-96 h-96 bg-primary-100 rounded-full opacity-30 blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-100 rounded-full opacity-30 blur-3xl pointer-events-none"></div>
+    </section>
+
+    <!-- 핵심 기능 섹션 -->
+    <section id="features" class="py-24 bg-white">
+        <div class="max-w-6xl mx-auto px-6">
+            <!-- 섹션 헤더 -->
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">핵심 기능</h2>
+                <p class="text-gray-500 text-lg">게임사에 필요한 모든 것을 하나의 플랫폼으로</p>
+            </div>
+
+            <!-- 기능 카드 그리드 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                <!-- 기능 1: Secure RAG -->
+                <div class="group p-8 bg-gray-50 hover:bg-primary-50 rounded-2xl border border-transparent hover:border-primary-100 transition-all duration-300">
+                    <div class="w-12 h-12 bg-primary-100 group-hover:bg-primary-200 rounded-xl flex items-center justify-center mb-5 transition-colors">
+                        <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Secure RAG 지식 검색 & 문서 생성</h3>
+                    <p class="text-gray-500 leading-relaxed">
+                        보안 걱정 없이 사내 문서를 AI가 학습합니다. 개발 환경은 Public AI API로, 운영은 내부 LLM으로 즉시 전환 가능한 구조로 설계되었습니다.
+                    </p>
+                </div>
+
+                <!-- 기능 2: 인게임 데이터 수집 -->
+                <div class="group p-8 bg-gray-50 hover:bg-primary-50 rounded-2xl border border-transparent hover:border-primary-100 transition-all duration-300">
+                    <div class="w-12 h-12 bg-primary-100 group-hover:bg-primary-200 rounded-xl flex items-center justify-center mb-5 transition-colors">
+                        <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">인게임 데이터 수집</h3>
+                    <p class="text-gray-500 leading-relaxed">
+                        크래시 로그, 유저 피드백을 REST API로 수집합니다. 정형/비정형 데이터를 모두 처리하며 순간적인 트래픽도 안정적으로 처리합니다.
+                    </p>
+                </div>
+
+                <!-- 기능 3: 이슈 트래커 -->
+                <div class="group p-8 bg-gray-50 hover:bg-primary-50 rounded-2xl border border-transparent hover:border-primary-100 transition-all duration-300">
+                    <div class="w-12 h-12 bg-primary-100 group-hover:bg-primary-200 rounded-xl flex items-center justify-center mb-5 transition-colors">
+                        <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">인텔리전트 이슈 트래커 & 대시보드</h3>
+                    <p class="text-gray-500 leading-relaxed">
+                        실시간 버그 현황을 시각화하고 칸반 보드로 이슈를 관리합니다. 임계값 초과 시 Slack 알림도 자동 발송됩니다.
+                    </p>
+                </div>
+
+                <!-- 기능 4: 패치노트 자동 생성 -->
+                <div class="group p-8 bg-gray-50 hover:bg-primary-50 rounded-2xl border border-transparent hover:border-primary-100 transition-all duration-300">
+                    <div class="w-12 h-12 bg-primary-100 group-hover:bg-primary-200 rounded-xl flex items-center justify-center mb-5 transition-colors">
+                        <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">지식 자산화 & 패치노트 자동 생성</h3>
+                    <p class="text-gray-500 leading-relaxed">
+                        해결된 버그 티켓과 수정된 기획서를 종합하여 유저 친화적인 패치노트를 자동으로 생성합니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA 섹션 -->
+    <section class="py-20 bg-gradient-to-r from-primary-600 to-indigo-600">
+        <div class="max-w-3xl mx-auto px-6 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">
+                지금 바로 시작하세요
+            </h2>
+            <p class="text-primary-100 text-lg mb-10">
+                무료로 시작하고 팀의 생산성을 높여보세요.
+            </p>
+            <a href="/auth/login"
+               class="inline-flex items-center px-8 py-4 bg-white hover:bg-gray-50 text-primary-700 text-base font-bold rounded-xl shadow-xl transition-all duration-200 hover:-translate-y-0.5">
+                무료로 시작하기
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+            </a>
+        </div>
+    </section>
+</main>
+
+<!-- 푸터 -->
+<footer class="bg-gray-900 text-gray-400 py-10">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+            <div class="w-6 h-6 bg-primary-600 rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <span class="text-white font-semibold">Documind</span>
+        </div>
+        <p class="text-sm">&copy; 2025 Documind. All rights reserved.</p>
+    </div>
+</footer>
+
+</body>
+</html>

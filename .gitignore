@@ -39,6 +39,7 @@ out/
 ### 보안 ###
 .env
 *.pem
+application-dev.yml
 
 ### Claude Code ###
 .claude/

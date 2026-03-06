@@ -1,12 +1,21 @@
 async function callApi(url, options = {}) {
-    const defaultOptions = {
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        ...options,
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers ?? {}),
     };
 
-    const response = await fetch(url, defaultOptions);
+    const method = (options.method ?? 'GET').toUpperCase();
+    if (!['GET', 'HEAD'].includes(method)) {
+        const csrfToken = getCookie('XSRF-TOKEN');
+        if (csrfToken) {
+            headers['X-XSRF-TOKEN'] = csrfToken;
+        }
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        headers,
+    });
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
@@ -18,28 +27,34 @@ async function callApi(url, options = {}) {
 }
 
 function renderApiError(error, globalErrorId = 'globalError') {
+    if (!error) return;
     if (error.details && error.details.length > 0) {
-        // 필드별 인라인 에러 표시
         error.details.forEach(fe => showFieldError(fe.field, fe.reason));
     } else {
-        // 글로벌 에러 메시지 표시
         showGlobalError(error.message, globalErrorId);
     }
 }
 
 function showFieldError(field, message) {
+    const errorEl = document.getElementById(`${field}-error`);
+    if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden', 'd-none');
+        return;
+    }
     const input = document.getElementById(field);
-    if (!input) return;
-    input.classList.add('is-invalid');
-    const feedback = input.nextElementSibling;
-    if (feedback) feedback.textContent = message;
+    if (input) {
+        input.classList.add('is-invalid');
+        const feedback = input.nextElementSibling;
+        if (feedback) feedback.textContent = message;
+    }
 }
 
 function showGlobalError(message, elementId = 'globalError') {
     const el = document.getElementById(elementId);
     if (!el) return;
     el.textContent = message;
-    el.classList.remove('d-none');
+    el.classList.remove('hidden', 'd-none');
 }
 
 function clearErrors() {
@@ -47,6 +62,23 @@ function clearErrors() {
     .forEach(el => el.classList.remove('is-invalid'));
     document.querySelectorAll('.invalid-feedback')
     .forEach(el => el.textContent = '');
-    const globalError = document.getElementById('globalError');
-    if (globalError) globalError.classList.add('d-none');
+    // Tailwind hidden 패턴 에러 요소 초기화
+    document.querySelectorAll('[id$="-error"]')
+    .forEach(el => {
+        el.textContent = '';
+        el.classList.add('hidden');
+    });
+    // 글로벌 에러 영역 초기화
+    ['globalError', 'global-error'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = '';
+            el.classList.add('hidden', 'd-none');
+        }
+    });
+}
+
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
 }
