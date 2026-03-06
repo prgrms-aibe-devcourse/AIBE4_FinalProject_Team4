@@ -32,7 +32,7 @@ public class GameLog {
     @Id private UUID logId;
 
     @Column(nullable = false)
-    private String projectId;
+    private UUID projectId;
 
     @Column(nullable = false)
     private String sessionId;
@@ -48,7 +48,7 @@ public class GameLog {
     private EventCategory eventCategory;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String body;
+    private String archive;
 
     @Id
     @Column(nullable = false, updatable = false) // 수정 방지
@@ -59,6 +59,8 @@ public class GameLog {
 
     private String traceId;
     private String spanId;
+
+    @Column(nullable = false, length = 64)
     private String fingerprint; // 이슈 그룹핑 해시
 
     @Type(JsonBinaryType.class)
@@ -68,6 +70,12 @@ public class GameLog {
     @Type(JsonBinaryType.class)
     @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> attributes;
+
+    @Column(nullable = false, updatable = false)
+    private OffsetDateTime createdAt; // 생성 시각
+
+    @Column(nullable = false)
+    private OffsetDateTime updatedAt; // 수정 시각
 
     // Todo 비즈니스 로직
 }

@@ -17,8 +17,8 @@ import static org.mockito.Mockito.when;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
@@ -50,6 +50,8 @@ class LogBufferServiceTest {
 
     @Mock private LogMapper logMapper;
 
+    @Mock private IssueGroupingBatchService issueGroupingBatchService;
+
     private MeterRegistry meterRegistry;
     private LogBufferService logBufferService;
 
@@ -69,7 +71,8 @@ class LogBufferServiceTest {
                         redisTemplate,
                         backpressureManager,
                         meterRegistry,
-                        logMapper);
+                        logMapper,
+                        issueGroupingBatchService);
 
         // @Value 필드 초기화
         ReflectionTestUtils.setField(logBufferService, "batchSize", BATCH_SIZE);
@@ -90,38 +93,41 @@ class LogBufferServiceTest {
 
     // 헬퍼 메서드: GameLog 생성
     private GameLog createGameLog(String logIdSuffix) {
+        OffsetDateTime now = OffsetDateTime.now();
         return GameLog.builder()
                 .logId(UUID.randomUUID())
-                .projectId("test-project")
+                .projectId(UUID.randomUUID())
                 .sessionId("test-session")
                 .userId("test-user")
                 .severity(LogSeverity.INFO)
                 .eventCategory(EventCategory.SYSTEM)
-                .body("Test log message: " + logIdSuffix)
-                .occurredAt(OffsetDateTime.now())
-                .ingestedAt(OffsetDateTime.now())
+                .archive("Test log message: " + logIdSuffix)
+                .occurredAt(now)
+                .ingestedAt(now)
                 .traceId("trace-123")
                 .spanId("span-456")
                 .fingerprint("fp-789")
-                .resource(new HashMap<>())
-                .attributes(new HashMap<>())
+                .resource(Map.of())
+                .attributes(Map.of())
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
     }
 
     // 헬퍼 메서드: RawLogRequest 생성
-    private RawLogRequest createRawLogRequest(String bodyMessage) {
+    private RawLogRequest createRawLogRequest(String archiveMessage) {
         return new RawLogRequest(
-                "test-project",
+                UUID.randomUUID(),
                 "test-session",
                 "test-user",
                 LogSeverity.INFO,
                 EventCategory.SYSTEM,
-                bodyMessage,
+                archiveMessage,
                 OffsetDateTime.now().toString(),
                 "trace-123",
                 "span-456",
-                new HashMap<>(),
-                new HashMap<>());
+                Map.of(),
+                Map.of());
     }
 
     @Test
@@ -217,7 +223,7 @@ class LogBufferServiceTest {
                 .thenAnswer(
                         invocation -> {
                             RawLogRequest dto = invocation.getArgument(0);
-                            return createGameLog(dto.body());
+                            return createGameLog(dto.archive());
                         });
 
         int initialBufferSize = getBufferSize();

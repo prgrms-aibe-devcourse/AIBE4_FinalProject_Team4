@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 
@@ -36,8 +37,10 @@ public class RedisStreamConfig {
                             streamKey.getBytes(), consumerGroup, ReadOffset.from("0-0"), true);
             log.info("Redis Stream consumer group created: {}", consumerGroup);
         } catch (Exception e) {
-            // "already exists" 에러는 정상적인 상황이므로 무시
-            if (e.getMessage() != null && e.getMessage().contains("BUSYGROUP")) {
+            // Root Cause의 메시지까지 확인하여 "already exists" 에러 감지
+            String rootMessage = NestedExceptionUtils.getMostSpecificCause(e).getMessage();
+
+            if (rootMessage != null && rootMessage.contains("BUSYGROUP")) {
                 log.debug("Consumer group already exists: {}", consumerGroup);
             } else {
                 log.error("Failed to create Redis Stream consumer group", e);

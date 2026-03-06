@@ -3,16 +3,17 @@ package kr.java.documind.domain.logprocessor.model.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.Map;
+import java.util.UUID;
 import kr.java.documind.domain.logprocessor.model.enums.EventCategory;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
 
 public record RawLogRequest(
-        @NotBlank(message = "Project ID cannot be blank") String projectId, // 프로젝트 식별자
+        @NotNull(message = "Project ID cannot be null") UUID projectId, // 프로젝트 식별자
         @NotBlank(message = "Session ID cannot be blank") String sessionId, // 게임 세션 ID
         String userId, // 유저 식별자 (Nullable)
         @NotNull(message = "Severity cannot be null") LogSeverity severity, // 로그 심각도
         @NotNull(message = "Event category cannot be null") EventCategory eventCategory, // 이벤트 카테고리
-        @NotBlank(message = "Log body cannot be blank") String body, // 로그 본문
+        @NotBlank(message = "Log archive cannot be blank") String archive, // 로그 본문
         @NotBlank(message = "Occurred-at timestamp cannot be blank")
                 String occurredAt, // 클라이언트 발생 시각 (String으로 수신 후 보정)
         String traceId, // 트랜잭션 추적 ID

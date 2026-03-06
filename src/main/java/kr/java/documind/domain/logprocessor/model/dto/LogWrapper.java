@@ -1,4 +1,4 @@
-package kr.java.documind.domain.logprocessor.service;
+package kr.java.documind.domain.logprocessor.model.dto;
 
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import org.springframework.data.redis.connection.stream.RecordId;
