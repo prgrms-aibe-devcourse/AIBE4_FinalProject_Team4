@@ -3,6 +3,9 @@ package kr.java.documind.domain.member.service;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import kr.java.documind.domain.member.model.dto.CompanyDetail;
+import kr.java.documind.domain.member.model.dto.HeaderInfo;
+import kr.java.documind.domain.member.model.dto.MemberProfileDetail;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.enums.GlobalRole;
@@ -20,6 +23,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+
+    public HeaderInfo getHeaderInfo(UUID memberId) {
+        Member member = getMemberWithCompany(memberId);
+        return HeaderInfo.from(member);
+    }
+
+    public MemberProfileDetail getProfileDetail(UUID memberId) {
+        Member member = getMemberWithCompany(memberId);
+        return MemberProfileDetail.from(member);
+    }
+
+    public CompanyDetail getCompanyDetail(UUID memberId) {
+        Member member = getMemberWithCompany(memberId);
+        if (member.getCompany() == null) {
+            return null;
+        }
+        return CompanyDetail.from(member.getCompany());
+    }
 
     public Optional<OAuthProvider> findConflictingProvider(
             String email, OAuthProvider currentProvider) {
