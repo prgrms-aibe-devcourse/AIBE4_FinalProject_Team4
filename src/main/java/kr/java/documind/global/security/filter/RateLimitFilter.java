@@ -62,7 +62,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.addHeader(HEADER_REMAINING_TOKEN, String.valueOf(probe.getRemainingTokens()));
             filterChain.doFilter(request, response);
         } else {
-            long waitForRefillSeconds = TimeUnit.NANOSECONDS.toSeconds(probe.getNanosToWaitForRefill());
+            long nanosToWaitForRefill = probe.getNanosToWaitForRefill();
+
+            // 1초 미만의 대기 시간도 무조건 1초로 올림 처리하여 소수점 버림 방지
+            long waitForRefillSeconds = TimeUnit.NANOSECONDS.toSeconds(nanosToWaitForRefill + 999_999_999);
+
             log.warn("API Key: {}의 요청 한도를 초과했습니다. {}초 후에 다시 시도해주세요.", apiKey, waitForRefillSeconds);
 
             throw new TooManyRequestsException("요청 한도를 초과했습니다.", waitForRefillSeconds);
