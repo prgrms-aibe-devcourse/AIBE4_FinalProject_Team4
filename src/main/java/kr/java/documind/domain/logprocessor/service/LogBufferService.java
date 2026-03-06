@@ -214,6 +214,16 @@ public class LogBufferService {
                 logJdbcRepository.saveAll(logs);
                 long latencyMs = System.currentTimeMillis() - start;
 
+                // DLQ 재시도 성공 후 이슈 그룹핑 수행
+                try {
+                    issueGroupingBatchService.groupLogs(logs);
+                } catch (Exception e) {
+                    log.error(
+                            "[DLQ] Failed to group logs into issues. Logs are saved but issues not created.",
+                            e);
+                    // 이슈 생성 실패해도 로그는 저장되었으므로 ACK는 보냄
+                }
+
                 // RecordId가 있는 경우에만 ACK 전송
                 List<RecordId> recordIds =
                         wrappersToRetry.stream()

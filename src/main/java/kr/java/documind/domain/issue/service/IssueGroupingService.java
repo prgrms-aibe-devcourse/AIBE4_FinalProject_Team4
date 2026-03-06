@@ -9,6 +9,7 @@ import kr.java.documind.domain.issue.service.fingerprint.FingerprintResult;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,33 +40,59 @@ public class IssueGroupingService {
         String fingerprint = fingerprintResult.getFingerprint();
         UUID projectId = gameLog.getProjectId();
 
-        // 기존 이슈 조회
-        return issueRepository
-                .findByFingerprintAndProjectId(fingerprint, projectId)
-                .map(
-                        existingIssue -> {
-                            // 기존 이슈 발견 - occurrence_count 증가
-                            existingIssue.incrementOccurrence(gameLog.getOccurredAt());
-                            log.info(
-                                    "Existing issue found. issueId={}, fingerprint={}, occurrenceCount={}",
-                                    existingIssue.getIssueId(),
-                                    fingerprint,
-                                    existingIssue.getOccurrenceCount());
-                            return existingIssue;
-                        })
-                .orElseGet(
-                        () -> {
-                            // 새 이슈 생성
-                            Issue newIssue = createNewIssue(gameLog, fingerprintResult);
-                            issueRepository.save(newIssue);
-                            log.info(
-                                    "New issue created. issueId={}, fingerprint={}, quality={}, status={}",
-                                    newIssue.getIssueId(),
-                                    fingerprint,
-                                    fingerprintResult.getQuality(),
-                                    newIssue.getStatus());
-                            return newIssue;
-                        });
+        try {
+            // 기존 이슈 조회
+            return issueRepository
+                    .findByFingerprintAndProjectId(fingerprint, projectId)
+                    .map(
+                            existingIssue -> {
+                                // 기존 이슈 발견 - occurrence_count 증가
+                                existingIssue.incrementOccurrence(gameLog.getOccurredAt());
+                                log.debug(
+                                        "Existing issue found. issueId={}, fingerprint={}, occurrenceCount={}",
+                                        existingIssue.getIssueId(),
+                                        fingerprint,
+                                        existingIssue.getOccurrenceCount());
+                                return existingIssue;
+                            })
+                    .orElseGet(
+                            () -> {
+                                // 새 이슈 생성
+                                Issue newIssue = createNewIssue(gameLog, fingerprintResult);
+                                issueRepository.save(newIssue);
+                                log.info(
+                                        "New issue created. issueId={}, fingerprint={}, quality={}, status={}",
+                                        newIssue.getIssueId(),
+                                        fingerprint,
+                                        fingerprintResult.getQuality(),
+                                        newIssue.getStatus());
+                                return newIssue;
+                            });
+        } catch (DataIntegrityViolationException e) {
+            // UNIQUE 제약 위반 (동시 생성 경쟁 상태)
+            log.warn(
+                    "UNIQUE constraint violation detected. Retrying with existing issue. fingerprint={}, projectId={}",
+                    fingerprint,
+                    projectId);
+
+            // 재조회하여 기존 이슈 업데이트
+            return issueRepository
+                    .findByFingerprintAndProjectId(fingerprint, projectId)
+                    .map(
+                            existingIssue -> {
+                                existingIssue.incrementOccurrence(gameLog.getOccurredAt());
+                                log.info(
+                                        "Recovered from race condition. issueId={}, occurrenceCount={}",
+                                        existingIssue.getIssueId(),
+                                        existingIssue.getOccurrenceCount());
+                                return existingIssue;
+                            })
+                    .orElseThrow(
+                            () ->
+                                    new IllegalStateException(
+                                            "Issue should exist after UNIQUE violation. fingerprint="
+                                                    + fingerprint));
+        }
     }
 
     /**
