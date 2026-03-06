@@ -4,21 +4,19 @@
 -- 파티션 부모 테이블 생성
 CREATE TABLE game_log (
     log_id UUID NOT NULL,
-    project_id UUID NOT NULL,
-    session_id VARCHAR(128) NOT NULL,
-    user_id VARCHAR(128),
-    severity VARCHAR(20) NOT NULL,
-    event_category VARCHAR(32) NOT NULL,
-    archive TEXT NOT NULL,
+    project_id VARCHAR(255) NOT NULL,
+    session_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(255),
+    severity VARCHAR(50) NOT NULL,
+    event_category VARCHAR(50) NOT NULL,
+    body TEXT NOT NULL,
     occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
     ingested_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    trace_id VARCHAR(32),
-    span_id VARCHAR(16),
-    fingerprint VARCHAR(64) NOT NULL,
+    trace_id VARCHAR(255),
+    span_id VARCHAR(255),
+    fingerprint VARCHAR(255),
     resource JSONB NOT NULL,
     attributes JSONB NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY (log_id, occurred_at)  -- 파티션 키를 PRIMARY KEY에 포함
 ) PARTITION BY RANGE (occurred_at);
 
