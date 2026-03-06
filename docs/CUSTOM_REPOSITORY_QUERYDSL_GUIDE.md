@@ -1,27 +1,22 @@
-# Custom Repository + QueryDSL 패턴 가이드
-
-> QueryDSL을 활용한 Custom Repository 구현 가이드 (팀 공유용)
-
-## 📌 목차
+📌 목차
 
 <aside>
 
 1. Custom Repository란
 2. QueryDSL이란
 3. 언제 사용하는가
-4. 구현 방법 (단계별)
+4. 구현 방법 단계별
 5. 실전 예시
 6. 네이밍 규칙
 7. 주의사항
 8. FAQ
-
 </aside>
 
 ---
 
 ## 1. Custom Repository란?
 
-Spring Data JPA가 제공하는 기본 메서드(`findById`, `save` 등) 외에
+Spring Data JPA가 제공하는 기본 메서드(findById, save 등) 외에
 복잡한 쿼리나 비즈니스 로직을 위한 커스텀 메서드를 정의하는 패턴입니다.
 
 ### 기본 Repository의 한계
@@ -29,9 +24,10 @@ Spring Data JPA가 제공하는 기본 메서드(`findById`, `save` 등) 외에
 ```java
 // ✅ Spring Data JPA가 자동으로 제공
 public interface IssueRepository extends JpaRepository<Issue, UUID> {
-    Optional<Issue> findById(UUID id);  // 자동 생성
-    List<Issue> findAll();              // 자동 생성
+Optional<Issue> findById(UUID id);  // 자동 생성
+List<Issue> findAll();              // 자동 생성
 }
+```
 
 // ❌ 하지만 이런 복잡한 쿼리는?
 // - 동적 필터링 (여러 조건 조합)
@@ -39,7 +35,6 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
 // - 네이티브 쿼리
 // - Bulk Update
 // - JPQL이 표현하기 어려운 로직
-```
 
 ---
 
@@ -53,49 +48,60 @@ Q클래스(Query Type)를 통해 엔티티 필드에 안전하게 접근
 
 ### 왜 QueryDSL인가?
 
-| 비교 항목 | **JPQL (@Query)** | **Native Query** | **QueryDSL** |
+|  비교 항목  |  **JPQL (@Query)**  |  **Native Query**  |  **QueryDSL** |
 | --- | --- | --- | --- |
-| 타입 안전성 | ❌ 문자열 | ❌ 문자열 | ✅ Java 코드 |
-| 컴파일 검증 | ❌ 런타임 | ❌ 런타임 | ✅ 컴파일 타임 |
-| 동적 쿼리 | ❌ 어려움 | ❌ 어려움 | ✅ 쉬움 |
-| IDE 자동완성 | ❌ 없음 | ❌ 없음 | ✅ 완벽 지원 |
-| 리팩토링 안전성 | ❌ 수동 수정 | ❌ 수동 수정 | ✅ 자동 반영 |
-| 복잡한 조인/서브쿼리 | △ 가능하나 복잡 | ✅ 가능 | ✅ 직관적 |
-
-**결론**: 복잡한 동적 쿼리가 필요한 경우 QueryDSL이 최선의 선택
-
----
+|  타입 안전성  |  ❌ 문자열  |  ❌ 문자열  |  ✅ Java 코드  |
+|  컴파일 검증  |  ❌ 런타임  |  ❌ 런타임  |  ✅ 컴파일 타임  |
+|  동적 쿼리  |  ❌ 어려움  |  ❌ 어려움  |  ✅ 쉬움  |
+|  IDE 자동완성  |  ❌ 없음  |  ❌ 없음  |  ✅ 완벽 지원  |
+|  리팩토링 안전성  |  ❌ 수동 수정  |  ❌ 수동 수정  |  ✅ 자동 반영  |
+|  복잡한 조인/서브쿼리  |  △ 가능하나 복잡  |  ✅ 가능  |  ✅ 직관적  |
 
 ## 3. 언제 사용하는가?
 
-### ✅ Custom Repository가 필요한 경우
+✅ Custom Repository가 필요한 경우
 
-| 상황 | 예시 |
-| --- | --- |
-| 동적 쿼리 | 검색 필터가 여러 개 (status, severity, dateRange 등) |
-| 복잡한 JOIN | 3개 이상의 테이블 조인 + 집계 |
-| Bulk 연산 | 1000개 이슈를 한 번에 RESOLVED 처리 |
-| 네이티브 쿼리 | PostgreSQL 전용 기능 (JSONB, Full-text search) |
-| 성능 최적화 | Fetch Join, N+1 문제 해결 |
-| 복잡한 비즈니스 로직 | Repository 레이어에서 처리해야 하는 로직 |
+```markdown
+┌──────────────────────┬──────────────────────────────────────────────────────┐
+│         상황         │                         예시                         │
+├──────────────────────┼──────────────────────────────────────────────────────┤
+│ 동적 쿼리             │ 검색 필터가 여러 개 (status, severity, dateRange 등)  │
+├──────────────────────┼──────────────────────────────────────────────────────┤
+│ 복잡한 JOIN          │ 3개 이상의 테이블 조인 + 집계                          │
+├──────────────────────┼──────────────────────────────────────────────────────┤
+│ Bulk 연산            │ 1000개 이슈를 한 번에 RESOLVED 처리                   │
+├──────────────────────┼──────────────────────────────────────────────────────┤
+│ 네이티브 쿼리         │ PostgreSQL 전용 기능 (JSONB, Full-text search)       │
+├──────────────────────┼──────────────────────────────────────────────────────┤
+│ 성능 최적화           │ Fetch Join, N+1 문제 해결                            │
+├──────────────────────┼──────────────────────────────────────────────────────┤
+│ 복잡한 비즈니스 로직  │ Repository 레이어에서 처리해야 하는 로직               │
+└──────────────────────┴──────────────────────────────────────────────────────┘
+```
 
-### ❌ Custom Repository가 불필요한 경우
+❌ Custom Repository가 불필요한 경우
 
-| 상황 | 대안 |
-| --- | --- |
-| 단순 조회 | `findByFingerprint()` 같은 메서드명 쿼리 |
-| 단일 조건 | `findByStatus(IssueStatus.OPEN)` |
-| 비즈니스 로직 | Service 레이어로 이동 |
+```markdown
+┌───────────────┬────────────────────────────────────────┐
+│     상황      │                  대안                  │
+├───────────────┼────────────────────────────────────────┤
+│ 단순 조회     │ findByFingerprint() 같은 메서드명 쿼리  │
+├───────────────┼────────────────────────────────────────┤
+│ 단일 조건     │ findByStatus(IssueStatus.OPEN)         │
+├───────────────┼────────────────────────────────────────┤
+│ 비즈니스 로직  │ Service 레이어로 이동                  │
+└───────────────┴────────────────────────────────────────┘
+```
 
 ---
 
-## 4. 구현 방법 (단계별)
+## 4. 구현 방법
 
-### 사전 준비: QueryDSL 프로젝트 설정
+### 사전 준비
 
-#### 1️⃣ build.gradle 설정 (QueryDSL 자동화)
-
-```gradle
+```java
+1️⃣ 의존성 추가 (`build.gradle`)
+ggradle
 // ========== QueryDSL 설정 ==========
 def querydslDir = "$buildDir/generated/querydsl"
 
@@ -122,9 +128,9 @@ dependencies {
 
 **⚠️ 중요**: 위 설정을 추가하면 Q클래스가 자동으로 생성되고 IDE가 자동 인식합니다!
 
-#### 2️⃣ JPAQueryFactory Bean 등록
-
 ```java
+2️⃣ JPAQueryFactory Bean 등록
+java
 // 📁 global/config/QueryDslConfig.java
 package kr.java.documind.global.config;
 
@@ -142,21 +148,6 @@ public class QueryDslConfig {
     }
 }
 ```
-
-#### 3️⃣ Q클래스 생성 확인
-
-```bash
-# Gradle 빌드 실행
-./gradlew clean build
-
-# Q클래스 자동 생성 확인
-# → build/generated/querydsl/kr/java/documind/domain/{도메인}/model/entity/Q{Entity}.java
-```
-
-**✅ 자동으로 처리되는 것**:
-- Q클래스 생성 위치: `build/generated/querydsl`
-- IDE의 Sources Root 인식 (수동 마킹 불필요)
-- 빌드 시 자동 재생성
 
 ### Step 1: Custom 인터페이스 정의
 
@@ -203,9 +194,10 @@ public interface IssueRepositoryCustom {
 }
 ```
 
-**네이밍 규칙**:
-- 인터페이스명: `{Entity}RepositoryCustom`
-- 예: `IssueRepositoryCustom`, `GameLogRepositoryCustom`
+네이밍 규칙:
+
+- 인터페이스명: {Entity}RepositoryCustom
+- 예: IssueRepositoryCustom, GameLogRepositoryCustom
 
 ---
 
@@ -231,7 +223,6 @@ import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
 
 /**
  * Issue Repository 커스텀 구현체
- *
  * <p>⚠️ 네이밍 규칙: {Entity}RepositoryImpl (Impl 필수!)
  */
 public class IssueRepositoryImpl implements IssueRepositoryCustom {
@@ -307,8 +298,9 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
 }
 ```
 
-**네이밍 규칙**:
-- 구현체명: `{Entity}RepositoryImpl` (Impl 필수!)
+네이밍 규칙:
+
+- 구현체명: {Entity}RepositoryImpl (Impl 필수!)
 - Spring Data JPA가 자동으로 Impl 접미사를 찾아 연결
 
 ---
@@ -325,12 +317,11 @@ import kr.java.documind.domain.issue.model.entity.Issue;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * Issue Repository
- *
- * <p>IssueRepositoryCustom을 상속하여 커스텀 메서드 사용 가능
- */
+- Issue Repository
+- <p>IssueRepositoryCustom을 상속하여 커스텀 메서드 사용 가능
+*/
 public interface IssueRepository
-        extends JpaRepository<Issue, UUID>, IssueRepositoryCustom { // ✅ Custom 상속
+extends JpaRepository<Issue, UUID>, IssueRepositoryCustom { // ✅ Custom 상속
 
     // Spring Data JPA 기본 메서드
     Optional<Issue> findByFingerprintAndProjectId(String fingerprint, UUID projectId);
@@ -338,7 +329,7 @@ public interface IssueRepository
     // + IssueRepositoryCustom의 메서드도 사용 가능
     // - findByDynamicFilter()
     // - getStatistics()
-}
+    }
 ```
 
 ---
@@ -351,33 +342,33 @@ public interface IssueRepository
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class IssueService {
+  private final IssueRepository issueRepository;
 
-    private final IssueRepository issueRepository;
+  /**
+   * 동적 필터링으로 이슈 검색
+   */
+  public List<IssueListResponse> searchIssues(IssueSearchRequest request) {
+      // ✅ Custom Repository 메서드 사용
+      List<Issue> issues = issueRepository.findByDynamicFilter(
+              request.projectId(),
+              request.status(),
+              request.severity(),
+              request.startDate(),
+              request.endDate());
 
-    /**
-     * 동적 필터링으로 이슈 검색
-     */
-    public List<IssueListResponse> searchIssues(IssueSearchRequest request) {
-        // ✅ Custom Repository 메서드 사용
-        List<Issue> issues =
-                issueRepository.findByDynamicFilter(
-                        request.projectId(),
-                        request.status(),
-                        request.severity(),
-                        request.startDate(),
-                        request.endDate());
+      return issues.stream()
+              .map(IssueListResponse::from)
+              .collect(Collectors.toList());
+  }
 
-        return issues.stream().map(IssueListResponse::from).collect(Collectors.toList());
-    }
-
-    /**
-     * 프로젝트 이슈 통계 조회
-     */
-    public IssueStatisticsResponse getProjectStatistics(UUID projectId) {
-        // ✅ Custom Repository 메서드 사용
-        IssueStatisticsDto stats = issueRepository.getStatistics(projectId);
-        return IssueStatisticsResponse.from(stats);
-    }
+  /**
+   * 프로젝트 이슈 통계 조회
+   */
+  public IssueStatisticsResponse getProjectStatistics(UUID projectId) {
+      // ✅ Custom Repository 메서드 사용
+      IssueStatisticsDto stats = issueRepository.getStatistics(projectId);
+      return IssueStatisticsResponse.from(stats);
+  }
 }
 ```
 
@@ -385,9 +376,9 @@ public class IssueService {
 
 ## 5. 실전 예시
 
-### 예시 1: 동적 검색 (QueryDSL)
+예시 1: 동적 검색 (QueryDSL)
 
-**요구사항**: 이슈 검색 API에서 status, severity, dateRange를 선택적으로 필터링
+요구사항: 이슈 검색 API에서 status, severity, dateRange를 선택적으로 필터링
 
 ```java
 // IssueRepositoryCustom.java
@@ -455,202 +446,126 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
 
 ---
 
-### 예시 2: 복잡한 집계 (Native Query)
-
-**요구사항**: JSONB 필드를 사용한 PostgreSQL 전용 쿼리
-
-```java
-// GameLogRepositoryCustom.java
-public interface GameLogRepositoryCustom {
-    List<ErrorCodeStatistics> getTopErrorCodes(UUID projectId, int limit);
-}
-
-// GameLogRepositoryImpl.java
-public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
-
-    private final EntityManager entityManager;
-
-    public GameLogRepositoryImpl(EntityManager em) {
-        this.entityManager = em;
-    }
-
-    @Override
-    public List<ErrorCodeStatistics> getTopErrorCodes(UUID projectId, int limit) {
-        String sql =
-                """
-                SELECT
-                    attributes->>'errorCode' AS error_code,
-                    COUNT(*) AS occurrence_count
-                FROM game_log
-                WHERE project_id = :projectId
-                  AND attributes->>'errorCode' IS NOT NULL
-                GROUP BY attributes->>'errorCode'
-                ORDER BY COUNT(*) DESC
-                LIMIT :limit
-                """;
-
-        return entityManager
-                .createNativeQuery(sql, Tuple.class)
-                .setParameter("projectId", projectId)
-                .setParameter("limit", limit)
-                .getResultStream()
-                .map(
-                        tuple ->
-                                new ErrorCodeStatistics(
-                                        (String) tuple.get("error_code"),
-                                        ((Number) tuple.get("occurrence_count")).longValue()))
-                .collect(Collectors.toList());
-    }
-}
-```
-
----
-
-### 예시 3: Bulk Update (JPQL)
-
-**요구사항**: 특정 조건의 이슈를 일괄 RESOLVED 처리
-
-```java
-// IssueRepositoryCustom.java
-public interface IssueRepositoryCustom {
-    int bulkResolveIssues(UUID projectId, OffsetDateTime before);
-}
-
-// IssueRepositoryImpl.java
-public class IssueRepositoryImpl implements IssueRepositoryCustom {
-
-    private final EntityManager entityManager;
-
-    public IssueRepositoryImpl(EntityManager em) {
-        this.entityManager = em;
-    }
-
-    @Override
-    @Modifying
-    public int bulkResolveIssues(UUID projectId, OffsetDateTime before) {
-        String jpql =
-                """
-                UPDATE Issue i
-                SET i.status = :status, i.updatedAt = :now
-                WHERE i.projectId = :projectId
-                  AND i.lastOccurredAt < :before
-                  AND i.status = :openStatus
-                """;
-
-        return entityManager
-                .createQuery(jpql)
-                .setParameter("status", IssueStatus.RESOLVED)
-                .setParameter("now", OffsetDateTime.now())
-                .setParameter("projectId", projectId)
-                .setParameter("before", before)
-                .setParameter("openStatus", IssueStatus.OPEN)
-                .executeUpdate();
-    }
-}
-```
-
----
-
 ## 6. 네이밍 규칙
 
-### 필수 규칙 (Spring Data JPA 자동 인식)
+필수 규칙 (Spring Data JPA 자동 인식)
 
-| 대상 | 규칙 | 예시 |
-| --- | --- | --- |
-| Custom 인터페이스 | `{Entity}RepositoryCustom` | `IssueRepositoryCustom` |
-| Custom 구현체 | `{Entity}RepositoryImpl` | `IssueRepositoryImpl` ⚠️ Impl 필수! |
-| 기본 Repository | `{Entity}Repository` | `IssueRepository` |
+```markdown
+┌───────────────────┬──────────────────────────┬───────────────────────────────────┐
+│       대상        │           규칙            │               예시                │
+├───────────────────┼──────────────────────────┼───────────────────────────────────┤
+│ Custom 인터페이스 │ {Entity}RepositoryCustom │ IssueRepositoryCustom             │
+├───────────────────┼──────────────────────────┼───────────────────────────────────┤
+│ Custom 구현체     │ {Entity}RepositoryImpl   │ IssueRepositoryImpl ⚠️ Impl 필수! │
+├───────────────────┼──────────────────────────┼───────────────────────────────────┤
+│ 기본 Repository   │ {Entity}Repository       │ IssueRepository                   │
+└───────────────────┴──────────────────────────┴───────────────────────────────────┘
+```
 
-### 메서드 네이밍
+메서드 네이밍
 
-| 용도 | 접두사 | 예시 |
-| --- | --- | --- |
-| 조회 (단건) | `find`, `get` | `findByComplexCondition()` |
-| 조회 (목록) | `find`, `search` | `searchByDynamicFilter()` |
-| 집계/통계 | `get`, `count` | `getStatistics()` |
-| 수정 | `update`, `bulk` | `bulkUpdateStatus()` |
-| 삭제 | `delete`, `bulk` | `bulkDeleteOldLogs()` |
+```markdown
+┌─────────────┬──────────────┬──────────────────────────┐
+│    용도     │    접두사    │           예시            │
+├─────────────┼──────────────┼──────────────────────────┤
+│ 조회 (단건) │ find, get    │ findByComplexCondition() │
+├─────────────┼──────────────┼──────────────────────────┤
+│ 조회 (목록) │ find, search │ searchByDynamicFilter()  │
+├─────────────┼──────────────┼──────────────────────────┤
+│ 집계/통계   │ get, count   │ getStatistics()          │
+├─────────────┼──────────────┼──────────────────────────┤
+│ 수정        │ update, bulk │ bulkUpdateStatus()       │
+├─────────────┼──────────────┼──────────────────────────┤
+│ 삭제        │ delete, bulk │ bulkDeleteOldLogs()      │
+└─────────────┴──────────────┴──────────────────────────┘
+```
 
 ---
 
 ## 7. 주의사항
 
-### ⚠️ 1. 구현체 이름은 반드시 Impl
+⚠️ 1. 구현체 이름은 반드시 Impl
 
 ```java
 // ❌ 잘못된 이름
 public class IssueRepositoryCustomImpl implements IssueRepositoryCustom { }
 public class IssueRepositoryCustomization implements IssueRepositoryCustom { }
+```
 
+```java
 // ✅ 올바른 이름
 public class IssueRepositoryImpl implements IssueRepositoryCustom { }
 ```
 
-**이유**: Spring Data JPA가 `{Entity}RepositoryImpl` 패턴을 자동으로 찾음
+이유: Spring Data JPA가 {Entity}RepositoryImpl 패턴을 자동으로 찾음
 
 ---
 
-### ⚠️ 2. Custom 인터페이스는 기본 Repository에 상속
+⚠️ 2. Custom 인터페이스는 기본 Repository에 상속
 
 ```java
 // ❌ 잘못된 구조
 public interface IssueRepository extends JpaRepository<Issue, UUID> { }
 public interface IssueRepositoryCustom { }  // 별도 인터페이스
+```
 
+```java
 // ✅ 올바른 구조
 public interface IssueRepository
-        extends JpaRepository<Issue, UUID>, IssueRepositoryCustom {  // 상속!
+extends JpaRepository<Issue, UUID>, IssueRepositoryCustom {  // 상속!
 }
 ```
 
 ---
 
-### ⚠️ 3. QueryDSL 의존성 추가 필요
+⚠️ 3. QueryDSL 의존성 추가 필요
 
-```gradle
+```java
 // build.gradle
 dependencies {
-    implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
-    annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"
-    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
-    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"
+annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+annotationProcessor "jakarta.persistence:jakarta.persistence-api"
 }
 ```
 
 ---
 
-### ⚠️ 4. JPAQueryFactory Bean 등록
+⚠️ 4. JPAQueryFactory Bean 등록
 
 ```java
 // 📁 QueryDslConfig.java
 @Configuration
 public class QueryDslConfig {
 
-    @Bean
-    public JPAQueryFactory jpaQueryFactory(EntityManager entityManager) {
-        return new JPAQueryFactory(entityManager);
-    }
+  @Bean
+  public JPAQueryFactory jpaQueryFactory(EntityManager entityManager) {
+      return new JPAQueryFactory(entityManager);
+  }
 }
 ```
 
 ---
 
-### ⚠️ 5. N+1 문제 주의
+⚠️ 5. N+1 문제 주의
 
 ```java
 // ❌ N+1 문제 발생
 public List<Issue> findAllWithComments() {
-    return queryFactory
-            .selectFrom(issue)
-            .fetch();  // 이슈만 조회, 댓글은 Lazy Loading → N+1
+return queryFactory
+.selectFrom(issue)
+.fetch();  // 이슈만 조회, 댓글은 Lazy Loading → N+1
 }
+```
 
+```java
 // ✅ Fetch Join 사용
 public List<Issue> findAllWithComments() {
-    return queryFactory
-            .selectFrom(issue)
-            .leftJoin(issue.comments).fetchJoin()  // 한 번에 조회
-            .fetch();
+return queryFactory
+.selectFrom(issue)
+.leftJoin(issue.comments).fetchJoin()  // 한 번에 조회
+.fetch();
 }
 ```
 
@@ -658,18 +573,26 @@ public List<Issue> findAllWithComments() {
 
 ## 8. FAQ
 
-### Q1. Custom Repository vs @Query?
+Q1. Custom Repository vs @Query?
 
-**A**:
+A:
 
-| 항목 | Custom Repository | @Query |
-| --- | --- | --- |
-| 용도 | 복잡한 동적 쿼리 | 단순 정적 쿼리 |
-| 코드 재사용 | ✅ 가능 | ❌ 어려움 |
-| 타입 안정성 | ✅ QueryDSL 사용 시 | ⚠️ 문자열 |
-| 테스트 | ✅ 쉬움 | ⚠️ 통합 테스트 필요 |
+```markdown
+┌─────────────┬─────────────────────┬─────────────────────┐
+│    항목     │  Custom Repository  │       @Query        │
+├─────────────┼─────────────────────┼─────────────────────┤
+│ 용도        │ 복잡한 동적 쿼리     │ 단순 정적 쿼리       │
+├─────────────┼─────────────────────┼─────────────────────┤
+│ 코드 재사용 │ ✅ 가능             │ ❌ 어려움           │
+├─────────────┼─────────────────────┼─────────────────────┤
+│ 타입 안정성 │ ✅ QueryDSL 사용 시 │ ⚠️  문자열          │
+├─────────────┼─────────────────────┼─────────────────────┤
+│ 테스트      │ ✅ 쉬움             │ ⚠️  통합 테스트 필요 │
+└─────────────┴─────────────────────┴─────────────────────┘
+```
 
 ```java
+예시:
 // 간단한 쿼리 → @Query
 @Query("SELECT i FROM Issue i WHERE i.status = :status")
 List<Issue> findByStatus(@Param("status") IssueStatus status);
@@ -680,36 +603,49 @@ List<Issue> findByDynamicFilter(status, severity, dateRange);
 
 ---
 
-### Q2. QueryDSL vs Native Query vs JPQL?
+Q2. QueryDSL vs Native Query vs JPQL?
 
-**A**:
+A:
 
-| 기술 | 장점 | 단점 | 사용 시기 |
-| --- | --- | --- | --- |
-| QueryDSL | 타입 안전, IDE 지원 | 러닝 커브 | 동적 쿼리, 복잡한 조건 |
-| JPQL | 표준, 간결 | 동적 쿼리 어려움 | 정적 쿼리 |
-| Native Query | DB 최적화 | DB 종속 | DB 전용 기능 (JSONB 등) |
-
----
-
-### Q3. Service 로직 vs Repository 로직?
-
-**A**:
-
-| 로직 | 위치 | 예시 |
-| --- | --- | --- |
-| 데이터 조회/변환 | Repository | `findByDynamicFilter()` |
-| 비즈니스 규칙 | Service | `if (issue.isResolved()) { ... }` |
-| 트랜잭션 처리 | Service | `@Transactional` |
-| 복잡한 집계 | Repository | `getStatistics()` |
+```markdown
+┌──────────────┬─────────────────────┬──────────────────┬─────────────────────────┐
+│     기술     │        장점         │       단점       │        사용 시기         │
+├──────────────┼─────────────────────┼──────────────────┼─────────────────────────┤
+│ QueryDSL     │ 타입 안전, IDE 지원  │ 러닝 커브        │ 동적 쿼리, 복잡한 조건   │
+├──────────────┼─────────────────────┼──────────────────┼─────────────────────────┤
+│ JPQL         │ 표준, 간결          │ 동적 쿼리 어려움 │ 정적 쿼리                 │
+├──────────────┼─────────────────────┼──────────────────┼─────────────────────────┤
+│ Native Query │ DB 최적화           │ DB 종속          │ DB 전용 기능 (JSONB 등)  │
+└──────────────┴─────────────────────┴──────────────────┴─────────────────────────┘
+```
 
 ---
 
-### Q4. 기존 JPA Repository를 Custom으로 변경해야 하나?
+Q3. Service 로직 vs Repository 로직?
 
-**A**: 필요할 때만 변경하세요.
+A:
 
-```java
+```markdown
+┌──────────────────┬────────────┬─────────────────────────────────┐
+│       로직       │    위치    │              예시                │
+├──────────────────┼────────────┼─────────────────────────────────┤
+│ 데이터 조회/변환  │ Repository │ findByDynamicFilter()           │
+├──────────────────┼────────────┼─────────────────────────────────┤
+│ 비즈니스 규칙     │ Service    │ if (issue.isResolved()) { ... } │
+├──────────────────┼────────────┼─────────────────────────────────┤
+│ 트랜잭션 처리     │ Service    │ @Transactional                  │
+├──────────────────┼────────────┼─────────────────────────────────┤
+│ 복잡한 집계      │ Repository │ getStatistics()                  │
+└──────────────────┴────────────┴─────────────────────────────────┘
+```
+
+---
+
+Q4. 기존 JPA Repository를 Custom으로 변경해야 하나?
+
+A: 필요할 때만 변경하세요.
+
+```markdown
 // ✅ 이런 건 그대로 유지
 Optional<Issue> findByFingerprintAndProjectId(String fingerprint, UUID projectId);
 
@@ -717,13 +653,12 @@ Optional<Issue> findByFingerprintAndProjectId(String fingerprint, UUID projectId
 List<Issue> searchByMultipleFilters(/* 여러 선택적 파라미터 */);
 ```
 
----
+Q5. Q클래스가 생성되지 않을 때?
 
-### Q5. Q클래스가 생성되지 않을 때?
+A: build.gradle 설정 확인이 가장 중요합니다.
 
-**A**: build.gradle 설정 확인이 가장 중요합니다.
-
-```gradle
+```java
+gradle
 // ✅ 이 설정이 있어야 자동 생성됨
 def querydslDir = "$buildDir/generated/querydsl"
 
@@ -736,16 +671,17 @@ tasks.withType(JavaCompile) {
 }
 ```
 
-**해결 순서**:
+해결 순서:
 1. build.gradle에 위 설정 추가
 2. `./gradlew clean build` 실행
 3. `build/generated/querydsl` 폴더에 Q클래스 확인
 4. IDE가 자동으로 인식 (수동 마킹 불필요)
 
-**여전히 안 될 때**:
+여전히 안 될 때:
 - Entity에 `@Entity` 어노테이션 있는지 확인
 - Gradle JVM 버전 확인 (Java 17 이상)
 - IntelliJ 캐시 삭제: `File` → `Invalidate Caches / Restart`
+```
 
 ---
 
@@ -753,8 +689,3 @@ tasks.withType(JavaCompile) {
 
 - [Spring Data JPA Custom Implementations](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories.custom-implementations)
 - [QueryDSL Reference](http://querydsl.com/static/querydsl/latest/reference/html/)
-- 프로젝트 컨벤션: `/docs/CODE_CONVENTION.md`
-
----
-
-**마지막 업데이트**: 2026-03-06
