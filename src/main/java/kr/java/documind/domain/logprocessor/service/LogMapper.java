@@ -47,6 +47,20 @@ public class LogMapper {
 
         OffsetDateTime now = OffsetDateTime.now();
 
+        // fingerprint 처리: null이면 생성
+        String fingerprint = map.get("fingerprint");
+        if (fingerprint == null || fingerprint.isEmpty()) {
+            // 임시 엔티티로 fingerprint 생성
+            GameLog tempLog =
+                    GameLog.builder()
+                            .archive(map.get("archive"))
+                            .severity(
+                                    LogSeverity.fromString(map.getOrDefault("severity", "INFO")))
+                            .build();
+            fingerprint = fingerprintGenerator.generate(tempLog).getFingerprint();
+            log.debug("Generated fingerprint for Redis Stream message: {}", fingerprint);
+        }
+
         return GameLog.builder()
                 .logId(logId)
                 .projectId(UUID.fromString(map.get("projectId")))
@@ -60,7 +74,7 @@ public class LogMapper {
                 .ingestedAt(parseTime(map.get("ingestedAt")))
                 .traceId(map.get("traceId"))
                 .spanId(map.get("spanId"))
-                .fingerprint(map.get("fingerprint"))
+                .fingerprint(fingerprint)
                 .resource(
                         objectMapper.readValue(
                                 map.getOrDefault("resource", "{}"),
