@@ -1,117 +1,257 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{common/head :: head('회사 관리')}"></head>
-<body class="bg-gray-50 min-h-screen">
 
-<!-- 인증 헤더 -->
-<div th:replace="~{common/header-auth :: header-auth}"></div>
+<!--
+  레이아웃:  [고정 사이드바 w-64] [ml-64 오른쪽 패널]
+  model 필요 속성 (controller 에서 제공):
+    headerInfo : name, nickname, globalRole, profileImageUrl, companyName, companyProfileUrl
+    company    : name, profileUrl, status, pending()
+-->
+<body class="bg-gray-100 min-h-screen">
 
-<!-- 메인 콘텐츠 -->
-<main class="pt-16 max-w-7xl mx-auto px-6 py-10">
-    <div class="flex gap-8">
+<!-- ── 고정 사이드바 ── -->
+<div th:replace="~{common/sidebar-mypage :: sidebar-mypage('company')}"></div>
 
-        <!-- 사이드바 -->
-        <div th:replace="~{common/sidebar-mypage :: sidebar-mypage('company')}"></div>
+<!-- ── 오른쪽 패널 ── -->
+<div class="ml-64 flex flex-col min-h-screen">
 
-        <!-- 콘텐츠 영역 -->
-        <div class="flex-1 min-w-0 space-y-6">
+    <!-- 사용자 바 -->
+    <div th:replace="~{common/header-auth :: user-bar}"></div>
 
-            <!-- 회사 등록 / 관리 카드 -->
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-                <h2 class="text-xl font-bold text-gray-900 mb-2">회사 관리</h2>
-                <p class="text-sm text-gray-400 mb-8">회사 정보를 등록하고 관리하세요</p>
+    <main class="flex-1 px-8 py-8">
+        <div class="max-w-2xl mx-auto">
 
-                <!-- 글로벌 에러/성공 -->
-                <div id="global-error" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600"></div>
-                <div id="success-message" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600"></div>
+            <!-- 글로벌 에러 / 성공 -->
+            <div id="global-error"
+                 class="hidden mb-6 p-4 bg-red-50 border border-red-200
+                            rounded-xl text-sm text-red-600"></div>
+            <div id="success-message"
+                 class="hidden mb-6 p-4 bg-green-50 border border-green-200
+                            rounded-xl text-sm text-green-700"></div>
 
-                <!-- 기존 회사가 있는 경우 -->
-                <div th:if="${company != null}">
-                    <!-- 상태 뱃지 -->
-                    <div class="flex items-center gap-3 mb-6 p-4 rounded-xl"
-                         th:classappend="${company.pending()} ? 'bg-yellow-50 border border-yellow-100' : 'bg-green-50 border border-green-100'">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
-                             th:classappend="${company.pending()} ? 'bg-yellow-100' : 'bg-green-100'">
-                            <svg th:if="${company.pending()}" class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <svg th:unless="${company.pending()}" class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="text-sm font-semibold"
-                                 th:classappend="${company.pending()} ? 'text-yellow-800' : 'text-green-800'"
-                                 th:text="${company.pending()} ? '승인 대기 중' : '승인 완료'">상태</div>
-                            <div class="text-xs mt-0.5"
-                                 th:classappend="${company.pending()} ? 'text-yellow-500' : 'text-green-500'"
-                                 th:text="${company.pending()} ? '관리자 승인 후 사용 가능합니다' : '모든 기능을 이용할 수 있습니다'">상태 설명</div>
-                        </div>
-                    </div>
+            <!-- 기본 정보 카드 -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
-                    <!-- 회사 정보 수정 폼 -->
-                    <form id="company-form" class="space-y-5" onsubmit="return false;">
-                        <div>
-                            <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1.5">회사명</label>
-                            <input type="text"
-                                   id="companyName"
-                                   name="companyName"
-                                   th:value="${company.name()}"
-                                   maxlength="50"
-                                   placeholder="회사명을 입력하세요"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all"/>
-                            <p id="companyName-error" class="hidden mt-1.5 text-xs text-red-500"></p>
-                        </div>
-
-                        <button type="button"
-                                onclick="updateCompany()"
-                                class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors">
-                            저장하기
-                        </button>
-                    </form>
+                <div class="px-8 py-5 border-b border-gray-100">
+                    <h2 class="text-base font-bold text-gray-900">기본 정보</h2>
                 </div>
 
-                <!-- 회사가 없는 경우 (신규 등록) -->
-                <div th:unless="${company != null}">
-                    <div class="mb-6 p-5 bg-blue-50 border border-blue-100 rounded-xl">
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <p class="text-sm text-blue-700">
-                                회사를 등록하면 프로젝트를 생성하고 팀원을 초대할 수 있습니다.
-                                등록 후 관리자 승인이 필요합니다.
-                            </p>
-                        </div>
+                <div class="p-8">
+
+                    <!-- 회사 아이콘 + 회사/조직명 헤더 -->
+                    <div class="grid grid-cols-2 gap-6 mb-2">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">회사 아이콘</p>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">회사/조직명</p>
                     </div>
 
-                    <form id="company-form" class="space-y-5" onsubmit="return false;">
-                        <div>
-                            <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1.5">회사명</label>
-                            <input type="text"
-                                   id="companyName"
-                                   name="companyName"
-                                   maxlength="50"
-                                   placeholder="회사명을 입력하세요"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all"/>
-                            <p id="companyName-error" class="hidden mt-1.5 text-xs text-red-500"></p>
+                    <div class="grid grid-cols-2 gap-6 items-start">
+
+                        <!-- ── 좌: 회사 아이콘 ── -->
+                        <div class="flex flex-col items-center gap-2">
+                            <!-- 아이콘 클릭 → 파일 선택 -->
+                            <button type="button"
+                                    onclick="document.getElementById('company-icon-input').click()"
+                                    class="relative group">
+                                <!-- 이미지 있는 경우 -->
+                                <div th:if="${company?.profileUrl() != null}"
+                                     class="w-20 h-20 rounded-full overflow-hidden ring-2 ring-gray-200
+                                                group-hover:ring-blue-300 transition-all">
+                                    <img th:src="${company.profileUrl()}"
+                                         id="company-icon-preview"
+                                         alt="회사 아이콘" class="w-full h-full object-cover"/>
+                                </div>
+                                <!-- 이미지 없는 경우 → 회사명 첫 글자 -->
+                                <div th:unless="${company?.profileUrl() != null}"
+                                     id="company-icon-fallback"
+                                     class="w-20 h-20 rounded-full bg-sky-400 flex items-center justify-center
+                                                ring-2 ring-gray-200 group-hover:ring-blue-300 transition-all">
+                                        <span th:text="${company?.name() != null
+                                                         ? #strings.substring(company.name(),0,1) : '+'}"
+                                              class="text-2xl font-bold text-white">Q</span>
+                                </div>
+                                <!-- 호버 오버레이 -->
+                                <div class="absolute inset-0 rounded-full bg-black/20 opacity-0
+                                                group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86
+                                                     a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5
+                                                     a2 2 0 01-2-2V9z M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <input type="file" id="company-icon-input"
+                                   accept="image/*" class="hidden"
+                                   onchange="previewCompanyIcon(this)"/>
+
+                            <!-- 승인 상태 표시 -->
+                            <span th:if="${company != null and company.pending()}"
+                                  class="text-xs text-gray-400">승인 대기 중 입니다</span>
+                            <span th:if="${company != null and !company.pending()}"
+                                  class="text-xs text-emerald-500 font-medium">승인 완료</span>
                         </div>
 
-                        <button type="button"
-                                onclick="registerCompany()"
-                                class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors">
-                            승인 요청하기
-                        </button>
-                    </form>
+                        <!-- ── 우: 회사/조직명 입력 ── -->
+                        <div class="flex flex-col gap-2 pt-1">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
+                                                     m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2
+                                                     a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                </div>
+                                <input type="text"
+                                       id="companyName"
+                                       name="companyName"
+                                       th:value="${company?.name()}"
+                                       maxlength="50"
+                                       placeholder="회사명을 입력하세요"
+                                       class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200
+                                                  rounded-xl text-sm text-gray-700 focus:outline-none
+                                                  focus:ring-2 focus:ring-blue-300 focus:border-transparent
+                                                  transition-all"/>
+                            </div>
+                            <p id="companyName-error" class="hidden text-xs text-red-500"></p>
+
+                            <!-- 회사가 없는 경우 안내 -->
+                            <div th:unless="${company != null}"
+                                 class="flex items-start gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                                <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <p class="text-xs text-blue-700 leading-relaxed">
+                                    회사를 등록하면 프로젝트를 생성하고 팀원을 초대할 수 있습니다.
+                                    등록 후 관리자 승인이 필요합니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+
+                <!-- ── 하단 버튼 ── -->
+                <div class="px-8 pb-8 flex justify-end gap-3">
+                    <button type="button"
+                            onclick="resetCompanyForm()"
+                            class="px-6 py-2.5 rounded-xl border border-gray-200
+                                       text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                        취소
+                    </button>
+                    <!-- 수정 or 신규 등록 -->
+                    <button th:if="${company != null}"
+                            type="button"
+                            onclick="updateCompany()"
+                            class="px-6 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
+                                       text-sm font-semibold text-white transition-colors">
+                        변경 사항 저장
+                    </button>
+                    <button th:unless="${company != null}"
+                            type="button"
+                            onclick="registerCompany()"
+                            class="px-6 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
+                                       text-sm font-semibold text-white transition-colors">
+                        승인 요청하기
+                    </button>
+                </div>
+
+            </div><!-- /기본 정보 카드 -->
         </div>
-    </div>
-</main>
+    </main>
 
-<!-- 공통 인증 JS (로그아웃) -->
-<script src="/js/member/auth.js"></script>
+    <footer class="border-t border-gray-200 py-6 text-center text-xs text-gray-400">
+        © 2026 Documind Incs. All rights reserved.
+    </footer>
+</div>
+
+
+<!-- 로그아웃 모달 + 공통 JS -->
+<div th:replace="~{common/header-auth :: logout-modal}"></div>
+<script th:src="@{/js/common/FetchUtil.js}"></script>
+<script th:src="@{/js/member/auth.js}"></script>
+<script>
+    /* 회사 아이콘 미리보기 */
+    function previewCompanyIcon(input) {
+        if (!input.files || !input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const preview = document.getElementById('company-icon-preview');
+            const fallback = document.getElementById('company-icon-fallback');
+            if (preview) {
+                preview.src = e.target.result;
+            } else if (fallback) {
+                const img = document.createElement('img');
+                img.id = 'company-icon-preview';
+                img.src = e.target.result;
+                img.className = 'w-full h-full object-cover';
+                img.alt = '회사 아이콘';
+                fallback.replaceWith(img);
+            }
+        };
+        reader.readAsDataURL(file);
+        // TODO: S3 업로드 API 호출
+    }
+
+    /* 회사 정보 수정 */
+    async function updateCompany() {
+        clearErrors();
+        const name = document.getElementById('companyName')?.value?.trim();
+        if (!name) {
+            document.getElementById('companyName-error').textContent = '회사명을 입력해주세요.';
+            document.getElementById('companyName-error').classList.remove('hidden');
+            return;
+        }
+        try {
+            const body = await callApi('/api/companies/me', {
+                method: 'PATCH',
+                body: JSON.stringify({ name }),
+            });
+            if (body.success) {
+                const msg = document.getElementById('success-message');
+                msg.textContent = '회사 정보가 저장되었습니다.';
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 3000);
+            } else {
+                renderApiError(body.error, 'global-error');
+            }
+        } catch (err) {
+            showGlobalError(err.message, 'global-error');
+        }
+    }
+
+    /* 회사 신규 등록 */
+    async function registerCompany() {
+        clearErrors();
+        const name = document.getElementById('companyName')?.value?.trim();
+        if (!name) {
+            document.getElementById('companyName-error').textContent = '회사명을 입력해주세요.';
+            document.getElementById('companyName-error').classList.remove('hidden');
+            return;
+        }
+        try {
+            const body = await callApi('/api/companies', {
+                method: 'POST',
+                body: JSON.stringify({ name }),
+            });
+            if (body.success) {
+                location.reload();
+            } else {
+                renderApiError(body.error, 'global-error');
+            }
+        } catch (err) {
+            showGlobalError(err.message, 'global-error');
+        }
+    }
+
+    /* 취소 */
+    function resetCompanyForm() {
+        const input = document.getElementById('companyName');
+        if (input) input.value = input.defaultValue;
+        clearErrors();
+    }
+</script>
 
 </body>
 </html>
