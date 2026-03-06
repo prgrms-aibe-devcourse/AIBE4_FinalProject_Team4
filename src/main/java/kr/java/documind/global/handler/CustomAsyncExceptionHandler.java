@@ -1,4 +1,4 @@
-package kr.java.documind.global.exception;
+package kr.java.documind.global.handler;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
