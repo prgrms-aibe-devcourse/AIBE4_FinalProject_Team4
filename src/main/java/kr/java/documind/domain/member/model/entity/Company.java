@@ -30,4 +30,23 @@ public class Company extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static Company create(String name) {
+        Company company = new Company();
+        company.name = name;
+        company.status = CompanyStatus.PENDING;
+        return company;
+    }
+
+    public void updateName(String name) {
+        if (name != null && !name.isBlank()) {
+            this.name = name;
+        }
+    }
+
+    public void updateProfileKey(String profileKey) {
+        if (profileKey != null) {
+            this.profileKey = profileKey;
+        }
+    }
 }

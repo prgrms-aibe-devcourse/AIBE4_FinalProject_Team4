@@ -55,12 +55,12 @@ public class Invitation extends UuidBaseEntity {
     private LocalDateTime expiresAt;
 
     public static Invitation create(
-        Project project,
-        Member member,
-        Member inviter,
-        String targetEmail,
-        ProjectRole targetRole,
-        LocalDateTime expiresAt) {
+            Project project,
+            Member member,
+            Member inviter,
+            String targetEmail,
+            ProjectRole targetRole,
+            LocalDateTime expiresAt) {
         Invitation invitation = new Invitation();
         invitation.project = project;
         invitation.member = member;
@@ -76,6 +76,7 @@ public class Invitation extends UuidBaseEntity {
         this.status = InvitationStatus.USED;
         this.usedAt = LocalDateTime.now();
     }
+
     public void revoke() {
         this.status = InvitationStatus.REVOKED;
         this.revokedAt = LocalDateTime.now();
@@ -91,6 +92,6 @@ public class Invitation extends UuidBaseEntity {
 
     public boolean isExpired() {
         return this.status == InvitationStatus.EXPIRED
-            || LocalDateTime.now().isAfter(this.expiresAt);
+                || LocalDateTime.now().isAfter(this.expiresAt);
     }
 }

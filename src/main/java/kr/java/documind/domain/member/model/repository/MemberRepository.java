@@ -15,7 +15,6 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
     @Query("SELECT m FROM Member m LEFT JOIN FETCH m.company WHERE m.id = :id")
     Optional<Member> findWithCompanyById(UUID id);
 
-    /** 동일 이메일로 다른 provider에 가입된 활성 계정 조회 */
     @Query(
             "SELECT m FROM Member m "
                     + "WHERE m.email = :email "

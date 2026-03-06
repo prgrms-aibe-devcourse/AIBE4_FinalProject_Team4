@@ -30,6 +30,7 @@ public class Project extends UuidBaseEntity {
 
     @Column(nullable = false, length = 100)
     private String name;
+
     @Column(name = "profile_key")
     private String profileKey;
 

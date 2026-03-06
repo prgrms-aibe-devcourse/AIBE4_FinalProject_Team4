@@ -7,6 +7,7 @@ import java.util.Set;
 import kr.java.documind.domain.member.model.entity.Company;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.CompanyStatus;
+import kr.java.documind.domain.member.model.enums.GlobalRole;
 import kr.java.documind.domain.member.service.MemberService;
 import kr.java.documind.global.config.JwtProperties;
 import kr.java.documind.global.security.RedisTokenService;
@@ -24,10 +25,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private static final Set<String> ALLOWED_REDIRECT_PATHS = Set.of("/dashboard", "/company");
+    private static final Set<String> ALLOWED_REDIRECT_PATHS =
+            Set.of("/member/dashboard", "/my/company");
 
-    private static final String URL_DASHBOARD = "/dashboard";
-    private static final String URL_COMPANY   = "/company";
+    private static final String URL_DASHBOARD = "/member/dashboard";
+    private static final String URL_COMPANY = "/my/company";
 
     private final TokenProvider jwtProvider;
     private final JwtProperties jwtProperties;
@@ -46,7 +48,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         Member member = memberService.getMemberWithCompany(authMember.getMemberId());
 
         if (!member.isActive()) {
-            log.warn("정지된 계정 로그인 시도: memberId={}", member.getId());
+            log.warn("[OAuth2SuccessHandler] 정지된 계정 로그인 시도: memberId={}", member.getId());
             authRequestRepository.removeAuthorizationRequestCookies(request, response);
             deletePendingRoleCookie(response);
             response.sendRedirect("/auth/login?error=account_suspended");
@@ -75,13 +77,30 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         redisTokenService.saveRefreshToken(
                 member.getId(), refreshToken, jwtProperties.getRefreshExpirationSeconds());
 
+        GlobalRole selectedRole = resolveRoleFromCookie(request);
+        boolean roleMismatch = false;
+        if (selectedRole != null && selectedRole != member.getGlobalRole()) {
+            log.info(
+                    "[OAuth2SuccessHandler] 역할 불일치 감지: selected={}, actual={}",
+                    selectedRole,
+                    member.getGlobalRole());
+            roleMismatch = true;
+        }
+
         authRequestRepository.removeAuthorizationRequestCookies(request, response);
         deletePendingRoleCookie(response);
+        deleteAllowEmailDuplicateCookie(response);
         clearAuthenticationAttributes(request);
 
         String redirectUrl = resolveRedirectUrl(member);
+
+        if (roleMismatch) {
+            String toastValue = member.isCeo() ? "role_mismatch_ceo" : "role_mismatch_employee";
+            redirectUrl += (redirectUrl.contains("?") ? "&" : "?") + "toast_message=" + toastValue;
+        }
+
         log.info(
-                "OAuth2 로그인 성공: memberId={} role={} redirect={}",
+                "[OAuth2SuccessHandler] OAuth2 로그인 성공: memberId={} role={} redirect={}",
                 member.getId(),
                 member.getGlobalRole(),
                 redirectUrl);
@@ -98,12 +117,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             boolean approved = company != null && company.getStatus() == CompanyStatus.APPROVED;
             resolved = approved ? URL_DASHBOARD : URL_COMPANY;
         } else {
-            // EMPLOYEE
             resolved = URL_DASHBOARD;
         }
 
         if (!ALLOWED_REDIRECT_PATHS.contains(resolved)) {
-            log.error("허용되지 않은 리다이렉트 경로 차단 (allowlist fallback): {}", resolved);
+            log.error(
+                    "[OAuth2SuccessHandler] 허용되지 않은 리다이렉트 경로 차단 (allowlist fallback): {}",
+                    resolved);
             return URL_DASHBOARD;
         }
         return resolved;
@@ -114,5 +134,26 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 response,
                 CustomOAuth2UserService.PENDING_ROLE_COOKIE,
                 jwtProperties.isCookieSecure());
+    }
+
+    private void deleteAllowEmailDuplicateCookie(HttpServletResponse response) {
+        cookieUtil.deleteCookie(
+                response,
+                CustomOAuth2UserService.ALLOW_EMAIL_DUPLICATE_COOKIE,
+                jwtProperties.isCookieSecure());
+    }
+
+    private GlobalRole resolveRoleFromCookie(HttpServletRequest request) {
+        return cookieUtil
+                .getCookieValue(request, CustomOAuth2UserService.PENDING_ROLE_COOKIE)
+                .map(
+                        value -> {
+                            try {
+                                return GlobalRole.valueOf(value.toUpperCase());
+                            } catch (IllegalArgumentException e) {
+                                return null;
+                            }
+                        })
+                .orElse(null);
     }
 }
