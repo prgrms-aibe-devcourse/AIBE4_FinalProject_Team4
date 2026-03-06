@@ -1,9 +1,4 @@
 spring:
-  # Spring AI 자동 설정 제외 (팀원 작업 구간 - 필요 시 주석 해제)
-  autoconfigure:
-    exclude:
-      - org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiChatAutoConfiguration
-
   # Database 설정
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:documind_db}
