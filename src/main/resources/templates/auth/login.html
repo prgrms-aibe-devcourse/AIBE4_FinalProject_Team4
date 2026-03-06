@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{common/head :: head('로그인')}"></head>
+<head th:replace="~{common/fragments/head :: head('로그인')}"></head>
 <body class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-indigo-50 flex flex-col items-center justify-center px-4 py-12">
 
 <!-- 로고 -->
@@ -129,8 +129,8 @@
         </button>
     </div>
 
-    <!-- Step Conflict: 이메일 중복 알림 -->
-    <div id="step-conflict" class="hidden bg-white rounded-2xl shadow-xl shadow-gray-100 border border-gray-100 p-8 transition-all duration-300">
+    <!-- Step Role Conflict: 역할 불일치 알림 -->
+    <div id="step-role-conflict" class="hidden bg-white rounded-2xl shadow-xl shadow-gray-100 border border-gray-100 p-8 transition-all duration-300">
         <!-- 헤더 -->
         <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center w-14 h-14 bg-amber-100 rounded-2xl mb-4">
@@ -139,18 +139,18 @@
                           d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
             </div>
-            <h1 class="text-2xl font-bold text-gray-900 mb-2">이미 가입된 이메일입니다</h1>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">이미 가입된 계정이 있습니다</h1>
             <p class="text-gray-500 text-sm">
-                이 이메일은
-                <span id="existing-provider-label" class="font-semibold text-primary-600"></span>
-                계정으로 가입된 이력이 있습니다.
+                이 계정은
+                <span id="existing-role-label" class="font-semibold text-primary-600"></span>
+                계정으로 가입되어 있습니다.
             </p>
         </div>
 
         <!-- 선택 버튼 -->
         <div class="space-y-3">
-            <!-- Google로 로그인 (existing_provider=google 일 때만 표시) -->
-            <a id="conflict-google-btn"
+            <!-- Google로 로그인 (provider=google 일 때만 표시) -->
+            <a id="role-conflict-google-btn"
                href="/oauth2/authorization/google"
                class="hidden flex items-center justify-center gap-3 w-full px-5 py-3.5 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl transition-all duration-200 text-sm">
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
@@ -162,8 +162,8 @@
                 Google 계정으로 로그인하기
             </a>
 
-            <!-- GitHub로 로그인 (existing_provider=github 일 때만 표시) -->
-            <a id="conflict-github-btn"
+            <!-- GitHub로 로그인 (provider=github 일 때만 표시) -->
+            <a id="role-conflict-github-btn"
                href="/oauth2/authorization/github"
                class="hidden flex items-center justify-center gap-3 w-full px-5 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl transition-all duration-200 text-sm">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -174,7 +174,7 @@
 
             <!-- 처음으로 돌아가기 -->
             <button type="button"
-                    onclick="goBackFromConflict()"
+                    onclick="goBackFromRoleConflict()"
                     class="mt-2 w-full flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors py-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -183,9 +183,47 @@
             </button>
         </div>
     </div>
+
+    <!-- Step Conflict: 이메일 중복 알림 (Provider 불일치) -->
+    <div id="step-conflict" class="hidden bg-white rounded-2xl shadow-xl shadow-gray-100 border border-gray-100 p-8 transition-all duration-300">
+        <!-- 헤더 -->
+        <div class="text-center mb-6">
+            <h1 class="text-xl font-bold text-gray-900 mb-2">이 이메일로 사용 중인 계정이 있습니다</h1>
+
+            <!-- 프로필 카드 -->
+            <div class="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-4 text-left">
+                <!-- 아바타 (JS로 채움: 실제 프로필 이미지 또는 이니셜) -->
+                <div id="conflict-avatar"
+                     class="w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center"></div>
+                <div>
+                    <div class="font-bold text-gray-900 flex items-center gap-2">
+                        <span id="conflict-nickname"></span>
+                        <span id="conflict-role-badge"
+                              class="hidden px-2 py-0.5 rounded text-[10px] font-bold"></span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-0.5" id="conflict-email"></div>
+                </div>
+            </div>
+
+            <p class="mt-6 text-gray-500 text-sm">로그인 방식을 선택해주세요.</p>
+        </div>
+
+        <!-- 선택 버튼 (JS로 채움: Google/GitHub 스타일 버튼) -->
+        <div id="conflict-buttons" class="space-y-3"></div>
+
+        <!-- 처음으로 돌아가기 -->
+        <button type="button"
+                onclick="goBackFromConflict()"
+                class="mt-4 w-full flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors py-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            처음으로 돌아가기
+        </button>
+    </div>
 </div>
 
 <!-- 로그인 관련 JS -->
-<script src="/js/member/login.js"></script>
+<script src="/js/member/Login.js"></script>
 </body>
 </html>

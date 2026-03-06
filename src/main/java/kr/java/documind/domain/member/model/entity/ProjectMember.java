@@ -19,12 +19,12 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(
-    name = "project_member",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_project_member",
-            columnNames = {"project_id", "member_id"})
-    })
+        name = "project_member",
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    name = "uk_project_member",
+                    columnNames = {"project_id", "member_id"})
+        })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProjectMember extends BaseEntity {
@@ -56,6 +56,7 @@ public class ProjectMember extends BaseEntity {
         pm.status = AccountStatus.ACTIVE;
         return pm;
     }
+
     public void changeRole(ProjectRole newRole) {
         this.projectRole = newRole;
     }

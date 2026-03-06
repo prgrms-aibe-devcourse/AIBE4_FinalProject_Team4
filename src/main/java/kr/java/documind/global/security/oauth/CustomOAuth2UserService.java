@@ -1,9 +1,12 @@
 package kr.java.documind.global.security.oauth;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import kr.java.documind.domain.member.model.dto.ConflictingMemberInfo;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.GlobalRole;
 import kr.java.documind.domain.member.model.enums.OAuthProvider;
@@ -68,6 +71,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     static final String EMAIL_CONFLICT_ERROR = "email_conflict";
+    static final String ROLE_CONFLICT_ERROR = "role_conflict";
+    static final String ALLOW_EMAIL_DUPLICATE_COOKIE = "oauth_allow_email_duplicate";
 
     private CustomUserDetails processOAuthLogin(
             String registrationId, Map<String, Object> attributes, OAuth2UserRequest userRequest) {
@@ -84,19 +89,29 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                         .filter(n -> !n.isBlank())
                         .orElse(name);
 
-        memberService
-                .findConflictingProvider(resolvedEmail, userProfile.getProvider())
-                .ifPresent(
-                        existingProvider -> {
-                            log.warn(
-                                    "이메일 중복 provider 감지: email={} 시도={} 기존={}",
-                                    resolvedEmail,
-                                    userProfile.getProvider(),
-                                    existingProvider);
-                            throw new OAuth2AuthenticationException(
-                                    new OAuth2Error(
-                                            EMAIL_CONFLICT_ERROR, existingProvider.name(), null));
-                        });
+        Optional<ConflictingMemberInfo> conflictOpt =
+                memberService.findConflictingMemberInfo(resolvedEmail, userProfile.getProvider());
+
+        if (conflictOpt.isPresent() && !isEmailDuplicateAllowed()) {
+            ConflictingMemberInfo info = conflictOpt.get();
+            log.warn(
+                    "[OAuth2UserService] 이메일 중복 provider 감지: email={} 시도={} 기존={}",
+                    resolvedEmail,
+                    userProfile.getProvider(),
+                    info.provider());
+            String desc =
+                    info.provider().name()
+                            + "||"
+                            + enc(info.nickname())
+                            + "||"
+                            + enc(info.email())
+                            + "||"
+                            + enc(info.profileImageUrl() != null ? info.profileImageUrl() : "")
+                            + "||"
+                            + info.globalRole().name();
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error(EMAIL_CONFLICT_ERROR, desc, null));
+        }
 
         Member member =
                 memberService.findOrCreateOAuthMember(
@@ -121,13 +136,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             String accessToken = userRequest.getAccessToken().getTokenValue();
             String githubEmail = fetchGithubVerifiedEmail(accessToken);
             if (githubEmail != null) {
-                log.debug("GitHub /user/emails API로 이메일 조회 성공");
+                log.debug("[OAuth2UserService] GitHub /user/emails API로 이메일 조회 성공");
                 return githubEmail;
             }
         }
 
         log.warn(
-                "이메일 조회 실패 — placeholder 저장: provider={} id={}",
+                "[OAuth2UserService] 이메일 조회 실패 — placeholder 저장: provider={} id={}",
                 userProfile.getProvider(),
                 userProfile.getId());
         return buildEmailPlaceholder(userProfile);
@@ -164,7 +179,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .orElse(null);
 
         } catch (Exception e) {
-            log.warn("GitHub /user/emails API 호출 실패: {}", e.getMessage());
+            log.warn("[OAuth2UserService] GitHub /user/emails API 호출 실패: {}", e.getMessage());
             return null;
         }
     }
@@ -190,7 +205,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                             })
                     .orElse(GlobalRole.EMPLOYEE);
         } catch (Exception e) {
-            log.debug("oauth_pending_role 쿠키 읽기 실패: {}", e.getMessage());
+            log.debug("[OAuth2UserService] oauth_pending_role 쿠키 읽기 실패: {}", e.getMessage());
             return GlobalRole.EMPLOYEE;
         }
     }
@@ -200,5 +215,24 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 + "_"
                 + userProfile.getId()
                 + "@oauth.placeholder";
+    }
+
+    private boolean isEmailDuplicateAllowed() {
+        try {
+            ServletRequestAttributes attrs =
+                    (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+            HttpServletRequest request = attrs.getRequest();
+            return cookieUtil
+                    .getCookieValue(request, ALLOW_EMAIL_DUPLICATE_COOKIE)
+                    .map("true"::equalsIgnoreCase)
+                    .orElse(false);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static String enc(String value) {
+        if (value == null) return "";
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }

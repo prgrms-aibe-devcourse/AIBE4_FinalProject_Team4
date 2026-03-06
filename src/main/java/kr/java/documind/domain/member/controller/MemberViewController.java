@@ -18,12 +18,9 @@ public class MemberViewController {
     private final MemberService memberService;
 
     @GetMapping("/dashboard")
-    public String dashboard(
-        @AuthenticationPrincipal CustomUserDetails authMember,
-        Model model) {
+    public String dashboard(@AuthenticationPrincipal CustomUserDetails authMember, Model model) {
 
-        HeaderInfo headerInfo =
-            memberService.getHeaderInfo(authMember.getMemberId());
+        HeaderInfo headerInfo = memberService.getHeaderInfo(authMember.getMemberId());
 
         model.addAttribute("headerInfo", headerInfo);
         model.addAttribute("showSidebar", false);

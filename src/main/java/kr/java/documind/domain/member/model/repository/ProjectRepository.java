@@ -1,6 +1,5 @@
 package kr.java.documind.domain.member.model.repository;
 
-import io.lettuce.core.dynamic.annotation.Param;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

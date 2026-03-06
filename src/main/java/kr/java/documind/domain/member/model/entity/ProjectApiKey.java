@@ -42,7 +42,7 @@ public class ProjectApiKey extends BaseEntity {
     private LocalDateTime revokedAt;
 
     public static ProjectApiKey create(
-        Project project, String apiKeyHash, String keyPrefix, String keyLast4) {
+            Project project, String apiKeyHash, String keyPrefix, String keyLast4) {
         ProjectApiKey apiKey = new ProjectApiKey();
         apiKey.project = project;
         apiKey.apiKeyHash = apiKeyHash;

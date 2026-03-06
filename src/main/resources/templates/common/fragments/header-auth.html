@@ -19,12 +19,12 @@
         <span class="text-lg font-bold text-gray-900 tracking-tight">DOCUMIND</span>
     </a>
 
-    <div th:replace="~{common/header-auth :: user-info-area}"></div>
+    <div th:replace="::user-info-area"></div>
 </header>
 
 <div th:fragment="user-bar"
      class="h-14 bg-white border-b border-gray-200 flex items-center justify-end px-6 shrink-0">
-    <div th:replace="~{common/header-auth :: user-info-area}"></div>
+    <div th:replace="::user-info-area"></div>
 </div>
 
 <div th:fragment="user-info-area" class="flex items-center gap-4">

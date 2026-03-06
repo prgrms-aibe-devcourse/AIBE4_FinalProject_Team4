@@ -39,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (redisTokenService.isBlacklisted(token)) {
                 SecurityContextHolder.clearContext();
                 log.debug(
-                        "Blacklisted JWT — cleared SecurityContext for {}",
+                        "[JWT] Blacklisted JWT — cleared SecurityContext for {}",
                         request.getRequestURI());
             } else {
                 setAuthentication(request, token);
