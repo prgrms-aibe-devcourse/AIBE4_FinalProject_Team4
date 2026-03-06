@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -94,11 +95,14 @@ public class RedisStreamHealthIndicator implements HealthIndicator {
      *
      * <p>PING 명령어로 간단하게 확인
      *
+     * <p>try-with-resources를 사용하여 연결을 안전하게 반환 (connection pool leak 방지)
+     *
      * @return 연결 성공 여부
      */
     private boolean testRedisConnection() {
-        try {
-            String pong = redisTemplate.getConnectionFactory().getConnection().ping();
+        try (RedisConnection connection =
+                redisTemplate.getConnectionFactory().getConnection()) {
+            String pong = connection.ping();
             return "PONG".equalsIgnoreCase(pong);
         } catch (Exception e) {
             log.debug("Redis connection test failed: {}", e.getMessage());
