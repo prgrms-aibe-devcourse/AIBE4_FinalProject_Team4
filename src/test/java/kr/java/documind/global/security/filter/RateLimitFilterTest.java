@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,8 +30,9 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("Rate Limit: 동시 요청으로 한도 초과 시 → 429 에러 반환")
     void doFilterInternal_ConcurrentRequestsExceedLimit_Returns429() throws Exception {
-        // Given: 50개의 동시 요청 준비 (현재 설정된 한도: 5)
-        String testApiKey = "test-project-uuid-001";
+        // 매 테스트마다 고유한 랜덤 키 생성
+        String testApiKey = "test-" + UUID.randomUUID().toString();
+
         int totalRequests = 50;
         ExecutorService executorService = Executors.newFixedThreadPool(30);
         CountDownLatch latch = new CountDownLatch(totalRequests);
@@ -41,7 +43,7 @@ class RateLimitFilterTest {
             executorService.submit(() -> {
                 try {
                     int statusCode = mockMvc.perform(get("/api/logs/test-rate-limit")
-                            .header("Api-Key", testApiKey))
+                            .header(RateLimitFilter.HEADER_API_KEY, testApiKey))
                         .andReturn().getResponse().getStatus();
 
                     if (statusCode == 429) {
@@ -64,17 +66,17 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("Rate Limit: 순차 요청으로 한도 초과 시 → 429 에러 및 헤더/JSON 반환")
     void doFilterInternal_SequentialRequestsExceedLimit_Returns429() throws Exception {
-        // Given: 5번의 요청은 성공할 것을 가정 (독립적인 API Key 사용)
-        String testApiKey = "test-project-uuid-002";
+        // 매 테스트마다 고유한 랜덤 키 생성
+        String testApiKey = "test-" + UUID.randomUUID().toString();
 
         // When: 5번의 요청 순차 실행
         for (int i = 0; i < 5; i++) {
-            mockMvc.perform(get("/api/logs/test-rate-limit").header("Api-Key", testApiKey))
+            mockMvc.perform(get("/api/logs/test-rate-limit").header(RateLimitFilter.HEADER_API_KEY, testApiKey))
                 .andExpect(status().isOk());
         }
 
         // Then: 6번째 요청은 GlobalApiExceptionHandler를 타고 429 에러와 커스텀 헤더, JSON 포맷을 반환해야 함
-        mockMvc.perform(get("/api/logs/test-rate-limit").header("Api-Key", testApiKey))
+        mockMvc.perform(get("/api/logs/test-rate-limit").header(RateLimitFilter.HEADER_API_KEY, testApiKey))
             .andExpect(status().isTooManyRequests())
             .andExpect(header().string(RateLimitFilter.HEADER_REMAINING_TOKEN, "0"))
             .andExpect(header().exists(RateLimitFilter.HEADER_RETRY_AFTER))
