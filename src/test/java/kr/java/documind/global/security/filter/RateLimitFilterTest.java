@@ -40,7 +40,7 @@ class RateLimitFilterTest {
         for (int i = 0; i < totalRequests; i++) {
             executorService.submit(() -> {
                 try {
-                    int statusCode = mockMvc.perform(get("/api/v1/test-rate-limit")
+                    int statusCode = mockMvc.perform(get("/api/logs/test-rate-limit")
                             .header("Api-Key", testApiKey))
                         .andReturn().getResponse().getStatus();
 
@@ -69,12 +69,12 @@ class RateLimitFilterTest {
 
         // When: 5번의 요청 순차 실행
         for (int i = 0; i < 5; i++) {
-            mockMvc.perform(get("/api/v1/test-rate-limit").header("Api-Key", testApiKey))
+            mockMvc.perform(get("/api/logs/test-rate-limit").header("Api-Key", testApiKey))
                 .andExpect(status().isOk());
         }
 
         // Then: 6번째 요청은 GlobalApiExceptionHandler를 타고 429 에러와 커스텀 헤더, JSON 포맷을 반환해야 함
-        mockMvc.perform(get("/api/v1/test-rate-limit").header("Api-Key", testApiKey))
+        mockMvc.perform(get("/api/logs/test-rate-limit").header("Api-Key", testApiKey))
             .andExpect(status().isTooManyRequests())
             .andExpect(header().string(RateLimitFilter.HEADER_REMAINING_TOKEN, "0"))
             .andExpect(header().exists(RateLimitFilter.HEADER_RETRY_AFTER))
@@ -85,7 +85,7 @@ class RateLimitFilterTest {
     @DisplayName("Rate Limit: Api-Key 헤더 누락 시 → 400 에러 및 JSON 반환")
     void doFilterInternal_MissingApiKeyHeader_Returns400() throws Exception {
         // When & Then: Api-Key 헤더를 실수로 빼먹고 요청을 보냈을 때
-        mockMvc.perform(get("/api/v1/test-rate-limit"))
+        mockMvc.perform(get("/api/logs/test-rate-limit"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error.message").value(RateLimitFilter.HEADER_API_KEY + " 헤더가 누락되었습니다."));
     }

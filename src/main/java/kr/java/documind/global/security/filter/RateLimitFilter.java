@@ -9,6 +9,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.TooManyRequestsException;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +22,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -38,6 +37,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Value("${app.rate-limit.capacity:50}")
     private int capacity;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        // API 경로가 아닌 경우 필터를 적용하지 않음
+        return !request.getRequestURI().startsWith("/api/logs/");
+    }
 
     @Override
     protected void doFilterInternal(

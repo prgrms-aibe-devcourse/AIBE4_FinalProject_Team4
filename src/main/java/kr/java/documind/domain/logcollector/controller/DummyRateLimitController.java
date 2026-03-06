@@ -1,4 +1,4 @@
-package kr.java.documind;
+package kr.java.documind.domain.logcollector.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DummyRateLimitController {
 
     /** Rate Limit 필터가 정상 작동하는지 확인하기 위한 임시 엔드포인트 */
-    @GetMapping("/api/v1/test-rate-limit")
+    @GetMapping("/api/logs/test-rate-limit")
     public ResponseEntity<String> testRateLimit() {
         return ResponseEntity.ok("Rate Limit Passed! Token is consumed.");
     }
