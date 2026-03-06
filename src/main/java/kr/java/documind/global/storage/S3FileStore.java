@@ -9,10 +9,13 @@ import java.util.UUID;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
 import kr.java.documind.global.exception.StorageException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -20,6 +23,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
+@Slf4j
 @Component
 @ConditionalOnExpression("'${spring.cloud.aws.s3.bucket:}' != ''")
 public class S3FileStore implements FileStore {
@@ -88,6 +92,23 @@ public class S3FileStore implements FileStore {
                         .build();
 
         return s3Presigner.presignGetObject(presignRequest).url().toString();
+    }
+
+    @Override
+    public void registerRollback(String storedKey) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (status == STATUS_ROLLED_BACK) {
+                            try {
+                                delete(storedKey);
+                            } catch (Exception e) {
+                                log.warn("트랜잭션 롤백 후 S3 파일 삭제 실패: {}", storedKey, e);
+                            }
+                        }
+                    }
+                });
     }
 
     private void validateFile(MultipartFile file) {
