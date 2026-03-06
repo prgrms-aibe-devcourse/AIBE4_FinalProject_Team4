@@ -54,8 +54,7 @@ public class LogMapper {
             GameLog tempLog =
                     GameLog.builder()
                             .archive(map.get("archive"))
-                            .severity(
-                                    LogSeverity.fromString(map.getOrDefault("severity", "INFO")))
+                            .severity(LogSeverity.fromString(map.getOrDefault("severity", "INFO")))
                             .build();
             fingerprint = fingerprintGenerator.generate(tempLog).getFingerprint();
             log.debug("Generated fingerprint for Redis Stream message: {}", fingerprint);

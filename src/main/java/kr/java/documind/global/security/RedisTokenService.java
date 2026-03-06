@@ -30,8 +30,8 @@ public class RedisTokenService {
     /**
      * Refresh Token을 원자적으로 읽고 즉시 삭제한다 (Redis GETDEL).
      *
-     * <p>GET + DELETE를 하나의 원자 연산으로 처리하므로, 동일한 토큰으로 동시에 들어온 두 요청 중
-     * 오직 첫 번째 요청만 토큰 값을 얻고, 이후 요청은 null을 반환받아 거부된다.
+     * <p>GET + DELETE를 하나의 원자 연산으로 처리하므로, 동일한 토큰으로 동시에 들어온 두 요청 중 오직 첫 번째 요청만 토큰 값을 얻고, 이후 요청은
+     * null을 반환받아 거부된다.
      *
      * @return 저장된 Refresh Token 문자열, 없으면 null
      */

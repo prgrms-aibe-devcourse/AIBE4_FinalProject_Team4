@@ -100,8 +100,7 @@ public class RedisStreamHealthIndicator implements HealthIndicator {
      * @return 연결 성공 여부
      */
     private boolean testRedisConnection() {
-        try (RedisConnection connection =
-                redisTemplate.getConnectionFactory().getConnection()) {
+        try (RedisConnection connection = redisTemplate.getConnectionFactory().getConnection()) {
             String pong = connection.ping();
             return "PONG".equalsIgnoreCase(pong);
         } catch (Exception e) {
