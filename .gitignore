@@ -44,3 +44,6 @@ application-dev.yml
 ### Claude Code ###
 .claude/
 CLAUDE.md
+
+### 테스트 데이터 ###
+src/test/resources/fixtures/logprocessor/game-logs/*.json
