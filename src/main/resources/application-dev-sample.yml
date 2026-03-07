@@ -62,8 +62,9 @@ spring:
 
     vectorstore:
       pgvector:
-        initialize-schema: true # 앱 시작 시 벡터 테이블 자동 생성
+        initialize-schema: false
         dimensions: 1536 # 임베딩 벡터 차원 (text-embedding-3-large 축소)
+
   security:
     oauth2:
       client:
