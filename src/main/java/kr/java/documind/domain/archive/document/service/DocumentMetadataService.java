@@ -1,8 +1,11 @@
 package kr.java.documind.domain.archive.document.service;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUploadRequest;
@@ -13,8 +16,11 @@ import kr.java.documind.domain.archive.document.model.dto.response.DocumentDownl
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetadataResponse;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
+import kr.java.documind.domain.archive.document.model.event.DocumentEtlEvent;
+import kr.java.documind.domain.archive.document.model.event.DocumentVectorDeleteEvent;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
 import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
+import kr.java.documind.domain.archive.etl.model.enums.EmbeddingStatus;
 import kr.java.documind.domain.member.model.entity.Project;
 import kr.java.documind.domain.member.model.repository.ProjectRepository;
 import kr.java.documind.global.entity.DomainSource;
@@ -27,22 +33,28 @@ import kr.java.documind.global.repository.DomainSourceRepository;
 import kr.java.documind.global.storage.FileStore;
 import kr.java.documind.global.util.FileUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DocumentMetadataService {
+
+    private static final Set<String> EMBEDDABLE_EXTENSIONS = Set.of("pdf");
 
     private final DocumentGroupRepository documentGroupRepository;
     private final DocumentMetadataRepository documentMetadataRepository;
     private final DomainSourceRepository domainSourceRepository;
     private final ProjectRepository projectRepository;
     private final FileStore fileStore;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ==================== DocumentViewController ====================
 
@@ -132,6 +144,8 @@ public class DocumentMetadataService {
     public void deleteDocument(Long documentId) {
         DocumentMetadata metadata = findMetadataById(documentId);
         DocumentGroup group = metadata.getDocumentGroup();
+
+        eventPublisher.publishEvent(new DocumentVectorDeleteEvent(metadata.getId()));
 
         DomainSource domainSource = metadata.getDomainSource();
         documentMetadataRepository.delete(metadata);
@@ -241,6 +255,17 @@ public class DocumentMetadataService {
                     parsed.filename(), "", parsed.extension(), newHash, file.getSize(), storedKey);
 
             fileStore.delete(oldStoredKey);
+
+            eventPublisher.publishEvent(new DocumentVectorDeleteEvent(metadata.getId()));
+
+            boolean embeddable = EMBEDDABLE_EXTENSIONS.contains(parsed.extension().toLowerCase());
+            if (embeddable) {
+                metadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
+                Path tempFile = saveTempFile(file, parsed.extension());
+                eventPublisher.publishEvent(new DocumentEtlEvent(metadata.getId(), tempFile));
+            } else {
+                metadata.changeEmbeddingStatus(EmbeddingStatus.NONE);
+            }
         } catch (IOException e) {
             throw new StorageException("파일 업로드에 실패했습니다.", e);
         }
@@ -269,6 +294,10 @@ public class DocumentMetadataService {
                 throw new ConflictException("동일한 내용의 파일이 프로젝트 내에 이미 존재합니다.");
             }
 
+            boolean embeddable = EMBEDDABLE_EXTENSIONS.contains(parsed.extension().toLowerCase());
+            EmbeddingStatus embeddingStatus =
+                    embeddable ? EmbeddingStatus.PENDING : EmbeddingStatus.NONE;
+
             // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
             DomainSource domainSource =
                     domainSourceRepository.save(DomainSource.create(SourceType.DOCUMENT));
@@ -288,11 +317,28 @@ public class DocumentMetadataService {
                                     file.getSize(),
                                     storedKey,
                                     isProcessed,
+                                    embeddingStatus,
                                     LocalDateTime.now()));
+
+            if (embeddable) {
+                Path tempFile = saveTempFile(file, parsed.extension());
+                eventPublisher.publishEvent(new DocumentEtlEvent(metadata.getId(), tempFile));
+            }
 
             return DocumentMetadataResponse.from(metadata);
         } catch (IOException e) {
             throw new StorageException("파일 업로드에 실패했습니다.", e);
+        }
+    }
+
+    private Path saveTempFile(MultipartFile file, String extension) {
+        try {
+            Path tempFile = Files.createTempFile("documind-etl-", "." + extension);
+            file.transferTo(tempFile);
+            return tempFile;
+        } catch (IOException e) {
+            log.warn("[ETL] 임시 파일 저장 실패, 벡터화를 건너뜁니다.", e);
+            throw new StorageException("임시 파일 저장에 실패했습니다.", e);
         }
     }
 }

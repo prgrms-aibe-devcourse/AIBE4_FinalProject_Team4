@@ -8,6 +8,7 @@ import kr.java.documind.domain.archive.document.model.dto.request.DocumentUpload
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentDownloadResult;
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetadataResponse;
 import kr.java.documind.domain.archive.document.service.DocumentMetadataService;
+import kr.java.documind.domain.archive.etl.infrastructure.EmbeddingSseManager;
 import kr.java.documind.global.annotation.ProjectId;
 import kr.java.documind.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/projects/{publicId}/documents")
@@ -33,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class DocumentMetadataApiController {
 
     private final DocumentMetadataService documentMetadataService;
+    private final EmbeddingSseManager embeddingSseManager;
 
     @GetMapping("/{documentId}/download")
     public ResponseEntity<Resource> downloadDocument(
@@ -85,5 +88,13 @@ public class DocumentMetadataApiController {
             @ProjectId UUID projectId, @PathVariable Long documentId) {
         documentMetadataService.deleteDocument(documentId);
         return ApiResponse.success();
+    }
+
+    @GetMapping(
+            value = "/{documentId}/embedding-status",
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeEmbeddingStatus(
+            @ProjectId UUID projectId, @PathVariable Long documentId) {
+        return embeddingSseManager.register(documentId);
     }
 }

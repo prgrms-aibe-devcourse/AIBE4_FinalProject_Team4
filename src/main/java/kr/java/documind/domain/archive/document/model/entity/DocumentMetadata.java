@@ -3,6 +3,8 @@ package kr.java.documind.domain.archive.document.model.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -12,6 +14,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
+import kr.java.documind.domain.archive.etl.model.enums.EmbeddingStatus;
 import kr.java.documind.global.entity.DomainSource;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -77,6 +80,10 @@ public class DocumentMetadata {
     @Column(nullable = false)
     private boolean isProcessed;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EmbeddingStatus embeddingStatus;
+
     @Column(nullable = false)
     private LocalDateTime uploadedAt;
 
@@ -101,6 +108,7 @@ public class DocumentMetadata {
             long size,
             String storedKey,
             boolean isProcessed,
+            EmbeddingStatus embeddingStatus,
             LocalDateTime uploadedAt) {
         this.domainSource = domainSource;
         this.documentGroup = documentGroup;
@@ -114,6 +122,7 @@ public class DocumentMetadata {
         this.size = size;
         this.storedKey = storedKey;
         this.isProcessed = isProcessed;
+        this.embeddingStatus = embeddingStatus;
         this.uploadedAt = uploadedAt;
     }
 
@@ -130,6 +139,7 @@ public class DocumentMetadata {
             long size,
             String storedKey,
             boolean isProcessed,
+            EmbeddingStatus embeddingStatus,
             LocalDateTime uploadedAt) {
         return new DocumentMetadata(
                 domainSource,
@@ -144,6 +154,7 @@ public class DocumentMetadata {
                 size,
                 storedKey,
                 isProcessed,
+                embeddingStatus,
                 uploadedAt);
     }
 
@@ -174,6 +185,10 @@ public class DocumentMetadata {
 
     public void changeProcessed(boolean isProcessed) {
         this.isProcessed = isProcessed;
+    }
+
+    public void changeEmbeddingStatus(EmbeddingStatus embeddingStatus) {
+        this.embeddingStatus = embeddingStatus;
     }
 
     public void markModified() {
