@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<aside th:fragment="sidebar-mypage(activeMenu)"
+       class="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200
+              z-40 flex flex-col overflow-hidden">
+
+    <!-- ── 로고 ── -->
+    <div class="h-14 flex items-center px-4 border-b border-gray-200 shrink-0">
+        <a href="/member/dashboard" class="flex items-center gap-2 select-none">
+            <div class="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center"
+                 style="background:linear-gradient(135deg,#e84393 0%,#f5a623 50%,#7ed321 100%)">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2
+                             h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <span class="text-base font-bold text-gray-900 tracking-tight">DOCUMIND</span>
+        </a>
+    </div>
+
+    <!-- ── 회사 프로필 (ADMIN 제외) ── -->
+    <div th:if="${headerInfo != null and headerInfo.globalRole() != null
+                  and headerInfo.globalRole().name() != 'ADMIN'}"
+         class="px-4 py-4 border-b border-gray-100 shrink-0">
+
+        <!-- 소속 회사 있음 -->
+        <div th:if="${headerInfo.companyName() != null}"
+             class="flex items-center gap-3">
+            <div th:if="${headerInfo.companyProfileUrl() != null}"
+                 class="w-10 h-10 rounded-full overflow-hidden shrink-0">
+                <img th:src="${headerInfo.companyProfileUrl()}" alt="회사 프로필" class="w-full h-full object-cover"/>
+            </div>
+            <div th:unless="${headerInfo.companyProfileUrl() != null}"
+                 class="w-10 h-10 rounded-full bg-sky-400 flex items-center justify-center shrink-0">
+                <span th:text="${#strings.substring(headerInfo.companyName(),0,1)}"
+                      class="text-white text-sm font-bold"></span>
+            </div>
+            <span th:text="${headerInfo.companyName()}"
+                  class="text-sm font-semibold text-gray-800 truncate"></span>
+        </div>
+
+        <!-- 소속 회사 없음 -->
+        <div th:unless="${headerInfo.companyName() != null}"
+             class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
+                             m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/>
+                </svg>
+            </div>
+            <span class="text-sm text-gray-400">소속 없음</span>
+        </div>
+    </div>
+
+    <!-- ── 메뉴 ── -->
+    <nav class="flex-1 flex flex-col gap-0.5 p-3 overflow-y-auto">
+
+        <!-- 내 프로필 -->
+        <a href="/my/profile"
+           th:classappend="${activeMenu == 'profile'} ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            내 프로필
+        </a>
+
+        <!-- 회사 관리 (EMPLOYEE 는 숨김) -->
+        <a th:if="${headerInfo == null or headerInfo.globalRole() == null or headerInfo.globalRole().name() != 'EMPLOYEE'}"
+           href="/my/company"
+           th:classappend="${activeMenu == 'company'} ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
+                         m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+            회사 관리
+        </a>
+
+        <!-- 프로젝트 관리 (사이드바 있는 대시보드 → /my/projects) -->
+        <a href="/my/projects"
+           th:classappend="${activeMenu == 'projects'} ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z
+                         M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z
+                         M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z
+                         M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+            </svg>
+            프로젝트 관리
+        </a>
+    </nav>
+</aside>
+
+</body>
+</html>
+

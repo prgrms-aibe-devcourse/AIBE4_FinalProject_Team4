@@ -5,11 +5,12 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import kr.java.documind.global.exception.BusinessException;
 import kr.java.documind.global.exception.TooManyRequestsException;
-import kr.java.documind.global.security.filter.RateLimitFilter;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.response.ErrorResponse;
+import kr.java.documind.global.security.filter.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
@@ -18,8 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
 
 @Slf4j
 @Component
@@ -31,12 +30,13 @@ public class FilterExceptionHandler extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-        HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-        throws ServletException, IOException {
+            HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         try {
             filterChain.doFilter(request, response);
         } catch (TooManyRequestsException e) {
-            response.addHeader(RateLimitFilter.HEADER_RETRY_AFTER, String.valueOf(e.getRetryAfterSeconds()));
+            response.addHeader(
+                    RateLimitFilter.HEADER_RETRY_AFTER, String.valueOf(e.getRetryAfterSeconds()));
             response.addHeader(RateLimitFilter.HEADER_REMAINING_TOKEN, "0");
             sendErrorResponse(response, e.getStatus(), e.getMessage());
         } catch (BusinessException e) {
@@ -47,7 +47,8 @@ public class FilterExceptionHandler extends OncePerRequestFilter {
         }
     }
 
-    private void sendErrorResponse(HttpServletResponse response, HttpStatus status, String message) throws IOException {
+    private void sendErrorResponse(HttpServletResponse response, HttpStatus status, String message)
+            throws IOException {
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");

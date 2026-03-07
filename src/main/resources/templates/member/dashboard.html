@@ -1,161 +1,81 @@
-<!-- templates/member/dashboard.html -->
-<!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{common/layout/layout :: layout('참여 중인 프로젝트', ~{:: #main-content})}">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>참여 중인 프로젝트 | DOCUMIND</title>
+    <!-- layout.html의 head로 대체 -->
 </head>
+<body class="bg-gray-50 min-h-screen">
+<div id="main-content">
+    <th:block th:if="${showSidebar == null or !showSidebar}">
 
-<body class="min-h-screen bg-gray-50 text-gray-900">
+        <div class="flex flex-col min-h-screen">
+            <div th:replace="~{common/fragments/header-auth :: header-auth}"></div>
 
-<header th:replace="common/header-auth :: header"></header>
-
-<main class="mx-auto w-full max-w-5xl px-6 pb-16 pt-14">
-    <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-            <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl">참여 중인 프로젝트</h1>
-            <p class="mt-4 max-w-2xl text-base leading-7 text-gray-600">
-                작업할 프로젝트를 선택해주세요. 각 프로젝트의 팀 내 역할과 최근 활동 상태를 확인하실 수 있습니다.
-            </p>
-        </div>
-
-        <div class="sm:pt-2">
-            <a
-                th:if="${canCreateProject} == null or ${canCreateProject}"
-                th:href="@{/projects/new}"
-                class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.99]"
-            >
-          <span class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/15" aria-hidden="true">
-            <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
-              <path fill-rule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clip-rule="evenodd"/>
-            </svg>
-          </span>
-                새 프로젝트 생성
-            </a>
-        </div>
-    </div>
-
-    <section class="mt-10">
-        <!-- Empty -->
-        <div
-            th:if="${projects == null or #lists.isEmpty(projects)}"
-            class="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm"
-        >
-            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6 text-gray-500">
-                    <path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
-                          stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M8.5 8h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    <path d="M8.5 12h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <h2 class="text-lg font-semibold">아직 참여 중인 프로젝트가 없어요</h2>
-            <p class="mt-2 text-sm text-gray-600">
-                새 프로젝트를 만들거나, 프로젝트에 초대되면 이곳에 표시됩니다.
-            </p>
-            <div class="mt-6">
-                <a
-                    th:href="@{/projects/new}"
-                    class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-                >
-                    새 프로젝트 생성
-                </a>
-            </div>
-        </div>
-
-        <!-- List -->
-        <div th:if="${projects != null and !#lists.isEmpty(projects)}" class="space-y-5">
-            <article
-                th:each="p : ${projects}"
-                class="group flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-6 py-6 shadow-sm transition hover:shadow-md"
-            >
-                <div class="flex min-w-0 items-center gap-5">
-                    <!-- 아이콘 -->
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gray-100" aria-hidden="true">
-                        <!-- lightning -->
-                        <svg th:if="${p.icon} == 'lightning'" viewBox="0 0 24 24" fill="none" class="h-6 w-6 text-blue-600">
-                            <path d="M13 2 3 14h8l-1 8 10-12h-8l1-8Z"
-                                  stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-                        </svg>
-
-                        <!-- globe -->
-                        <svg th:if="${p.icon} == 'globe'" viewBox="0 0 24 24" fill="none" class="h-6 w-6 text-blue-600">
-                            <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"
-                                  stroke="currentColor" stroke-width="1.7"/>
-                            <path d="M2 12h20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-                            <path d="M12 2c3 3 3 17 0 20-3-3-3-17 0-20Z"
-                                  stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-                        </svg>
-
-                        <!-- default grid -->
-                        <svg th:if="${p.icon} == null or (${p.icon} != 'lightning' and ${p.icon} != 'globe')"
-                             viewBox="0 0 24 24" fill="none" class="h-6 w-6 text-blue-600">
-                            <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"
-                                  stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-
-                    <!-- 제목/메타 -->
-                    <div class="min-w-0">
-                        <h3 class="truncate text-lg font-bold text-gray-900" th:text="${p.name}">알파 프로젝트</h3>
-                        <p th:if="${p.meta != null}" class="mt-1 truncate text-sm text-gray-500" th:text="${p.meta}">
-                            운영자 · 최근 활동 2시간 전
+            <main class="flex-1 pt-20 w-full max-w-4xl mx-auto px-6 pb-10">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">참여 중인 프로젝트</h1>
+                        <p class="mt-2 text-sm text-gray-500 leading-relaxed">
+                            작업할 프로젝트를 선택해주세요. 각 프로젝트의 팀 내 역할과 최근 활동 상태를 확인하실 수 있습니다.
                         </p>
                     </div>
-                </div>
-
-                <div class="flex shrink-0 items-center gap-2">
-                    <a
-                        th:href="@{/projects/{id}(id=${p.id})}"
-                        class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
-                    >
-                        프로젝트 입장
-                        <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" aria-hidden="true">
-                            <path d="M9 18l6-6-6-6"
-                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <a th:href="@{/projects/new}"
+                       class="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5
+                              text-sm font-semibold text-white shadow-sm hover:bg-blue-600
+                              active:scale-[0.99] transition shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
+                        새 프로젝트 생성
                     </a>
                 </div>
-            </article>
+                <div th:replace="~{member/dashboard-fragments :: project-list}"></div>
+            </main>
 
-            <!-- 더보기 -->
-            <div class="pt-4 text-center">
-                <a
-                    th:if="${hasNext} == true"
-                    th:href="@{/member/dashboard(page=${nextPage})}"
-                    class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
-                >
-                    더보기
-                    <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6"
-                              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </a>
-
-                <!-- hasNext를 안 쓰는 경우(디자인용) -->
-                <button
-                    th:if="${hasNext} == null"
-                    type="button"
-                    class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
-                >
-                    더보기
-                    <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6"
-                              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-            </div>
+            <footer class="border-t border-gray-200 py-6 text-center text-xs text-gray-400">
+                © 2026 Documind Incs. All rights reserved.
+            </footer>
         </div>
-    </section>
-</main>
+    </th:block>
 
-<footer class="border-t border-gray-200 bg-gray-50 py-6">
-    <div class="mx-auto max-w-5xl px-6 text-center text-xs text-gray-500">
-        © 2026 Documind Incs. All rights reserved.
-    </div>
-</footer>
+    <th:block th:if="${showSidebar}">
+
+        <div th:replace="~{common/fragments/sidebar-mypage :: sidebar-mypage('projects')}"></div>
+
+        <div class="ml-64 flex flex-col min-h-screen">
+            <div th:replace="~{common/fragments/header-auth :: user-bar}"></div>
+
+            <main class="flex-1 px-8 py-8">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">참여 중인 프로젝트</h1>
+                        <p class="mt-2 text-sm text-gray-500 leading-relaxed">
+                            작업할 프로젝트를 선택해주세요. 각 프로젝트의 팀 내 역할과 최근 활동 상태를 확인하실 수 있습니다.
+                        </p>
+                    </div>
+                    <a th:href="@{/projects/new}"
+                       class="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5
+                              text-sm font-semibold text-white shadow-sm hover:bg-blue-600
+                              active:scale-[0.99] transition shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        새 프로젝트 생성
+                    </a>
+                </div>
+                <div th:replace="~{member/dashboard-fragments :: project-list}"></div>
+            </main>
+
+            <footer class="border-t border-gray-200 py-6 text-center text-xs text-gray-400">
+                © 2026 Documind Incs. All rights reserved.
+            </footer>
+        </div>
+    </th:block>
+
+    <!-- 로그아웃 모달 + 공통 JS -->
+    <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
+    <script th:src="@{/js/common/FetchUtil.js}"></script>
+    <script th:src="@{/js/member/Auth.js}"></script>
+</div>
 </body>
 </html>

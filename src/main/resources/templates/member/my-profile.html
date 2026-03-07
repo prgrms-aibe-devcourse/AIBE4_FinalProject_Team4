@@ -1,149 +1,285 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{common/head :: head('내 프로필')}"></head>
-<body class="bg-gray-50 min-h-screen">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{common/layout/layout :: layout('내 프로필', ~{:: #main-content})}">
+<head>
+    <!-- layout.html의 head로 대체 -->
+</head>
 
-<!-- 인증 헤더 -->
-<div th:replace="~{common/header-auth :: header-auth}"></div>
+<body class="bg-gray-100 min-h-screen">
+<div id="main-content">
+    <!-- ── 고정 사이드바 ── -->
+    <div th:replace="~{common/fragments/sidebar-mypage :: sidebar-mypage('profile')}"></div>
 
-<!-- 메인 콘텐츠 -->
-<main class="pt-16 max-w-7xl mx-auto px-6 py-10">
-    <div class="flex gap-8">
+    <!-- ── 오른쪽 패널 ── -->
+    <div class="ml-64 flex flex-col min-h-screen">
 
-        <!-- 사이드바 -->
-        <div th:replace="~{common/sidebar-mypage :: sidebar-mypage('profile')}"></div>
+        <!-- 사용자 바 -->
+        <div th:replace="~{common/fragments/header-auth :: user-bar}"></div>
 
-        <!-- 콘텐츠 영역 -->
-        <div class="flex-1 min-w-0">
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+        <main class="flex-1 px-8 py-8">
+            <div class="max-w-3xl mx-auto">
 
-                <!-- 페이지 타이틀 -->
-                <h2 class="text-xl font-bold text-gray-900 mb-8">내 프로필</h2>
+                <!-- 프로필 카드 -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
-                <!-- 글로벌 에러 표시 영역 -->
-                <div id="global-error" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600"></div>
-                <div id="success-message" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600"></div>
+                    <!-- ── 상단 배너: 프로필 이미지 + 이름 + 뱃지 ── -->
+                    <div class="bg-gradient-to-r from-sky-50 to-blue-50 px-8 pt-8 pb-6 border-b border-gray-200">
+                        <div class="flex items-center gap-6">
 
-                <!-- 프로필 이미지 & 기본 정보 -->
-                <div class="flex items-start gap-6 mb-8 pb-8 border-b border-gray-100">
-                    <!-- 프로필 이미지 -->
-                    <div class="shrink-0">
-                        <div th:if="${profile.profileImageUrl() != null}"
-                             class="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100">
-                            <img th:src="${profile.profileImageUrl()}" alt="프로필 이미지" class="w-full h-full object-cover"/>
-                        </div>
-                        <div th:unless="${profile.profileImageUrl() != null}"
-                             class="w-20 h-20 rounded-2xl bg-primary-100 flex items-center justify-center">
-                            <span th:text="${#strings.substring(profile.nickname(), 0, 1)}"
-                                  class="text-3xl font-bold text-primary-600">U</span>
-                        </div>
-                    </div>
-
-                    <!-- 이름 & 이메일 (읽기 전용) -->
-                    <div class="flex-1">
-                        <div class="text-lg font-semibold text-gray-900 mb-1" th:text="${profile.name()}">이름</div>
-                        <div class="text-sm text-gray-400" th:text="${profile.email()}">이메일</div>
-                        <div class="flex items-center gap-2 mt-3">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                  th:classappend="${profile.globalRole() == 'ADMIN'} ? 'bg-red-100 text-red-700' :
-                                                  (${profile.globalRole() == 'CEO'} ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')"
-                                  th:text="${profile.globalRole()}">
-                                ROLE
-                            </span>
-                            <span th:if="${profile.position() != null}"
-                                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
-                                  th:text="${profile.position()}">
-                                POSITION
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 프로필 수정 폼 -->
-                <form id="profile-form" class="space-y-6" onsubmit="return false;">
-
-                    <!-- 닉네임 (편집 가능) -->
-                    <div>
-                        <label for="nickname" class="block text-sm font-medium text-gray-700 mb-1.5">
-                            닉네임
-                        </label>
-                        <div class="flex gap-3">
-                            <input type="text"
-                                   id="nickname"
-                                   name="nickname"
-                                   th:value="${profile.nickname()}"
-                                   maxlength="20"
-                                   placeholder="닉네임을 입력하세요"
-                                   class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all"/>
-                            <button type="button"
-                                    onclick="updateNickname()"
-                                    class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors whitespace-nowrap">
-                                저장
-                            </button>
-                        </div>
-                        <p id="nickname-error" class="hidden mt-1.5 text-xs text-red-500"></p>
-                    </div>
-
-                    <!-- 이름 (읽기 전용) -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">이름</label>
-                        <input type="text"
-                               th:value="${profile.name()}"
-                               readonly
-                               class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed"/>
-                        <p class="mt-1 text-xs text-gray-400">소셜 계정에서 가져온 정보는 변경할 수 없습니다</p>
-                    </div>
-
-                    <!-- 이메일 (읽기 전용) -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">이메일</label>
-                        <input type="email"
-                               th:value="${profile.email()}"
-                               readonly
-                               class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed"/>
-                    </div>
-
-                    <!-- 소속 정보 -->
-                    <div class="pt-6 border-t border-gray-100">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-4">소속 정보</h3>
-                        <div th:if="${profile.companyName() != null}"
-                             class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                            <div class="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center shrink-0">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
-                                </svg>
+                            <!-- 프로필 이미지 (카메라 버튼 overlay) -->
+                            <div class="relative shrink-0">
+                                <div class="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white shadow-md">
+                                    <img th:if="${profile?.profileImageUrl() != null}"
+                                         th:src="${profile.profileImageUrl()}"
+                                         id="profile-img-preview"
+                                         alt="프로필 이미지"
+                                         class="w-full h-full object-cover"/>
+                                    <div th:unless="${profile?.profileImageUrl() != null}"
+                                         id="profile-img-fallback"
+                                         class="w-full h-full bg-amber-400 flex items-center justify-center">
+                                            <span th:text="${profile?.nickname() != null
+                                                             ? #strings.substring(profile.nickname(),0,1) : 'U'}"
+                                                  class="text-3xl font-bold text-white">U</span>
+                                    </div>
+                                </div>
+                                <!-- 카메라 버튼 -->
+                                <button type="button"
+                                        onclick="document.getElementById('profile-image-input').click()"
+                                        class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-blue-500
+                                                   hover:bg-blue-600 flex items-center justify-center
+                                                   shadow-md transition-colors">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86
+                                                     a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5
+                                                     a2 2 0 01-2-2V9z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                </button>
+                                <input type="file" id="profile-image-input"
+                                       accept="image/*" class="hidden"
+                                       onchange="previewImage(this)"/>
+                                <!-- 원본 이미지 URL 보관 (취소 시 복원용) -->
+                                <input type="hidden" id="profile-img-original-src"
+                                       th:value="${profile?.profileImageUrl()}"/>
                             </div>
+
+                            <!-- 이름 + 뱃지 + 이메일 -->
                             <div>
-                                <div class="text-sm font-medium text-gray-800" th:text="${profile.companyName()}">회사명</div>
-                                <div class="text-xs text-gray-400 mt-0.5" th:text="${profile.position()}">직책</div>
+                                <div class="flex items-center gap-2 mb-1">
+                                        <span th:text="${profile?.name() ?: '이름'}"
+                                              class="text-2xl font-bold text-gray-900">이름</span>
+
+                                    <!-- 역할 뱃지 -->
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full
+                                                     text-xs font-semibold bg-emerald-100 text-emerald-700">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944
+                                                         a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9
+                                                         c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622
+                                                         0-1.042-.133-2.052-.382-3.016z"/>
+                                            </svg>
+                                            <th:block th:if="${profile != null and profile.globalRole() != null}">
+                                                <th:block th:if="${profile.globalRole().name() == 'CEO'}">대표</th:block>
+                                                <th:block th:if="${profile.globalRole().name() == 'ADMIN'}">운영자</th:block>
+                                                <th:block th:if="${profile.globalRole().name() == 'EMPLOYEE'}">직원</th:block>
+                                            </th:block>
+                                        </span>
+                                </div>
+                                <p class="text-sm text-gray-500 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14
+                                                     a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span th:text="${profile?.email() ?: '이메일'}">email</span>
+                                </p>
                             </div>
-                            <!-- 승인 대기 뱃지 -->
-                            <span th:if="${profile.companyPending()}"
-                                  class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                                승인 대기
-                            </span>
-                            <span th:unless="${profile.companyPending()}"
-                                  class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                정상
-                            </span>
-                        </div>
-                        <div th:unless="${profile.companyName() != null}"
-                             class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center">
-                            <p class="text-sm text-gray-400 mb-3">아직 소속 회사가 없습니다</p>
-                            <a href="/my/company"
-                               class="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                                회사 등록하기 →
-                            </a>
                         </div>
                     </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</main>
 
-<!-- 공통 인증 JS (로그아웃) -->
-<script src="/js/member/auth.js"></script>
+                    <!-- ── 본문 ── -->
+                    <div class="p-8">
+
+                        <!-- 글로벌 에러 / 성공 메시지 -->
+                        <div id="global-error"
+                             class="hidden mb-6 p-4 bg-red-50 border border-red-200
+                                        rounded-xl text-sm text-red-600"></div>
+                        <div id="success-message"
+                             class="hidden mb-6 p-4 bg-green-50 border border-green-200
+                                        rounded-xl text-sm text-green-700"></div>
+
+                        <div class="grid gap-8"
+                             th:classappend="${profile != null and profile.globalRole() != null
+                                                  and profile.globalRole().name() == 'ADMIN'}
+                                                 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-5'">
+
+                            <!-- ── 왼쪽: 기본 정보 수정 ── -->
+                            <div th:classappend="${profile != null and profile.globalRole() != null
+                                                       and profile.globalRole().name() == 'ADMIN'}
+                                                      ? '' : 'lg:col-span-3'">
+                                <h3 class="flex items-center gap-2 text-sm font-bold text-blue-600 mb-5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066
+                                                     c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924
+                                                     0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0
+                                                     00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066
+                                                     c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426
+                                                     -1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37
+                                                     .996.608 2.296.07 2.572-1.065z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    기본 정보 수정
+                                </h3>
+
+                                <!-- 닉네임 (편집 가능) -->
+                                <div class="mb-5">
+                                    <label for="nickname"
+                                           class="block text-sm font-semibold text-gray-700 mb-1.5">
+                                        닉네임
+                                        <span class="text-red-500 ml-0.5">*</span>
+                                    </label>
+                                    <input type="text"
+                                           id="nickname"
+                                           name="nickname"
+                                           th:value="${profile?.nickname()}"
+                                           maxlength="20"
+                                           placeholder="닉네임을 입력하세요"
+                                           class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200
+                                                      rounded-xl text-sm focus:outline-none focus:ring-2
+                                                      focus:ring-blue-300 focus:border-transparent transition-all"/>
+                                    <p class="mt-1.5 text-xs text-gray-400">
+                                        커뮤니티와 리포트 생성 시 표시될 이름입니다.
+                                    </p>
+                                    <p id="nickname-error" class="hidden mt-1 text-xs text-red-500"></p>
+                                </div>
+
+                                <!-- 이름 + 이메일 (읽기 전용, 2열) -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-500 mb-1.5">이름</label>
+                                        <div class="flex items-center gap-2 px-4 py-2.5 bg-gray-50
+                                                        border border-gray-200 rounded-xl text-sm text-gray-600">
+                                            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                            </svg>
+                                            <span th:text="${profile?.name() ?: '-'}">이름</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-500 mb-1.5">이메일</label>
+                                        <div class="flex items-center gap-2 px-4 py-2.5 bg-gray-50
+                                                        border border-gray-200 rounded-xl text-sm text-gray-600">
+                                            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7
+                                                             a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                            </svg>
+                                            <span th:text="${profile?.email() ?: '-'}" class="truncate">이메일</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ── 오른쪽: 소속 정보 (ADMIN 은 숨김) ── -->
+                            <div th:if="${profile == null
+                                              or profile.globalRole() == null
+                                              or profile.globalRole().name() != 'ADMIN'}"
+                                 class="lg:col-span-2">
+                                <h3 class="flex items-center gap-2 text-sm font-bold text-emerald-600 mb-5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
+                                                     m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2
+                                                     a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                    소속 정보
+                                </h3>
+
+                                <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 space-y-4">
+                                    <!-- 소속 회사 -->
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-xl bg-sky-100 flex items-center justify-center shrink-0">
+                                            <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
+                                                             m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2
+                                                             a1 1 0 011 1v5m-4 0h4"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-400 mb-0.5">소속 회사</p>
+                                            <p class="text-sm font-bold text-gray-800"
+                                               th:text="${profile?.companyName() ?: '미등록'}">회사명</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- 직급 -->
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                                            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4
+                                                             a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8
+                                                             a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-400 mb-0.5">직급</p>
+                                            <p class="text-sm font-bold text-gray-800"
+                                               th:text="${profile?.position() ?: '-'}">직급</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- 입사일 -->
+                                    <p class="text-xs text-gray-400 pt-1 border-t border-gray-200">
+                                        입사일:
+                                        <span th:if="${profile?.joinedAt() != null}"
+                                              th:text="${profile.joinedAt()}">2021.05.12</span>
+                                        <span th:unless="${profile?.joinedAt() != null}">-</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div><!-- /grid -->
+                    </div><!-- /본문 -->
+
+                    <!-- ── 하단 버튼 ── -->
+                    <div class="px-8 pb-8 flex justify-end gap-3">
+                        <button type="button"
+                                onclick="resetForm()"
+                                class="px-6 py-2.5 rounded-xl border border-gray-200
+                                           text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                            취소
+                        </button>
+                        <button type="button"
+                                onclick="saveProfile()"
+                                class="px-6 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
+                                           text-sm font-semibold text-white transition-colors">
+                            변경 사항 저장
+                        </button>
+                    </div>
+
+                </div><!-- /프로필 카드 -->
+            </div>
+        </main>
+
+        <footer class="border-t border-gray-200 py-6 text-center text-xs text-gray-400">
+            © 2026 Documind Incs. All rights reserved.
+        </footer>
+    </div>
+
+
+    <!-- 로그아웃 모달 + 공통 JS -->
+    <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
+    <script th:src="@{/js/common/FetchUtil.js}"></script>
+    <script th:src="@{/js/member/Auth.js}"></script>
+    <script th:src="@{/js/member/MyProfile.js}"></script>
+</div>
 </body>
 </html>

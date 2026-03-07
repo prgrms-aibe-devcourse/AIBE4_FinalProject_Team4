@@ -1,12 +1,9 @@
 async function callApi(url, options = {}) {
-    const headers = {
-        ...(options.headers ?? {}),
-    };
-
     const isFormData = options.body instanceof FormData;
-    if (!isFormData) {
-        headers['Content-Type'] = 'application/json';
-    }
+
+    const headers = isFormData
+        ? { ...(options.headers ?? {}) }
+        : { 'Content-Type': 'application/json', ...(options.headers ?? {}) };
 
     const method = (options.method ?? 'GET').toUpperCase();
     if (!['GET', 'HEAD'].includes(method)) {
