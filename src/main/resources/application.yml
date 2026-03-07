@@ -11,6 +11,11 @@ spring:
       s3:
         bucket: ${AWS_S3_BUCKET:team4-documind-bucket}
 
+# Cold Storage 설정
+cold-storage:
+  s3-prefix: cold-storage/game-logs  # S3 저장 경로 접두사
+  temp-dir: ${java.io.tmpdir}/cold-storage  # 임시 파일 디렉토리
+
   # 파일 업로드 용량 설정
   servlet:
     multipart:
