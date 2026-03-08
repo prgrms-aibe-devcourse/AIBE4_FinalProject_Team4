@@ -4,9 +4,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.stream.Collectors;
+import kr.java.documind.domain.member.exception.DeletedProjectException;
 import kr.java.documind.global.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -20,10 +22,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @ControllerAdvice(annotations = Controller.class)
 public class GlobalViewExceptionHandler {
 
-    /**
-     * @Valid on @ModelAttribute - BindingResult 없이 던져진 경우 (안전망) 직전 페이지로 리다이렉트하며 flash 속성으로 에러 메시지
-     * 전달 Referer 헤더에서 path만 추출해 오픈 리다이렉트 방지
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public String handleMethodArgumentNotValid(
             MethodArgumentNotValidException e,
@@ -83,6 +81,23 @@ public class GlobalViewExceptionHandler {
         mav.addObject("status", HttpStatus.BAD_REQUEST.value());
         mav.addObject("message", "요청 파라미터 타입이 올바르지 않습니다: " + e.getName());
         mav.setStatus(HttpStatus.BAD_REQUEST);
+        return mav;
+    }
+
+    @ExceptionHandler(DeletedProjectException.class)
+    public String handleDeletedProject(DeletedProjectException e, HttpServletRequest request) {
+        log.warn("DeletedProjectException [{}]: {}", request.getRequestURI(), e.getMessage());
+        return "error/deleted-project";
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ModelAndView handleAccessDenied(AccessDeniedException e, HttpServletRequest request) {
+        log.warn("AccessDeniedException [{}]: {}", request.getRequestURI(), e.getMessage());
+
+        ModelAndView mav = new ModelAndView("error/403");
+        mav.addObject("status", HttpStatus.FORBIDDEN.value());
+        mav.addObject("message", "접근 권한이 없습니다.");
+        mav.setStatus(HttpStatus.FORBIDDEN);
         return mav;
     }
 

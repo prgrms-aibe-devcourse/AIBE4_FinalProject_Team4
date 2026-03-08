@@ -4,74 +4,150 @@
 
 <div th:fragment="project-list">
 
-    <!-- 빈 상태 -->
+    <!-- 빈 상태: 역할별 안내 메시지 분기 -->
     <div th:if="${projects == null or #lists.isEmpty(projects)}"
          class="rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm">
-        <div class="mx-auto mb-4 w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
-            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                      d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/>
-                <path stroke-linecap="round" stroke-width="1.5" d="M8.5 8h7M8.5 12h7"/>
-            </svg>
-        </div>
-        <h2 class="text-base font-semibold text-gray-900 mb-1">아직 참여 중인 프로젝트가 없어요</h2>
-        <p class="text-sm text-gray-500 mb-6">새 프로젝트를 만들거나, 프로젝트에 초대되면 이곳에 표시됩니다.</p>
-        <a th:href="@{/projects/new}"
-           class="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5
-                  text-sm font-semibold text-white hover:bg-blue-600 transition">
-            새 프로젝트 생성
-        </a>
+
+        <!-- ── 케이스 1: ADMIN ── -->
+        <th:block th:if="${headerInfo != null
+                            and headerInfo.globalRole() != null
+                            and headerInfo.globalRole().name() == 'ADMIN'}">
+            <div class="mx-auto mb-4 w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center">
+                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066
+                             c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924
+                             0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724
+                             0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066
+                             c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426
+                             -1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37
+                             .996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <h2 class="text-base font-semibold text-gray-900 mb-1">관리자 전용 기능</h2>
+            <p class="text-sm text-gray-500">운영자용 프로젝트 관리 기능은 준비중입니다...</p>
+        </th:block>
+
+        <!-- ── 케이스 2: CEO + 미승인 (no company / PENDING / SUSPENDED) ── -->
+        <th:block th:if="${headerInfo != null
+                            and headerInfo.globalRole() != null
+                            and headerInfo.globalRole().name() == 'CEO'
+                            and (headerInfo.companyStatus() == null
+                                 or headerInfo.companyStatus().name() != 'APPROVED')}">
+            <div class="mx-auto mb-4 w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
+                <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
+                             m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0
+                             011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+            </div>
+            <h2 class="text-base font-semibold text-gray-900 mb-1">승인된 회사가 없습니다.</h2>
+            <p class="text-sm text-gray-500 mb-6">
+                관리자(CEO) 계정의 경우 먼저 회사 승인을 받아야 합니다.
+            </p>
+            <a th:href="@{/my/company}"
+               class="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5
+                      text-sm font-semibold text-white hover:bg-amber-600 transition">
+                회사 관리 페이지로 이동
+            </a>
+        </th:block>
+
+        <!-- ── 케이스 3: CEO + APPROVED (프로젝트 없음) ── -->
+        <th:block th:if="${headerInfo != null
+                            and headerInfo.globalRole() != null
+                            and headerInfo.globalRole().name() == 'CEO'
+                            and headerInfo.companyStatus() != null
+                            and headerInfo.companyStatus().name() == 'APPROVED'}">
+            <div class="mx-auto mb-4 w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+                    <path stroke-linecap="round" stroke-width="1.5" d="M8.5 8h7M8.5 12h7"/>
+                </svg>
+            </div>
+            <h2 class="text-base font-semibold text-gray-900 mb-1">아직 참여 중인 프로젝트가 없어요</h2>
+            <p class="text-sm text-gray-500 mb-6">새 프로젝트를 만들거나 팀원을 초대해보세요.</p>
+        </th:block>
+
+        <!-- ── 케이스 4: EMPLOYEE (프로젝트 없음) / 기본 ── -->
+        <th:block th:if="${headerInfo == null
+                            or headerInfo.globalRole() == null
+                            or headerInfo.globalRole().name() == 'EMPLOYEE'}">
+            <div class="mx-auto mb-4 w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+                    <path stroke-linecap="round" stroke-width="1.5" d="M8.5 8h7M8.5 12h7"/>
+                </svg>
+            </div>
+            <h2 class="text-base font-semibold text-gray-900 mb-1">참여 중인 프로젝트가 없습니다.</h2>
+            <p class="text-sm text-gray-500">프로젝트에 초대되면 이곳에 표시됩니다.</p>
+        </th:block>
+
     </div>
 
     <!-- 카드 목록 -->
-    <div th:if="${projects != null and !#lists.isEmpty(projects)}" class="space-y-3">
+    <div th:if="${projects != null and !#lists.isEmpty(projects)}">
 
-        <article th:each="p : ${projects}"
-                 class="flex items-center justify-between rounded-2xl border border-gray-200
-                        bg-white px-6 py-5 shadow-sm hover:shadow-md transition-shadow">
-            <div class="flex items-center gap-5 min-w-0">
-                <div class="w-11 h-11 shrink-0 rounded-2xl bg-blue-50 flex items-center justify-center">
-                    <svg th:if="${p.icon == 'lightning'}"
-                         class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M13 2 3 14h8l-1 8 10-12h-8l1-8Z"/>
-                    </svg>
-                    <svg th:if="${p.icon == 'globe'}"
-                         class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"
-                              d="M12 2a10 10 0 100 20A10 10 0 0012 2zM2 12h20"/>
-                    </svg>
-                    <svg th:if="${p.icon == null or (p.icon != 'lightning' and p.icon != 'globe')}"
-                         class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"/>
-                    </svg>
+        <div id="project-list-container"
+             th:classappend="${#lists.size(projects) > 3} ? 'overflow-hidden' : ''"
+             th:style="${#lists.size(projects) > 3} ? 'max-height: 285px;' : ''"
+             class="space-y-3">
+
+            <article th:each="p : ${projects}"
+                     class="flex items-center justify-between rounded-2xl border border-gray-200
+                            bg-white px-6 py-5 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-5 min-w-0">
+                    <!-- 프로젝트 로고 -->
+                    <div class="w-11 h-11 shrink-0 rounded-2xl bg-blue-50 flex items-center
+                                justify-center overflow-hidden ring-1 ring-gray-100">
+                        <img th:if="${p.profileUrl() != null}"
+                             th:src="${p.profileUrl()}"
+                             alt="프로젝트 로고"
+                             class="w-full h-full object-cover"/>
+                        <svg th:if="${p.profileUrl() == null}"
+                             class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"/>
+                        </svg>
+                    </div>
+                    <!-- 프로젝트명 -->
+                    <h3 class="text-base font-bold text-gray-900 truncate"
+                        th:text="${p.name()}">프로젝트</h3>
                 </div>
-                <h3 class="text-base font-bold text-gray-900 truncate" th:text="${p.name}">프로젝트</h3>
-            </div>
 
-            <a th:href="@{/projects/{id}(id=${p.id})}"
-               class="shrink-0 inline-flex items-center gap-1 text-sm font-semibold
-                      text-blue-500 hover:text-blue-700 transition-colors">
-                프로젝트 입장
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18l6-6-6-6"/>
-                </svg>
-            </a>
-        </article>
+                <!-- 프로젝트 입장 버튼 -->
+                <a th:href="@{/projects/{publicId}/groups(publicId=${p.publicId()})}"
+                   class="shrink-0 inline-flex items-center gap-1 text-sm font-semibold
+                          text-blue-500 hover:text-blue-700 transition-colors">
+                    프로젝트 입장
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18l6-6-6-6"/>
+                    </svg>
+                </a>
+            </article>
 
-        <!-- 더보기 -->
-        <div th:if="${hasNext}" class="pt-4 text-center">
-            <a th:href="@{/member/dashboard(page=${nextPage})}"
-               class="inline-flex items-center gap-2 rounded-full border border-gray-200
-                      bg-white px-6 py-2.5 text-sm font-semibold text-gray-700
-                      shadow-sm hover:bg-gray-50 transition">
-                더보기
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
-                </svg>
-            </a>
         </div>
+
+        <!-- 더 보기 버튼 (3개 초과 시만 표시) -->
+        <div th:if="${#lists.size(projects) > 3}" class="mt-3 text-center">
+            <button id="project-list-toggle-btn"
+                    type="button"
+                    onclick="toggleProjectList()"
+                    class="inline-flex items-center gap-1.5 text-sm font-semibold
+                           text-blue-500 hover:text-blue-700 transition-colors">
+                <span id="project-list-toggle-label">더 보기</span>
+                <svg id="project-list-toggle-icon"
+                     class="w-4 h-4 transition-transform duration-200"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+        </div>
+
     </div>
 </div>
 

@@ -13,6 +13,7 @@ import kr.java.documind.global.security.oauth.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -39,6 +40,7 @@ public class SecurityConfig {
     private final OAuth2FailureHandler oAuth2FailureHandler;
     private final HttpCookieOAuth2AuthorizationRequestRepository authRequestRepository;
 
+    /** 인증 없이 접근 가능한 GET 경로 (정적 리소스 · 공개 페이지) */
     private static final String[] PUBLIC_GET_PATHS = {
         "/",
         "/auth/login",
@@ -47,11 +49,17 @@ public class SecurityConfig {
         "/css/**",
         "/js/**",
         "/images/**",
-        "/favicon.ico"
+        "/favicon.ico",
     };
 
+    /** 인증 없이 접근 가능한 POST 경로 */
     private static final String[] PUBLIC_POST_PATHS = {
         "/api/auth/refresh", "/api/auth/logout",
+    };
+
+    /** 인증 없이 접근 가능한 Actuator 엔드포인트 */
+    private static final String[] PUBLIC_ACTUATOR_PATHS = {
+        "/actuator/health",
     };
 
     @Bean
@@ -68,14 +76,21 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(
                         auth ->
-                                auth.requestMatchers(PUBLIC_GET_PATHS)
+                                auth
+                                        // ── 공개 페이지 / 정적 리소스 ──────────────────────
+                                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_PATHS)
                                         .permitAll()
-                                        .requestMatchers(PUBLIC_POST_PATHS)
+                                        .requestMatchers(HttpMethod.POST, PUBLIC_POST_PATHS)
+                                        .permitAll()
+                                        // ── Actuator : health는 공개, 나머지는 ADMIN 전용 ──
+                                        .requestMatchers(HttpMethod.GET, PUBLIC_ACTUATOR_PATHS)
                                         .permitAll()
                                         .requestMatchers("/actuator/**")
                                         .hasRole("ADMIN")
+                                        // ── 어드민 전용 페이지 ─────────────────────────────
                                         .requestMatchers("/admin/**")
                                         .hasRole("ADMIN")
+                                        // ── 그 외 모든 요청: 인증 필요 ───────────────────
                                         .anyRequest()
                                         .authenticated())
                 .exceptionHandling(

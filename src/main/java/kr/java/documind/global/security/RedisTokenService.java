@@ -13,6 +13,7 @@ public class RedisTokenService {
     private static final String REFRESH_PREFIX = "refresh:";
     private static final String BLACKLIST_PREFIX = "blacklist:";
     private static final String OAUTH2_STATE_PREFIX = "oauth2_state:";
+    private static final String SUSPENDED_PREFIX = "suspended:";
 
     private final StringRedisTemplate redisTemplate;
     private final TokenProvider tokenProvider;
@@ -49,6 +50,21 @@ public class RedisTokenService {
         return redisTemplate.hasKey(blacklistKey(accessToken));
     }
 
+    public void revokeAllTokensByMember(UUID memberId, long accessTokenTtlSeconds) {
+        deleteRefreshToken(memberId);
+        redisTemplate
+                .opsForValue()
+                .set(suspendedKey(memberId), "1", accessTokenTtlSeconds, TimeUnit.SECONDS);
+    }
+
+    public boolean isMemberSuspended(UUID memberId) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(suspendedKey(memberId)));
+    }
+
+    public void clearSuspension(UUID memberId) {
+        redisTemplate.delete(suspendedKey(memberId));
+    }
+
     public void saveOAuth2State(String requestId, String stateJson, long ttlSeconds) {
         redisTemplate
                 .opsForValue()
@@ -73,5 +89,9 @@ public class RedisTokenService {
 
     private String oauth2StateKey(String requestId) {
         return OAUTH2_STATE_PREFIX + requestId;
+    }
+
+    private String suspendedKey(UUID memberId) {
+        return SUSPENDED_PREFIX + memberId;
     }
 }

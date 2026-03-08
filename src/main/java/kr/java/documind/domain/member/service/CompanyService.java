@@ -1,12 +1,20 @@
 package kr.java.documind.domain.member.service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import kr.java.documind.domain.member.exception.CompanyNotFoundException;
+import kr.java.documind.domain.member.model.dto.AdminCompanyCard;
+import kr.java.documind.domain.member.model.dto.HeaderInfo;
 import kr.java.documind.domain.member.model.entity.Company;
 import kr.java.documind.domain.member.model.entity.Member;
+import kr.java.documind.domain.member.model.enums.AccountStatus;
+import kr.java.documind.domain.member.model.enums.CompanyStatus;
 import kr.java.documind.domain.member.model.repository.CompanyRepository;
 import kr.java.documind.global.exception.ConflictException;
-import kr.java.documind.global.exception.ForbiddenException;
 import kr.java.documind.global.exception.NotFoundException;
 import kr.java.documind.global.exception.StorageException;
 import kr.java.documind.global.storage.FileStore;
@@ -22,18 +30,127 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class CompanyService {
 
+    private static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy.MM.dd");
+
     private final CompanyRepository companyRepository;
     private final MemberService memberService;
     private final FileStore fileStore;
+
+    public record AdminPageData(
+            HeaderInfo headerInfo,
+            List<AdminCompanyCard> pendingCompanies,
+            List<AdminCompanyCard> approvedCompanies,
+            List<AdminCompanyCard> suspendedCompanies,
+            long pendingCount,
+            long approvedCount,
+            long suspendedCount) {}
+
+    public AdminPageData getAdminCompanyPageData(UUID adminMemberId) {
+        HeaderInfo headerInfo = memberService.getHeaderInfo(adminMemberId);
+        List<AdminCompanyCard> pending = buildAdminCards(CompanyStatus.PENDING);
+        List<AdminCompanyCard> approved = buildAdminCards(CompanyStatus.APPROVED);
+        List<AdminCompanyCard> suspended = buildAdminCards(CompanyStatus.SUSPENDED);
+        return new AdminPageData(
+                headerInfo,
+                pending,
+                approved,
+                suspended,
+                pending.size(),
+                approved.size(),
+                suspended.size());
+    }
+
+    @Transactional
+    public void approveCompany(UUID adminMemberId, Long companyId) {
+        Company company =
+                companyRepository
+                        .findByIdAndDeletedAtIsNull(companyId)
+                        .orElseThrow(CompanyNotFoundException::new);
+        company.approve();
+        log.info("[CompanyService] 회사 승인: adminId={} companyId={}", adminMemberId, companyId);
+    }
+
+    @Transactional
+    public void rejectCompany(UUID adminMemberId, Long companyId) {
+        Company company =
+                companyRepository
+                        .findByIdAndDeletedAtIsNull(companyId)
+                        .orElseThrow(CompanyNotFoundException::new);
+        company.reject();
+        log.info("[CompanyService] 회사 거부: adminId={} companyId={}", adminMemberId, companyId);
+    }
+
+    private List<AdminCompanyCard> buildAdminCards(CompanyStatus status) {
+        List<Company> companies =
+                companyRepository.findByStatusAndDeletedAtIsNullOrderByCreatedAtDesc(status);
+        if (companies.isEmpty()) {
+            return List.of();
+        }
+        // 회사 ID 목록으로 CEO를 단일 쿼리로 일괄 조회 (N+1 방지)
+        List<Long> companyIds = companies.stream().map(Company::getId).toList();
+        Map<Long, Member> ceoByCompanyId = memberService.findCeosByCompanyIds(companyIds);
+
+        return companies.stream()
+                .map(company -> toAdminCompanyCard(company, ceoByCompanyId.get(company.getId())))
+                .toList();
+    }
+
+    private AdminCompanyCard toAdminCompanyCard(Company company, Member ceo) {
+        String companyProfileUrl = resolveUrl(company.getProfileKey());
+        String appliedAt = formatDate(company.getCreatedAt());
+        String updatedAt = formatDate(company.getUpdatedAt());
+
+        if (ceo == null || ceo.getAccountStatus() == AccountStatus.DELETED) {
+            return new AdminCompanyCard(
+                    company.getId(),
+                    company.getName(),
+                    companyProfileUrl,
+                    company.getStatus(),
+                    appliedAt,
+                    updatedAt,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    true);
+        }
+
+        return new AdminCompanyCard(
+                company.getId(),
+                company.getName(),
+                companyProfileUrl,
+                company.getStatus(),
+                appliedAt,
+                updatedAt,
+                ceo.getName(),
+                ceo.getEmail(),
+                ceo.getAccountStatus(),
+                ceo.getPosition(),
+                resolveUrl(ceo.getProfileKey()),
+                false);
+    }
+
+    private String resolveUrl(String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        return fileStore.getAccessUrl(key);
+    }
+
+    private String formatDate(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "-";
+        }
+        return dateTime.format(DATE_FORMATTER);
+    }
 
     @Transactional
     public void registerCompany(UUID memberId, String name) {
         Member member = memberService.getMemberWithCompany(memberId);
 
-        if (!member.isCeo()) {
-            throw new ForbiddenException("회사 등록은 CEO 계정만 가능합니다.");
-        }
-
+        // 비즈니스 규칙: CEO가 이미 회사를 보유한 경우 등록 불가
         if (member.getCompany() != null) {
             throw new ConflictException("이미 소속 회사가 있습니다.");
         }
@@ -88,9 +205,6 @@ public class CompanyService {
 
     private Company getCompanyByMember(UUID memberId) {
         Member member = memberService.getMemberWithCompany(memberId);
-        if (!member.isCeo()) {
-            throw new ForbiddenException("회사 정보 수정은 CEO계정만 가능합니다.");
-        }
         if (member.getCompany() == null) {
             throw new NotFoundException("소속 회사 정보가 없습니다.");
         }

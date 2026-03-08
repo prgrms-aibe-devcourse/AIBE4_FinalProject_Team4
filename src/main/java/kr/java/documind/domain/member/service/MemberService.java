@@ -1,9 +1,12 @@
 package kr.java.documind.domain.member.service;
 
 import java.io.IOException;
-import java.util.NoSuchElementException;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import kr.java.documind.domain.member.model.dto.CompanyDetail;
 import kr.java.documind.domain.member.model.dto.ConflictingMemberInfo;
 import kr.java.documind.domain.member.model.dto.HeaderInfo;
@@ -14,6 +17,7 @@ import kr.java.documind.domain.member.model.enums.GlobalRole;
 import kr.java.documind.domain.member.model.enums.OAuthProvider;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
 import kr.java.documind.global.exception.StorageException;
+import kr.java.documind.global.exception.UnauthorizedException;
 import kr.java.documind.global.storage.FileStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +50,11 @@ public class MemberService {
 
     public HeaderInfo getHeaderInfo(UUID memberId) {
         return buildHeaderInfo(getMemberWithCompany(memberId));
+    }
+
+    /** 이미 로드된 Member 엔티티로 HeaderInfo를 빌드한다. DB 조회 없음. */
+    public HeaderInfo getHeaderInfo(Member member) {
+        return buildHeaderInfo(member);
     }
 
     public MemberProfileDetail getProfileDetail(UUID memberId) {
@@ -84,10 +93,27 @@ public class MemberService {
         return memberRepository.findByProviderAndProviderId(provider, providerId).isPresent();
     }
 
+    public Optional<Member> findCeoByCompanyId(Long companyId) {
+        return memberRepository.findFirstByCompanyIdAndGlobalRole(companyId, GlobalRole.CEO);
+    }
+
+    /**
+     * 여러 회사의 CEO를 단일 쿼리로 일괄 조회하여 companyId → Member 맵으로 반환한다.
+     *
+     * <p>ADMIN 회사 관리 페이지 N+1 방지 전용. 빈 목록이면 DB 조회 없이 빈 맵을 반환한다.
+     */
+    public Map<Long, Member> findCeosByCompanyIds(List<Long> companyIds) {
+        if (companyIds.isEmpty()) {
+            return Map.of();
+        }
+        return memberRepository.findByCompanyIdInAndGlobalRole(companyIds, GlobalRole.CEO).stream()
+                .collect(Collectors.toMap(m -> m.getCompany().getId(), Function.identity()));
+    }
+
     public Member getMemberWithCompany(UUID id) {
         return memberRepository
                 .findWithCompanyById(id)
-                .orElseThrow(() -> new NoSuchElementException("인증된 회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new UnauthorizedException("인증된 회원을 찾을 수 없습니다."));
     }
 
     @Transactional
