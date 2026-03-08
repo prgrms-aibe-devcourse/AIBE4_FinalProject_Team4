@@ -1,9 +1,10 @@
 package kr.java.documind.global.config;
 
 import kr.java.documind.global.security.RedisTokenService;
+import kr.java.documind.global.security.filter.CsrfCookieFilter;
+import kr.java.documind.global.security.filter.JwtAuthenticationFilter;
 import kr.java.documind.global.security.jwt.CustomAccessDeniedHandler;
 import kr.java.documind.global.security.jwt.CustomAuthenticationEntryPoint;
-import kr.java.documind.global.security.jwt.JwtAuthenticationFilter;
 import kr.java.documind.global.security.jwt.TokenProvider;
 import kr.java.documind.global.security.oauth.CustomOAuth2UserService;
 import kr.java.documind.global.security.oauth.HttpCookieOAuth2AuthorizationRequestRepository;
@@ -19,6 +20,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
@@ -49,7 +51,7 @@ public class SecurityConfig {
     };
 
     private static final String[] PUBLIC_POST_PATHS = {
-        "/api/auth/refresh",
+        "/api/auth/refresh", "/api/auth/logout",
     };
 
     @Bean
@@ -61,7 +63,9 @@ public class SecurityConfig {
                                 csrf.csrfTokenRepository(csrfTokenRepository())
                                         .csrfTokenRequestHandler(
                                                 new CsrfTokenRequestAttributeHandler())
-                                        .ignoringRequestMatchers("/oauth2/**", "/login/oauth2/**"))
+                                        .ignoringRequestMatchers(
+                                                "/oauth2/**", "/login/oauth2/**", "/api/**"))
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(
                         auth ->
                                 auth.requestMatchers(PUBLIC_GET_PATHS)
@@ -79,6 +83,7 @@ public class SecurityConfig {
                                 ex.authenticationEntryPoint(jwtAuthenticationEntryPoint) // 401
                                         .accessDeniedHandler(jwtAccessDeniedHandler) // 403
                         )
+                .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .addFilterBefore(
                         jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(
@@ -115,7 +120,7 @@ public class SecurityConfig {
     public CookieCsrfTokenRepository csrfTokenRepository() {
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         repository.setCookiePath("/");
-        repository.setCookieCustomizer(builder -> builder.sameSite("Strict"));
+        repository.setCookieCustomizer(builder -> builder.sameSite("Lax"));
         return repository;
     }
 }

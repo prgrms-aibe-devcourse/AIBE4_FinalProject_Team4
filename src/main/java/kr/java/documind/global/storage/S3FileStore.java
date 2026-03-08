@@ -111,6 +111,21 @@ public class S3FileStore implements FileStore {
                 });
     }
 
+    @Override
+    public void registerDeleteAfterCommit(String storedKey) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            delete(storedKey);
+                        } catch (Exception e) {
+                            log.warn("트랜잭션 커밋 후 기존 S3 파일 삭제 실패: {}", storedKey, e);
+                        }
+                    }
+                });
+    }
+
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty() || file.getSize() == 0) {
             throw new BadRequestException("업로드할 파일이 비어 있습니다.");
