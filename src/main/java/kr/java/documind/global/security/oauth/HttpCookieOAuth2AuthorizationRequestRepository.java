@@ -37,7 +37,9 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
                         requestId -> {
                             String stateJson = redisTokenService.getOAuth2State(requestId);
                             if (stateJson == null) {
-                                log.debug("OAuth2 상태 만료 또는 미존재: requestId={}", requestId);
+                                log.debug(
+                                        "[OAuth2RequestRepository] OAuth2 상태 만료 또는 미존재: requestId={}",
+                                        requestId);
                                 return Optional.empty();
                             }
                             return Optional.ofNullable(toAuthorizationRequest(stateJson));
@@ -60,7 +62,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
         String stateJson = toJson(authorizationRequest);
         if (stateJson == null) {
-            log.warn("OAuth2AuthorizationRequest 직렬화 실패 — OAuth2 흐름 중단");
+            log.warn("[OAuth2RequestRepository] OAuth2AuthorizationRequest 직렬화 실패 — OAuth2 흐름 중단");
             return;
         }
         redisTokenService.saveOAuth2State(requestId, stateJson, COOKIE_TTL_SECONDS);
@@ -128,7 +130,9 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
                             req.getAttributes());
             return objectMapper.writeValueAsString(state);
         } catch (Exception e) {
-            log.warn("OAuth2AuthorizationRequest 직렬화 실패: {}", e.getMessage());
+            log.warn(
+                    "[OAuth2RequestRepository] OAuth2AuthorizationRequest 직렬화 실패: {}",
+                    e.getMessage());
             return null;
         }
     }
@@ -148,7 +152,9 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
                     .attributes(s.attributes())
                     .build();
         } catch (Exception e) {
-            log.warn("OAuth2AuthorizationRequest 역직렬화 실패: {}", e.getMessage());
+            log.warn(
+                    "[OAuth2RequestRepository] OAuth2AuthorizationRequest 역직렬화 실패: {}",
+                    e.getMessage());
             return null;
         }
     }

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:fragment="layout(title, content)">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${title}">DOCUMIND</title>
+
+    <!-- 공통 Head (CSS, Meta 등) -->
+    <th:block th:replace="~{common/fragments/head :: head(${title})}"></th:block>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen font-sans antialiased">
+
+    <!-- 상단 토스트 메시지 (시스템 알림) -->
+    <div th:replace="~{common/fragments/top-toast :: top-toast}"></div>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <div th:replace="${content}"></div>
+
+    <!-- 하단 알림 토스트 (실시간 알림) -->
+    <div th:replace="~{common/fragments/alarm-toast :: alarm-toast}"></div>
+
+</body>
+</html>
