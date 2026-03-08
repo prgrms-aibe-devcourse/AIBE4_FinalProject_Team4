@@ -38,6 +38,12 @@ spring:
         secret-key: test
       s3:
         enabled: false
+        bucket: test-bucket
+
+# Cold Storage 설정
+cold-storage:
+  s3-prefix: cold-storage/game-logs
+  temp-dir: ${java.io.tmpdir}/cold-storage-test
 
 worker:
   jdbc:

@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAdjusters;
 import javax.sql.DataSource;
+import kr.java.documind.domain.logprocessor.service.coldstorage.ColdStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Component;
 public class PartitionMaintenanceScheduler {
 
     private final DataSource dataSource;
+    private final ColdStorageService coldStorageService;
     private JdbcTemplate jdbcTemplate;
 
     /** Hot Storage: 최근 1주 (7일) - SSD */
@@ -139,9 +141,7 @@ public class PartitionMaintenanceScheduler {
             // Warm Storage로 이동
             moveTableToWarmTablespace(tableName);
 
-            log.info(
-                    "[Partition] ⚡ Moved to Warm Storage: {} (7+ days old, SSD→HDD)",
-                    tableName);
+            log.info("[Partition] ⚡ Moved to Warm Storage: {} (7+ days old, SSD→HDD)", tableName);
         } catch (Exception e) {
             log.error("[Partition] Failed to move partition to Warm Storage", e);
         }
@@ -176,15 +176,17 @@ public class PartitionMaintenanceScheduler {
                 return;
             }
 
-            // TODO: S3로 Parquet Export
-            // exportToS3(tableName, coldMonday);
+            // S3로 Parquet Export
+            String s3Uri = coldStorageService.archivePartitionToS3(tableName, coldMonday);
 
             // 파티션 삭제
             String sql = String.format("DROP TABLE IF EXISTS %s", tableName);
             jdbcTemplate.execute(sql);
 
             log.warn(
-                    "[Partition] ❄️ Archived to Cold Storage (S3): {} (28+ days old)", tableName);
+                    "[Partition] ❄️ Archived to Cold Storage: {} (28+ days old) → {}",
+                    tableName,
+                    s3Uri);
         } catch (Exception e) {
             log.error("[Partition] Failed to move partition to Cold Storage", e);
         }
@@ -201,8 +203,7 @@ public class PartitionMaintenanceScheduler {
         try {
             // 개발 환경에서는 Tablespace 이동 skip
             if (isDevEnvironment()) {
-                log.debug(
-                        "[Partition] Skip Tablespace move in dev environment: {}", tableName);
+                log.debug("[Partition] Skip Tablespace move in dev environment: {}", tableName);
                 return;
             }
 
@@ -221,8 +222,7 @@ public class PartitionMaintenanceScheduler {
 
             log.info("[Partition] Moved {} to Warm tablespace (SSD→HDD)", tableName);
         } catch (Exception e) {
-            log.error(
-                    "[Partition] Failed to move table to Warm tablespace: {}", tableName, e);
+            log.error("[Partition] Failed to move table to Warm tablespace: {}", tableName, e);
             throw e;
         }
     }
@@ -285,9 +285,7 @@ public class PartitionMaintenanceScheduler {
         return "dev".equals(activeProfile) || "local".equals(activeProfile);
     }
 
-    /**
-     * Tablespace 설정 로깅
-     */
+    /** Tablespace 설정 로깅 */
     private void logTablespaceConfiguration() {
         if (isDevEnvironment()) {
             log.info(
