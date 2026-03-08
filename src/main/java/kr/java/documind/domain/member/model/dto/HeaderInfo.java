@@ -2,6 +2,7 @@ package kr.java.documind.domain.member.model.dto;
 
 import kr.java.documind.domain.member.model.entity.Company;
 import kr.java.documind.domain.member.model.entity.Member;
+import kr.java.documind.domain.member.model.enums.CompanyStatus;
 import kr.java.documind.domain.member.model.enums.GlobalRole;
 
 public record HeaderInfo(
@@ -10,7 +11,8 @@ public record HeaderInfo(
         GlobalRole globalRole,
         String profileImageUrl,
         String companyName,
-        String companyProfileUrl) {
+        String companyProfileUrl,
+        CompanyStatus companyStatus) {
 
     public static HeaderInfo from(Member member, String profileImageUrl, String companyProfileUrl) {
         Company company = member.getCompany();
@@ -20,6 +22,7 @@ public record HeaderInfo(
                 member.getGlobalRole(),
                 profileImageUrl,
                 company != null ? company.getName() : null,
-                companyProfileUrl);
+                companyProfileUrl,
+                company != null ? company.getStatus() : null);
     }
 }

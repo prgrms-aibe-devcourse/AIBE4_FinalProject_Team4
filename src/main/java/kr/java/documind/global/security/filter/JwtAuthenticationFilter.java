@@ -44,7 +44,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         "[JWT] Blacklisted JWT — cleared SecurityContext for {}",
                         request.getRequestURI());
             } else {
-                setAuthentication(request, token);
+                UUID memberId = tokenProvider.getMemberId(token);
+                if (redisTokenService.isMemberSuspended(memberId)) {
+                    SecurityContextHolder.clearContext();
+                    log.warn(
+                            "[JWT] 정지된 계정 요청 차단: memberId={} uri={}",
+                            memberId,
+                            request.getRequestURI());
+                } else {
+                    setAuthentication(request, token);
+                }
             }
         } else if (StringUtils.hasText(token)) {
             SecurityContextHolder.clearContext();

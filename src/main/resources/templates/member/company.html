@@ -53,10 +53,10 @@
 
                             <!-- ── 좌: 회사 아이콘 ── -->
                             <div class="flex flex-col items-center gap-2 pt-4">
-                                <!-- 아이콘 클릭 → 파일 선택 (PENDING 중에는 비활성) -->
+                                <!-- 아이콘 클릭 → 파일 선택 (APPROVED 상태에서만 활성) -->
                                 <button type="button"
-                                        th:disabled="${company != null and company.pending()}"
-                                        th:classappend="${company != null and company.pending()} ? ' opacity-60 cursor-not-allowed' : ''"
+                                        th:disabled="${company != null and !company.approved()}"
+                                        th:classappend="${company != null and !company.approved()} ? ' opacity-60 cursor-not-allowed' : ''"
                                         onclick="document.getElementById('company-icon-input').click()"
                                         class="relative group">
                                     <!-- 이미지 있는 경우 -->
@@ -95,8 +95,10 @@
                                        th:value="${company?.profileUrl()}"/>
 
                                 <!-- 승인 상태 표시 -->
-                                <span th:if="${company != null and !company.pending()}"
+                                <span th:if="${company != null and company.approved()}"
                                       class="text-xs text-emerald-500 font-medium">승인 완료</span>
+                                <span th:if="${company != null and company.suspended()}"
+                                      class="text-xs text-red-500 font-medium">거부됨</span>
                             </div>
 
                             <!-- ── 우: 회사/조직명 입력 ── -->
@@ -114,10 +116,10 @@
                                            id="companyName"
                                            name="companyName"
                                            th:value="${company?.name()}"
-                                           th:disabled="${company != null and company.pending()}"
+                                           th:disabled="${company != null and !company.approved()}"
                                            maxlength="50"
                                            placeholder="회사명을 입력하세요"
-                                           th:class="${company != null and company.pending()} ?
+                                           th:class="${company != null and !company.approved()} ?
                                                       'w-full pl-10 pr-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed transition-all' :
                                                       'w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all'"/>
                                 </div>
@@ -140,6 +142,8 @@
                     </div>
 
                     <!-- ── 하단 버튼 ── -->
+
+                    <!-- PENDING: 대기 중 안내 -->
                     <div th:if="${company != null and company.pending()}"
                          class="px-8 pb-8 flex justify-end">
                         <span class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
@@ -151,7 +155,22 @@
                             관리자 승인 대기 중입니다
                         </span>
                     </div>
-                    <div th:unless="${company != null and company.pending()}"
+
+                    <!-- SUSPENDED: 거부 안내 -->
+                    <div th:if="${company != null and company.suspended()}"
+                         class="px-8 pb-8 flex justify-end">
+                        <span class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
+                                         bg-red-50 border border-red-200 text-sm font-semibold text-red-600">
+                            <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                            </svg>
+                            승인이 거부되었습니다. 관리자에게 문의하세요.
+                        </span>
+                    </div>
+
+                    <!-- APPROVED or 미등록: 편집 버튼 -->
+                    <div th:if="${company == null or company.approved()}"
                          class="px-8 pb-8 flex justify-end gap-3">
                         <button type="button"
                                 onclick="resetCompanyForm()"
@@ -188,7 +207,6 @@
 
     <!-- 로그아웃 모달 + 공통 JS -->
     <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
-    <script th:src="@{/js/common/FetchUtil.js}"></script>
     <script th:src="@{/js/member/Auth.js}"></script>
     <script th:src="@{/js/member/Company.js}"></script>
 </div>

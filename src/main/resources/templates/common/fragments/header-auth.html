@@ -21,8 +21,11 @@
 
 <div th:fragment="user-info-area" class="flex items-center gap-4">
 
-    <!-- 무료 플랜 뱃지 -->
-    <span class="hidden sm:inline-flex items-center px-3 py-1 rounded-full
+    <!-- 무료 플랜 뱃지 (ADMIN 제외) -->
+    <span th:unless="${headerInfo != null
+                        and headerInfo.globalRole() != null
+                        and headerInfo.globalRole().name() == 'ADMIN'}"
+          class="hidden sm:inline-flex items-center px-3 py-1 rounded-full
                  text-xs font-medium bg-gray-100 text-gray-500">
         무료 플랜
     </span>
