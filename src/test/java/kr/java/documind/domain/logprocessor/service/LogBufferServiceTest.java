@@ -52,6 +52,8 @@ class LogBufferServiceTest {
 
     @Mock private IssueGroupingBatchService issueGroupingBatchService;
 
+    @Mock private LogSamplingService logSamplingService;
+
     private MeterRegistry meterRegistry;
     private LogBufferService logBufferService;
 
@@ -72,7 +74,8 @@ class LogBufferServiceTest {
                         backpressureManager,
                         meterRegistry,
                         logMapper,
-                        issueGroupingBatchService);
+                        issueGroupingBatchService,
+                        logSamplingService);
 
         // @Value 필드 초기화
         ReflectionTestUtils.setField(logBufferService, "batchSize", BATCH_SIZE);

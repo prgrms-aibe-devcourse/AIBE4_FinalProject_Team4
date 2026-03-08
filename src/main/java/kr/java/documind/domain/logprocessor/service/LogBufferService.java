@@ -32,6 +32,7 @@ public class LogBufferService {
     private final MeterRegistry meterRegistry;
     private final LogMapper logMapper;
     private final IssueGroupingBatchService issueGroupingBatchService;
+    private final LogSamplingService logSamplingService;
     private final ConcurrentLinkedQueue<LogWrapper> buffer = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<LogWrapper> deadLetterQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isFlushing = new AtomicBoolean(false);
@@ -94,6 +95,22 @@ public class LogBufferService {
     // API 요청용 - DTO를 받아서 변환 (Service Layer에서 변환 처리)
     public void addFromDto(RawLogRequest dto) {
         GameLog logEntity = logMapper.toEntity(dto);
+
+        // 샘플링 체크 (Severity + Fingerprint + Backpressure)
+        if (logSamplingService.shouldSample(
+                logEntity.getFingerprint(),
+                logEntity.getLogId().toString(),
+                logEntity.getSeverity())) {
+            // 샘플링된 로그는 DB에 저장하지 않지만, 이슈의 occurrence_count는 증가
+            issueGroupingBatchService.incrementOccurrenceOnly(logEntity);
+            log.debug(
+                    "[Sampling] Log sampled (not saved to DB). severity={}, fingerprint={}, logId={}",
+                    logEntity.getSeverity(),
+                    logEntity.getFingerprint(),
+                    logEntity.getLogId());
+            return;
+        }
+
         add(logEntity);
     }
 
