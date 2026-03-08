@@ -52,11 +52,7 @@ async function updateCompany() {
     clearErrors();
     const nameInput = document.getElementById('companyName');
     const name = nameInput?.value?.trim();
-    if (!name) {
-        document.getElementById('companyName-error').textContent = '회사명을 입력해주세요.';
-        document.getElementById('companyName-error').classList.remove('hidden');
-        return;
-    }
+    if (!validateNameField(name, { fieldId: 'companyName', label: '회사명', max: 100 })) return;
 
     const iconChanged = pendingCompanyIconFile !== null;
     const nameChanged = name !== nameInput.defaultValue;
@@ -116,11 +112,7 @@ async function registerCompany() {
     clearErrors();
     const nameInput = document.getElementById('companyName');
     const name = nameInput?.value?.trim();
-    if (!name) {
-        document.getElementById('companyName-error').textContent = '회사명을 입력해주세요.';
-        document.getElementById('companyName-error').classList.remove('hidden');
-        return;
-    }
+    if (!validateNameField(name, { fieldId: 'companyName', label: '회사명', max: 100 })) return;
 
     try {
         const body = await callApi('/api/companies', {

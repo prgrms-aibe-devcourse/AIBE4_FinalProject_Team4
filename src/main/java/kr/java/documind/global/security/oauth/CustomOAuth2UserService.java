@@ -71,7 +71,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     static final String EMAIL_CONFLICT_ERROR = "email_conflict";
-    static final String ROLE_CONFLICT_ERROR = "role_conflict";
     static final String ALLOW_EMAIL_DUPLICATE_COOKIE = "oauth_allow_email_duplicate";
 
     private CustomUserDetails processOAuthLogin(
@@ -89,8 +88,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                         .filter(n -> !n.isBlank())
                         .orElse(name);
 
+        boolean isExistingMember =
+                memberService.existsByProviderAndProviderId(
+                        userProfile.getProvider(), userProfile.getId());
+
         Optional<ConflictingMemberInfo> conflictOpt =
-                memberService.findConflictingMemberInfo(resolvedEmail, userProfile.getProvider());
+                isExistingMember
+                        ? Optional.empty()
+                        : memberService.findConflictingMemberInfo(
+                                resolvedEmail, userProfile.getProvider());
 
         if (conflictOpt.isPresent() && !isEmailDuplicateAllowed()) {
             ConflictingMemberInfo info = conflictOpt.get();

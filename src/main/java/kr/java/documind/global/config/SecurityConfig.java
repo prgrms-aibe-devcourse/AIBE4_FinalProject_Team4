@@ -1,10 +1,10 @@
 package kr.java.documind.global.config;
 
 import kr.java.documind.global.security.RedisTokenService;
-import kr.java.documind.global.security.jwt.CsrfCookieFilter;
+import kr.java.documind.global.security.filter.CsrfCookieFilter;
+import kr.java.documind.global.security.filter.JwtAuthenticationFilter;
 import kr.java.documind.global.security.jwt.CustomAccessDeniedHandler;
 import kr.java.documind.global.security.jwt.CustomAuthenticationEntryPoint;
-import kr.java.documind.global.security.jwt.JwtAuthenticationFilter;
 import kr.java.documind.global.security.jwt.TokenProvider;
 import kr.java.documind.global.security.oauth.CustomOAuth2UserService;
 import kr.java.documind.global.security.oauth.HttpCookieOAuth2AuthorizationRequestRepository;
@@ -64,7 +64,7 @@ public class SecurityConfig {
                                         .csrfTokenRequestHandler(
                                                 new CsrfTokenRequestAttributeHandler())
                                         .ignoringRequestMatchers(
-                                                "/api/**", "/oauth2/**", "/login/oauth2/**"))
+                                                "/oauth2/**", "/login/oauth2/**", "/api/**"))
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(
                         auth ->
@@ -120,7 +120,7 @@ public class SecurityConfig {
     public CookieCsrfTokenRepository csrfTokenRepository() {
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         repository.setCookiePath("/");
-        repository.setCookieCustomizer(builder -> builder.sameSite("Strict"));
+        repository.setCookieCustomizer(builder -> builder.sameSite("Lax"));
         return repository;
     }
 }

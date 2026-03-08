@@ -27,12 +27,13 @@ public class Invitation extends UuidBaseEntity {
     private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inviter_id", nullable = false)
     private Member inviter;
+
+    // 초대 수락 후 채워짐. 신규 유저는 수락 전 null
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 
     @Column(name = "target_email", nullable = false, length = 150)
     private String targetEmail;
@@ -54,16 +55,15 @@ public class Invitation extends UuidBaseEntity {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
+    // member 파라미터 없음: 초대 발송 시점에 수신자가 신규 유저일 수 있어 member 미확정
     public static Invitation create(
             Project project,
-            Member member,
             Member inviter,
             String targetEmail,
             ProjectRole targetRole,
             LocalDateTime expiresAt) {
         Invitation invitation = new Invitation();
         invitation.project = project;
-        invitation.member = member;
         invitation.inviter = inviter;
         invitation.targetEmail = targetEmail;
         invitation.targetRole = targetRole;
@@ -72,7 +72,9 @@ public class Invitation extends UuidBaseEntity {
         return invitation;
     }
 
-    public void use() {
+    // 초대 수락 시 member 확정 후 상태 변경
+    public void use(Member member) {
+        this.member = member;
         this.status = InvitationStatus.USED;
         this.usedAt = LocalDateTime.now();
     }

@@ -34,7 +34,8 @@ public class MemberApiController {
             @AuthenticationPrincipal CustomUserDetails authMember,
             @Valid @RequestBody MemberProfileUpdateRequest request) {
 
-        memberService.updateMemberProfile(authMember.getMemberId(), request.nickname());
+        memberService.updateMemberProfile(
+                authMember.getMemberId(), request.nickname(), request.position());
         return ResponseEntity.ok(ApiResponse.success("변경 사항이 저장되었습니다."));
     }
 

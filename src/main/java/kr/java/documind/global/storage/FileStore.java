@@ -15,4 +15,6 @@ public interface FileStore {
     String getAccessUrl(String storedKey);
 
     default void registerRollback(String storedKey) {}
+
+    default void registerDeleteAfterCommit(String storedKey) {}
 }

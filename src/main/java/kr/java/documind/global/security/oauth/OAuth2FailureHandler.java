@@ -60,20 +60,6 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
                                 + existingRole);
                 return;
             }
-
-            if (CustomOAuth2UserService.ROLE_CONFLICT_ERROR.equals(errorCode)) {
-                // description 형식: "CEO:google" 또는 "EMPLOYEE:github"
-                String desc = oauthEx.getError().getDescription();
-                String[] parts = desc != null ? desc.split(":") : new String[0];
-                String existingRole = parts.length > 0 ? parts[0].toLowerCase() : "unknown";
-                String provider = parts.length > 1 ? parts[1] : "unknown";
-                response.sendRedirect(
-                        "/auth/login?error=role_conflict&existing_role="
-                                + existingRole
-                                + "&provider="
-                                + provider);
-                return;
-            }
         }
 
         String encodedError = URLEncoder.encode("소셜 로그인에 실패했습니다.", StandardCharsets.UTF_8);

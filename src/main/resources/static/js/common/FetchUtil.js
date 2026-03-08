@@ -83,3 +83,21 @@ function getCookie(name) {
     const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'));
     return match ? decodeURIComponent(match[1]) : null;
 }
+
+function validateNameField(value, { fieldId, label, max, required = true }) {
+    if (required && !value) {
+        showFieldError(fieldId, `${label}을 입력해주세요.`);
+        return false;
+    }
+    if (value) {
+        if (value.length > max) {
+            showFieldError(fieldId, `${label}은 ${max}자 이하로 입력해주세요.`);
+            return false;
+        }
+        if (!/^[가-힣a-zA-Z0-9 ]*$/.test(value)) {
+            showFieldError(fieldId, `${label}은 한글, 영문, 숫자, 공백만 사용할 수 있습니다.`);
+            return false;
+        }
+    }
+    return true;
+}

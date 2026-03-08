@@ -1,4 +1,4 @@
-package kr.java.documind.global.security.jwt;
+package kr.java.documind.global.security.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -11,6 +11,8 @@ import java.util.UUID;
 import kr.java.documind.domain.member.model.enums.GlobalRole;
 import kr.java.documind.global.config.JwtProperties;
 import kr.java.documind.global.security.RedisTokenService;
+import kr.java.documind.global.security.jwt.CustomUserDetails;
+import kr.java.documind.global.security.jwt.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String token = extractTokenFromCookie(request);
+        String token = extractToken(request);
 
         if (StringUtils.hasText(token)
                 && tokenProvider.validateToken(token)
@@ -50,6 +52,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String extractToken(HttpServletRequest request) {
+        String bearer = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
+            return bearer.substring(7);
+        }
+        return extractTokenFromCookie(request);
     }
 
     private String extractTokenFromCookie(HttpServletRequest request) {

@@ -80,6 +80,10 @@ public class MemberService {
                 .map(Member::getGlobalRole);
     }
 
+    public boolean existsByProviderAndProviderId(OAuthProvider provider, String providerId) {
+        return memberRepository.findByProviderAndProviderId(provider, providerId).isPresent();
+    }
+
     public Member getMemberWithCompany(UUID id) {
         return memberRepository
                 .findWithCompanyById(id)
@@ -129,24 +133,29 @@ public class MemberService {
     }
 
     @Transactional
-    public void updateMemberProfile(UUID memberId, String nickname) {
+    public void updateMemberProfile(UUID memberId, String nickname, String position) {
+        String validPosition = (position != null && !position.isBlank()) ? position.strip() : null;
         Member member = getMemberWithCompany(memberId);
-        member.updateProfile(nickname, null, null);
-        log.info("[MemberService] 프로필 닉네임 변경: memberId={}", memberId);
+        member.updateProfile(nickname, null, validPosition);
+        log.info("[MemberService] 프로필 변경: memberId={}", memberId);
     }
 
     @Transactional
     public String uploadMemberProfileImage(UUID memberId, MultipartFile file) {
         Member member = getMemberWithCompany(memberId);
-
-        // 기존 이미지 삭제 (S3 orphan 방지)
-        if (member.getProfileKey() != null) {
-            fileStore.delete(member.getProfileKey());
-        }
+        String oldKey = member.getProfileKey();
 
         try {
+            // 1. 새 파일 먼저 업로드
             String newKey = fileStore.save(file);
+            // 2. 롤백 시 newKey 자동 삭제 (orphan 방지)
+            fileStore.registerRollback(newKey);
+            // 3. DB 업데이트
             member.updateProfile(null, newKey, null);
+            // 4. 커밋 확정 후 기존 파일 삭제 (롤백 시에는 삭제하지 않음)
+            if (oldKey != null) {
+                fileStore.registerDeleteAfterCommit(oldKey);
+            }
             log.info("[MemberService] 프로필 이미지 업로드: memberId={} key={}", memberId, newKey);
             return fileStore.getAccessUrl(newKey);
         } catch (IOException e) {

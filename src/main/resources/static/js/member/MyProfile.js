@@ -24,22 +24,31 @@ function previewImage(input) {
     reader.readAsDataURL(pendingProfileFile);
 }
 
-/* 변경 사항 저장: ① 이미지 업로드(대기 파일 있을 때) → ② 닉네임 저장 */
 async function saveProfile() {
     clearErrors();
-    const nicknameInput = document.getElementById('nickname');
-    const nickname = nicknameInput?.value?.trim();
-    if (!nickname) {
-        document.getElementById('nickname-error').textContent = '닉네임을 입력해주세요.';
-        document.getElementById('nickname-error').classList.remove('hidden');
-        return;
-    }
 
+    const nicknameInput = document.getElementById('nickname');
+    const positionInput = document.getElementById('position');
+
+    const nickname = nicknameInput?.value?.trim();
+    const position = positionInput?.value?.trim() || null;
+
+    // 변경 여부를 먼저 계산 (검증보다 앞에 두어 변경되지 않은 필드는 검증 생략)
     const imageChanged = pendingProfileFile !== null;
-    const nicknameChanged = nickname !== nicknameInput.defaultValue;
+    const nicknameChanged = nickname !== (nicknameInput?.defaultValue?.trim() ?? '');
+    const positionChanged =
+        positionInput !== null &&
+        position !== (positionInput.defaultValue?.trim() || null);
+
+    // 닉네임 검증 — 변경된 경우에만 수행 (기존 닉네임이 규칙에 맞지 않아도 직급만 수정 가능)
+    if (nicknameChanged &&
+        !validateNameField(nickname, { fieldId: 'nickname', label: '닉네임', max: 20 })) return;
+    // 직급은 선택 필드: 빈칸이면 null(=기존 값 유지), 값이 있을 때만 검증
+    if (position !== null &&
+        !validateNameField(position, { fieldId: 'position', label: '직급', max: 20, required: false })) return;
 
     // 변경 사항 없으면 저장 스킵
-    if (!imageChanged && !nicknameChanged) {
+    if (!imageChanged && !nicknameChanged && !positionChanged) {
         const msg = document.getElementById('success-message');
         msg.textContent = '변경된 내용이 없습니다.';
         msg.classList.remove('hidden');
@@ -75,15 +84,28 @@ async function saveProfile() {
         }
     }
 
-    // ② 닉네임 저장
-    if (nicknameChanged) {
+    // ② 닉네임/직급 저장
+    if (nicknameChanged || positionChanged) {
+        const payload = {};
+        // 닉네임은 변경된 경우에만 전송 — null이면 서버에서 기존 값 유지
+        if (nicknameChanged) {
+            payload.nickname = nickname;
+        }
+        // position 이 null 이면 기존 값 유지 (서버 측에서도 null = 업데이트 안 함)
+        if (positionChanged && position !== null) {
+            payload.position = position;
+        }
+
         try {
             const body = await callApi('/api/members/me/profile', {
                 method: 'PATCH',
-                body: JSON.stringify({ nickname }),
+                body: JSON.stringify(payload),
             });
             if (body.success) {
-                nicknameInput.defaultValue = nickname; // 취소 기준값 갱신
+                if (nicknameChanged) nicknameInput.defaultValue = nickname;
+                if (positionInput && positionChanged) {
+                    positionInput.defaultValue = position ?? positionInput.defaultValue;
+                }
                 const msg = document.getElementById('success-message');
                 msg.textContent = '변경 사항이 저장되었습니다.';
                 msg.classList.remove('hidden');
@@ -103,11 +125,15 @@ async function saveProfile() {
     }
 }
 
-/* 취소: 이미지·닉네임 모두 원래 값으로 복원 */
+/* 취소: 이미지·닉네임·직급 모두 원래 값으로 복원 */
 function resetForm() {
     // 닉네임 복원
     const nicknameInput = document.getElementById('nickname');
     if (nicknameInput) nicknameInput.value = nicknameInput.defaultValue;
+
+    // 직급 복원
+    const positionInput = document.getElementById('position');
+    if (positionInput) positionInput.value = positionInput.defaultValue;
 
     // 이미지 복원
     pendingProfileFile = null;
