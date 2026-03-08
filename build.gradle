@@ -101,6 +101,7 @@ dependencies {
         exclude group: 'org.slf4j', module: 'slf4j-reload4j'
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
+    implementation 'org.apache.commons:commons-csv:1.11.0'
 
     // Spring AI & ETL & RAG
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'

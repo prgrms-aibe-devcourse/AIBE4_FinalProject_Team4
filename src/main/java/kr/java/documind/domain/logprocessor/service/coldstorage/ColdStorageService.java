@@ -56,15 +56,15 @@ public class ColdStorageService {
             throws IOException {
         log.info("[ColdStorage] Starting archive process for table: {}", tableName);
 
-        // 1. 임시 디렉토리 생성
-        Path tempDirPath = createTempDirectory();
+        // 1. 고유한 임시 디렉토리 생성 (동시 실행 방지)
+        Path uniqueTempDir = createUniqueTempDirectory(tableName);
 
         try {
             // 2. PostgreSQL → CSV export
-            File csvFile = exportPartitionToCsv(tableName, tempDirPath);
+            File csvFile = exportPartitionToCsv(tableName, uniqueTempDir);
 
             // 3. CSV → Parquet 변환
-            File parquetFile = convertCsvToParquet(csvFile, tableName, tempDirPath);
+            File parquetFile = convertCsvToParquet(csvFile, tableName, uniqueTempDir);
 
             // 4. Parquet → S3 업로드
             String s3Uri = uploadParquetToS3(parquetFile, tableName, weekStartDate);
@@ -74,19 +74,27 @@ public class ColdStorageService {
             return s3Uri;
 
         } finally {
-            // 5. 임시 파일 정리
-            cleanupTempDirectory(tempDirPath);
+            // 5. 임시 파일 정리 (해당 아카이빙 작업의 파일만)
+            cleanupTempDirectory(uniqueTempDir);
         }
     }
 
-    /** 임시 디렉토리 생성 */
-    private Path createTempDirectory() throws IOException {
-        Path tempDirPath = Path.of(tempDir);
-        if (!Files.exists(tempDirPath)) {
-            Files.createDirectories(tempDirPath);
-            log.debug("[ColdStorage] Created temp directory: {}", tempDirPath);
-        }
-        return tempDirPath;
+    /**
+     * 고유한 임시 디렉토리 생성 (동시 실행 안전성)
+     *
+     * @param tableName 테이블 이름
+     * @return 고유 임시 디렉토리 경로
+     */
+    private Path createUniqueTempDirectory(String tableName) throws IOException {
+        // 타임스탬프 기반 고유 디렉토리 생성 (동시 실행 시 충돌 방지)
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        Path baseTempDir = Path.of(tempDir);
+        Path uniqueTempDir = baseTempDir.resolve(tableName + "_" + timestamp);
+
+        Files.createDirectories(uniqueTempDir);
+        log.debug("[ColdStorage] Created unique temp directory: {}", uniqueTempDir);
+
+        return uniqueTempDir;
     }
 
     /**
@@ -150,7 +158,8 @@ public class ColdStorageService {
         log.info("[ColdStorage] Uploading Parquet to S3...");
 
         // S3 키 생성: cold-storage/game-logs/year=2024/week=10/game_log_2024_w10.parquet
-        int year = weekStartDate.getYear();
+        // ISO week-based year 사용 (연말/연초 경계 처리)
+        int year = weekStartDate.get(java.time.temporal.IsoFields.WEEK_BASED_YEAR);
         int weekNumber = weekStartDate.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR);
 
         String s3Key =

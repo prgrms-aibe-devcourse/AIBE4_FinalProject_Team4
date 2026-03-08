@@ -38,8 +38,9 @@ public class PostgresExporter {
         try (Connection connection = dataSource.getConnection();
                 FileWriter writer = new FileWriter(outputFile)) {
 
-            // PostgreSQL COPY 명령 사용
-            CopyManager copyManager = new CopyManager((BaseConnection) connection);
+            // PostgreSQL COPY 명령 사용 (Hikari 프록시 언래핑)
+            BaseConnection baseConnection = connection.unwrap(BaseConnection.class);
+            CopyManager copyManager = new CopyManager(baseConnection);
 
             // COPY 쿼리: CSV 형식으로 export
             String copyQuery =

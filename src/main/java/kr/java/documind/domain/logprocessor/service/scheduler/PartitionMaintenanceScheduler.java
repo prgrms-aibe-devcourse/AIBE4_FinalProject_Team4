@@ -121,7 +121,8 @@ public class PartitionMaintenanceScheduler {
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             LocalDate warmMonday = monday.minusWeeks(HOT_STORAGE_WEEKS);
 
-            int year = warmMonday.getYear();
+            // ISO week-based year 사용 (연말/연초 경계 처리)
+            int year = warmMonday.get(IsoFields.WEEK_BASED_YEAR);
             int weekNumber = warmMonday.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
             String tableName = buildPartitionTableName(year, weekNumber);
 
@@ -165,7 +166,8 @@ public class PartitionMaintenanceScheduler {
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             LocalDate coldMonday = monday.minusWeeks(WARM_STORAGE_WEEKS);
 
-            int year = coldMonday.getYear();
+            // ISO week-based year 사용 (연말/연초 경계 처리)
+            int year = coldMonday.get(IsoFields.WEEK_BASED_YEAR);
             int weekNumber = coldMonday.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
             String tableName = buildPartitionTableName(year, weekNumber);
 
@@ -348,7 +350,8 @@ public class PartitionMaintenanceScheduler {
      * @param weekStartMonday 파티션 시작 월요일 날짜
      */
     private void createPartitionIfNotExists(LocalDate weekStartMonday) {
-        int year = weekStartMonday.getYear();
+        // ISO week-based year 사용 (연말/연초 경계 처리)
+        int year = weekStartMonday.get(IsoFields.WEEK_BASED_YEAR);
         int weekNumber = weekStartMonday.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
         String tableName = buildPartitionTableName(year, weekNumber);
 

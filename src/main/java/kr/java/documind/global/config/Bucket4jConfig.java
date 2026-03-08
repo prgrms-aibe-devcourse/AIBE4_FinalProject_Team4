@@ -3,6 +3,7 @@ package kr.java.documind.global.config;
 import io.github.bucket4j.distributed.ExpirationAfterWriteStrategy;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import io.github.bucket4j.redis.redisson.Bucket4jRedisson;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -10,8 +11,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.time.Duration;
 
 @Configuration
 @RequiredArgsConstructor
@@ -34,8 +33,10 @@ public class Bucket4jConfig {
         CommandAsyncExecutor commandExecutor = ((Redisson) redissonClient).getCommandExecutor();
 
         return Bucket4jRedisson.casBasedBuilder(commandExecutor)
-            // 버킷이 다시 채워지는 시간에 기반한 유동적 만료 전략
-            .expirationAfterWrite(ExpirationAfterWriteStrategy.basedOnTimeForRefillingBucketUpToMax(Duration.ofHours(expirationHours)))
-            .build();
+                // 버킷이 다시 채워지는 시간에 기반한 유동적 만료 전략
+                .expirationAfterWrite(
+                        ExpirationAfterWriteStrategy.basedOnTimeForRefillingBucketUpToMax(
+                                Duration.ofHours(expirationHours)))
+                .build();
     }
 }

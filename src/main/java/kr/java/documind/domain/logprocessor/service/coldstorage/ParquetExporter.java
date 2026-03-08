@@ -1,16 +1,17 @@
 package kr.java.documind.domain.logprocessor.service.coldstorage;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Reader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
@@ -60,18 +61,22 @@ public class ParquetExporter {
                                 .withPageSize(4 * 1024 * 1024) // 4MB (대용량 데이터에 최적화)
                                 .withRowGroupSize(128 * 1024 * 1024) // 128MB
                                 .build();
-                BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
+                Reader reader = new FileReader(csvFile);
+                CSVParser csvParser =
+                        CSVFormat.DEFAULT
+                                .builder()
+                                .setHeader()
+                                .setSkipHeaderRecord(true)
+                                .setQuote('"')
+                                .setEscape('"') // PostgreSQL COPY CSV escape 처리
+                                .build()
+                                .parse(reader)) {
 
-            // CSV 헤더 스킵
-            String header = reader.readLine();
-            log.debug("[ParquetExporter] CSV Header: {}", header);
-
-            // CSV 데이터 읽기 및 Parquet 쓰기
-            String line;
             long rowCount = 0;
 
-            while ((line = reader.readLine()) != null) {
-                GenericRecord record = parseCsvLineToAvroRecord(line, schema);
+            // CSV 데이터 읽기 및 Parquet 쓰기 (Apache Commons CSV 사용)
+            for (CSVRecord csvRecord : csvParser) {
+                GenericRecord record = parseCsvRecordToAvroRecord(csvRecord, schema);
                 writer.write(record);
                 rowCount++;
 
@@ -164,71 +169,45 @@ public class ParquetExporter {
     }
 
     /**
-     * CSV 라인을 Avro GenericRecord로 파싱
+     * CSVRecord를 Avro GenericRecord로 변환 (Apache Commons CSV 사용)
      *
-     * @param line CSV 라인
+     * @param csvRecord CSV 레코드
      * @param schema Avro 스키마
      * @return GenericRecord
      */
-    private GenericRecord parseCsvLineToAvroRecord(String line, Schema schema) {
+    private GenericRecord parseCsvRecordToAvroRecord(CSVRecord csvRecord, Schema schema) {
         GenericRecord record = new GenericData.Record(schema);
 
-        // CSV 파싱 (간단한 split, 실제로는 CSV 라이브러리 사용 권장)
-        List<String> fields = parseCsvLine(line);
-
-        if (fields.size() >= 16) {
-            record.put("log_id", fields.get(0));
-            record.put("project_id", fields.get(1));
-            record.put("session_id", fields.get(2));
-            record.put("user_id", fields.get(3).isEmpty() ? null : fields.get(3));
-            record.put("severity", fields.get(4));
-            record.put("event_category", fields.get(5));
-            record.put("archive", fields.get(6));
-            record.put("occurred_at", fields.get(7));
-            record.put("ingested_at", fields.get(8));
-            record.put("trace_id", fields.get(9).isEmpty() ? null : fields.get(9));
-            record.put("span_id", fields.get(10).isEmpty() ? null : fields.get(10));
-            record.put("fingerprint", fields.get(11));
-            record.put("resource", fields.get(12));
-            record.put("attributes", fields.get(13));
-            record.put("created_at", fields.get(14));
-            record.put("updated_at", fields.get(15));
+        // Apache Commons CSV가 자동으로 escape 처리 (""→")
+        if (csvRecord.size() >= 16) {
+            record.put("log_id", csvRecord.get(0));
+            record.put("project_id", csvRecord.get(1));
+            record.put("session_id", csvRecord.get(2));
+            record.put("user_id", emptyToNull(csvRecord.get(3)));
+            record.put("severity", csvRecord.get(4));
+            record.put("event_category", csvRecord.get(5));
+            record.put("archive", csvRecord.get(6));
+            record.put("occurred_at", csvRecord.get(7));
+            record.put("ingested_at", csvRecord.get(8));
+            record.put("trace_id", emptyToNull(csvRecord.get(9)));
+            record.put("span_id", emptyToNull(csvRecord.get(10)));
+            record.put("fingerprint", csvRecord.get(11));
+            record.put("resource", csvRecord.get(12));
+            record.put("attributes", csvRecord.get(13));
+            record.put("created_at", csvRecord.get(14));
+            record.put("updated_at", csvRecord.get(15));
         }
 
         return record;
     }
 
     /**
-     * CSV 라인 파싱 (RFC 4180 준수)
+     * 빈 문자열을 null로 변환 (nullable 필드 처리)
      *
-     * <p>따옴표로 묶인 필드 내의 쉼표와 개행 문자 처리
-     *
-     * @param line CSV 라인
-     * @return 필드 리스트
+     * @param value 문자열 값
+     * @return null 또는 원래 값
      */
-    private List<String> parseCsvLine(String line) {
-        List<String> fields = new ArrayList<>();
-        StringBuilder currentField = new StringBuilder();
-        boolean insideQuotes = false;
-
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-
-            if (c == '"') {
-                // 따옴표 토글
-                insideQuotes = !insideQuotes;
-            } else if (c == ',' && !insideQuotes) {
-                // 필드 구분자
-                fields.add(currentField.toString());
-                currentField = new StringBuilder();
-            } else {
-                currentField.append(c);
-            }
-        }
-
-        // 마지막 필드 추가
-        fields.add(currentField.toString());
-
-        return fields;
+    private String emptyToNull(String value) {
+        return value == null || value.isEmpty() ? null : value;
     }
 }
