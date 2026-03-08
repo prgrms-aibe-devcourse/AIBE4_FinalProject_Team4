@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,16 +46,34 @@ public class ColdStorageService {
     private String tempDir;
 
     /**
+     * 파티션 테이블명 검증 패턴 (SQL 인젝션 방지)
+     *
+     * <p>허용 형식: game_log_YYYY_wWW (예: game_log_2024_w10)
+     */
+    private static final Pattern PARTITION_NAME_PATTERN =
+            Pattern.compile("^game_log_\\d{4}_w\\d{2}$");
+
+    /**
      * 파티션을 Cold Storage(S3)로 아카이빙
+     *
+     * <p><b>접근 제한:</b> 스케줄러 전용 (외부 호출 금지)
+     *
+     * <p><b>보안:</b> SQL 인젝션 방지를 위한 테이블명 검증
+     *
+     * <p><b>경고:</b> tableName은 내부에서 생성된 값만 사용 가능. 외부 입력 금지!
      *
      * @param tableName 파티션 테이블 이름 (예: game_log_2024_w10)
      * @param weekStartDate 주 시작 날짜
      * @return 업로드된 S3 URI
      * @throws IOException 파일 I/O 오류
+     * @throws IllegalArgumentException 잘못된 테이블명 (SQL 인젝션 시도 등)
      */
     public String archivePartitionToS3(String tableName, LocalDate weekStartDate)
             throws IOException {
         log.info("[ColdStorage] Starting archive process for table: {}", tableName);
+
+        // SQL 인젝션 방지: 테이블명 검증
+        validatePartitionTableName(tableName);
 
         // 1. 고유한 임시 디렉토리 생성 (동시 실행 방지)
         Path uniqueTempDir = createUniqueTempDirectory(tableName);
@@ -202,13 +221,74 @@ public class ColdStorageService {
     }
 
     /**
-     * Cold Storage에서 데이터 복원 (향후 구현)
+     * Cold Storage에서 데이터 복원
+     *
+     * <p><b>접근 제한:</b> 운영진 전용 (향후 @PreAuthorize("hasRole('ADMIN')") 추가 필요)
+     *
+     * <p><b>보안:</b> SQL 인젝션 방지를 위한 테이블명 검증
+     *
+     * <p><b>경고:</b> tableName은 서버에서 생성된 값만 사용 가능. 사용자 입력 금지!
+     *
+     * <p><b>사용 시나리오:</b>
+     *
+     * <ul>
+     *   <li>데이터 재처리 (버그 수정 후)
+     *   <li>규정 준수 감사
+     *   <li>긴급 복구
+     * </ul>
      *
      * @param tableName 파티션 테이블 이름
      * @param weekStartDate 주 시작 날짜
+     * @throws IllegalArgumentException 잘못된 테이블명 (SQL 인젝션 시도 등)
      */
     public void restoreFromS3(String tableName, LocalDate weekStartDate) {
-        // TODO: S3 Parquet → PostgreSQL 복원 로직
-        log.info("[ColdStorage] TODO: Restore {} from S3 (week: {})", tableName, weekStartDate);
+        log.info("[ColdStorage] Starting restore process for table: {}", tableName);
+
+        // SQL 인젝션 방지: 테이블명 검증
+        validatePartitionTableName(tableName);
+
+        // TODO: S3 Parquet → PostgreSQL 복원 로직 구현
+        // 1. S3에서 Parquet 다운로드
+        // 2. Parquet → CSV 변환
+        // 3. PostgreSQL 파티션 재생성
+        // 4. CSV → PostgreSQL COPY
+        log.warn(
+                "[ColdStorage] Restore functionality not yet implemented: {} (week: {})",
+                tableName,
+                weekStartDate);
+    }
+
+    /**
+     * 파티션 테이블명 검증 (SQL 인젝션 방지)
+     *
+     * <p>허용되는 형식: game_log_YYYY_wWW
+     *
+     * <p>예시:
+     *
+     * <ul>
+     *   <li>✅ game_log_2024_w10
+     *   <li>✅ game_log_2023_w52
+     *   <li>❌ game_log_2024_w10; DROP TABLE users; --
+     *   <li>❌ game_log_2024_w10 UNION SELECT * FROM passwords
+     * </ul>
+     *
+     * @param tableName 검증할 테이블명
+     * @throws IllegalArgumentException 형식이 맞지 않는 경우
+     */
+    private void validatePartitionTableName(String tableName) {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("Partition table name cannot be null or empty");
+        }
+
+        if (!PARTITION_NAME_PATTERN.matcher(tableName).matches()) {
+            log.error(
+                    "[ColdStorage] Invalid partition table name detected: '{}'. "
+                            + "Possible SQL injection attempt.",
+                    tableName);
+            throw new IllegalArgumentException(
+                    "Invalid partition table name: '"
+                            + tableName
+                            + "'. Expected format: game_log_YYYY_wWW (e.g., game_log_2024_w10)");
+        }
     }
 }
