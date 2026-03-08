@@ -57,10 +57,8 @@ public class ParquetExporter {
                                 .withSchema(schema)
                                 .withConf(conf)
                                 .withCompressionCodec(CompressionCodecName.SNAPPY)
-                                .withPageSize(
-                                        4 * 1024 * 1024) // 4MB (대용량 데이터에 최적화)
-                                .withRowGroupSize(
-                                        128 * 1024 * 1024) // 128MB
+                                .withPageSize(4 * 1024 * 1024) // 4MB (대용량 데이터에 최적화)
+                                .withRowGroupSize(128 * 1024 * 1024) // 128MB
                                 .build();
                 BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
 
@@ -82,9 +80,7 @@ public class ParquetExporter {
                 }
             }
 
-            log.info(
-                    "[ParquetExporter] Parquet conversion completed: {} rows",
-                    rowCount);
+            log.info("[ParquetExporter] Parquet conversion completed: {} rows", rowCount);
 
         } catch (Exception e) {
             log.error("[ParquetExporter] Failed to convert CSV to Parquet", e);
@@ -92,9 +88,7 @@ public class ParquetExporter {
         }
     }
 
-    /**
-     * GameLog 테이블 스키마 정의 (Avro Schema)
-     */
+    /** GameLog 테이블 스키마 정의 (Avro Schema) */
     private Schema createGameLogSchema() {
         return SchemaBuilder.record("GameLog")
                 .namespace("kr.java.documind.domain.logprocessor")

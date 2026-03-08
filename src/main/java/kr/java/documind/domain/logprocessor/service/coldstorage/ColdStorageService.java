@@ -79,9 +79,7 @@ public class ColdStorageService {
         }
     }
 
-    /**
-     * 임시 디렉토리 생성
-     */
+    /** 임시 디렉토리 생성 */
     private Path createTempDirectory() throws IOException {
         Path tempDirPath = Path.of(tempDir);
         if (!Files.exists(tempDirPath)) {
@@ -93,6 +91,7 @@ public class ColdStorageService {
 
     /**
      * PostgreSQL 파티션 → CSV export
+     *
      * @param tableName 파티션 테이블 이름
      * @param tempDirPath 임시 디렉토리
      * @return CSV 파일
@@ -156,8 +155,7 @@ public class ColdStorageService {
 
         String s3Key =
                 String.format(
-                        "%s/year=%d/week=%02d/%s.parquet",
-                        s3Prefix, year, weekNumber, tableName);
+                        "%s/year=%d/week=%02d/%s.parquet", s3Prefix, year, weekNumber, tableName);
 
         // S3 업로드
         PutObjectRequest putRequest =
@@ -169,8 +167,7 @@ public class ColdStorageService {
                                 java.util.Map.of(
                                         "table-name", tableName,
                                         "week-start-date", weekStartDate.toString(),
-                                        "archived-at",
-                                                java.time.OffsetDateTime.now().toString()))
+                                        "archived-at", java.time.OffsetDateTime.now().toString()))
                         .build();
 
         s3Client.putObject(putRequest, parquetFile.toPath());
@@ -181,9 +178,7 @@ public class ColdStorageService {
         return s3Uri;
     }
 
-    /**
-     * 임시 파일 정리
-     */
+    /** 임시 파일 정리 */
     private void cleanupTempDirectory(Path tempDirPath) {
         try {
             Files.walk(tempDirPath)
@@ -205,8 +200,6 @@ public class ColdStorageService {
      */
     public void restoreFromS3(String tableName, LocalDate weekStartDate) {
         // TODO: S3 Parquet → PostgreSQL 복원 로직
-        log.info(
-                "[ColdStorage] TODO: Restore {} from S3 (week: {})",
-                tableName, weekStartDate);
+        log.info("[ColdStorage] TODO: Restore {} from S3 (week: {})", tableName, weekStartDate);
     }
 }
