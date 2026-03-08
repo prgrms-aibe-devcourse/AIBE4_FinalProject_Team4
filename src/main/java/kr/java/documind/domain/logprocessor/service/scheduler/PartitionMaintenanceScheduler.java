@@ -7,11 +7,12 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAdjusters;
+import java.util.Arrays;
 import javax.sql.DataSource;
 import kr.java.documind.domain.logprocessor.service.coldstorage.ColdStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,7 @@ public class PartitionMaintenanceScheduler {
 
     private final DataSource dataSource;
     private final ColdStorageService coldStorageService;
+    private final Environment environment;
     private JdbcTemplate jdbcTemplate;
 
     /** Hot Storage: 최근 1주 (7일) - SSD */
@@ -43,10 +45,6 @@ public class PartitionMaintenanceScheduler {
 
     /** Warm Storage: 1~4주 (7~28일) - HDD */
     private static final int WARM_STORAGE_WEEKS = 4;
-
-    /** 운영 환경 여부 */
-    @Value("${spring.profiles.active:dev}")
-    private String activeProfile;
 
     /** Hot Storage Tablespace 이름 */
     private static final String HOT_TABLESPACE = "hot_storage";
@@ -295,12 +293,15 @@ public class PartitionMaintenanceScheduler {
     /**
      * 개발 환경 여부 확인
      *
+     * <p>다중 프로파일 지원 (예: "dev,mysql" → true)
+     *
      * @return 개발 환경이면 true
      */
     private boolean isDevEnvironment() {
-        return "dev".equals(activeProfile)
-                || "local".equals(activeProfile)
-                || "test".equals(activeProfile);
+        return Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(profile -> "dev".equals(profile)
+                        || "local".equals(profile)
+                        || "test".equals(profile));
     }
 
     /** Tablespace 설정 로깅 */
