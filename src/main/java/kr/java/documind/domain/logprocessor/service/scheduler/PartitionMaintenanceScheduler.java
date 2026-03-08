@@ -509,20 +509,4 @@ public class PartitionMaintenanceScheduler {
 
         log.debug("[Partition] Created occurred_at index for: {}", tableName);
     }
-
-    /**
-     * TODO: S3로 Parquet Export (Cold Storage 이동)
-     *
-     * @param tableName 파티션 테이블 이름
-     * @param weekStartDate 주 시작 날짜
-     */
-    @SuppressWarnings("unused")
-    private void exportToS3(String tableName, LocalDate weekStartDate) {
-        // TODO: 구현 필요
-        // 1. PostgreSQL → Parquet 파일 export (COPY TO 또는 pg_dump)
-        // 2. S3 업로드 (s3://bucket/cold-storage/year=2024/week=10/data.parquet)
-        // 3. AWS Glue 카탈로그 등록 (Athena 쿼리용)
-        // 4. 메타데이터 저장 (아카이브 날짜, 파일 크기 등)
-        log.info("[Partition] TODO: Export {} to S3 Cold Storage", tableName);
-    }
 }
