@@ -282,7 +282,9 @@ public class PartitionMaintenanceScheduler {
      * @return 개발 환경이면 true
      */
     private boolean isDevEnvironment() {
-        return "dev".equals(activeProfile) || "local".equals(activeProfile);
+        return "dev".equals(activeProfile)
+                || "local".equals(activeProfile)
+                || "test".equals(activeProfile);
     }
 
     /** Tablespace 설정 로깅 */

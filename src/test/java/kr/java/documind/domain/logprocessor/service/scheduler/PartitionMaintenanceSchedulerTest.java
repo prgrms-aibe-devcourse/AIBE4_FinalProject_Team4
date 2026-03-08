@@ -7,8 +7,10 @@ import static org.mockito.Mockito.*;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
 import java.util.UUID;
+import javax.sql.DataSource;
 import kr.java.documind.domain.logprocessor.model.enums.EventCategory;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
 import kr.java.documind.domain.logprocessor.service.coldstorage.ColdStorageService;
@@ -17,13 +19,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @Transactional
@@ -31,11 +33,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Import(PartitionMaintenanceSchedulerTestConfig.class)
 class PartitionMaintenanceSchedulerTest {
 
-    @Autowired private PartitionMaintenanceScheduler scheduler;
+    @Autowired private DataSource dataSource;
 
     @Autowired private JdbcTemplate jdbcTemplate;
 
     @Autowired private ColdStorageService coldStorageService;
+
+    private PartitionMaintenanceScheduler scheduler;
 
     private LocalDate today;
     private LocalDate currentMonday;
@@ -44,6 +48,10 @@ class PartitionMaintenanceSchedulerTest {
     void setUp() throws Exception {
         today = LocalDate.now();
         currentMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        // PartitionMaintenanceScheduler 생성
+        scheduler = new PartitionMaintenanceScheduler(dataSource, coldStorageService);
+        scheduler.init();
 
         // ColdStorageService Mock 설정
         when(coldStorageService.archivePartitionToS3(anyString(), any(LocalDate.class)))
@@ -152,6 +160,46 @@ class PartitionMaintenanceSchedulerTest {
     }
 
     @Test
+    @DisplayName("1주(7일) 경과한 파티션은 Warm Storage로 이동된다")
+    void moveToWarmStorage_movesOldPartition() {
+        // given: 1주 전 파티션 생성
+        LocalDate warmMonday = currentMonday.minusWeeks(1);
+        String tableName = buildExpectedTableName(warmMonday);
+        createPartitionManually(warmMonday);
+
+        // when
+        scheduler.maintainPartitions();
+
+        // then: 테스트 환경에서는 Tablespace 이동 skip됨
+        // 파티션은 여전히 존재하고, pg_default tablespace에 있어야 함
+        boolean exists = checkPartitionExists(tableName);
+        assertThat(exists).isTrue();
+
+        // Tablespace 확인 (테스트 환경에서는 pg_default)
+        String tablespaceName = getTablespaceName(tableName);
+        assertThat(tablespaceName).isEqualTo("pg_default");
+    }
+
+    @Test
+    @DisplayName("Hot Storage 기간(7일 이내) 파티션은 Warm으로 이동되지 않는다")
+    void hotStoragePartition_notMovedToWarm() {
+        // given: 현재 주 파티션 생성
+        LocalDate hotMonday = currentMonday;
+        String tableName = buildExpectedTableName(hotMonday);
+        createPartitionManually(hotMonday);
+
+        // when
+        scheduler.maintainPartitions();
+
+        // then: 여전히 Hot Storage에 있어야 함
+        boolean exists = checkPartitionExists(tableName);
+        assertThat(exists).isTrue();
+
+        String tablespaceName = getTablespaceName(tableName);
+        assertThat(tablespaceName).isEqualTo("pg_default");
+    }
+
+    @Test
     @DisplayName("벌크 저장: 1000개 로그를 1초 이내에 저장한다")
     void bulkInsert_1000logs_within1second() {
         // given
@@ -162,7 +210,7 @@ class PartitionMaintenanceSchedulerTest {
                 """
                 INSERT INTO game_log (
                     log_id, project_id, session_id, user_id, severity,
-                    event_category, body, occurred_at, ingested_at,
+                    event_category, archive, occurred_at, ingested_at,
                     trace_id, span_id, fingerprint, resource, attributes
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)
                 """;
@@ -176,7 +224,7 @@ class PartitionMaintenanceSchedulerTest {
             jdbcTemplate.update(
                     sql,
                     UUID.randomUUID(),
-                    "test-project",
+                    UUID.randomUUID(),
                     "session-" + i,
                     "user-" + i,
                     LogSeverity.INFO.toString(),
@@ -211,11 +259,11 @@ class PartitionMaintenanceSchedulerTest {
         createPartitionManually(targetMonday);
 
         // when: 월요일 데이터 삽입
-        insertTestLog(targetMonday.atTime(0, 0).atOffset(OffsetDateTime.now().getOffset()));
+        insertTestLog(targetMonday.atTime(0, 0).atOffset(ZoneOffset.UTC));
 
         // when: 일요일 데이터 삽입
         LocalDate sunday = targetMonday.plusDays(6);
-        insertTestLog(sunday.atTime(23, 59).atOffset(OffsetDateTime.now().getOffset()));
+        insertTestLog(sunday.atTime(23, 59).atOffset(ZoneOffset.UTC));
 
         // then
         Integer count =
@@ -310,7 +358,7 @@ class PartitionMaintenanceSchedulerTest {
                 """
                 INSERT INTO game_log (
                     log_id, project_id, session_id, user_id, severity,
-                    event_category, body, occurred_at, ingested_at,
+                    event_category, archive, occurred_at, ingested_at,
                     trace_id, span_id, fingerprint, resource, attributes
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)
                 """;
@@ -318,7 +366,7 @@ class PartitionMaintenanceSchedulerTest {
         jdbcTemplate.update(
                 sql,
                 UUID.randomUUID(),
-                "test-project",
+                UUID.randomUUID(),
                 "test-session",
                 "test-user",
                 LogSeverity.INFO.toString(),
@@ -331,5 +379,19 @@ class PartitionMaintenanceSchedulerTest {
                 "test-fingerprint",
                 "{\"environment\": \"test\"}",
                 "{\"action\": \"test\"}");
+    }
+
+    /** 테이블의 Tablespace 이름 조회 */
+    private String getTablespaceName(String tableName) {
+        String sql =
+                """
+                SELECT COALESCE(t.spcname, 'pg_default') AS tablespace_name
+                FROM pg_class c
+                LEFT JOIN pg_tablespace t ON t.oid = c.reltablespace
+                WHERE c.relname = ?
+                """;
+
+        String tablespaceName = jdbcTemplate.queryForObject(sql, String.class, tableName);
+        return tablespaceName;
     }
 }

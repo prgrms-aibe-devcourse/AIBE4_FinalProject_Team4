@@ -1,5 +1,11 @@
--- V6: game_log 파티셔닝 전략 변경: 월별 → 주별
--- 기존 월별 파티션은 유지, 신규 데이터는 주별 파티션에 저장
+-- V9: game_log 파티셔닝 전략 변경: 월별 → 주별
+-- 기존 월별 파티션 삭제 후 주별 파티션 생성
+
+-- 월별 파티션 삭제
+DROP TABLE IF EXISTS game_log_2024_02;
+DROP TABLE IF EXISTS game_log_2024_03;
+DROP TABLE IF EXISTS game_log_2024_04;
+DROP TABLE IF EXISTS game_log_2024_05;
 
 -- 주별 파티션 생성 (ISO 주차 기준)
 -- 2024년 10주차 (2024-03-04 ~ 2024-03-11)
