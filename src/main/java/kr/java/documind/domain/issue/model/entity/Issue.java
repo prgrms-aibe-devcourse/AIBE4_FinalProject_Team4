@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.enums.FingerprintQuality;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
@@ -78,7 +79,7 @@ public class Issue {
     public void incrementOccurrence(OffsetDateTime occurredAt) {
         this.occurrenceCount++;
         this.lastOccurredAt = occurredAt;
-        this.updatedAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -88,7 +89,7 @@ public class Issue {
      */
     public void changeStatus(IssueStatus newStatus) {
         this.status = newStatus;
-        this.updatedAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**

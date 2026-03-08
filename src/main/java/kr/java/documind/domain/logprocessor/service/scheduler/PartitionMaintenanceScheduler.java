@@ -3,6 +3,7 @@ package kr.java.documind.domain.logprocessor.service.scheduler;
 import jakarta.annotation.PostConstruct;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAdjusters;
@@ -68,7 +69,11 @@ public class PartitionMaintenanceScheduler {
     }
 
     /**
-     * 매주 월요일 00:00에 실행: 3-Tier 저장 전략 실행
+     * 매주 월요일 00:00 UTC에 실행: 3-Tier 저장 전략 실행
+     *
+     * <p><b>스케줄링:</b> UTC 기준 (서버 타임존 무관)
+     *
+     * <p><b>파티션 경계:</b> UTC +00 기준으로 정의되어 있으므로, 스케줄러도 UTC 기준으로 동작
      *
      * <ol>
      *   <li>향후 2주 파티션 생성 (Hot Storage)
@@ -76,7 +81,7 @@ public class PartitionMaintenanceScheduler {
      *   <li>4주 경과 파티션 → Cold Storage 이동 (HDD → S3)
      * </ol>
      */
-    @Scheduled(cron = "0 0 0 * * MON") // 매주 월요일 00:00
+    @Scheduled(cron = "0 0 0 * * MON", zone = "UTC") // 매주 월요일 00:00 UTC
     public void maintainPartitions() {
         createFuturePartitions();
         moveToWarmStorage();
@@ -87,10 +92,13 @@ public class PartitionMaintenanceScheduler {
      * 향후 2주 파티션 생성 (Hot Storage)
      *
      * <p>데이터 유실 방지를 위해 현재 주 + 2주까지 파티션을 미리 생성
+     *
+     * <p><b>타임존:</b> UTC 기준으로 동작 (파티션 경계와 일치)
      */
     private void createFuturePartitions() {
         try {
-            LocalDate today = LocalDate.now();
+            // UTC 기준 날짜 (파티션 경계는 UTC +00으로 정의됨)
+            LocalDate today = LocalDate.now(ZoneOffset.UTC);
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
             // 현재 주 + 2주까지 생성
@@ -110,6 +118,8 @@ public class PartitionMaintenanceScheduler {
      *
      * <p>Tablespace 이동: SSD → HDD
      *
+     * <p><b>타임존:</b> UTC 기준으로 동작 (파티션 경계와 일치)
+     *
      * <ul>
      *   <li>개발 환경: Tablespace 이동 skip (pg_default 유지)
      *   <li>운영 환경: ALTER TABLE ... SET TABLESPACE warm_storage
@@ -117,7 +127,8 @@ public class PartitionMaintenanceScheduler {
      */
     private void moveToWarmStorage() {
         try {
-            LocalDate today = LocalDate.now();
+            // UTC 기준 날짜 (파티션 경계는 UTC +00으로 정의됨)
+            LocalDate today = LocalDate.now(ZoneOffset.UTC);
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             LocalDate warmMonday = monday.minusWeeks(HOT_STORAGE_WEEKS);
 
@@ -151,6 +162,8 @@ public class PartitionMaintenanceScheduler {
     /**
      * 4주(28일) 경과한 파티션을 Cold Storage(S3)로 이동
      *
+     * <p><b>타임존:</b> UTC 기준으로 동작 (파티션 경계와 일치)
+     *
      * <p>Cold Storage 이동:
      *
      * <ol>
@@ -162,7 +175,8 @@ public class PartitionMaintenanceScheduler {
      */
     private void moveToColdStorage() {
         try {
-            LocalDate today = LocalDate.now();
+            // UTC 기준 날짜 (파티션 경계는 UTC +00으로 정의됨)
+            LocalDate today = LocalDate.now(ZoneOffset.UTC);
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             LocalDate coldMonday = monday.minusWeeks(WARM_STORAGE_WEEKS);
 
@@ -326,10 +340,13 @@ public class PartitionMaintenanceScheduler {
      * 누락된 파티션 자동 생성
      *
      * <p>현재 주 기준 -1주 ~ +2주 파티션을 확인하고 누락 시 생성
+     *
+     * <p><b>타임존:</b> UTC 기준으로 동작 (파티션 경계와 일치)
      */
     private void createMissingPartitions() {
         try {
-            LocalDate today = LocalDate.now();
+            // UTC 기준 날짜 (파티션 경계는 UTC +00으로 정의됨)
+            LocalDate today = LocalDate.now(ZoneOffset.UTC);
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
             // 과거 1주 ~ 미래 2주 파티션 생성

@@ -46,7 +46,8 @@ class PartitionMaintenanceSchedulerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        today = LocalDate.now();
+        // UTC 기준 날짜 (스케줄러와 동일한 기준)
+        today = LocalDate.now(ZoneOffset.UTC);
         currentMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
         // PartitionMaintenanceScheduler 생성
