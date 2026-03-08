@@ -49,9 +49,11 @@ public class ColdStorageService {
      * 파티션 테이블명 검증 패턴 (SQL 인젝션 방지)
      *
      * <p>허용 형식: game_log_YYYY_wWW (예: game_log_2024_w10)
+     *
+     * <p>주차: 01-53만 허용 (ISO 8601 week numbering)
      */
     private static final Pattern PARTITION_NAME_PATTERN =
-            Pattern.compile("^game_log_\\d{4}_w\\d{2}$");
+            Pattern.compile("^game_log_\\d{4}_w(0[1-9]|[1-4][0-9]|5[0-3])$");
 
     /**
      * 파티션을 Cold Storage(S3)로 아카이빙
@@ -156,11 +158,19 @@ public class ColdStorageService {
 
         long originalSizeMB = csvFile.length() / (1024 * 1024);
         long compressedSizeMB = parquetFile.length() / (1024 * 1024);
-        double compressionRatio = (1 - (double) parquetFile.length() / csvFile.length()) * 100;
 
-        log.info(
-                "[ColdStorage] Parquet conversion completed: {} MB → {} MB ({}% compression)",
-                originalSizeMB, compressedSizeMB, String.format("%.1f", compressionRatio));
+        // CSV 파일이 비어있으면 압축률 계산 불가 (divide by zero 방지)
+        double compressionRatio = 0.0;
+        if (csvFile.length() > 0) {
+            compressionRatio = (1 - (double) parquetFile.length() / csvFile.length()) * 100;
+            log.info(
+                    "[ColdStorage] Parquet conversion completed: {} MB → {} MB ({}% compression)",
+                    originalSizeMB, compressedSizeMB, String.format("%.1f", compressionRatio));
+        } else {
+            log.warn(
+                    "[ColdStorage] CSV file is empty, skipping compression ratio calculation. tableName={}",
+                    tableName);
+        }
 
         return parquetFile;
     }

@@ -2,6 +2,7 @@ package kr.java.documind.domain.logprocessor.service.coldstorage;
 
 import static org.assertj.core.api.Assertions.*;
 
+import java.lang.reflect.Method;
 import java.time.LocalDate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,21 +14,59 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@DisplayName("ColdStorageService 테이블명 검증 테스트")
+@DisplayName("ColdStorageService 테이블명 검증 테스트 (격리)")
 class ColdStorageServiceValidationTest {
 
     @Autowired private ColdStorageService coldStorageService;
 
     @Test
     @DisplayName("올바른 파티션 테이블명은 검증 통과")
-    void validPartitionName_shouldPass() {
+    void validPartitionName_shouldPass() throws Exception {
         // given
         String validTableName = "game_log_2024_w10";
-        LocalDate weekStartDate = LocalDate.of(2024, 3, 4);
 
-        // when & then - 예외가 발생하지 않으면 성공
-        assertThatCode(() -> coldStorageService.archivePartitionToS3(validTableName, weekStartDate))
-                .doesNotThrowAnyException();
+        // when & then - private 메서드를 직접 호출하여 검증만 테스트 (DB/S3 호출 안 함)
+        assertThatCode(() -> invokeValidateMethod(validTableName)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("유효한 주차 범위 테스트 (w01 ~ w53)")
+    void validWeekRange_shouldPass() throws Exception {
+        // given
+        String[] validWeeks = {"game_log_2024_w01", "game_log_2024_w10", "game_log_2024_w53"};
+
+        // when & then
+        for (String tableName : validWeeks) {
+            assertThatCode(() -> invokeValidateMethod(tableName))
+                    .as("Valid week: " + tableName)
+                    .doesNotThrowAnyException();
+        }
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 주차는 검증 실패 (w00, w54, w99)")
+    void invalidWeekRange_shouldFail() throws Exception {
+        // given
+        String[] invalidWeeks = {"game_log_2024_w00", "game_log_2024_w54", "game_log_2024_w99"};
+
+        // when & then
+        for (String tableName : invalidWeeks) {
+            assertThatThrownBy(() -> invokeValidateMethod(tableName))
+                    .as("Invalid week: " + tableName)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Invalid partition table name");
+        }
+    }
+
+    /**
+     * private validatePartitionTableName() 메서드를 리플렉션으로 호출 (격리 테스트용)
+     */
+    private void invokeValidateMethod(String tableName) throws Exception {
+        Method validateMethod =
+                ColdStorageService.class.getDeclaredMethod(
+                        "validatePartitionTableName", String.class);
+        validateMethod.setAccessible(true);
+        validateMethod.invoke(coldStorageService, tableName);
     }
 
     @ParameterizedTest

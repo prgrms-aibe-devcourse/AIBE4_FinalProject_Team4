@@ -176,27 +176,33 @@ public class ParquetExporter {
      * @return GenericRecord
      */
     private GenericRecord parseCsvRecordToAvroRecord(CSVRecord csvRecord, Schema schema) {
+        // CSV row가 16개 컬럼보다 적으면 invalid data
+        if (csvRecord.size() < 16) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Invalid CSV row: expected 16 columns but got %d. Row number: %d",
+                            csvRecord.size(), csvRecord.getRecordNumber()));
+        }
+
         GenericRecord record = new GenericData.Record(schema);
 
         // Apache Commons CSV가 자동으로 escape 처리 (""→")
-        if (csvRecord.size() >= 16) {
-            record.put("log_id", csvRecord.get(0));
-            record.put("project_id", csvRecord.get(1));
-            record.put("session_id", csvRecord.get(2));
-            record.put("user_id", emptyToNull(csvRecord.get(3)));
-            record.put("severity", csvRecord.get(4));
-            record.put("event_category", csvRecord.get(5));
-            record.put("archive", csvRecord.get(6));
-            record.put("occurred_at", csvRecord.get(7));
-            record.put("ingested_at", csvRecord.get(8));
-            record.put("trace_id", emptyToNull(csvRecord.get(9)));
-            record.put("span_id", emptyToNull(csvRecord.get(10)));
-            record.put("fingerprint", csvRecord.get(11));
-            record.put("resource", csvRecord.get(12));
-            record.put("attributes", csvRecord.get(13));
-            record.put("created_at", csvRecord.get(14));
-            record.put("updated_at", csvRecord.get(15));
-        }
+        record.put("log_id", csvRecord.get(0));
+        record.put("project_id", csvRecord.get(1));
+        record.put("session_id", csvRecord.get(2));
+        record.put("user_id", emptyToNull(csvRecord.get(3)));
+        record.put("severity", csvRecord.get(4));
+        record.put("event_category", csvRecord.get(5));
+        record.put("archive", csvRecord.get(6));
+        record.put("occurred_at", csvRecord.get(7));
+        record.put("ingested_at", csvRecord.get(8));
+        record.put("trace_id", emptyToNull(csvRecord.get(9)));
+        record.put("span_id", emptyToNull(csvRecord.get(10)));
+        record.put("fingerprint", csvRecord.get(11));
+        record.put("resource", csvRecord.get(12));
+        record.put("attributes", csvRecord.get(13));
+        record.put("created_at", csvRecord.get(14));
+        record.put("updated_at", csvRecord.get(15));
 
         return record;
     }
