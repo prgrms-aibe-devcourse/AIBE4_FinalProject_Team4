@@ -299,9 +299,11 @@ public class PartitionMaintenanceScheduler {
      */
     private boolean isDevEnvironment() {
         return Arrays.stream(environment.getActiveProfiles())
-                .anyMatch(profile -> "dev".equals(profile)
-                        || "local".equals(profile)
-                        || "test".equals(profile));
+                .anyMatch(
+                        profile ->
+                                "dev".equals(profile)
+                                        || "local".equals(profile)
+                                        || "test".equals(profile));
     }
 
     /** Tablespace 설정 로깅 */
@@ -425,10 +427,18 @@ public class PartitionMaintenanceScheduler {
     /**
      * 파티션 생성 (주별)
      *
+     * <p>동시성 안전: 파티션 존재 여부를 먼저 확인하여 예외 메시지 의존성 제거
+     *
      * @param weekStartMonday 주 시작 월요일
      * @param tableName 파티션 테이블 이름
      */
     private void createPartition(LocalDate weekStartMonday, String tableName) {
+        // 1. 파티션 존재 여부 사전 확인 (멀티 인스턴스 환경 안전성)
+        if (checkPartitionExists(tableName)) {
+            log.debug("[Partition] Partition already exists: {}", tableName);
+            return;
+        }
+
         LocalDate startDate = weekStartMonday;
         LocalDate endDate = weekStartMonday.plusWeeks(1); // 다음 주 월요일
 
@@ -445,20 +455,18 @@ public class PartitionMaintenanceScheduler {
         try {
             jdbcTemplate.execute(sql);
             log.debug("[Partition] Created partition table: {}", tableName);
-        } catch (org.springframework.dao.DuplicateKeyException e) {
-            // 멀티 인스턴스 환경에서 동시 생성 시 발생 가능 (정상 케이스)
-            log.debug(
-                    "[Partition] Partition table already exists (created by another instance): {}",
-                    tableName);
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // PostgreSQL의 "duplicate_table" 에러 처리
-            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
+        } catch (Exception e) {
+            // 2. 동시 생성 경쟁 상황 (race condition) - 재확인
+            if (checkPartitionExists(tableName)) {
                 log.debug(
-                        "[Partition] Partition table already exists (concurrent creation): {}",
+                        "[Partition] Partition created by another instance during race condition: {}",
                         tableName);
-            } else {
-                throw e; // 다른 종류의 에러는 재발생
+                return;
             }
+
+            // 3. 실제 에러 - 예외 전파
+            log.error("[Partition] Failed to create partition table: {}", tableName, e);
+            throw e;
         }
     }
 
