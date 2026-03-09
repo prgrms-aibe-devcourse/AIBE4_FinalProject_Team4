@@ -53,9 +53,10 @@ public class FrequencyStrategy implements SeverityStrategy {
         // 경과 시간 계산 (분 단위)
         long elapsedMinutes = Duration.between(firstOccurred, lastOccurred).toMinutes();
 
-        // 경과 시간이 0이면 (거의 동시 발생) → 높은 빈도로 간주
+        // 경과 시간이 0이면 (1분 내 버스트) → 시간당으로 환산
+        // 예: 10초에 1000번 발생 = 시간당 60,000번으로 추정
         if (elapsedMinutes == 0) {
-            return occurrenceCount; // 분당 N건 = 시간당 N건으로 근사
+            return occurrenceCount * 60; // 분당 N건 → 시간당 N*60건
         }
 
         // 시간당 발생 횟수 = 총 발생 횟수 / (경과 시간 / 60)

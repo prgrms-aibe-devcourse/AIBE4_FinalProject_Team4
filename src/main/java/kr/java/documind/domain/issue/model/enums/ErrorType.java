@@ -94,10 +94,9 @@ public enum ErrorType {
             }
         }
 
-        throw new IllegalArgumentException(
-                "Unknown error type: '"
-                        + value
-                        + "'. Supported values: NULL_POINTER, INDEX_OUT_OF_BOUNDS, etc.");
+        // 인식하지 못한 값은 UNKNOWN으로 fallback (예외 발생하지 않음)
+        // 미래 버전/레거시 데이터 호환성 유지
+        return UNKNOWN;
     }
 
     @Override
