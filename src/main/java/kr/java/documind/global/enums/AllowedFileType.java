@@ -6,7 +6,6 @@ import lombok.Getter;
 
 @Getter
 public enum AllowedFileType {
-
     JPG("image/jpeg", "jpg"),
     PNG("image/png", "png"),
     TXT("text/plain", "txt"),
