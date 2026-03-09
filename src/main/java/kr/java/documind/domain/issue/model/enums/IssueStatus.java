@@ -1,30 +1,55 @@
 package kr.java.documind.domain.issue.model.enums;
 
-/** 이슈 상태 */
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+/**
+ * 이슈 상태 (ERD 기준)
+ *
+ * <p>TODO → IN_PROGRESS → RESOLVED 흐름
+ */
 public enum IssueStatus {
-    /** 열림 (처리 필요) */
-    OPEN,
+    TODO("TODO", "할 일"),
+    IN_PROGRESS("IN_PROGRESS", "진행 중"),
+    RESOLVED("RESOLVED", "해결됨");
 
-    /** 수동 검토 필요 (낮은 품질의 fingerprint) */
-    REQUIRES_REVIEW,
+    private final String value;
+    private final String description;
 
-    /** 진행 중 */
-    IN_PROGRESS,
+    IssueStatus(String value, String description) {
+        this.value = value;
+        this.description = description;
+    }
 
-    /** 해결됨 */
-    RESOLVED,
+    @JsonValue
+    public String getValue() {
+        return value;
+    }
 
-    /** 무시됨 */
-    IGNORED;
+    public String getDescription() {
+        return description;
+    }
 
+    @JsonCreator
     public static IssueStatus fromString(String value) {
-        if (value == null) {
-            return OPEN;
+        if (value == null || value.isBlank()) {
+            return TODO;
         }
-        try {
-            return valueOf(value.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return OPEN;
+
+        for (IssueStatus status : values()) {
+            if (status.value.equalsIgnoreCase(value.trim())) {
+                return status;
+            }
         }
+
+        throw new IllegalArgumentException(
+                "Unknown issue status: '"
+                        + value
+                        + "'. Supported values: TODO, IN_PROGRESS, RESOLVED");
+    }
+
+    @Override
+    public String toString() {
+        return value;
     }
 }
