@@ -34,7 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class DocumentGroupApiController {
 
     private final DocumentGroupService documentGroupService;
-    private final DocumentMetadataService documentMetadataService;
+    private final DocumentMetadataService documentService;
 
     @GetMapping
     public ApiResponse<List<DocumentGroupResponse>> getDocumentGroups(
@@ -43,21 +43,21 @@ public class DocumentGroupApiController {
     }
 
     @GetMapping("/{groupId}/documents")
-    public ApiResponse<List<DocumentMetadataResponse>> getDocumentVersions(
+    public ApiResponse<List<DocumentMetadataResponse>> getDocumentsByGroup(
             @ProjectId UUID projectId, @PathVariable Long groupId) {
         List<DocumentMetadataResponse> documents =
-                documentGroupService.getDocumentVersions(groupId);
+                documentGroupService.getDocumentsByGroup(projectId, groupId);
         return ApiResponse.success(documents);
     }
 
     @PostMapping("/{groupId}/documents")
-    public ResponseEntity<ApiResponse<DocumentMetadataResponse>> uploadNewVersion(
+    public ResponseEntity<ApiResponse<DocumentMetadataResponse>> uploadNewVersionDocument(
             @ProjectId UUID projectId,
             @PathVariable Long groupId,
             @RequestPart("request") @Valid NewVersionDocumentUploadRequest request,
             @RequestPart("file") MultipartFile file) {
         DocumentMetadataResponse response =
-                documentMetadataService.uploadNewVersion(groupId, request, file);
+                documentService.uploadNewVersionDocument(projectId, groupId, request, file);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
@@ -66,16 +66,16 @@ public class DocumentGroupApiController {
             @ProjectId UUID projectId,
             @PathVariable Long groupId,
             @RequestBody @Valid GroupNameUpdateRequest request) {
-        documentGroupService.updateGroupName(groupId, request);
+        documentGroupService.updateGroupName(projectId, groupId, request);
         return ApiResponse.success();
     }
 
     @PatchMapping("/{groupId}/category")
-    public ApiResponse<Void> updateGroupCategory(
+    public ApiResponse<Void> updateCategory(
             @ProjectId UUID projectId,
             @PathVariable Long groupId,
             @RequestBody @Valid CategoryUpdateRequest request) {
-        documentGroupService.updateGroupCategory(groupId, request);
+        documentGroupService.updateCategory(projectId, groupId, request);
         return ApiResponse.success();
     }
 }

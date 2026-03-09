@@ -17,6 +17,13 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class VectorStoreRepository {
 
+    private static final String INSERT_CHUNK_SQL =
+            "INSERT INTO vector_store (source_id, content, metadata, embedding)"
+                    + " VALUES (?, ?, ?::jsonb, ?::vector)";
+
+    private static final String DELETE_BY_SOURCE_ID_SQL =
+            "DELETE FROM vector_store WHERE source_id = ?";
+
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
@@ -25,12 +32,8 @@ public class VectorStoreRepository {
             return;
         }
 
-        String sql =
-                "INSERT INTO vector_store (source_id, content, metadata, embedding)"
-                        + " VALUES (?, ?, ?::jsonb, ?::vector)";
-
         jdbcTemplate.batchUpdate(
-                sql,
+                INSERT_CHUNK_SQL,
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -49,8 +52,7 @@ public class VectorStoreRepository {
     }
 
     public void deleteBySourceId(Long sourceId) {
-        String sql = "DELETE FROM vector_store WHERE source_id = ?";
-        jdbcTemplate.update(sql, sourceId);
+        jdbcTemplate.update(DELETE_BY_SOURCE_ID_SQL, sourceId);
     }
 
     private String toJsonb(Map<String, Object> metadata) {

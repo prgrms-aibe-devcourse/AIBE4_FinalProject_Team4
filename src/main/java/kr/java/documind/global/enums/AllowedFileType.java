@@ -18,13 +18,17 @@ public enum AllowedFileType {
     PPTX("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx");
 
     private static final Map<String, AllowedFileType> BY_MIME_TYPE;
+    private static final Map<String, AllowedFileType> BY_EXTENSION;
 
     static {
-        Map<String, AllowedFileType> map = new HashMap<>();
+        Map<String, AllowedFileType> mimeMap = new HashMap<>();
+        Map<String, AllowedFileType> extMap = new HashMap<>();
         for (AllowedFileType type : values()) {
-            map.put(type.mimeType, type);
+            mimeMap.put(type.mimeType, type);
+            extMap.put(type.extension, type);
         }
-        BY_MIME_TYPE = Map.copyOf(map);
+        BY_MIME_TYPE = Map.copyOf(mimeMap);
+        BY_EXTENSION = Map.copyOf(extMap);
     }
 
     private final String mimeType;
@@ -40,5 +44,12 @@ public enum AllowedFileType {
             return null;
         }
         return BY_MIME_TYPE.get(mimeType.strip().toLowerCase());
+    }
+
+    public static AllowedFileType fromExtension(String extension) {
+        if (extension == null || extension.isBlank()) {
+            return null;
+        }
+        return BY_EXTENSION.get(extension.strip().toLowerCase());
     }
 }

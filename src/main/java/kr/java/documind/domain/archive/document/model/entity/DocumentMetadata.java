@@ -1,5 +1,6 @@
 package kr.java.documind.domain.archive.document.model.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -14,9 +15,10 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
-import kr.java.documind.domain.archive.etl.model.enums.EmbeddingStatus;
+import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.global.entity.DomainSource;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -41,7 +43,7 @@ public class DocumentMetadata {
 
     @Id private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     @MapsId
     @JoinColumn(name = "id")
     private DomainSource domainSource;
@@ -95,6 +97,7 @@ public class DocumentMetadata {
 
     @LastModifiedDate private LocalDateTime updatedAt;
 
+    @Builder
     private DocumentMetadata(
             DomainSource domainSource,
             DocumentGroup documentGroup,
@@ -124,38 +127,6 @@ public class DocumentMetadata {
         this.isProcessed = isProcessed;
         this.embeddingStatus = embeddingStatus;
         this.uploadedAt = uploadedAt;
-    }
-
-    public static DocumentMetadata create(
-            DomainSource domainSource,
-            DocumentGroup documentGroup,
-            String documentName,
-            String choseong,
-            String extension,
-            int majorVersion,
-            int minorVersion,
-            int patchVersion,
-            String hash,
-            long size,
-            String storedKey,
-            boolean isProcessed,
-            EmbeddingStatus embeddingStatus,
-            LocalDateTime uploadedAt) {
-        return new DocumentMetadata(
-                domainSource,
-                documentGroup,
-                documentName,
-                choseong,
-                extension,
-                majorVersion,
-                minorVersion,
-                patchVersion,
-                hash,
-                size,
-                storedKey,
-                isProcessed,
-                embeddingStatus,
-                uploadedAt);
     }
 
     public String getVersionString() {

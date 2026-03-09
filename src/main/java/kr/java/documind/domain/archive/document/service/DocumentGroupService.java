@@ -2,16 +2,13 @@ package kr.java.documind.domain.archive.document.service;
 
 import java.util.List;
 import java.util.UUID;
+import kr.java.documind.domain.archive.document.infrastructure.DocumentGroupManager;
+import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
 import kr.java.documind.domain.archive.document.model.dto.request.CategoryUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.GroupNameUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentGroupResponse;
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetadataResponse;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
-import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
-import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
-import kr.java.documind.domain.member.model.entity.Project;
-import kr.java.documind.global.exception.ConflictException;
-import kr.java.documind.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,64 +20,44 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class DocumentGroupService {
 
-    private final DocumentGroupRepository documentGroupRepository;
-    private final DocumentMetadataRepository documentMetadataRepository;
-
-    // ==================== DocumentViewController ====================
-    // ==================== DocumentGroupApiController ====================
+    private final DocumentGroupManager documentGroupManager;
+    private final DocumentMetadataManager documentMetadataManager;
 
     public Page<DocumentGroupResponse> getDocumentGroups(UUID projectId, Pageable pageable) {
-        return documentGroupRepository
-                .findGroupSummariesByProjectId(projectId, pageable)
+        return documentGroupManager
+                .findGroupSummaries(projectId, pageable)
                 .map(DocumentGroupResponse::from);
     }
 
-    // ==================== DocumentGroupApiController ====================
-
-    public List<DocumentMetadataResponse> getDocumentVersions(Long groupId) {
-        DocumentGroup group = findGroupById(groupId);
-        return documentMetadataRepository
-                .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(group)
-                .stream()
+    public List<DocumentMetadataResponse> getDocumentsByGroup(UUID projectId, Long groupId) {
+        DocumentGroup group = findGroup(groupId, projectId);
+        return documentMetadataManager.findVersionsByGroup(group).stream()
                 .map(DocumentMetadataResponse::from)
                 .toList();
     }
 
     @Transactional
-    public void updateGroupName(Long groupId, GroupNameUpdateRequest request) {
-        DocumentGroup group = findGroupById(groupId);
+    public void updateGroupName(UUID projectId, Long groupId, GroupNameUpdateRequest request) {
+        DocumentGroup group = findGroup(groupId, projectId);
 
-        validateGroupNameUniqueness(group.getProject(), group.getCategory(), request.groupName());
+        documentGroupManager.validateGroupNameUniqueness(
+                group.getProjectId(), group.getCategory(), request.groupName());
 
         // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
         group.updateGroupName(request.groupName(), "");
     }
 
     @Transactional
-    public void updateGroupCategory(Long groupId, CategoryUpdateRequest request) {
-        DocumentGroup group = findGroupById(groupId);
+    public void updateCategory(UUID projectId, Long groupId, CategoryUpdateRequest request) {
+        DocumentGroup group = findGroup(groupId, projectId);
 
-        validateGroupNameUniqueness(group.getProject(), request.category(), group.getGroupName());
+        documentGroupManager.validateGroupNameUniqueness(
+                group.getProjectId(), request.category(), group.getGroupName());
 
         group.updateCategory(request.category());
     }
 
-    // ==================== private ====================
-
-    private void validateGroupNameUniqueness(Project project, String category, String groupName) {
-        if (documentGroupRepository.existsByProjectAndCategoryAndGroupName(
-                project, category, groupName)) {
-            throw new ConflictException(
-                    String.format("카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.", category, groupName));
-        }
-    }
-
-    private DocumentGroup findGroupById(Long groupId) {
-        return documentGroupRepository
-                .findById(groupId)
-                .orElseThrow(
-                        () ->
-                                new NotFoundException(
-                                        String.format("문서 그룹(id=%d)을 찾을 수 없습니다.", groupId)));
+    private DocumentGroup findGroup(Long groupId, UUID projectId) {
+        return documentGroupManager.findByIdAndProjectId(groupId, projectId);
     }
 }
