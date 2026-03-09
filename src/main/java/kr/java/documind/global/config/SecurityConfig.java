@@ -1,9 +1,10 @@
 package kr.java.documind.global.config;
 
 import kr.java.documind.global.security.RedisTokenService;
+import kr.java.documind.global.security.filter.CsrfCookieFilter;
+import kr.java.documind.global.security.filter.JwtAuthenticationFilter;
 import kr.java.documind.global.security.jwt.CustomAccessDeniedHandler;
 import kr.java.documind.global.security.jwt.CustomAuthenticationEntryPoint;
-import kr.java.documind.global.security.jwt.JwtAuthenticationFilter;
 import kr.java.documind.global.security.jwt.TokenProvider;
 import kr.java.documind.global.security.oauth.CustomOAuth2UserService;
 import kr.java.documind.global.security.oauth.HttpCookieOAuth2AuthorizationRequestRepository;
@@ -12,6 +13,7 @@ import kr.java.documind.global.security.oauth.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,6 +21,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
@@ -37,6 +40,7 @@ public class SecurityConfig {
     private final OAuth2FailureHandler oAuth2FailureHandler;
     private final HttpCookieOAuth2AuthorizationRequestRepository authRequestRepository;
 
+    /** 인증 없이 접근 가능한 GET 경로 (정적 리소스 · 공개 페이지) */
     private static final String[] PUBLIC_GET_PATHS = {
         "/",
         "/auth/login",
@@ -45,11 +49,17 @@ public class SecurityConfig {
         "/css/**",
         "/js/**",
         "/images/**",
-        "/favicon.ico"
+        "/favicon.ico",
     };
 
+    /** 인증 없이 접근 가능한 POST 경로 */
     private static final String[] PUBLIC_POST_PATHS = {
-        "/api/auth/refresh",
+        "/api/auth/refresh", "/api/auth/logout",
+    };
+
+    /** 인증 없이 접근 가능한 Actuator 엔드포인트 */
+    private static final String[] PUBLIC_ACTUATOR_PATHS = {
+        "/actuator/health",
     };
 
     @Bean
@@ -61,17 +71,26 @@ public class SecurityConfig {
                                 csrf.csrfTokenRepository(csrfTokenRepository())
                                         .csrfTokenRequestHandler(
                                                 new CsrfTokenRequestAttributeHandler())
-                                        .ignoringRequestMatchers("/oauth2/**", "/login/oauth2/**"))
+                                        .ignoringRequestMatchers(
+                                                "/oauth2/**", "/login/oauth2/**", "/api/**"))
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(
                         auth ->
-                                auth.requestMatchers(PUBLIC_GET_PATHS)
+                                auth
+                                        // ── 공개 페이지 / 정적 리소스 ──────────────────────
+                                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_PATHS)
                                         .permitAll()
-                                        .requestMatchers(PUBLIC_POST_PATHS)
+                                        .requestMatchers(HttpMethod.POST, PUBLIC_POST_PATHS)
+                                        .permitAll()
+                                        // ── Actuator : health는 공개, 나머지는 ADMIN 전용 ──
+                                        .requestMatchers(HttpMethod.GET, PUBLIC_ACTUATOR_PATHS)
                                         .permitAll()
                                         .requestMatchers("/actuator/**")
                                         .hasRole("ADMIN")
+                                        // ── 어드민 전용 페이지 ─────────────────────────────
                                         .requestMatchers("/admin/**")
                                         .hasRole("ADMIN")
+                                        // ── 그 외 모든 요청: 인증 필요 ───────────────────
                                         .anyRequest()
                                         .authenticated())
                 .exceptionHandling(
@@ -79,6 +98,7 @@ public class SecurityConfig {
                                 ex.authenticationEntryPoint(jwtAuthenticationEntryPoint) // 401
                                         .accessDeniedHandler(jwtAccessDeniedHandler) // 403
                         )
+                .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .addFilterBefore(
                         jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(
@@ -115,7 +135,7 @@ public class SecurityConfig {
     public CookieCsrfTokenRepository csrfTokenRepository() {
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         repository.setCookiePath("/");
-        repository.setCookieCustomizer(builder -> builder.sameSite("Strict"));
+        repository.setCookieCustomizer(builder -> builder.sameSite("Lax"));
         return repository;
     }
 }

@@ -72,7 +72,9 @@ public class AuthApiController {
         Member member = memberService.getMemberWithCompany(memberId);
         if (!member.isActive()) {
             log.warn(
-                    "비활성 계정의 토큰 갱신 시도: memberId={} status={}", memberId, member.getAccountStatus());
+                    "[AuthApiController] 비활성 계정의 토큰 갱신 시도: memberId={} status={}",
+                    memberId,
+                    member.getAccountStatus());
             deleteAuthCookies(response);
             return ResponseEntity.status(401)
                     .body(ApiResponse.error(ErrorResponse.of("계정이 비활성화되었습니다. 다시 로그인하세요.")));
@@ -98,7 +100,7 @@ public class AuthApiController {
         redisTokenService.saveRefreshToken(
                 memberId, newRefreshToken, jwtProperties.getRefreshExpirationSeconds());
 
-        log.debug("Access Token 재발급 완료: memberId={}", memberId);
+        log.debug("[AuthApiController] Access Token 재발급 완료: memberId={}", memberId);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
@@ -122,12 +124,29 @@ public class AuthApiController {
             }
 
             redisTokenService.deleteRefreshToken(authMember.getMemberId());
+            log.info("[AuthApiController] 로그아웃: memberId={}", authMember.getMemberId());
 
-            log.info("로그아웃: memberId={}", authMember.getMemberId());
+        } else {
+            String refreshToken =
+                    cookieUtil
+                            .getCookieValue(request, jwtProperties.getRefreshCookieName())
+                            .orElse(null);
+
+            if (refreshToken != null) {
+                try {
+                    UUID memberId = jwtProvider.getMemberIdFromExpiredToken(refreshToken);
+                    redisTokenService.deleteRefreshToken(memberId);
+                    log.info(
+                            "[AuthApiController] 만료된 토큰으로 로그아웃 처리 (Refresh Token 정리): memberId={}",
+                            memberId);
+                } catch (Exception e) {
+                    log.debug(
+                            "Refresh Token에서 memberId 추출 실패 (이미 정리되었거나 서명 오류): {}", e.getMessage());
+                }
+            }
         }
 
         deleteAuthCookies(response);
-
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 

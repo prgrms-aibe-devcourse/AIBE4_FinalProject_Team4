@@ -13,6 +13,7 @@ public class RedisTokenService {
     private static final String REFRESH_PREFIX = "refresh:";
     private static final String BLACKLIST_PREFIX = "blacklist:";
     private static final String OAUTH2_STATE_PREFIX = "oauth2_state:";
+    private static final String SUSPENDED_PREFIX = "suspended:";
 
     private final StringRedisTemplate redisTemplate;
     private final TokenProvider tokenProvider;
@@ -27,14 +28,6 @@ public class RedisTokenService {
         return redisTemplate.opsForValue().get(refreshKey(memberId));
     }
 
-    /**
-     * Refresh Token을 원자적으로 읽고 즉시 삭제한다 (Redis GETDEL).
-     *
-     * <p>GET + DELETE를 하나의 원자 연산으로 처리하므로, 동일한 토큰으로 동시에 들어온 두 요청 중 오직 첫 번째 요청만 토큰 값을 얻고, 이후 요청은
-     * null을 반환받아 거부된다.
-     *
-     * @return 저장된 Refresh Token 문자열, 없으면 null
-     */
     public String consumeRefreshToken(UUID memberId) {
         return redisTemplate.opsForValue().getAndDelete(refreshKey(memberId));
     }
@@ -55,6 +48,21 @@ public class RedisTokenService {
 
     public boolean isBlacklisted(String accessToken) {
         return redisTemplate.hasKey(blacklistKey(accessToken));
+    }
+
+    public void revokeAllTokensByMember(UUID memberId, long accessTokenTtlSeconds) {
+        deleteRefreshToken(memberId);
+        redisTemplate
+                .opsForValue()
+                .set(suspendedKey(memberId), "1", accessTokenTtlSeconds, TimeUnit.SECONDS);
+    }
+
+    public boolean isMemberSuspended(UUID memberId) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(suspendedKey(memberId)));
+    }
+
+    public void clearSuspension(UUID memberId) {
+        redisTemplate.delete(suspendedKey(memberId));
     }
 
     public void saveOAuth2State(String requestId, String stateJson, long ttlSeconds) {
@@ -81,5 +89,9 @@ public class RedisTokenService {
 
     private String oauth2StateKey(String requestId) {
         return OAUTH2_STATE_PREFIX + requestId;
+    }
+
+    private String suspendedKey(UUID memberId) {
+        return SUSPENDED_PREFIX + memberId;
     }
 }

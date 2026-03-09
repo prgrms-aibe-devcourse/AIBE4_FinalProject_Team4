@@ -91,6 +91,18 @@ dependencies {
     // S3
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.4.2'
 
+    // Parquet (Cold Storage)
+    implementation 'org.apache.parquet:parquet-avro:1.13.1'
+    implementation('org.apache.hadoop:hadoop-common:3.3.6') {
+        exclude group: 'org.slf4j', module: 'slf4j-reload4j'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+    implementation('org.apache.hadoop:hadoop-mapreduce-client-core:3.3.6') {
+        exclude group: 'org.slf4j', module: 'slf4j-reload4j'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+    implementation 'org.apache.commons:commons-csv:1.11.0'
+
     // Spring AI & ETL & RAG
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
