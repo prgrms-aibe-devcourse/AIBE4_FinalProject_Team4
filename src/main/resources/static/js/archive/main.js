@@ -14,51 +14,67 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDropZone('uploadDropZone', 'uploadFile');
     setupDropZone('newVersionDropZone', 'newVersionFile');
     setupDropZone('editDropZone', 'editFile');
-});
 
-// ==================== 모달 공통 ====================
+    // 이벤트 위임 (XSS 방지: 인라인 onclick 대신 data-action 사용)
+    const groupList = document.getElementById('groupList');
 
-function openModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
+    groupList.addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
 
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-    document.body.style.overflow = '';
-}
+        const action = target.dataset.action;
+        const groupId = Number(target.dataset.groupId);
+        const documentId = Number(target.dataset.documentId);
 
-function showModalError(errorElId, message) {
-    const el = document.getElementById(errorElId);
-    el.textContent = message;
-    el.classList.remove('hidden');
-}
-
-function hideModalError(errorElId) {
-    document.getElementById(errorElId).classList.add('hidden');
-}
-
-function setupDropZone(zoneId, fileInputId) {
-    const zone = document.getElementById(zoneId);
-    if (!zone) return;
-
-    zone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        zone.classList.add('border-sky-400', 'bg-sky-50/30');
-    });
-    zone.addEventListener('dragleave', () => {
-        zone.classList.remove('border-sky-400', 'bg-sky-50/30');
-    });
-    zone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        zone.classList.remove('border-sky-400', 'bg-sky-50/30');
-        const fileInput = document.getElementById(fileInputId);
-        if (e.dataTransfer.files.length > 0) {
-            fileInput.files = e.dataTransfer.files;
-            fileInput.dispatchEvent(new Event('change'));
+        switch (action) {
+            case 'startEditGroupName':
+                startEditGroupName(groupId, target.dataset.groupName);
+                break;
+            case 'submitGroupName':
+                submitGroupName(groupId);
+                break;
+            case 'cancelEditGroupName':
+                cancelEditGroupName(groupId, target.dataset.groupName);
+                break;
+            case 'toggleCategoryDropdown':
+                toggleCategoryDropdown(groupId, target);
+                break;
+            case 'submitCategory':
+                submitCategory(groupId, target.dataset.category);
+                break;
+            case 'openAddVersion':
+                openAddVersion(groupId, target.dataset.latestVersion);
+                break;
+            case 'toggleDocuments':
+                toggleDocuments(groupId);
+                break;
+            case 'downloadDocument':
+                downloadDocument(documentId);
+                break;
+            case 'openEditDocument':
+                openEditDocument(
+                    documentId, groupId,
+                    target.dataset.groupName, target.dataset.category,
+                    target.dataset.version, target.dataset.isProcessed === 'true'
+                );
+                break;
+            case 'openDeleteModal':
+                openDeleteModal(documentId, groupId, target.dataset.docName, target.dataset.version);
+                break;
         }
     });
-}
+
+    groupList.addEventListener('keydown', (e) => {
+        const input = e.target.closest('input[data-action-enter]');
+        if (!input) return;
+
+        if (e.key === 'Enter') {
+            submitGroupName(Number(input.dataset.groupId));
+        } else if (e.key === 'Escape') {
+            cancelEditGroupName(Number(input.dataset.groupId), input.dataset.groupName);
+        }
+    });
+});
 
 // ==================== 새 파일 업로드 ====================
 
@@ -108,14 +124,20 @@ async function submitUpload() {
     formData.append('request', new Blob([JSON.stringify(requestData)], { type: 'application/json' }));
     formData.append('file', fileInput.files[0]);
 
+    const btn = document.querySelector('#uploadModal button[onclick="submitUpload()"]');
+    startLoading(btn);
     try {
         const result = await callApi(`/api/projects/${projectId}/documents`, {
             method: 'POST',
             body: formData
         });
         if (result.success) {
+            const uploadedDocId = result.data.documentId;
+            subscribeEmbeddingStatus(uploadedDocId);
+            await completeLoading(btn);
             closeModal('uploadModal');
             loadGroups(currentPage);
+            return;
         } else {
             showModalError('uploadError', result.error?.message || '업로드에 실패했습니다.');
         }
@@ -123,6 +145,7 @@ async function submitUpload() {
         showModalError('uploadError', '업로드에 실패했습니다.');
         console.error(e);
     }
+    stopLoading(btn);
 }
 
 // ==================== 새 버전 업로드 ====================
@@ -185,14 +208,20 @@ async function submitNewVersion() {
     formData.append('request', new Blob([JSON.stringify(requestData)], { type: 'application/json' }));
     formData.append('file', fileInput.files[0]);
 
+    const btn = document.querySelector('#newVersionModal button[onclick="submitNewVersion()"]');
+    startLoading(btn);
     try {
         const result = await callApi(`/api/projects/${projectId}/groups/${groupId}/documents`, {
             method: 'POST',
             body: formData
         });
         if (result.success) {
+            const uploadedDocId = result.data.documentId;
+            subscribeEmbeddingStatus(uploadedDocId);
+            await completeLoading(btn);
             closeModal('newVersionModal');
             loadGroups(currentPage);
+            return;
         } else {
             showModalError('newVersionError', result.error?.message || '업로드에 실패했습니다.');
         }
@@ -200,6 +229,7 @@ async function submitNewVersion() {
         showModalError('newVersionError', '업로드에 실패했습니다.');
         console.error(e);
     }
+    stopLoading(btn);
 }
 
 // ==================== 파일 수정 ====================
@@ -228,30 +258,6 @@ function openEditDocument(documentId, groupId, groupName, category, version, isP
     openModal('editModal');
 }
 
-function toggleEditFile() {
-    const area = document.getElementById('editFileArea');
-    if (document.getElementById('editFileToggle').checked) {
-        area.classList.remove('hidden');
-    } else {
-        area.classList.add('hidden');
-        clearEditFile();
-    }
-}
-
-function onEditFileSelected(input) {
-    if (input.files.length > 0) {
-        document.getElementById('editFileName').textContent = input.files[0].name;
-        document.getElementById('editFileInfo').classList.remove('hidden');
-        document.getElementById('editDropZone').classList.add('hidden');
-    }
-}
-
-function clearEditFile() {
-    document.getElementById('editFile').value = '';
-    document.getElementById('editFileInfo').classList.add('hidden');
-    document.getElementById('editDropZone').classList.remove('hidden');
-}
-
 async function submitEdit() {
     hideModalError('editError');
 
@@ -270,14 +276,18 @@ async function submitEdit() {
         formData.append('file', fileInput.files[0]);
     }
 
+    const btn = document.querySelector('#editModal button[onclick="submitEdit()"]');
+    startLoading(btn);
     try {
         const result = await callApi(`/api/projects/${projectId}/documents/${documentId}`, {
             method: 'PATCH',
             body: formData
         });
         if (result.success) {
+            await completeLoading(btn);
             closeModal('editModal');
             loadGroups(currentPage);
+            return;
         } else {
             showModalError('editError', result.error?.message || '수정에 실패했습니다.');
         }
@@ -285,6 +295,7 @@ async function submitEdit() {
         showModalError('editError', '수정에 실패했습니다.');
         console.error(e);
     }
+    stopLoading(btn);
 }
 
 // ==================== 삭제 ====================
@@ -298,19 +309,24 @@ function openDeleteModal(documentId, groupId, docName, version) {
 }
 
 async function confirmDelete() {
+    const btn = document.querySelector('#deleteModal button[onclick="confirmDelete()"]');
+    startLoading(btn);
     try {
         const result = await callApi(
             `/api/projects/${projectId}/documents/${deleteTarget.documentId}`,
             { method: 'DELETE' }
         );
         if (result.success) {
+            await completeLoading(btn);
             closeModal('deleteModal');
             loadGroups(currentPage);
+            return;
         }
     } catch (e) {
         alert('문서 삭제에 실패했습니다.');
         console.error(e);
     }
+    stopLoading(btn);
 }
 
 // ==================== 그룹/문서 로딩 ====================
@@ -348,7 +364,7 @@ function renderGroups(groups) {
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <!-- 그룹명 표시 모드 -->
                     <span id="groupName-display-${group.groupId}" class="font-semibold text-gray-800">${escapeHtml(group.groupName)}</span>
-                    <button onclick="startEditGroupName(${group.groupId}, '${escapeAttr(group.groupName)}')" class="text-yellow-500 hover:text-yellow-600" title="그룹명 수정">
+                    <button data-action="startEditGroupName" data-group-id="${group.groupId}" data-group-name="${escapeAttr(group.groupName)}" class="text-yellow-500 hover:text-yellow-600" title="그룹명 수정">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     </button>
                     <!-- 그룹명 수정 모드 -->
@@ -356,11 +372,12 @@ function renderGroups(groups) {
                         <input type="text" id="groupName-input-${group.groupId}" value="${escapeAttr(group.groupName)}"
                                class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48"
                                maxlength="30"
-                               onkeydown="if(event.key==='Enter') submitGroupName(${group.groupId}); if(event.key==='Escape') cancelEditGroupName(${group.groupId}, '${escapeAttr(group.groupName)}');">
-                        <button onclick="submitGroupName(${group.groupId})" class="text-green-500 hover:text-green-600" title="확인">
+                               data-action-enter="submitGroupName" data-action-escape="cancelEditGroupName"
+                               data-group-id="${group.groupId}" data-group-name="${escapeAttr(group.groupName)}">
+                        <button data-action="submitGroupName" data-group-id="${group.groupId}" class="text-green-500 hover:text-green-600" title="확인">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         </button>
-                        <button onclick="cancelEditGroupName(${group.groupId}, '${escapeAttr(group.groupName)}')" class="text-gray-400 hover:text-gray-600" title="취소">
+                        <button data-action="cancelEditGroupName" data-group-id="${group.groupId}" data-group-name="${escapeAttr(group.groupName)}" class="text-gray-400 hover:text-gray-600" title="취소">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
@@ -369,14 +386,14 @@ function renderGroups(groups) {
                     <!-- 카테고리 표시 -->
                     <span class="inline-flex items-center gap-1">
                         <span id="category-display-${group.groupId}" class="inline-block bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded">${escapeHtml(group.category)}</span>
-                        <button onclick="toggleCategoryDropdown(${group.groupId}, event)" class="text-gray-400 hover:text-indigo-600" title="카테고리 수정">
+                        <button data-action="toggleCategoryDropdown" data-group-id="${group.groupId}" class="text-gray-400 hover:text-indigo-600" title="카테고리 수정">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
                         </button>
                     </span>
                     <!-- 카테고리 드롭다운 -->
                     <div id="category-dropdown-${group.groupId}" class="hidden fixed bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-36">
                         ${['기획서','기술문서','디자인','보고서','기타'].map(cat => `
-                            <button onclick="submitCategory(${group.groupId}, '${cat}')"
+                            <button data-action="submitCategory" data-group-id="${group.groupId}" data-category="${cat}"
                                     class="block w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-600 ${group.category === cat ? 'text-indigo-600 font-medium bg-indigo-50' : 'text-gray-700'}">
                                 ${cat}
                             </button>
@@ -391,11 +408,11 @@ function renderGroups(groups) {
                 </div>
                 <div class="col-span-2 flex items-center justify-end gap-4">
                     <button class="border border-green-600 text-green-600 hover:bg-green-50 text-xs font-medium px-3 py-1.5 rounded-lg"
-                            onclick="openAddVersion(${group.groupId}, '${escapeAttr(group.latestVersion)}')">
+                            data-action="openAddVersion" data-group-id="${group.groupId}" data-latest-version="${escapeAttr(group.latestVersion)}">
                         + 버전추가
                     </button>
                     <button class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                            onclick="toggleDocuments(${group.groupId})">
+                            data-action="toggleDocuments" data-group-id="${group.groupId}">
                         펼치기
                         <svg class="w-4 h-4 transition-transform" id="arrow-${group.groupId}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
@@ -451,11 +468,12 @@ function renderDocuments(groupId, documents, groupName, category) {
         <div class="mx-6 mb-4 border border-gray-200 rounded-lg overflow-hidden bg-white">
             <div class="grid grid-cols-12 gap-4 px-6 py-2.5 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500">
                 <div class="col-span-1">버전</div>
-                <div class="col-span-3">원본 파일명</div>
+                <div class="col-span-2">원본 파일명</div>
                 <div class="col-span-1 text-center">확장자</div>
                 <div class="col-span-2 text-center">처음 업로드일시</div>
                 <div class="col-span-2 text-center">마지막 수정일시</div>
-                <div class="col-span-1 text-center">패치노트 반영</div>
+                <div class="col-span-1 text-center">패치노트</div>
+                <div class="col-span-1 text-center">임베딩</div>
                 <div class="col-span-2"></div>
             </div>
             ${documents.map(doc => `
@@ -463,8 +481,8 @@ function renderDocuments(groupId, documents, groupName, category) {
                     <div class="col-span-1">
                         <span class="inline-block border border-indigo-300 text-indigo-600 text-xs font-medium px-2 py-0.5 rounded">${escapeHtml(doc.version)}</span>
                     </div>
-                    <div class="col-span-3">
-                        <a href="/projects/${projectId}/documents/${doc.documentId}" class="text-sm text-gray-800 hover:text-indigo-600">
+                    <div class="col-span-2">
+                        <a href="/projects/${projectId}/documents/${doc.documentId}" class="text-sm text-gray-800 hover:text-indigo-600 truncate block">
                             ${escapeHtml(doc.documentName)}
                         </a>
                     </div>
@@ -472,16 +490,21 @@ function renderDocuments(groupId, documents, groupName, category) {
                     <div class="col-span-2 text-center text-xs text-gray-500">${formatDateTime(doc.uploadedAt)}</div>
                     <div class="col-span-2 text-center text-xs text-gray-500">${formatDateTime(doc.reuploadedAt)}</div>
                     <div class="col-span-1 text-center text-xs font-medium ${doc.isProcessed ? 'text-gray-400' : 'text-green-600'}">${doc.isProcessed ? 'X' : 'O'}</div>
+                    <div class="col-span-1 text-center" id="embedding-status-${doc.documentId}">${renderEmbeddingBadge(doc.embeddingStatus)}</div>
                     <div class="col-span-2 flex items-center justify-end gap-3">
-                        <button class="text-blue-500 hover:text-blue-600" title="다운로드" onclick="downloadDocument(${doc.documentId})">
+                        <button class="text-blue-500 hover:text-blue-600" title="다운로드"
+                                data-action="downloadDocument" data-document-id="${doc.documentId}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         </button>
                         <button class="text-yellow-500 hover:text-yellow-600" title="수정"
-                                onclick="openEditDocument(${doc.documentId}, ${groupId}, '${escapeAttr(groupName)}', '${escapeAttr(category)}', '${escapeAttr(doc.version)}', ${doc.isProcessed || false})">
+                                data-action="openEditDocument" data-document-id="${doc.documentId}" data-group-id="${groupId}"
+                                data-group-name="${escapeAttr(groupName)}" data-category="${escapeAttr(category)}"
+                                data-version="${escapeAttr(doc.version)}" data-is-processed="${doc.isProcessed || false}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                         </button>
                         <button class="text-red-500 hover:text-red-600" title="삭제"
-                                onclick="openDeleteModal(${doc.documentId}, ${groupId}, '${escapeAttr(doc.documentName + '.' + doc.extension)}', '${escapeAttr(doc.version)}')">
+                                data-action="openDeleteModal" data-document-id="${doc.documentId}" data-group-id="${groupId}"
+                                data-doc-name="${escapeAttr(doc.documentName + '.' + doc.extension)}" data-version="${escapeAttr(doc.version)}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
                     </div>
@@ -550,7 +573,11 @@ function escapeHtml(str) {
 
 function escapeAttr(str) {
     if (!str) return '';
-    return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    return str.replace(/&/g, '&amp;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
 }
 
 function downloadDocument(documentId) {
@@ -598,7 +625,7 @@ async function submitGroupName(groupId) {
 
 // ==================== 카테고리 드롭다운 수정 ====================
 
-function toggleCategoryDropdown(groupId, event) {
+function toggleCategoryDropdown(groupId, triggerElement) {
     // 다른 열린 드롭다운 닫기
     document.querySelectorAll('[id^="category-dropdown-"]').forEach(el => {
         if (el.id !== `category-dropdown-${groupId}`) el.classList.add('hidden');
@@ -607,8 +634,7 @@ function toggleCategoryDropdown(groupId, event) {
     dropdown.classList.toggle('hidden');
 
     if (!dropdown.classList.contains('hidden')) {
-        const btn = event.currentTarget;
-        const rect = btn.getBoundingClientRect();
+        const rect = triggerElement.getBoundingClientRect();
         dropdown.style.top = (rect.bottom + 4) + 'px';
         dropdown.style.left = (rect.left + rect.width / 2 - dropdown.offsetWidth / 2) + 'px';
     }
@@ -637,3 +663,73 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('[id^="category-dropdown-"]').forEach(el => el.classList.add('hidden'));
     }
 });
+
+// ==================== 임베딩 배지 ====================
+
+const EMBEDDING_BADGE = {
+    NONE:       { classes: 'text-gray-400', label: '-' },
+    PENDING:    { classes: 'text-gray-500', label: '대기' },
+    PROCESSING: { classes: 'text-blue-600', label: '진행중' },
+    SUCCESS:    { classes: 'text-green-600', label: '성공' },
+    FAILED:     { classes: 'text-red-600', label: '실패' },
+};
+
+function renderEmbeddingBadge(status) {
+    const badge = EMBEDDING_BADGE[status] || EMBEDDING_BADGE.NONE;
+    return `<span class="text-xs font-medium ${badge.classes}">${badge.label}</span>`;
+}
+
+// ==================== 임베딩 SSE + 토스트 ====================
+
+const TOAST_CONFIG = {
+    PENDING:    { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', icon: '⏳', message: '임베딩 대기중...' },
+    PROCESSING: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: '⚙️', message: '임베딩 진행중...' },
+    SUCCESS:    { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', icon: '✅', message: '임베딩 완료' },
+    FAILED:     { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: '❌', message: '임베딩 실패' },
+};
+
+function subscribeEmbeddingStatus(documentId) {
+    showEmbeddingToast('PENDING');
+
+    const source = new EventSource(`/api/projects/${projectId}/documents/${documentId}/embedding-status`);
+
+    source.addEventListener('embedding-status', (e) => {
+        const status = e.data;
+        showEmbeddingToast(status);
+
+        const statusEl = document.getElementById(`embedding-status-${documentId}`);
+        if (statusEl) {
+            statusEl.innerHTML = renderEmbeddingBadge(status);
+        }
+
+        if (status === 'SUCCESS' || status === 'FAILED') {
+            source.close();
+            if (status === 'SUCCESS') {
+                setTimeout(hideEmbeddingToast, 3000);
+            }
+        }
+    });
+
+    source.onerror = () => {
+        source.close();
+        hideEmbeddingToast();
+    };
+}
+
+function showEmbeddingToast(status) {
+    const toast = document.getElementById('embeddingToast');
+    const icon = document.getElementById('embeddingToastIcon');
+    const message = document.getElementById('embeddingToastMessage');
+    const config = TOAST_CONFIG[status];
+    if (!config) return;
+
+    toast.classList.remove('hidden');
+    toast.className = `rounded-lg border px-3 py-1.5 flex items-center gap-2 transition-all ${config.bg} ${config.border}`;
+    icon.textContent = config.icon;
+    message.textContent = config.message;
+    message.className = `text-sm font-medium ${config.text}`;
+}
+
+function hideEmbeddingToast() {
+    document.getElementById('embeddingToast').classList.add('hidden');
+}
