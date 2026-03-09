@@ -1,9 +1,11 @@
 package kr.java.documind.domain.issue.service.severity.strategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
@@ -11,13 +13,62 @@ import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.SeverityFactor;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
+import kr.java.documind.global.config.SeverityProperties;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @DisplayName("BlockingStrategy 단위 테스트")
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class BlockingStrategyTest {
 
-    private final BlockingStrategy strategy = new BlockingStrategy();
+    @Mock private SeverityProperties severityProperties;
+
+    @InjectMocks private BlockingStrategy strategy;
+
+    @BeforeEach
+    void setUp() {
+        SeverityProperties.BlockingConfig blockingConfig = new SeverityProperties.BlockingConfig();
+
+        // Keywords 설정
+        blockingConfig.setKeywords(
+                Map.ofEntries(
+                        Map.entry("로그인", 20),
+                        Map.entry("login", 20),
+                        Map.entry("메인", 15),
+                        Map.entry("main", 15),
+                        Map.entry("퀘스트", 15),
+                        Map.entry("quest", 15),
+                        Map.entry("보상", 10),
+                        Map.entry("reward", 10),
+                        Map.entry("느림", 5),
+                        Map.entry("slow", 5),
+                        Map.entry("lag", 5),
+                        Map.entry("ui", 5),
+                        Map.entry("버그", 5),
+                        Map.entry("bug", 5)));
+
+        // ErrorTypes 설정
+        blockingConfig.setErrorTypes(
+                Map.ofEntries(
+                        Map.entry("AUTHENTICATION", 20),
+                        Map.entry("AUTHORIZATION", 20),
+                        Map.entry("NETWORK", 20),
+                        Map.entry("DATABASE", 20),
+                        Map.entry("TIMEOUT", 15),
+                        Map.entry("DEADLOCK", 15),
+                        Map.entry("IO", 10),
+                        Map.entry("SERIALIZATION", 10)));
+
+        given(severityProperties.getBlocking()).willReturn(blockingConfig);
+    }
 
     @Test
     @DisplayName("AUTHENTICATION 에러는 20점을 반환한다")

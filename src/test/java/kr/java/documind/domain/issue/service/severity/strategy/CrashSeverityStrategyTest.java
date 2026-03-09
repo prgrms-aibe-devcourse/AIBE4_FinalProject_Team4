@@ -1,9 +1,11 @@
 package kr.java.documind.domain.issue.service.severity.strategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
@@ -11,13 +13,47 @@ import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.SeverityFactor;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
+import kr.java.documind.global.config.SeverityProperties;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @DisplayName("CrashSeverityStrategy 단위 테스트")
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class CrashSeverityStrategyTest {
 
-    private final CrashSeverityStrategy strategy = new CrashSeverityStrategy();
+    @Mock private SeverityProperties severityProperties;
+
+    @InjectMocks private CrashSeverityStrategy strategy;
+
+    @BeforeEach
+    void setUp() {
+        SeverityProperties.CrashConfig crashConfig = new SeverityProperties.CrashConfig();
+
+        crashConfig.setErrorTypes(
+                Map.ofEntries(
+                        Map.entry("OUT_OF_MEMORY", 50),
+                        Map.entry("STACK_OVERFLOW", 50),
+                        Map.entry("DATABASE", 40),
+                        Map.entry("DEADLOCK", 40),
+                        Map.entry("NETWORK", 30),
+                        Map.entry("TIMEOUT", 30),
+                        Map.entry("IO", 30),
+                        Map.entry("NULL_POINTER", 15),
+                        Map.entry("INDEX_OUT_OF_BOUNDS", 15),
+                        Map.entry("ILLEGAL_ARGUMENT", 10),
+                        Map.entry("ILLEGAL_STATE", 10),
+                        Map.entry("UNSUPPORTED_OPERATION", 10)));
+
+        given(severityProperties.getCrash()).willReturn(crashConfig);
+    }
 
     @Test
     @DisplayName("OUT_OF_MEMORY 에러는 50점을 반환한다")

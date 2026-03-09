@@ -278,11 +278,9 @@ class SeverityCalculatorTest {
         given(playerCountStrategy.calculate(any(), any())).willReturn(0);
 
         given(crashStrategy.generateReason(50, issue, log)).willReturn("치명적 크래시 (50점)");
-        given(frequencyStrategy.generateReason(20, issue, log))
-                .willReturn("시간당 1,000회 발생 (20점)");
+        given(frequencyStrategy.generateReason(20, issue, log)).willReturn("시간당 1,000회 발생 (20점)");
         given(blockingStrategy.generateReason(0, issue, log)).willReturn(null);
-        given(businessImpactStrategy.generateReason(30, issue, log))
-                .willReturn("결제 시스템 영향 (30점)");
+        given(businessImpactStrategy.generateReason(30, issue, log)).willReturn("결제 시스템 영향 (30점)");
         given(playerCountStrategy.generateReason(0, issue, log)).willReturn(null);
 
         // when
@@ -446,8 +444,7 @@ class SeverityCalculatorTest {
         // 각 Strategy가 독립적으로 점수를 계산하므로 15 + 15 = 30점
         assertThat(result.getTotalScore()).isEqualTo(30);
         assertThat(result.getScoreBreakdown().get(SeverityFactor.BLOCKING)).isEqualTo(15);
-        assertThat(result.getScoreBreakdown().get(SeverityFactor.BUSINESS_IMPACT))
-                .isEqualTo(15);
+        assertThat(result.getScoreBreakdown().get(SeverityFactor.BUSINESS_IMPACT)).isEqualTo(15);
     }
 
     @Test

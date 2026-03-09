@@ -1,6 +1,7 @@
 package kr.java.documind.domain.issue.service.severity.strategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -12,13 +13,57 @@ import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.SeverityFactor;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
+import kr.java.documind.global.config.SeverityProperties;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @DisplayName("BusinessImpactStrategy 단위 테스트")
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class BusinessImpactStrategyTest {
 
-    private final BusinessImpactStrategy strategy = new BusinessImpactStrategy();
+    @Mock private SeverityProperties severityProperties;
+
+    @InjectMocks private BusinessImpactStrategy strategy;
+
+    @BeforeEach
+    void setUp() {
+        SeverityProperties.BusinessImpactConfig businessImpactConfig =
+                new SeverityProperties.BusinessImpactConfig();
+
+        businessImpactConfig.setKeywords(
+                Map.ofEntries(
+                        Map.entry("결제", 30),
+                        Map.entry("payment", 30),
+                        Map.entry("인앱", 30),
+                        Map.entry("가챠", 25),
+                        Map.entry("gacha", 25),
+                        Map.entry("상점", 25),
+                        Map.entry("shop", 25),
+                        Map.entry("보스", 20),
+                        Map.entry("boss", 20),
+                        Map.entry("레이드", 20),
+                        Map.entry("raid", 20),
+                        Map.entry("아이템", 15),
+                        Map.entry("퀘스트", 15),
+                        Map.entry("quest", 15),
+                        Map.entry("메인", 15),
+                        Map.entry("길드", 10),
+                        Map.entry("guild", 10),
+                        Map.entry("친구", 10),
+                        Map.entry("friend", 10),
+                        Map.entry("튜토리얼", 5),
+                        Map.entry("tutorial", 5)));
+
+        given(severityProperties.getBusinessImpact()).willReturn(businessImpactConfig);
+    }
 
     @Test
     @DisplayName("제목에 '결제' 키워드가 포함되면 30점을 반환한다")

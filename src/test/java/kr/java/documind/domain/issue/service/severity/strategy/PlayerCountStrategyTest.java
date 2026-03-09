@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.given;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
@@ -13,20 +14,50 @@ import kr.java.documind.domain.issue.model.enums.SeverityFactor;
 import kr.java.documind.domain.issue.service.tracking.UserCountTracker;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
+import kr.java.documind.global.config.SeverityProperties;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @DisplayName("PlayerCountStrategy 단위 테스트")
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class PlayerCountStrategyTest {
 
     @Mock private UserCountTracker userCountTracker;
+    @Mock private SeverityProperties severityProperties;
 
     @InjectMocks private PlayerCountStrategy strategy;
+
+    @BeforeEach
+    void setUp() {
+        SeverityProperties.PlayerCountConfig playerCountConfig =
+                new SeverityProperties.PlayerCountConfig();
+        playerCountConfig.setThresholds(
+                List.of(
+                        createThreshold(1000, 20),
+                        createThreshold(500, 18),
+                        createThreshold(100, 15),
+                        createThreshold(50, 12),
+                        createThreshold(10, 8),
+                        createThreshold(5, 5),
+                        createThreshold(1, 2)));
+
+        given(severityProperties.getPlayerCount()).willReturn(playerCountConfig);
+    }
+
+    private SeverityProperties.Threshold createThreshold(long count, int score) {
+        SeverityProperties.Threshold threshold = new SeverityProperties.Threshold();
+        threshold.setCount(count);
+        threshold.setScore(score);
+        return threshold;
+    }
 
     @Test
     @DisplayName("1000명 이상 영향 시 20점을 반환한다")
