@@ -23,6 +23,19 @@ spring:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
 
+  mail:
+      host: smtp.gmail.com
+      port: 587
+      username: ${GMAIL_USERNAME}
+      password: ${GMAIL_APP_PASSWORD}
+      properties:
+          mail:
+              smtp:
+                  auth: true
+                  starttls:
+                      enable: true
+                      required: true
+
   cloud:
     aws:
       region:
@@ -120,9 +133,9 @@ app:
       expiration-hours: 72
       hmac-secret: ${INVITATION_HMAC_SECRET}
 
+  mail:
+      from-address: ${GMAIL_FROM_ADDRESS}
+
 logging:
   level:
     org.springframework.ai.chat.client.advisor: info
-
-resend:
-    api-key: ${RESEND_API_KEY}

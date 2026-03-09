@@ -1,11 +1,11 @@
 async function callApi(url, options = {}) {
     const isFormData = options.body instanceof FormData;
+    const method = (options.method ?? 'GET').toUpperCase();
 
     const headers = isFormData
         ? { ...(options.headers ?? {}) }
         : { 'Content-Type': 'application/json', ...(options.headers ?? {}) };
 
-    const method = (options.method ?? 'GET').toUpperCase();
     if (!['GET', 'HEAD'].includes(method)) {
         const csrfToken = getCookie('XSRF-TOKEN');
         if (csrfToken) {
@@ -14,6 +14,7 @@ async function callApi(url, options = {}) {
     }
 
     const response = await fetch(url, {
+        credentials: 'same-origin',
         ...options,
         headers,
     });
@@ -23,8 +24,7 @@ async function callApi(url, options = {}) {
         throw new Error(`서버 오류가 발생했습니다. (status: ${response.status})`);
     }
 
-    const body = await response.json();
-    return body; // ApiResponse<T> 구조 그대로 반환
+    return await response.json();
 }
 
 function renderApiError(error, globalErrorId = 'globalError') {

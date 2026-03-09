@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>초대 오류 - DocuMind</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
+<head th:replace="~{common/head :: head('초대 오류')}"></head>
 <body class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
 
   <div class="w-full max-w-md bg-white rounded-2xl shadow-md overflow-hidden">
@@ -32,15 +27,25 @@
                   rounded-xl transition-colors text-sm">
           대시보드로 이동
         </a>
-        <a href="/auth/logout"
-           class="block py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold
-                  rounded-xl transition-colors text-sm">
-          다른 계정으로 로그인
-        </a>
+          <button type="button"
+                  onclick="handleLogout()"
+                  class="block w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors text-sm">
+              다른 계정으로 로그인
+          </button>
       </div>
 
     </div>
   </div>
-
+  <script>
+      async function handleLogout() {
+          try {
+              await callApi('/api/auth/logout', {
+                  method: 'POST'
+              });
+          } finally {
+              window.location.href = '/login';
+          }
+      }
+  </script>
 </body>
 </html>

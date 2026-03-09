@@ -33,10 +33,6 @@
         }
     </script>
 
-    <!-- CSRF meta tags (Double Submit Cookie pattern) -->
-    <meta name="_csrf_header" th:content="${_csrf.headerName}" th:if="${_csrf != null}"/>
-    <meta name="_csrf" th:content="${_csrf.token}" th:if="${_csrf != null}"/>
-
     <!-- 공통 API 유틸리티 (CSRF 토큰 자동 주입 포함) -->
     <script src="/js/common/FetchUtil.js"></script>
 </head>

@@ -63,15 +63,7 @@ public class InvitationService {
 
         Member inviter = memberService.getMember(inviterMemberId);
 
-        if (inviter.getEmail() != null
-                && inviter.getEmail().equalsIgnoreCase(request.targetEmail())) {
-            throw new BadRequestException("자신에게 초대를 보낼 수 없습니다.");
-        }
-
-        if (invitationRepository.existsActiveMemberByProjectAndEmail(
-                project, request.targetEmail())) {
-            throw new BadRequestException("이미 해당 프로젝트에 참여 중인 멤버입니다.");
-        }
+        validateInvitationRequest(inviter, project, request.targetEmail());
 
         invitationRepository
                 .findAllByProjectAndTargetEmailIgnoreCaseAndStatus(
@@ -81,20 +73,15 @@ public class InvitationService {
         String rawToken = HmacApiKeyUtil.generatePlainKey();
         String tokenHash = HmacApiKeyUtil.computeHmac(rawToken, hmacSecret);
 
-        LocalDateTime expiresAt = LocalDateTime.now().plusHours(expirationHours);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = now.plusHours(expirationHours);
 
         Invitation invitation =
                 Invitation.create(
                         project, inviter, request.targetEmail(), request.targetRole(), expiresAt);
         invitationRepository.save(invitation);
 
-        long ttlSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), expiresAt);
-        redisTemplate
-                .opsForValue()
-                .set(
-                        INVITE_KEY_PREFIX + tokenHash,
-                        invitation.getId().toString(),
-                        Duration.ofSeconds(ttlSeconds));
+        saveTokenToRedis(tokenHash, invitation.getId(), now, expiresAt);
 
         eventPublisher.publishEvent(
                 new InvitationCreatedEvent(
@@ -115,32 +102,17 @@ public class InvitationService {
 
     @Transactional
     public InviteViewData getInviteViewData(String rawToken, UUID memberId) {
-
         InviteResolution resolution = resolveToken(rawToken);
         Invitation invitation = resolution.invitation();
-
         Project project = invitation.getProject();
-        if (project.isDeleted()) {
-            throw new InvalidInviteTokenException("삭제된 프로젝트의 초대 링크입니다.");
-        }
+
+        validateProjectNotDeleted(project);
 
         Member member = memberService.getMemberWithCompany(memberId);
+        validateMemberEmailMatch(member, invitation.getTargetEmail());
+        validateNotAlreadyMember(project, member);
 
-        if (member.isEmailPlaceholder()
-                || !member.getEmail().equalsIgnoreCase(invitation.getTargetEmail())) {
-            throw new InviteEmailMismatchException(invitation.getTargetEmail());
-        }
-
-        Optional<ProjectMember> existingPm =
-                projectMemberRepository.findByProjectAndMember(project, member);
-        if (existingPm.isPresent() && existingPm.get().isActive()) {
-            throw new AlreadyProjectMemberException(project.getPublicId());
-        }
-
-        Company memberCompany = member.getCompany();
-        Company projectCompany = project.getCompany();
-        boolean hasDifferentCompany =
-                memberCompany != null && !memberCompany.getId().equals(projectCompany.getId());
+        boolean hasDifferentCompany = checkDifferentCompany(member, project);
 
         return new InviteViewData(
                 rawToken,
@@ -150,67 +122,29 @@ public class InvitationService {
                 invitation.getTargetRole(),
                 hasDifferentCompany,
                 hasDifferentCompany && member.isCeo(),
-                hasDifferentCompany ? memberCompany.getName() : null,
+                hasDifferentCompany ? member.getCompany().getName() : null,
                 invitation.getExpiresAt());
     }
 
     @Transactional
     public String acceptInvitation(String rawToken, UUID memberId, boolean forceLeaveCompany) {
-
         InviteResolution resolution = resolveToken(rawToken);
         Invitation invitation = resolution.invitation();
         String tokenHash = resolution.tokenHash();
-
         Project project = invitation.getProject();
-        if (project.isDeleted()) {
-            throw new InvalidInviteTokenException("삭제된 프로젝트의 초대 링크입니다.");
-        }
+
+        validateProjectNotDeleted(project);
 
         Member member = memberService.getMemberWithCompany(memberId);
+        validateMemberEmailMatch(member, invitation.getTargetEmail());
 
-        if (member.isEmailPlaceholder()
-                || !member.getEmail().equalsIgnoreCase(invitation.getTargetEmail())) {
-            throw new InviteEmailMismatchException(invitation.getTargetEmail());
+        if (checkDifferentCompany(member, project)) {
+            handleCompanySwitch(member, project.getCompany(), forceLeaveCompany);
         }
 
-        Company memberCompany = member.getCompany();
-        Company projectCompany = project.getCompany();
-        boolean hasDifferentCompany =
-                memberCompany != null && !memberCompany.getId().equals(projectCompany.getId());
-
-        if (hasDifferentCompany) {
-            if (member.isCeo()) {
-                throw new ForbiddenException("CEO는 현재 회사를 탈퇴하고 다른 프로젝트에 참여할 수 없습니다.");
-            }
-            if (!forceLeaveCompany) {
-                throw new BadRequestException("다른 회사에 소속되어 있습니다. 현재 회사를 탈퇴 후 참여해 주세요.");
-            }
-            member.assignCompany(projectCompany);
-            log.info(
-                    "[InvitationService] 회사 전환: memberId={} {} → {}",
-                    memberId,
-                    memberCompany.getName(),
-                    projectCompany.getName());
-        }
-
-        Optional<ProjectMember> existingPm =
-                projectMemberRepository.findByProjectAndMember(project, member);
-
-        if (existingPm.isPresent()) {
-            ProjectMember pm = existingPm.get();
-            if (pm.isActive()) {
-                return project.getPublicId();
-            }
-            pm.activate();
-            pm.changeRole(invitation.getTargetRole());
-            log.info("[InvitationService] ProjectMember 재활성화: status={} → ACTIVE", pm.getStatus());
-        } else {
-            projectMemberRepository.save(
-                    ProjectMember.create(project, member, invitation.getTargetRole()));
-        }
+        joinProject(project, member, invitation);
 
         invitation.use(member);
-
         redisTemplate.delete(INVITE_KEY_PREFIX + tokenHash);
 
         log.info(
@@ -222,16 +156,98 @@ public class InvitationService {
         return project.getPublicId();
     }
 
+    // ── Helper Methods ─────────────────────────────────────────────────────────────
+
+    private void validateInvitationRequest(Member inviter, Project project, String targetEmail) {
+        if (inviter.getEmail() != null && inviter.getEmail().equalsIgnoreCase(targetEmail)) {
+            throw new BadRequestException("자신에게 초대를 보낼 수 없습니다.");
+        }
+        if (invitationRepository.existsActiveMemberByProjectAndEmail(project, targetEmail)) {
+            throw new BadRequestException("이미 해당 프로젝트에 참여 중인 멤버입니다.");
+        }
+    }
+
+    private void saveTokenToRedis(String tokenHash, UUID invitationId,LocalDateTime now, LocalDateTime expiresAt) {
+        long ttlSeconds = ChronoUnit.SECONDS.between(now, expiresAt);
+        redisTemplate
+                .opsForValue()
+                .set(
+                        INVITE_KEY_PREFIX + tokenHash,
+                        invitationId.toString(),
+                        Duration.ofSeconds(ttlSeconds));
+    }
+
+    private void validateProjectNotDeleted(Project project) {
+        if (project.isDeleted()) {
+            throw new InvalidInviteTokenException("삭제된 프로젝트의 초대 링크입니다.");
+        }
+    }
+
+    private void validateMemberEmailMatch(Member member, String targetEmail) {
+        if (member.isEmailPlaceholder() || !member.getEmail().equalsIgnoreCase(targetEmail)) {
+            throw new InviteEmailMismatchException(targetEmail);
+        }
+    }
+
+    private void validateNotAlreadyMember(Project project, Member member) {
+        Optional<ProjectMember> existingPm =
+                projectMemberRepository.findByProjectAndMember(project, member);
+        if (existingPm.isPresent() && existingPm.get().isActive()) {
+            throw new AlreadyProjectMemberException(project.getPublicId());
+        }
+    }
+
+    private boolean checkDifferentCompany(Member member, Project project) {
+        Company memberCompany = member.getCompany();
+        Company projectCompany = project.getCompany();
+        return memberCompany != null && !memberCompany.getId().equals(projectCompany.getId());
+    }
+
+    private void handleCompanySwitch(
+            Member member, Company targetCompany, boolean forceLeaveCompany) {
+        if (member.isCeo()) {
+            throw new ForbiddenException("CEO는 현재 회사를 탈퇴하고 다른 프로젝트에 참여할 수 없습니다.");
+        }
+        if (!forceLeaveCompany) {
+            throw new BadRequestException("다른 회사에 소속되어 있습니다. 현재 회사를 탈퇴 후 참여해 주세요.");
+        }
+        Company oldCompany = member.getCompany();
+        member.assignCompany(targetCompany);
+        log.info(
+                "[InvitationService] 회사 전환: memberId={} {} → {}",
+                member.getId(),
+                oldCompany.getName(),
+                targetCompany.getName());
+    }
+
+    private void joinProject(Project project, Member member, Invitation invitation) {
+        Optional<ProjectMember> existingPm =
+                projectMemberRepository.findByProjectAndMember(project, member);
+
+        if (existingPm.isPresent()) {
+            ProjectMember pm = existingPm.get();
+            if (pm.isActive()) {
+                return;
+            }
+            pm.activate();
+            pm.changeRole(invitation.getTargetRole());
+            log.info("[InvitationService] ProjectMember 재활성화: status={} → ACTIVE", pm.getStatus());
+        } else {
+            projectMemberRepository.save(
+                    ProjectMember.create(project, member, invitation.getTargetRole()));
+        }
+    }
+
     private InviteResolution resolveToken(String rawToken) {
         String tokenHash = HmacApiKeyUtil.computeHmac(rawToken, hmacSecret);
-
         String invitationIdStr;
+
         try {
             invitationIdStr = redisTemplate.opsForValue().get(INVITE_KEY_PREFIX + tokenHash);
         } catch (Exception e) {
-            log.error("[InvitationService] Redis 장애 — 토큰 검증 불가. 만료 처리", e);
+            log.error("[InvitationService] Redis 장애 — 토큰 검증 불가", e);
             throw new InvalidInviteTokenException(
-                    "일시적인 오류가 발생했습니다. 초대 링크가 만료되었을 수 있습니다. " + "운영자에게 재초대를 요청해 주세요.");
+                    "일시적인 오류가 발생했습니다. 초대 링크가 만료되었을 수 있습니다. 운영자에게 재초대를 요청해 주세요.");
         }
 
         if (invitationIdStr == null) {
