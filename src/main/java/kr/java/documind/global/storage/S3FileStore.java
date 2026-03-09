@@ -47,7 +47,7 @@ public class S3FileStore implements FileStore {
     }
 
     @Override
-    public String save(MultipartFile file) {
+    public FileStoreResult save(MultipartFile file) {
         ResolvedFile resolved = validateAndResolve(file);
 
         String storedKey = UUID.randomUUID() + "." + resolved.extension();
@@ -59,7 +59,7 @@ public class S3FileStore implements FileStore {
                     is,
                     ObjectMetadata.builder().contentType(resolved.contentType()).build());
 
-            return storedKey;
+            return new FileStoreResult(storedKey, resolved.extension());
         } catch (IOException e) {
             throw new StorageException("파일 스트림 처리 중 오류가 발생했습니다.", e);
         } catch (Exception e) {

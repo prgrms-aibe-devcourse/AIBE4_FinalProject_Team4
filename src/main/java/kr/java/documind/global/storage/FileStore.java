@@ -5,7 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface FileStore {
 
-    String save(MultipartFile file);
+    FileStoreResult save(MultipartFile file);
 
     Resource load(String storedKey);
 
