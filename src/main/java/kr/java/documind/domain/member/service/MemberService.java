@@ -110,6 +110,13 @@ public class MemberService {
                 .collect(Collectors.toMap(m -> m.getCompany().getId(), Function.identity()));
     }
 
+    /** Company JOIN 불필요 시 사용. Member 단건 조회 진입점. */
+    public Member getMember(UUID id) {
+        return memberRepository
+                .findById(id)
+                .orElseThrow(() -> new UnauthorizedException("인증된 회원을 찾을 수 없습니다."));
+    }
+
     public Member getMemberWithCompany(UUID id) {
         return memberRepository
                 .findWithCompanyById(id)

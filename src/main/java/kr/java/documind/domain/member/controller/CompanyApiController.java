@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -64,25 +63,5 @@ public class CompanyApiController {
         String profileImageUrl =
                 companyService.uploadCompanyProfileImage(authMember.getMemberId(), file);
         return ResponseEntity.ok(ApiResponse.success(new ProfileImageResponse(profileImageUrl)));
-    }
-
-    @Operation(summary = "회사 승인 (ADMIN 전용)", description = "운영자가 회사 가입 신청을 승인합니다.")
-    @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping("/{companyId}/approve")
-    public ResponseEntity<ApiResponse<Void>> approveCompany(
-            @AuthenticationPrincipal CustomUserDetails authMember, @PathVariable Long companyId) {
-
-        companyService.approveCompany(authMember.getMemberId(), companyId);
-        return ResponseEntity.ok(ApiResponse.success("회사가 승인되었습니다."));
-    }
-
-    @Operation(summary = "회사 거부 (ADMIN 전용)", description = "운영자가 회사 가입 신청을 거부합니다.")
-    @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping("/{companyId}/reject")
-    public ResponseEntity<ApiResponse<Void>> rejectCompany(
-            @AuthenticationPrincipal CustomUserDetails authMember, @PathVariable Long companyId) {
-
-        companyService.rejectCompany(authMember.getMemberId(), companyId);
-        return ResponseEntity.ok(ApiResponse.success("회사가 거부되었습니다."));
     }
 }

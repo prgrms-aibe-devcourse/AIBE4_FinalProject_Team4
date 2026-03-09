@@ -113,6 +113,16 @@ app:
     capacity: 50
     expiration-hours: 1
 
+  api-key:
+      hmac-secret: ${API_KEY_HMAC_SECRET}
+
+  invitation:
+      expiration-hours: 72
+      hmac-secret: ${INVITATION_HMAC_SECRET}
+
 logging:
   level:
     org.springframework.ai.chat.client.advisor: info
+
+resend:
+    api-key: ${RESEND_API_KEY}

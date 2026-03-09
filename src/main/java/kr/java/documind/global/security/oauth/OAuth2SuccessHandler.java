@@ -92,6 +92,23 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         deleteAllowEmailDuplicateCookie(response);
         clearAuthenticationAttributes(request);
 
+        String redirectAfterLogin =
+                cookieUtil
+                        .getCookieValue(
+                                request,
+                                HttpCookieOAuth2AuthorizationRequestRepository
+                                        .REDIRECT_AFTER_LOGIN_COOKIE)
+                        .filter(path -> path.startsWith("/")) // 오픈 리다이렉트 방지
+                        .orElse(null);
+        if (redirectAfterLogin != null) {
+            log.info(
+                    "[OAuth2SuccessHandler] 로그인 후 복귀 리다이렉트: memberId={}, path={}",
+                    member.getId(),
+                    redirectAfterLogin);
+            response.sendRedirect(redirectAfterLogin);
+            return;
+        }
+
         String redirectUrl = resolveRedirectUrl(member);
 
         if (roleMismatch) {

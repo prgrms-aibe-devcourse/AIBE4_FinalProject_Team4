@@ -305,13 +305,35 @@ async function reissueApiKey() {
             method: 'POST',
         });
         if (body.success) {
-            window.location.reload();
+            showApiKeyRevealModal(body.data.plainKey);
         } else {
             alert(body.error?.message ?? 'API 키 발급에 실패했습니다.');
         }
     } catch (err) {
         alert(err.message);
     }
+}
+
+function showApiKeyRevealModal(plainKey) {
+    const modal   = document.getElementById('api-key-reveal-modal');
+    const display = document.getElementById('plain-api-key-display');
+    if (!modal || !display) return;
+    display.textContent = plainKey;
+    modal.classList.remove('hidden');
+}
+
+function closeApiKeyRevealModal() {
+    const modal = document.getElementById('api-key-reveal-modal');
+    if (modal) modal.classList.add('hidden');
+    window.location.reload();
+}
+
+function copyPlainApiKey() {
+    const display = document.getElementById('plain-api-key-display');
+    if (!display) return;
+    navigator.clipboard.writeText(display.textContent.trim())
+        .then(() => showTopToast('클립보드에 복사되었습니다.'))
+        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.'));
 }
 
 async function toggleApiKey(currentStatus) {
@@ -374,10 +396,12 @@ async function removeMember(memberId, memberName) {
 function openInviteModal() {
     const modal      = document.getElementById('invite-modal');
     const emailInput = document.getElementById('invite-email');
+    const roleSelect = document.getElementById('invite-role');
     const errorEl    = document.getElementById('invite-error');
     if (!modal) return;
 
     if (emailInput) emailInput.value = '';
+    if (roleSelect) roleSelect.value = 'MEMBER';  // 기본값: 구성원
     if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
 
     modal.classList.remove('hidden');
@@ -391,11 +415,14 @@ function closeInviteModal() {
 
 async function sendInvite() {
     const emailInput = document.getElementById('invite-email');
+    const roleSelect = document.getElementById('invite-role');
     const errorEl    = document.getElementById('invite-error');
+    const sendBtn    = document.getElementById('invite-send-btn');
 
     if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
 
     const email    = emailInput ? emailInput.value.trim() : '';
+    const role     = roleSelect ? roleSelect.value : 'MEMBER';
     const setError = (msg) => {
         if (errorEl) { errorEl.textContent = msg; errorEl.classList.remove('hidden'); }
     };
@@ -405,19 +432,23 @@ async function sendInvite() {
         setError('올바른 이메일 형식이 아닙니다.'); return;
     }
 
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '전송 중...'; }
+
     try {
         const body = await callApi(`/api/projects/${_PS.publicId}/invitations`, {
             method: 'POST',
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({ targetEmail: email, targetRole: role }),
         });
         if (body.success) {
             closeInviteModal();
-            showTopToast('초대 링크가 전송되었습니다.');
+            showTopToast('초대를 발송했습니다. 메일은 비동기로 처리됩니다.');
         } else {
             setError(body.error?.message ?? '초대 전송에 실패했습니다.');
         }
     } catch (err) {
         setError(err.message);
+    } finally {
+        if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '초대 전송'; }
     }
 }
 
