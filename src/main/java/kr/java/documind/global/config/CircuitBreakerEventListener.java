@@ -31,7 +31,7 @@ public class CircuitBreakerEventListener {
      * @return RegistryEventConsumer
      */
     @Bean
-    public RegistryEventConsumer<CircuitBreaker> circuitBreakerRegistryEventConsumer() {
+    public RegistryEventConsumer<CircuitBreaker> customCircuitBreakerRegistryEventConsumer() {
         return new RegistryEventConsumer<CircuitBreaker>() {
 
             @Override
