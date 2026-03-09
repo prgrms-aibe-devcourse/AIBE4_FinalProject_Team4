@@ -398,7 +398,7 @@
                                 <!-- ACTIVE → 정지, SUSPENDED → 활성화 -->
                                 <button th:if="${data.apiKeyInfo().active()}"
                                         type="button"
-                                        th:attr="onclick='toggleApiKey(' + '&#39;ACTIVE&#39;' + ')'"
+                                        th:onclick="toggleApiKey('ACTIVE')"
                                         class="px-4 py-2.5 rounded-xl border border-red-200
                                                text-sm font-semibold text-red-600
                                                hover:bg-red-50 transition-colors">
@@ -406,7 +406,7 @@
                                 </button>
                                 <button th:unless="${data.apiKeyInfo().active()}"
                                         type="button"
-                                        th:attr="onclick='toggleApiKey(' + '&#39;SUSPENDED&#39;' + ')'"
+                                        th:onclick="toggleApiKey('SUSPENDED')"
                                         class="px-4 py-2.5 rounded-xl border border-green-200
                                                text-sm font-semibold text-green-600
                                                hover:bg-green-50 transition-colors">
@@ -633,8 +633,26 @@
                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
                               text-sm text-gray-700 focus:outline-none focus:ring-2
                               focus:ring-blue-300 focus:border-transparent transition-all"/>
-                <p id="invite-error" class="hidden text-xs text-red-500"></p>
             </div>
+
+            <!-- 역할 선택 -->
+            <div class="flex flex-col gap-1.5">
+                <label for="invite-role"
+                       class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    역할
+                </label>
+                <select id="invite-role"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
+                               text-sm text-gray-700 focus:outline-none focus:ring-2
+                               focus:ring-blue-300 focus:border-transparent transition-all
+                               cursor-pointer">
+                    <option value="MEMBER" selected>구성원</option>
+                    <option value="MANAGER">관리자</option>
+                </select>
+            </div>
+
+            <p id="invite-error" class="hidden text-xs text-red-500 -mt-2"></p>
+
             <div class="flex gap-3">
                 <button type="button" onclick="closeInviteModal()"
                         class="flex-1 py-2.5 rounded-xl border border-gray-200
@@ -642,12 +660,45 @@
                                transition-colors">
                     취소
                 </button>
-                <button type="button" onclick="sendInvite()"
+                <button type="button" id="invite-send-btn" onclick="sendInvite()"
                         class="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
                                text-sm font-semibold text-white transition-colors">
                     초대 전송
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- API Key 평문 노출 모달 (발급/재발급 직후 1회만 표시) -->
+    <div id="api-key-reveal-modal"
+         class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+        <div class="bg-white rounded-2xl shadow-2xl w-[480px] p-8 flex flex-col gap-5">
+            <div>
+                <h3 class="text-base font-bold text-gray-900 mb-1">API 키가 발급되었습니다</h3>
+                <p class="text-sm text-red-500 font-semibold">
+                    이 화면을 벗어나면 키 원문을 다시 확인할 수 없습니다. 지금 바로 복사해 두세요.
+                </p>
+            </div>
+            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50
+                        border border-gray-200 rounded-xl">
+                <code id="plain-api-key-display"
+                      class="flex-1 text-sm font-mono text-gray-700 break-all select-all"></code>
+                <button type="button" onclick="copyPlainApiKey()"
+                        title="복사"
+                        class="shrink-0 p-1.5 rounded-lg hover:bg-gray-200
+                               transition-colors text-gray-500 hover:text-gray-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8
+                                 a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </button>
+            </div>
+            <button type="button" onclick="closeApiKeyRevealModal()"
+                    class="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
+                           text-sm font-semibold text-white transition-colors">
+                확인 (페이지 새로고침)
+            </button>
         </div>
     </div>
 

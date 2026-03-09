@@ -138,6 +138,9 @@ dependencies {
     // OAuth2
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
+    // Gmail SMTP (이메일 발송)
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
 }
 
 dependencyManagement {

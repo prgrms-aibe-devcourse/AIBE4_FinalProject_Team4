@@ -36,7 +36,7 @@ async function approveCompany(btn) {
     if (!confirm(`"${companyName}" 회사를 승인하시겠습니까?`)) return;
 
     try {
-        const body = await callApi(`/api/companies/${companyId}/approve`, {
+        const body = await callApi(`/api/admin/companies/${companyId}/approve`, {
             method: 'PATCH',
         });
         if (body.success) {
@@ -58,7 +58,7 @@ async function rejectCompany(btn) {
     if (!confirm(`"${companyName}" 회사를 거부하시겠습니까?`)) return;
 
     try {
-        const body = await callApi(`/api/companies/${companyId}/reject`, {
+        const body = await callApi(`/api/admin/companies/${companyId}/reject`, {
             method: 'PATCH',
         });
         if (body.success) {

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>초대 오류 - DocuMind</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-md overflow-hidden">
+
+    <!-- Header -->
+    <div class="bg-gray-900 px-8 py-6 text-center">
+      <span class="text-white text-xl font-bold tracking-tight">📄 DocuMind</span>
+    </div>
+
+    <!-- Body -->
+    <div class="px-8 py-8 text-center">
+
+      <div class="text-5xl mb-4">🔗</div>
+      <h1 class="text-xl font-bold text-gray-900 mb-3">초대 링크를 사용할 수 없습니다</h1>
+
+      <p class="text-sm text-gray-600 leading-relaxed mb-6"
+         th:text="${errorMessage}">
+        초대 링크가 만료되었거나 유효하지 않습니다. 운영자에게 재초대를 요청해 주세요.
+      </p>
+
+      <div class="space-y-2">
+        <a href="/member/dashboard"
+           class="block py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold
+                  rounded-xl transition-colors text-sm">
+          대시보드로 이동
+        </a>
+        <a href="/auth/logout"
+           class="block py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold
+                  rounded-xl transition-colors text-sm">
+          다른 계정으로 로그인
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
