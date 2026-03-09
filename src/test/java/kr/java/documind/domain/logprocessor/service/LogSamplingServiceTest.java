@@ -53,7 +53,7 @@ class LogSamplingServiceTest {
         // when
         boolean shouldSample =
                 logSamplingService.shouldSample(
-                        TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.INFO);
+                        TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.INFO, null);
 
         // then
         assertThat(shouldSample).isFalse(); // false = 저장함
@@ -72,7 +72,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 100; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.DEBUG);
+                            TEST_FINGERPRINT,
+                            UUID.randomUUID().toString(),
+                            LogSeverity.DEBUG,
+                            null);
             if (shouldSample) {
                 sampledCount++;
             }
@@ -96,7 +99,7 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 1000; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.INFO);
+                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.INFO, null);
             if (shouldSample) {
                 sampledCount++;
             } else {
@@ -121,7 +124,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 10; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                            TEST_FINGERPRINT,
+                            UUID.randomUUID().toString(),
+                            LogSeverity.ERROR,
+                            null);
             assertThat(shouldSample).isFalse(); // 모두 저장
         }
 
@@ -142,7 +148,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 50; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.FATAL);
+                            TEST_FINGERPRINT,
+                            UUID.randomUUID().toString(),
+                            LogSeverity.FATAL,
+                            null);
             assertThat(shouldSample).isFalse(); // 모두 저장
         }
     }
@@ -158,7 +167,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 50; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                            TEST_FINGERPRINT,
+                            UUID.randomUUID().toString(),
+                            LogSeverity.ERROR,
+                            null);
             assertThat(shouldSample).isFalse(); // 모두 저장
         }
 
@@ -183,7 +195,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < totalCalls; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                            TEST_FINGERPRINT,
+                            UUID.randomUUID().toString(),
+                            LogSeverity.ERROR,
+                            null);
             if (shouldSample) {
                 sampledCount++;
             } else {
@@ -216,7 +231,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 100; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                            TEST_FINGERPRINT,
+                            UUID.randomUUID().toString(),
+                            LogSeverity.ERROR,
+                            null);
             assertThat(shouldSample).isFalse(); // 모두 저장
         }
 
@@ -240,7 +258,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 100; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                            TEST_FINGERPRINT,
+                            UUID.randomUUID().toString(),
+                            LogSeverity.ERROR,
+                            null);
             if (shouldSample) {
                 sampledCount++;
             } else {
@@ -263,7 +284,7 @@ class LogSamplingServiceTest {
 
         // when
         logSamplingService.shouldSample(
-                TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR, null);
         long countBefore = logSamplingService.getCurrentCount(TEST_FINGERPRINT);
         assertThat(countBefore).isEqualTo(1);
 
@@ -288,11 +309,11 @@ class LogSamplingServiceTest {
         // when
         for (int i = 0; i < 50; i++) {
             logSamplingService.shouldSample(
-                    fingerprint1, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                    fingerprint1, UUID.randomUUID().toString(), LogSeverity.ERROR, null);
         }
         for (int i = 0; i < 30; i++) {
             logSamplingService.shouldSample(
-                    fingerprint2, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                    fingerprint2, UUID.randomUUID().toString(), LogSeverity.ERROR, null);
         }
 
         // then: HyperLogLog 근사값
@@ -317,7 +338,8 @@ class LogSamplingServiceTest {
 
         // when: 동일 logId를 50번 추가
         for (int i = 0; i < 50; i++) {
-            logSamplingService.shouldSample(TEST_FINGERPRINT, duplicateLogId, LogSeverity.ERROR);
+            logSamplingService.shouldSample(
+                    TEST_FINGERPRINT, duplicateLogId, LogSeverity.ERROR, null);
         }
 
         // then: HyperLogLog는 unique 카운트만 추적하므로 1개로 카운팅
@@ -343,7 +365,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 10; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                            TEST_FINGERPRINT,
+                            UUID.randomUUID().toString(),
+                            LogSeverity.ERROR,
+                            null);
             if (shouldSample) {
                 sampledCount++;
             }
@@ -371,7 +396,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 50; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                            TEST_FINGERPRINT,
+                            UUID.randomUUID().toString(),
+                            LogSeverity.ERROR,
+                            null);
             if (shouldSample) {
                 sampledCount++;
             }
@@ -395,7 +423,7 @@ class LogSamplingServiceTest {
         // when
         boolean shouldSample =
                 logSamplingService.shouldSample(
-                        TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR);
+                        TEST_FINGERPRINT, UUID.randomUUID().toString(), LogSeverity.ERROR, null);
 
         // then: Fingerprint 임계값 미만이고 서버 부하 샘플링 비활성화이므로 모두 저장
         assertThat(shouldSample).isFalse();
@@ -419,7 +447,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 10; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            "fingerprint-test", UUID.randomUUID().toString(), LogSeverity.ERROR);
+                            "fingerprint-test",
+                            UUID.randomUUID().toString(),
+                            LogSeverity.ERROR,
+                            null);
             if (shouldSample) {
                 sampledCountFingerprint++;
             }
@@ -430,7 +461,10 @@ class LogSamplingServiceTest {
         for (int i = 0; i < 3; i++) {
             boolean shouldSample =
                     logSamplingService.shouldSample(
-                            "another-fingerprint", UUID.randomUUID().toString(), LogSeverity.ERROR);
+                            "another-fingerprint",
+                            UUID.randomUUID().toString(),
+                            LogSeverity.ERROR,
+                            null);
             if (shouldSample) {
                 sampledCountBackpressure++;
             }

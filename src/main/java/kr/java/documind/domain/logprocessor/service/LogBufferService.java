@@ -97,10 +97,12 @@ public class LogBufferService {
         GameLog logEntity = logMapper.toEntity(dto);
 
         // 샘플링 체크 (Severity + Fingerprint + Backpressure)
+        // 샘플링 판단 전에 userId가 HyperLogLog에 기록됨 (영향받은 사용자 수 추적)
         if (logSamplingService.shouldSample(
                 logEntity.getFingerprint(),
                 logEntity.getLogId().toString(),
-                logEntity.getSeverity())) {
+                logEntity.getSeverity(),
+                logEntity.getUserId())) {
             // 샘플링된 로그는 DB에 저장하지 않지만, 이슈의 occurrence_count는 증가
             issueGroupingBatchService.incrementOccurrenceOnly(logEntity);
             log.debug(

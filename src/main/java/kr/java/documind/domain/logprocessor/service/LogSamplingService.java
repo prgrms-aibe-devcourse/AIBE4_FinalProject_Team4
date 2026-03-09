@@ -2,6 +2,7 @@ package kr.java.documind.domain.logprocessor.service;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
+import kr.java.documind.domain.issue.service.tracking.UserCountTracker;
 import kr.java.documind.domain.logprocessor.config.SamplingConfig;
 import kr.java.documind.domain.logprocessor.model.enums.BackpressureState;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
@@ -29,6 +30,7 @@ public class LogSamplingService {
     private final RedisTemplate<String, String> redisTemplate;
     private final SamplingConfig samplingConfig;
     private final BackpressureManager backpressureManager;
+    private final UserCountTracker userCountTracker;
 
     private static final String HLL_KEY_PREFIX = "sampling:";
 
@@ -38,12 +40,21 @@ public class LogSamplingService {
      * <p>샘플링 우선순위: 1. Severity 기반 (DEBUG/INFO는 항상 샘플링, ERROR/CRITICAL은 보존) 2. Fingerprint 기반 (동일 에러
      * 대량 발생) 3. 서버 부하 기반 (DB 지연, 메모리 부족)
      *
+     * <p>⚠️ 중요: 샘플링 판단 전에 userId를 HyperLogLog에 기록하여 영향받은 사용자 수를 정확히 추적
+     *
      * @param fingerprint 로그 fingerprint
      * @param logId 로그 고유 ID (HyperLogLog에 추가할 unique 값)
      * @param severity 로그 심각도
+     * @param userId 사용자 ID (영향받은 사용자 수 추적용, null 가능)
      * @return true면 샘플링(저장 안 함), false면 저장
      */
-    public boolean shouldSample(String fingerprint, String logId, LogSeverity severity) {
+    public boolean shouldSample(
+            String fingerprint, String logId, LogSeverity severity, String userId) {
+        // 샘플링 판단 전에 userId를 먼저 기록 (샘플링 여부와 무관하게 모든 로그의 userId 추적)
+        if (userId != null && !userId.isBlank()) {
+            userCountTracker.addUser(fingerprint, userId);
+        }
+
         // 샘플링 비활성화 상태면 모든 로그 저장
         if (!samplingConfig.isEnabled()) {
             return false;
