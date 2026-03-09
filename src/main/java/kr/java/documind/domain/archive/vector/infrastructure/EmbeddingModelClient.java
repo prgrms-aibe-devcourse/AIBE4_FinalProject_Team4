@@ -1,4 +1,4 @@
-package kr.java.documind.domain.archive.etl.infrastructure;
+package kr.java.documind.domain.archive.vector.infrastructure;
 
 import java.util.List;
 import org.springframework.ai.embedding.EmbeddingModel;

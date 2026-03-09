@@ -1,4 +1,4 @@
-package kr.java.documind.domain.archive.etl.infrastructure;
+package kr.java.documind.domain.archive.vector.infrastructure;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -8,7 +8,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DocumentTextExtractor {
+public class DocumentContentExtractor {
 
     public List<Document> read(Path tempFilePath) {
         TikaDocumentReader reader = new TikaDocumentReader(new FileSystemResource(tempFilePath));

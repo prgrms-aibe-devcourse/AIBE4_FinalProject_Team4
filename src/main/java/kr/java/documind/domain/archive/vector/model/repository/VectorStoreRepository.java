@@ -1,4 +1,4 @@
-package kr.java.documind.domain.archive.etl.repository;
+package kr.java.documind.domain.archive.vector.model.repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

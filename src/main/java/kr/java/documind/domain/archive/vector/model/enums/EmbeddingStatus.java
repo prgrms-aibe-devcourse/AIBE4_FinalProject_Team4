@@ -1,4 +1,4 @@
-package kr.java.documind.domain.archive.etl.model.enums;
+package kr.java.documind.domain.archive.vector.model.enums;
 
 public enum EmbeddingStatus {
     NONE,
