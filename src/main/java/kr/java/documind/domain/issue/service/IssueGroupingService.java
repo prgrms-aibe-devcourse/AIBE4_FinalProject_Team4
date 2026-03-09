@@ -1,6 +1,7 @@
 package kr.java.documind.domain.issue.service;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
@@ -103,7 +104,7 @@ public class IssueGroupingService {
      * @return 새로 생성된 이슈
      */
     private Issue createNewIssue(GameLog gameLog, FingerprintResult fingerprintResult) {
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
         // 이슈 제목 생성 (archive에서 첫 줄 추출)
         String title = extractTitle(gameLog.getArchive());

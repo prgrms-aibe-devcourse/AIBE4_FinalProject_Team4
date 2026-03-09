@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 import kr.java.documind.domain.issue.service.fingerprint.FingerprintGenerator;
@@ -45,7 +46,7 @@ public class LogMapper {
             log.warn("sessionId is null or empty. Using default value: 'unknown-session'");
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
         // fingerprint 처리: null이면 생성
         String fingerprint = map.get("fingerprint");
@@ -100,7 +101,7 @@ public class LogMapper {
      * @return GameLog와 FingerprintResult
      */
     public LogWithFingerprint toEntityWithFingerprint(RawLogRequest dto) {
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
         // 임시 엔티티 생성 (fingerprint 생성을 위해 archive 필요)
         GameLog tempLog =
@@ -151,7 +152,7 @@ public class LogMapper {
     }
 
     private OffsetDateTime parseTime(String timeStr) {
-        if (timeStr == null) return OffsetDateTime.now();
+        if (timeStr == null) return OffsetDateTime.now(ZoneOffset.UTC);
         try {
             return OffsetDateTime.parse(timeStr);
         } catch (Exception e) {
@@ -159,7 +160,7 @@ public class LogMapper {
                     "Failed to parse timestamp '{}'. Falling back to current time. Error: {}",
                     timeStr,
                     e.getMessage());
-            return OffsetDateTime.now();
+            return OffsetDateTime.now(ZoneOffset.UTC);
         }
     }
 

@@ -52,4 +52,32 @@ public class IssueGroupingBatchService {
 
         log.info("Issue grouping completed for {} logs", logs.size());
     }
+
+    /**
+     * 샘플링된 로그에 대해 이슈의 occurrence_count만 증가
+     *
+     * <p>로그는 DB에 저장하지 않고, 이슈의 occurrence_count만 증가 (샘플링 모드용)
+     *
+     * @param gameLog 샘플링된 게임 로그
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void incrementOccurrenceOnly(GameLog gameLog) {
+        try {
+            // fingerprint가 이미 GameLog에 있지만, quality 정보는 없으므로 다시 생성
+            FingerprintResult fingerprintResult = fingerprintGenerator.generate(gameLog);
+
+            // 이슈 찾거나 생성 (occurrence_count 자동 증가)
+            issueGroupingService.findOrCreateIssue(gameLog, fingerprintResult);
+
+            log.debug(
+                    "[Sampling] Occurrence count incremented for sampled log. fingerprint={}",
+                    gameLog.getFingerprint());
+        } catch (Exception e) {
+            log.error(
+                    "Failed to increment occurrence count for sampled log. fingerprint={}",
+                    gameLog.getFingerprint(),
+                    e);
+            // 샘플링된 로그의 occurrence_count 증가 실패는 치명적이지 않으므로 예외 전파 안 함
+        }
+    }
 }

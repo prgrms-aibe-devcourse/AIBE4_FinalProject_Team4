@@ -1,0 +1,113 @@
+package kr.java.documind.domain.logprocessor.controller;
+
+import java.time.LocalDate;
+import java.time.temporal.IsoFields;
+import kr.java.documind.domain.logprocessor.service.coldstorage.ColdStorageService;
+import kr.java.documind.global.response.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * Cold Storage 운영진 전용 API (예시)
+ *
+ * <p><b>향후 구현 시 참고:</b>
+ *
+ * <ul>
+ *   <li>파일명에서 .example 제거 후 사용
+ *   <li>@PreAuthorize로 ADMIN 권한 검증 필수
+ *   <li>tableName은 서버에서 안전하게 생성 (SQL 인젝션 방지)
+ * </ul>
+ *
+ * <p><b>보안 원칙:</b>
+ *
+ * <ol>
+ *   <li>사용자 입력을 tableName으로 직접 사용 금지
+ *   <li>날짜 기반으로 tableName 서버에서 생성
+ *   <li>운영진 권한 검증 필수
+ * </ol>
+ */
+// @RestController
+// @RequestMapping("/api/admin/cold-storage")
+// @RequiredArgsConstructor
+// @PreAuthorize("hasRole('ADMIN')")  // 운영진만 접근
+public class ColdStorageAdminController {
+
+    // private final ColdStorageService coldStorageService;
+
+    /**
+     * 파티션 복원 (Cold Storage → PostgreSQL)
+     *
+     * <p><b>권한:</b> ADMIN만 가능
+     *
+     * <p><b>사용 예시:</b>
+     *
+     * <pre>
+     * POST /api/admin/cold-storage/restore?weekStartDate=2024-03-04
+     * Authorization: Bearer {admin-token}
+     * </pre>
+     *
+     * @param weekStartDate 복원할 주 시작 날짜 (월요일)
+     * @return 복원 결과
+     */
+    // @PostMapping("/restore")
+    public ApiResponse<String> restorePartition(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate weekStartDate) {
+
+        // ✅ tableName은 서버에서 안전하게 생성 (사용자 입력 아님)
+        int year = weekStartDate.get(IsoFields.WEEK_BASED_YEAR);
+        int weekNumber = weekStartDate.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
+        String tableName = String.format("game_log_%d_w%02d", year, weekNumber);
+
+        // ColdStorageService는 package-private이므로 같은 패키지에서만 호출 가능
+        // coldStorageService.restoreFromS3(tableName, weekStartDate);
+
+        return ApiResponse.success("Partition restore initiated: " + tableName);
+    }
+
+    /**
+     * 복원 가능한 파티션 목록 조회
+     *
+     * <p>S3에 있는 Parquet 파일 목록을 조회하여 복원 가능한 주차 반환
+     *
+     * @return 복원 가능한 주차 목록
+     */
+    // @GetMapping("/available-partitions")
+    public ApiResponse<?> getAvailablePartitions() {
+        // TODO: S3에서 Parquet 파일 목록 조회
+        // List<String> partitions = s3Client.listObjects(...)
+        //     .stream()
+        //     .map(obj -> extractTableNameFromKey(obj.key()))
+        //     .toList();
+
+        return ApiResponse.success("Available partitions list");
+    }
+
+    /**
+     * 파티션 상태 조회
+     *
+     * <p>특정 주차의 데이터가 Hot/Warm/Cold 중 어디에 있는지 확인
+     *
+     * @param weekStartDate 조회할 주 시작 날짜
+     * @return 파티션 위치 (HOT, WARM, COLD)
+     */
+    // @GetMapping("/partition-status")
+    public ApiResponse<?> getPartitionStatus(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate weekStartDate) {
+
+        LocalDate now = LocalDate.now();
+        long daysDiff = java.time.temporal.ChronoUnit.DAYS.between(weekStartDate, now);
+
+        String status;
+        if (daysDiff <= 7) {
+            status = "HOT (PostgreSQL SSD)";
+        } else if (daysDiff <= 28) {
+            status = "WARM (PostgreSQL HDD)";
+        } else {
+            status = "COLD (S3 Parquet)";
+        }
+
+        return ApiResponse.success(status);
+    }
+}
