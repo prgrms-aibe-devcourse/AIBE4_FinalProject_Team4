@@ -69,7 +69,7 @@ public class IssueGroupingService {
                                 // 새 이슈 생성
                                 Issue newIssue = createNewIssue(gameLog, fingerprintResult);
                                 issueRepository.save(newIssue);
-                                log.info(
+                                log.debug(
                                         "New issue created. issueId={}, fingerprint={}, quality={}, status={}",
                                         newIssue.getId(),
                                         fingerprint,
@@ -94,7 +94,7 @@ public class IssueGroupingService {
                     .map(
                             existingIssue -> {
                                 existingIssue.incrementOccurrence(gameLog.getOccurredAt());
-                                log.info(
+                                log.debug(
                                         "Recovered from race condition. issueId={}, occurrenceCount={}",
                                         existingIssue.getId(),
                                         existingIssue.getOccurrenceCount());

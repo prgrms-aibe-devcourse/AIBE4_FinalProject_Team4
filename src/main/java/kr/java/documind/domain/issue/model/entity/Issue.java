@@ -111,11 +111,16 @@ public class Issue {
     /**
      * 이슈 발생 횟수 증가
      *
+     * <p>Out-of-order 로그 처리: lastOccurredAt은 더 최근 시간으로만 업데이트
+     *
      * @param occurredAt 로그 발생 시각
      */
     public void incrementOccurrence(OffsetDateTime occurredAt) {
         this.occurrenceCount++;
-        this.lastOccurredAt = occurredAt;
+        // Out-of-order 로그 대비: 더 최근 시간만 업데이트
+        if (this.lastOccurredAt == null || occurredAt.isAfter(this.lastOccurredAt)) {
+            this.lastOccurredAt = occurredAt;
+        }
         this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 

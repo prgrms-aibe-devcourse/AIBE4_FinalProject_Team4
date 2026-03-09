@@ -72,7 +72,7 @@ public class SeverityCalculator {
         // 사유 텍스트 생성
         String reason = generateReasonText(scoreBreakdown, issue, gameLog);
 
-        log.info(
+        log.debug(
                 "심각도 계산 완료: {} ({}점/{}) - 이슈 ID: {}, Fingerprint: {}",
                 severity.getValue(),
                 totalScore,

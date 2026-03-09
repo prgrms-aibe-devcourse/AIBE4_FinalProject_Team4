@@ -54,7 +54,7 @@ public class IssueSeverityService {
         // 2. Issue 엔티티에 반영
         issue.updateSeverity(severityScore.getSeverity(), severityScore.getTotalScore());
 
-        log.info(
+        log.debug(
                 "이슈 심각도 업데이트 완료: 이슈 ID={}, Fingerprint={}, Severity={}, Score={}/{}",
                 issue.getId(),
                 issue.getFingerprint(),

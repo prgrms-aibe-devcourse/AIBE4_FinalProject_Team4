@@ -3,12 +3,18 @@
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- 목적: ERD 설계와 Entity 동기화
 -- 주요 변경:
---   - PK: UUID → BIGINT (SERIAL)
+--   - PK: UUID (issue_id) → BIGINT (id) - 성능 및 ERD 표준 반영
 --   - 필드 추가: assignee_id, description, severity_score, error_type, stack_key, priority 등
 --   - Status 값: OPEN → TODO
+--
+-- ⚠️ DROP TABLE 사용 이유:
+--   - PK 타입 변경(UUID → BIGINT)으로 인해 ALTER TABLE 불가
+--   - V2 migration은 이미 팀원들에게 배포되어 수정 불가 (Flyway checksum)
+--   - 현재 개발 단계로 운영 데이터 없음
+--   - 로컬 DB 초기화: docker compose down -v && docker compose up -d
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
--- 기존 테이블 삭제 (개발 단계)
+-- 기존 테이블 삭제 (PK 타입 변경으로 인한 불가피한 조치)
 DROP TABLE IF EXISTS issue CASCADE;
 
 -- Issue 테이블 생성 (ERD 기준)
