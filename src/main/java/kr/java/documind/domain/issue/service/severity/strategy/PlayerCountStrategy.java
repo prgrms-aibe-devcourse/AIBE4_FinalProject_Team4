@@ -4,6 +4,7 @@ import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.SeverityFactor;
 import kr.java.documind.domain.issue.service.tracking.UserCountTracker;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
+import kr.java.documind.global.config.SeverityProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,18 +14,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>Redis HyperLogLog로 unique userId 카운팅
  *
- * <p>점수 기준 (Developer Guide 기준):
- *
- * <ul>
- *   <li>1,000명 이상: 20점
- *   <li>500-999명: 18점
- *   <li>100-499명: 15점
- *   <li>50-99명: 12점
- *   <li>10-49명: 8점
- *   <li>5-9명: 5점
- *   <li>1-4명: 2점
- *   <li>0명: 0점
- * </ul>
+ * <p>점수 기준: application.yml의 issue.severity.player-count.thresholds 설정 참조
  */
 @Slf4j
 @Component
@@ -32,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class PlayerCountStrategy implements SeverityStrategy {
 
     private final UserCountTracker userCountTracker;
+    private final SeverityProperties severityProperties;
 
     @Override
     public int calculate(Issue issue, GameLog log) {
@@ -42,20 +33,17 @@ public class PlayerCountStrategy implements SeverityStrategy {
     }
 
     /**
-     * 플레이어 수를 점수로 매핑
+     * 플레이어 수를 점수로 매핑 (설정값 기반)
      *
      * @param userCount 영향받은 플레이어 수
      * @return 점수 (0-20)
      */
     private int mapUserCountToScore(long userCount) {
-        if (userCount >= 1000) return 20;
-        if (userCount >= 500) return 18;
-        if (userCount >= 100) return 15;
-        if (userCount >= 50) return 12;
-        if (userCount >= 10) return 8;
-        if (userCount >= 5) return 5;
-        if (userCount >= 1) return 2;
-        return 0;
+        return severityProperties.getPlayerCount().getThresholds().stream()
+                .filter(threshold -> userCount >= threshold.getCount())
+                .mapToInt(SeverityProperties.Threshold::getScore)
+                .max()
+                .orElse(0);
     }
 
     @Override

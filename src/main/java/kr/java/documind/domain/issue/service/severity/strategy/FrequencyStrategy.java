@@ -5,6 +5,8 @@ import java.time.OffsetDateTime;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.SeverityFactor;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
+import kr.java.documind.global.config.SeverityProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -13,25 +15,14 @@ import org.springframework.stereotype.Component;
  *
  * <p>시간당 발생 횟수로 점수 계산
  *
- * <p>점수 기준 (Developer Guide 기준):
- *
- * <ul>
- *   <li>1,000건 이상/시: 20점 (대량 발생!)
- *   <li>500-999건/시: 18점
- *   <li>100-499건/시: 15점
- *   <li>50-99건/시: 12점
- *   <li>10-49건/시: 8점
- *   <li>5-9건/시: 5점
- *   <li>1-4건/시: 2점
- *   <li>0건/시: 0점
- * </ul>
+ * <p>점수 기준: application.yml의 issue.severity.frequency.thresholds 설정 참조
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class FrequencyStrategy implements SeverityStrategy {
 
-    /** 빈도 계산 기준 시간 (1시간) */
-    private static final long FREQUENCY_WINDOW_HOURS = 1;
+    private final SeverityProperties severityProperties;
 
     @Override
     public int calculate(Issue issue, GameLog log) {
@@ -73,20 +64,17 @@ public class FrequencyStrategy implements SeverityStrategy {
     }
 
     /**
-     * 빈도를 점수로 매핑
+     * 빈도를 점수로 매핑 (설정값 기반)
      *
      * @param occurrencesPerHour 시간당 발생 횟수
      * @return 점수 (0-20)
      */
     private int mapFrequencyToScore(long occurrencesPerHour) {
-        if (occurrencesPerHour >= 1000) return 20;
-        if (occurrencesPerHour >= 500) return 18;
-        if (occurrencesPerHour >= 100) return 15;
-        if (occurrencesPerHour >= 50) return 12;
-        if (occurrencesPerHour >= 10) return 8;
-        if (occurrencesPerHour >= 5) return 5;
-        if (occurrencesPerHour >= 1) return 2;
-        return 0;
+        return severityProperties.getFrequency().getThresholds().stream()
+                .filter(threshold -> occurrencesPerHour >= threshold.getCount())
+                .mapToInt(SeverityProperties.Threshold::getScore)
+                .max()
+                .orElse(0);
     }
 
     @Override

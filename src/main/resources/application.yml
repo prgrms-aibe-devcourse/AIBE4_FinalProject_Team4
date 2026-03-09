@@ -30,3 +30,144 @@ spring:
 cold-storage:
   s3-prefix: cold-storage/game-logs  # S3 저장 경로 접두사
   temp-dir: ${java.io.tmpdir}/cold-storage  # 임시 파일 디렉토리
+
+# 이슈 심각도 계산 설정
+issue:
+  severity:
+    # 발생 빈도 기반 점수 기준 (시간당 발생 횟수)
+    frequency:
+      thresholds:
+        - count: 1000
+          score: 20
+        - count: 500
+          score: 18
+        - count: 100
+          score: 15
+        - count: 50
+          score: 12
+        - count: 10
+          score: 8
+        - count: 5
+          score: 5
+        - count: 1
+          score: 2
+
+    # 영향받은 플레이어 수 기반 점수 기준
+    player-count:
+      thresholds:
+        - count: 1000
+          score: 20
+        - count: 500
+          score: 18
+        - count: 100
+          score: 15
+        - count: 50
+          score: 12
+        - count: 10
+          score: 8
+        - count: 5
+          score: 5
+        - count: 1
+          score: 2
+
+    # 비즈니스 임팩트 키워드 점수 기준
+    business-impact:
+      keywords:
+        # 결제 시스템 (30점)
+        결제: 30
+        payment: 30
+        purchase: 30
+        인앱: 30
+        iap: 30
+        billing: 30
+        # 가챠/상점 (25점)
+        가챠: 25
+        gacha: 25
+        상점: 25
+        shop: 25
+        store: 25
+        # 게임 밸런스 (20점)
+        보스: 20
+        boss: 20
+        레이드: 20
+        raid: 20
+        # 아이템 (15점)
+        아이템: 15
+        item: 15
+        # 게임 진행 (15점)
+        퀘스트: 15
+        quest: 15
+        메인: 15
+        main: 15
+        # 소셜 기능 (10점)
+        길드: 10
+        guild: 10
+        친구: 10
+        friend: 10
+        # 일반 기능 (5점)
+        튜토리얼: 5
+        tutorial: 5
+        설정: 5
+        setting: 5
+
+    # 게임 진행 차단 키워드 점수 기준
+    blocking:
+      keywords:
+        # 완전 차단 (20점)
+        로그인: 20
+        login: 20
+        접속: 20
+        connect: 20
+        서버: 20
+        server: 20
+        시작: 20
+        start: 20
+        authentication: 20
+        # 메인 진행 차단 (15점)
+        메인: 15
+        main: 15
+        퀘스트: 15
+        quest: 15
+        던전: 15
+        dungeon: 15
+        입장: 15
+        enter: 15
+        # 부분 차단 (10점)
+        보상: 10
+        reward: 10
+        수령: 10
+        claim: 10
+        기능: 10
+        feature: 10
+        # 불편 (5점)
+        느림: 5
+        slow: 5
+        lag: 5
+        ui: 5
+        버그: 5
+        bug: 5
+      error-types:
+        AUTHENTICATION: 20
+        AUTHORIZATION: 20
+        NETWORK: 20
+        DATABASE: 20
+        TIMEOUT: 15
+        DEADLOCK: 15
+        IO: 10
+        SERIALIZATION: 10
+
+    # 크래시 심각도 점수 기준
+    crash:
+      error-types:
+        OUT_OF_MEMORY: 50
+        STACK_OVERFLOW: 50
+        DATABASE: 40
+        DEADLOCK: 40
+        NETWORK: 30
+        TIMEOUT: 30
+        IO: 30
+        NULL_POINTER: 15
+        INDEX_OUT_OF_BOUNDS: 15
+        ILLEGAL_ARGUMENT: 10
+        ILLEGAL_STATE: 10
+        UNSUPPORTED_OPERATION: 10
