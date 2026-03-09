@@ -58,9 +58,7 @@ class ColdStorageServiceValidationTest {
         }
     }
 
-    /**
-     * private validatePartitionTableName() 메서드를 리플렉션으로 호출 (격리 테스트용)
-     */
+    /** private validatePartitionTableName() 메서드를 리플렉션으로 호출 (격리 테스트용) */
     private void invokeValidateMethod(String tableName) throws Exception {
         Method validateMethod =
                 ColdStorageService.class.getDeclaredMethod(

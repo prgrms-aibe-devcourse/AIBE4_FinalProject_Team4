@@ -1,4 +1,4 @@
--- V10: 3-Tier 저장 전략을 위한 Tablespace 생성
+-- V6: 3-Tier 저장 전략을 위한 Tablespace 생성
 -- Hot Storage (SSD): 0~7일 데이터 - 빠른 읽기/쓰기
 -- Warm Storage (HDD): 7~28일 데이터 - 저비용 보관
 
