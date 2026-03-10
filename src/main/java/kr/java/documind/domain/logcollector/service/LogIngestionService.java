@@ -7,6 +7,7 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 import kr.java.documind.domain.logcollector.model.dto.LogEvent;
 import kr.java.documind.domain.logcollector.model.dto.RawLogRequest;
+import kr.java.documind.global.exception.InternalServerException;
 import kr.java.documind.global.exception.ServiceUnavailableException;
 import kr.java.documind.global.util.UuidGenerator;
 import lombok.RequiredArgsConstructor;
@@ -65,7 +66,7 @@ public class LogIngestionService {
             throw new ServiceUnavailableException("일시적인 서비스 장애가 발생했습니다. 잠시 후 다시 시도해주세요.");
         } catch (JsonProcessingException e) {
             log.error("LogEvent를 JSON 문자열로 직렬화하는 데 실패했습니다.", e);
-            throw new RuntimeException("로그 직렬화 실패", e);
+            throw new InternalServerException("로그 직렬화 실패", e);
         }
     }
 }
