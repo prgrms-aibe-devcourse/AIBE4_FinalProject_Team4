@@ -1,12 +1,16 @@
 package kr.java.documind.domain.issue.service.tracking;
 
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Redis HyperLogLog를 사용한 영향받은 플레이어 수 추적
+ * Redis HyperLogLog를 사용한 영향받은 플레이어 수 추적 + Redis 카운터를 사용한 전체 로그 유입량 추적
  *
  * <p>HyperLogLog 장점:
  *
@@ -16,7 +20,12 @@ import org.springframework.stereotype.Component;
  *   <li>0.81% 표준 오차 (실용적으로 충분히 정확)
  * </ul>
  *
- * <p>Key 패턴: {@code issue:users:{fingerprint}:hll}
+ * <p>Key 패턴:
+ *
+ * <ul>
+ *   <li>플레이어 수: {@code issue:users:{fingerprint}:hll}
+ *   <li>전체 로그 수: {@code total_logs:{projectId}:{yyyy-MM-dd-HH}}
+ * </ul>
  *
  * <p>주의사항:
  *
@@ -37,6 +46,13 @@ public class UserCountTracker {
 
     /** HyperLogLog Key 접미사 */
     private static final String KEY_SUFFIX = ":hll";
+
+    /** 전체 로그 카운터 Key 접두사 */
+    private static final String TOTAL_LOGS_PREFIX = "total_logs:";
+
+    /** 시간 포맷 (시간 단위) */
+    private static final DateTimeFormatter HOUR_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
 
     /**
      * 특정 이슈에 영향받은 사용자 추가
@@ -134,5 +150,101 @@ public class UserCountTracker {
      */
     private String buildKey(String fingerprint) {
         return KEY_PREFIX + fingerprint + KEY_SUFFIX;
+    }
+
+    /**
+     * 전체 로그 유입량 추적 (시간당 집계)
+     *
+     * <p>Redis Counter를 사용하여 프로젝트별 시간당 전체 로그 수 추적
+     *
+     * <p>7일 TTL 제약: FrequencyStrategy는 최근 7일 데이터만 사용하여 에러율 계산
+     *
+     * @param projectId 프로젝트 ID
+     * @param timestamp 로그 발생 시각
+     */
+    public void trackTotalLogs(UUID projectId, OffsetDateTime timestamp) {
+        if (projectId == null || timestamp == null) {
+            log.warn("projectId 또는 timestamp가 null입니다. 전체 로그 추적 생략");
+            return;
+        }
+
+        try {
+            String key = buildTotalLogsKey(projectId, timestamp);
+            redisTemplate.opsForValue().increment(key);
+
+            // 7일 보관 (FrequencyStrategy는 최근 7일로 계산 범위 제한)
+            redisTemplate.expire(key, Duration.ofDays(7));
+
+            log.debug("전체 로그 카운터 증가: key={}", key);
+        } catch (Exception e) {
+            log.error("전체 로그 추적 실패 - projectId: {}, timestamp: {}", projectId, timestamp, e);
+            // Redis 장애 시에도 메인 로직은 계속 진행되어야 하므로 예외 전파하지 않음
+        }
+    }
+
+    /**
+     * 특정 시간 범위의 전체 로그 수 조회
+     *
+     * <p>FrequencyStrategy에서 에러율 계산 시 사용 (최근 7일 이내 범위)
+     *
+     * <p>주의: 7일 이전 데이터는 TTL로 인해 조회 불가
+     *
+     * @param projectId 프로젝트 ID
+     * @param start 시작 시각 (7일 이내 권장)
+     * @param end 종료 시각
+     * @return 시간 범위 내 전체 로그 수
+     */
+    public long getTotalLogsInTimeRange(UUID projectId, OffsetDateTime start, OffsetDateTime end) {
+        if (projectId == null || start == null || end == null) {
+            log.warn("projectId, start, end 중 null 값 존재. 0 반환");
+            return 0L;
+        }
+
+        try {
+            long totalLogs = 0L;
+            OffsetDateTime current = start;
+
+            // 시작 시각부터 종료 시각까지 시간 단위로 합산
+            while (!current.isAfter(end)) {
+                String key = buildTotalLogsKey(projectId, current);
+                String value = redisTemplate.opsForValue().get(key);
+
+                if (value != null) {
+                    totalLogs += Long.parseLong(value);
+                }
+
+                current = current.plusHours(1);
+            }
+
+            log.debug(
+                    "전체 로그 수 조회 완료: projectId={}, start={}, end={}, totalLogs={}",
+                    projectId,
+                    start,
+                    end,
+                    totalLogs);
+            return totalLogs;
+
+        } catch (Exception e) {
+            log.error(
+                    "전체 로그 수 조회 실패 - projectId: {}, start: {}, end: {}",
+                    projectId,
+                    start,
+                    end,
+                    e);
+            // Redis 장애 시 0 반환 (fallback)
+            return 0L;
+        }
+    }
+
+    /**
+     * 전체 로그 카운터 Redis Key 생성
+     *
+     * @param projectId 프로젝트 ID
+     * @param timestamp 로그 발생 시각
+     * @return Redis Key (예: "total_logs:uuid:2026-03-10-14")
+     */
+    private String buildTotalLogsKey(UUID projectId, OffsetDateTime timestamp) {
+        String hourKey = timestamp.format(HOUR_FORMATTER);
+        return TOTAL_LOGS_PREFIX + projectId + ":" + hourKey;
     }
 }

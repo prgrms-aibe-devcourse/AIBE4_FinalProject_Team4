@@ -66,7 +66,8 @@ public class SeverityProperties {
     @Getter
     @Setter
     public static class Threshold {
-        private long count;
+        private long count; // 절대값 기준 (PlayerCountStrategy에서 사용)
+        private double rate; // 비율 기준 (FrequencyStrategy에서 사용, 단위: %)
         private int score;
     }
 }

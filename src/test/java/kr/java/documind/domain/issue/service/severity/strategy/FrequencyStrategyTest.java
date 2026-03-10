@@ -1,6 +1,7 @@
 package kr.java.documind.domain.issue.service.severity.strategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import java.time.OffsetDateTime;
@@ -11,6 +12,7 @@ import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.SeverityFactor;
+import kr.java.documind.domain.issue.service.tracking.UserCountTracker;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
 import kr.java.documind.global.config.SeverityProperties;
@@ -31,6 +33,8 @@ class FrequencyStrategyTest {
 
     @Mock private SeverityProperties severityProperties;
 
+    @Mock private UserCountTracker userCountTracker;
+
     @InjectMocks private FrequencyStrategy strategy;
 
     @BeforeEach
@@ -39,32 +43,35 @@ class FrequencyStrategyTest {
                 new SeverityProperties.FrequencyConfig();
         frequencyConfig.setThresholds(
                 List.of(
-                        createThreshold(1000, 20),
-                        createThreshold(500, 18),
-                        createThreshold(100, 15),
-                        createThreshold(50, 12),
-                        createThreshold(10, 8),
-                        createThreshold(5, 5),
-                        createThreshold(1, 2)));
+                        createThreshold(10.0, 20), // 10% 이상
+                        createThreshold(5.0, 18), // 5% 이상
+                        createThreshold(2.0, 15), // 2% 이상
+                        createThreshold(1.0, 12), // 1% 이상
+                        createThreshold(0.5, 8), // 0.5% 이상
+                        createThreshold(0.1, 5), // 0.1% 이상
+                        createThreshold(0.01, 2))); // 0.01% 이상
 
         given(severityProperties.getFrequency()).willReturn(frequencyConfig);
     }
 
-    private SeverityProperties.Threshold createThreshold(long count, int score) {
+    private SeverityProperties.Threshold createThreshold(double rate, int score) {
         SeverityProperties.Threshold threshold = new SeverityProperties.Threshold();
-        threshold.setCount(count);
+        threshold.setRate(rate);
         threshold.setScore(score);
         return threshold;
     }
 
     @Test
-    @DisplayName("시간당 1000건 이상 발생 시 20점을 반환한다")
-    void calculate1000PlusPerHour() {
+    @DisplayName("에러율 10% 이상 시 20점을 반환한다")
+    void calculate10PercentPlus() {
         // given
         OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
         OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(firstOccurred, lastOccurred, 1000);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 1000); // 에러 1000건
         GameLog log = createGameLog();
+
+        // 전체 로그 10,000건 → 에러율 10%
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
         int score = strategy.calculate(issue, log);
@@ -74,13 +81,16 @@ class FrequencyStrategyTest {
     }
 
     @Test
-    @DisplayName("시간당 500-999건 발생 시 18점을 반환한다")
-    void calculate500To999PerHour() {
+    @DisplayName("에러율 5~9.99% 시 18점을 반환한다")
+    void calculate5To9Percent() {
         // given
         OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
         OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(firstOccurred, lastOccurred, 600);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 700); // 에러 700건
         GameLog log = createGameLog();
+
+        // 전체 로그 10,000건 → 에러율 7%
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
         int score = strategy.calculate(issue, log);
@@ -90,13 +100,16 @@ class FrequencyStrategyTest {
     }
 
     @Test
-    @DisplayName("시간당 100-499건 발생 시 15점을 반환한다")
-    void calculate100To499PerHour() {
+    @DisplayName("에러율 2~4.99% 시 15점을 반환한다")
+    void calculate2To4Percent() {
         // given
         OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
         OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(firstOccurred, lastOccurred, 200);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 300); // 에러 300건
         GameLog log = createGameLog();
+
+        // 전체 로그 10,000건 → 에러율 3%
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
         int score = strategy.calculate(issue, log);
@@ -106,13 +119,16 @@ class FrequencyStrategyTest {
     }
 
     @Test
-    @DisplayName("시간당 50-99건 발생 시 12점을 반환한다")
-    void calculate50To99PerHour() {
+    @DisplayName("에러율 1~1.99% 시 12점을 반환한다")
+    void calculate1To1Percent() {
         // given
         OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
         OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(firstOccurred, lastOccurred, 70);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 150); // 에러 150건
         GameLog log = createGameLog();
+
+        // 전체 로그 10,000건 → 에러율 1.5%
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
         int score = strategy.calculate(issue, log);
@@ -122,13 +138,16 @@ class FrequencyStrategyTest {
     }
 
     @Test
-    @DisplayName("시간당 10-49건 발생 시 8점을 반환한다")
-    void calculate10To49PerHour() {
+    @DisplayName("에러율 0.5~0.99% 시 8점을 반환한다")
+    void calculate0Point5To0Point9Percent() {
         // given
         OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
         OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(firstOccurred, lastOccurred, 30);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 70); // 에러 70건
         GameLog log = createGameLog();
+
+        // 전체 로그 10,000건 → 에러율 0.7%
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
         int score = strategy.calculate(issue, log);
@@ -138,13 +157,16 @@ class FrequencyStrategyTest {
     }
 
     @Test
-    @DisplayName("시간당 5-9건 발생 시 5점을 반환한다")
-    void calculate5To9PerHour() {
+    @DisplayName("에러율 0.1~0.49% 시 5점을 반환한다")
+    void calculate0Point1To0Point4Percent() {
         // given
         OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
         OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(firstOccurred, lastOccurred, 7);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 20); // 에러 20건
         GameLog log = createGameLog();
+
+        // 전체 로그 10,000건 → 에러율 0.2%
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
         int score = strategy.calculate(issue, log);
@@ -154,13 +176,16 @@ class FrequencyStrategyTest {
     }
 
     @Test
-    @DisplayName("시간당 1-4건 발생 시 2점을 반환한다")
-    void calculate1To4PerHour() {
+    @DisplayName("에러율 0.01~0.09% 시 2점을 반환한다")
+    void calculate0Point01To0Point09Percent() {
         // given
         OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
         OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(firstOccurred, lastOccurred, 3);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 3); // 에러 3건
         GameLog log = createGameLog();
+
+        // 전체 로그 10,000건 → 에러율 0.03%
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
         int score = strategy.calculate(issue, log);
@@ -170,49 +195,62 @@ class FrequencyStrategyTest {
     }
 
     @Test
-    @DisplayName("단일 발생 시 1을 반환한다")
-    void calculateSingleOccurrence() {
+    @DisplayName("전체 로그 데이터가 없을 때 fallback으로 절대 발생 횟수를 사용한다")
+    void calculateFallbackWhenNoTotalLogs() {
         // given
-        OffsetDateTime occurredAt = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(occurredAt, occurredAt, 1);
-        GameLog log = createGameLog();
-
-        // when
-        int score = strategy.calculate(issue, log);
-
-        // then
-        assertThat(score).isEqualTo(2); // 1건 → 2점
-    }
-
-    @Test
-    @DisplayName("경과 시간이 0일 때 (동시 발생) occurrenceCount를 시간당 발생 횟수로 간주한다")
-    void calculateZeroElapsedTime() {
-        // given
-        OffsetDateTime occurredAt = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(occurredAt, occurredAt, 100);
-        GameLog log = createGameLog();
-
-        // when
-        int score = strategy.calculate(issue, log);
-
-        // then
-        assertThat(score).isEqualTo(15); // 100건/시 → 15점
-    }
-
-    @Test
-    @DisplayName("2시간에 걸쳐 200건 발생 시 시간당 100건으로 계산한다")
-    void calculateTwoHoursSpan() {
-        // given
-        OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(2);
+        OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
         OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(firstOccurred, lastOccurred, 200);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 100); // 에러 100건
         GameLog log = createGameLog();
+
+        // 전체 로그 데이터 없음 (Redis 장애 등)
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(0L);
 
         // when
         int score = strategy.calculate(issue, log);
 
         // then
-        assertThat(score).isEqualTo(15); // 100건/시 → 15점
+        // fallback: 시간당 100회 = 1% 비율로 간주 → 12점
+        assertThat(score).isEqualTo(12);
+    }
+
+    @Test
+    @DisplayName("전체 로그 데이터 없고 버스트 발생 시 fallback으로 시간당 환산한다")
+    void calculateFallbackBurstScenario() {
+        // given
+        OffsetDateTime occurredAt = OffsetDateTime.now(ZoneOffset.UTC);
+        Issue issue = createIssue(occurredAt, occurredAt, 100); // 1분 내 100건 버스트
+        GameLog log = createGameLog();
+
+        // 전체 로그 데이터 없음
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(0L);
+
+        // when
+        int score = strategy.calculate(issue, log);
+
+        // then
+        // fallback: 100건 * 60 = 6000건/시 = 60% 비율로 간주 → 20점
+        assertThat(score).isEqualTo(20);
+    }
+
+    @Test
+    @DisplayName("7일 이상 지속된 이슈는 최근 7일 데이터만 사용한다")
+    void calculateWithSevenDayLimit() {
+        // given
+        OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusDays(10); // 10일 전
+        OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 500); // 에러 500건
+        GameLog log = createGameLog();
+
+        // 전체 로그 5,000건 → 에러율 10%
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(5000L);
+
+        // when
+        int score = strategy.calculate(issue, log);
+
+        // then
+        assertThat(score).isEqualTo(20); // 10% → 20점
+        // 참고: getTotalLogsInTimeRange()는 최근 7일 범위로 호출됨
     }
 
     @Test
@@ -241,28 +279,35 @@ class FrequencyStrategyTest {
     }
 
     @Test
-    @DisplayName("generateReason()은 시간당 발생 횟수와 점수를 포함한 텍스트를 반환한다")
+    @DisplayName("generateReason()은 에러율과 점수를 포함한 텍스트를 반환한다")
     void generateReasonWithScore() {
         // given
         OffsetDateTime firstOccurred = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
         OffsetDateTime lastOccurred = OffsetDateTime.now(ZoneOffset.UTC);
-        Issue issue = createIssue(firstOccurred, lastOccurred, 100);
+        Issue issue = createIssue(firstOccurred, lastOccurred, 300); // 에러 300건
         GameLog log = createGameLog();
+
+        // 전체 로그 10,000건 → 에러율 3%
+        given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
+
+        // calculate() 먼저 호출하여 cachedErrorRate 설정
+        strategy.calculate(issue, log);
 
         // when
         String reason = strategy.generateReason(15, issue, log);
 
         // then
-        assertThat(reason).contains("시간당");
-        assertThat(reason).contains("100");
+        assertThat(reason).contains("에러율");
+        assertThat(reason).contains("3.00%");
         assertThat(reason).contains("15점");
     }
 
     // 테스트 헬퍼 메서드
     private Issue createIssue(
             OffsetDateTime firstOccurred, OffsetDateTime lastOccurred, int occurrenceCount) {
+        UUID testProjectId = UUID.fromString("00000000-0000-0000-0000-000000000001");
         return Issue.builder()
-                .projectId(UUID.randomUUID())
+                .projectId(testProjectId)
                 .fingerprint("test-fingerprint")
                 .title("Test Issue")
                 .errorType(ErrorType.UNKNOWN)
@@ -274,8 +319,9 @@ class FrequencyStrategyTest {
     }
 
     private GameLog createGameLog() {
+        UUID testProjectId = UUID.fromString("00000000-0000-0000-0000-000000000001");
         return GameLog.builder()
-                .projectId(UUID.randomUUID())
+                .projectId(testProjectId)
                 .fingerprint("test-fingerprint")
                 .archive("Test archive")
                 .severity(LogSeverity.ERROR)

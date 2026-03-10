@@ -34,22 +34,22 @@ cold-storage:
 # 이슈 심각도 계산 설정
 issue:
   severity:
-    # 발생 빈도 기반 점수 기준 (시간당 발생 횟수)
+    # 발생 빈도 기반 점수 기준 (전체 로그 대비 에러 발생 비율)
     frequency:
       thresholds:
-        - count: 1000
+        - rate: 10.0  # 10% 이상
           score: 20
-        - count: 500
+        - rate: 5.0   # 5% 이상
           score: 18
-        - count: 100
+        - rate: 2.0   # 2% 이상
           score: 15
-        - count: 50
+        - rate: 1.0   # 1% 이상
           score: 12
-        - count: 10
+        - rate: 0.5   # 0.5% 이상
           score: 8
-        - count: 5
+        - rate: 0.1   # 0.1% 이상
           score: 5
-        - count: 1
+        - rate: 0.01  # 0.01% 이상
           score: 2
 
     # 영향받은 플레이어 수 기반 점수 기준

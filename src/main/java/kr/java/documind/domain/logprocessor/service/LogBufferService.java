@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import kr.java.documind.domain.issue.service.tracking.UserCountTracker;
 import kr.java.documind.domain.logprocessor.model.dto.LogWrapper;
 import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
@@ -33,6 +34,7 @@ public class LogBufferService {
     private final LogMapper logMapper;
     private final IssueGroupingBatchService issueGroupingBatchService;
     private final LogSamplingService logSamplingService;
+    private final UserCountTracker userCountTracker;
     private final ConcurrentLinkedQueue<LogWrapper> buffer = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<LogWrapper> deadLetterQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isFlushing = new AtomicBoolean(false);
@@ -96,6 +98,9 @@ public class LogBufferService {
     public void addFromDto(RawLogRequest dto) {
         GameLog logEntity = logMapper.toEntity(dto);
 
+        // 전체 로그 유입량 추적 (샘플링 여부와 무관하게 모든 로그 카운트)
+        userCountTracker.trackTotalLogs(logEntity.getProjectId(), logEntity.getOccurredAt());
+
         // 샘플링 체크 (Severity + Fingerprint + Backpressure)
         // 샘플링 판단 전에 userId가 HyperLogLog에 기록됨 (영향받은 사용자 수 추적)
         if (logSamplingService.shouldSample(
@@ -153,6 +158,12 @@ public class LogBufferService {
                 logJdbcRepository.saveAll(logs);
                 long latencyMs = System.currentTimeMillis() - start;
                 backpressureManager.recordLatency(latencyMs);
+
+                // 전체 로그 유입량 추적 (Redis Stream에서 온 로그들)
+                logs.forEach(
+                        log ->
+                                userCountTracker.trackTotalLogs(
+                                        log.getProjectId(), log.getOccurredAt()));
 
                 // 로그 저장 후 이슈 그룹핑 수행
                 try {
