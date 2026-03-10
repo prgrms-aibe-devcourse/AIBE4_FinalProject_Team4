@@ -13,7 +13,7 @@ import kr.java.documind.global.util.UuidGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -61,7 +61,7 @@ public class LogIngestionService {
                 "로그 수집 성공. LogID: {}, ProjectID: {}",
                 logEvent.logId(),
                 projectId);
-        } catch (DataAccessResourceFailureException e) {
+        } catch (DataAccessException e) {
             log.error("[CRITICAL] 로그 수집 중 Redis 연결 실패. ProjectID: {}", projectId, e);
             throw new ServiceUnavailableException("일시적인 서비스 장애가 발생했습니다. 잠시 후 다시 시도해주세요.");
         } catch (JsonProcessingException e) {
