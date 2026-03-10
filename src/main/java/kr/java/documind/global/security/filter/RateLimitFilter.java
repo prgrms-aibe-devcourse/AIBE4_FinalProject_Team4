@@ -42,7 +42,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${app.rate-limit.capacity:50}")
     private int capacity;
 
-    @Value("${app.rate-limit.redis-prefix}")
+    @Value("${app.rate-limit.redis-prefix:rate-limit:}")
     private String rateLimitPrefix;
 
     @Override

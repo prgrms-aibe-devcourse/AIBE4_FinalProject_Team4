@@ -19,7 +19,7 @@ public class RedisTokenService {
     private final StringRedisTemplate redisTemplate;
     private final TokenProvider tokenProvider;
 
-    @Value("${app.jwt.redis-prefix}")
+    @Value("${app.jwt.redis-prefix:jwt:}")
     private String jwtPrefix;
 
     public void saveRefreshToken(UUID memberId, String refreshToken, long ttlSeconds) {
