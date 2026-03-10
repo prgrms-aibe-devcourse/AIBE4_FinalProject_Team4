@@ -20,8 +20,8 @@ spring:
 
   data:
     redis:
-      host: ${CACHE_REDIS_HOST:redis}
-      port: ${CACHE_REDIS_PORT:6379}
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
       database: 0
 
   mail:
@@ -76,9 +76,9 @@ redis:
         consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
 
         # 향후 스트림 전용 ElastiCache 도입 시 코드를 분리하기 위한 설정
-        # 기본값은 CACHE_REDIS_HOST를 따라가게 하여 1개일 때도 작동함
-        host: ${STREAM_REDIS_HOST:${CACHE_REDIS_HOST:redis}}
-        port: ${STREAM_REDIS_PORT:${CACHE_REDIS_PORT:6379}}
+        # 기본값은 REDIS_HOST를 따라가게 하여 1개일 때도 작동함
+        host: ${STREAM_REDIS_HOST:${REDIS_HOST:redis}}
+        port: ${STREAM_REDIS_PORT:${REDIS_PORT:6379}}
 
 management:
   endpoints:
