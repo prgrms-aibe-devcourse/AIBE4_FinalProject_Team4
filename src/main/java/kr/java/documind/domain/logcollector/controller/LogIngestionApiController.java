@@ -2,12 +2,15 @@ package kr.java.documind.domain.logcollector.controller;
 
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.java.documind.domain.logcollector.model.dto.RawLogRequest;
 import kr.java.documind.domain.logcollector.service.LogIngestionService;
 import kr.java.documind.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "Log Ingestion", description = "로그 수집 API")
 @RestController
 @RequestMapping("/api/logs")
 @RequiredArgsConstructor
@@ -21,6 +24,8 @@ public class LogIngestionApiController {
      * @param projectId 필터(Api-Key 검증)에서 파악하여 넘겨준 신뢰할 수 있는 프로젝트 ID
      * @param request 클라이언트가 보낸 원본 로그 데이터 (내부의 projectId는 무시됨)
      */
+    @Operation(summary = "게임 로그 단건 수집", description = "게임 클라이언트/서버로부터 전송된 로그를 수신하여 비동기 큐에 적재합니다. (헤더에 Api-Key 필요)")
+    @LogIngestionSwaggerDocs.IngestLogDocs
     @PostMapping
     public ApiResponse<Void> ingestLog(
             @RequestAttribute("projectId") UUID projectId,
