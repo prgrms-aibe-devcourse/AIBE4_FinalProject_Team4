@@ -1,6 +1,8 @@
 package kr.java.documind.domain.logcollector.controller;
 
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,8 +33,30 @@ public class LogIngestionApiController {
             @RequestAttribute("projectId") UUID projectId,
             @RequestBody RawLogRequest request) {
 
+        if (isRawLogRequestEmpty(request)) {
+            return ApiResponse.success("빈 로그 요청은 무시되었습니다.");
+        }
+
         logIngestionService.ingestLogToStream(projectId, request);
 
         return ApiResponse.success("로그 수집이 성공적으로 접수되었습니다.");
+    }
+
+    private boolean isRawLogRequestEmpty(RawLogRequest request) {
+        if (request == null) {
+            return true;
+        }
+        return Stream.of(
+                        request.sessionId(),
+                        request.userId(),
+                        request.severity(),
+                        request.eventCategory(),
+                        request.occurredAt(),
+                        request.traceId(),
+                        request.spanId(),
+                        request.archive(),
+                        request.resource(),
+                        request.attributes())
+                .allMatch(Objects::isNull);
     }
 }
