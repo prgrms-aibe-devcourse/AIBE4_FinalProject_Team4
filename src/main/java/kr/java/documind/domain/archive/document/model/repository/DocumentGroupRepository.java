@@ -16,13 +16,13 @@ public interface DocumentGroupRepository extends JpaRepository<DocumentGroup, Lo
                     + "MAX(dm.majorVersion * 1000000 + dm.minorVersion * 1000 + dm.patchVersion) AS versionOrdinal, "
                     + "COUNT(dm) AS documentCount "
                     + "FROM DocumentGroup g JOIN DocumentMetadata dm ON dm.documentGroup = g "
-                    + "WHERE g.project.id = :projectId "
+                    + "WHERE g.projectId = :projectId "
                     + "GROUP BY g.id, g.groupName, g.category")
     Page<DocumentGroupSummary> findGroupSummariesByProjectId(
             @Param("projectId") UUID projectId, Pageable pageable);
 
-    Optional<DocumentGroup> findByIdAndProject_Id(Long id, UUID projectId);
+    Optional<DocumentGroup> findByIdAndProjectId(Long id, UUID projectId);
 
-    boolean existsByProject_IdAndCategoryAndGroupName(
+    boolean existsByProjectIdAndCategoryAndGroupName(
             UUID projectId, String category, String groupName);
 }

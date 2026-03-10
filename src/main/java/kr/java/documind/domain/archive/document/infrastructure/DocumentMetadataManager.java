@@ -22,7 +22,7 @@ public class DocumentMetadataManager {
 
     public DocumentMetadata findByIdAndProjectId(Long documentId, UUID projectId) {
         return documentMetadataRepository
-                .findByIdAndDocumentGroup_Project_Id(documentId, projectId)
+                .findByIdAndDocumentGroupProjectId(documentId, projectId)
                 .orElseThrow(() -> new NotFoundException("프로젝트에서 문서를 찾을 수 없습니다."));
     }
 

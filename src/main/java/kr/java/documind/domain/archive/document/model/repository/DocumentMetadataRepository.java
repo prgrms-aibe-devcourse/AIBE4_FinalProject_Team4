@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface DocumentMetadataRepository extends JpaRepository<DocumentMetadata, Long> {
 
-    Optional<DocumentMetadata> findByIdAndDocumentGroup_Project_Id(Long id, UUID projectId);
+    Optional<DocumentMetadata> findByIdAndDocumentGroupProjectId(Long id, UUID projectId);
 
     List<DocumentMetadata>
             findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(
@@ -25,7 +25,7 @@ public interface DocumentMetadataRepository extends JpaRepository<DocumentMetada
     @Query(
             "SELECT CASE WHEN COUNT(dm) > 0 THEN true ELSE false END "
                     + "FROM DocumentMetadata dm "
-                    + "WHERE dm.documentGroup.project.id = :projectId AND dm.hash = :hash")
+                    + "WHERE dm.documentGroup.projectId = :projectId AND dm.hash = :hash")
     boolean existsByProjectIdAndHash(
             @Param("projectId") UUID projectId, @Param("hash") String hash);
 }

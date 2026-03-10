@@ -22,7 +22,6 @@ import kr.java.documind.domain.archive.document.model.event.DocumentVectorCreate
 import kr.java.documind.domain.archive.document.model.event.DocumentVectorDeleteEvent;
 import kr.java.documind.domain.archive.document.model.event.DocumentVectorReplaceEvent;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
-import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
@@ -78,15 +77,14 @@ public class DocumentMetadataService {
             UUID projectId, DocumentUploadRequest request, MultipartFile file) {
         validateFile(file);
 
-        Project project = documentGroupManager.findProjectById(projectId);
-
         documentGroupManager.validateGroupNameUniqueness(
                 projectId, request.category(), request.groupName());
 
         // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
         DocumentGroup group =
                 documentGroupManager.save(
-                        DocumentGroup.create(project, request.category(), request.groupName(), ""));
+                        DocumentGroup.create(
+                                projectId, request.category(), request.groupName(), ""));
 
         return saveFileAndCreateMetadata(group, file, request);
     }
@@ -165,8 +163,6 @@ public class DocumentMetadataService {
             documentGroupManager.delete(group);
         }
     }
-
-    // ==================== private ====================
 
     private DocumentMetadata findMetadata(Long documentId, UUID projectId) {
         return documentMetadataManager.findByIdAndProjectId(documentId, projectId);
