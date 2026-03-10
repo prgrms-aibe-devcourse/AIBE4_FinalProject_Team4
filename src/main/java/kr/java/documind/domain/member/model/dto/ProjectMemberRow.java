@@ -1,7 +1,7 @@
 package kr.java.documind.domain.member.model.dto;
 
 import java.util.UUID;
-import kr.java.documind.domain.member.model.enums.ProjectRole;
+import kr.java.documind.domain.auth.model.enums.ProjectRole;
 
 public record ProjectMemberRow(
         UUID memberId,
@@ -13,7 +13,7 @@ public record ProjectMemberRow(
         boolean isCurrentUser,
         boolean isCeo) {
 
-    public boolean manager() {
+    public boolean isManager() {
         return role == ProjectRole.MANAGER;
     }
 }

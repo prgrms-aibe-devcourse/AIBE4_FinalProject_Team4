@@ -124,7 +124,7 @@
             </button>
 
             <!-- API Key (MANAGER 전용) -->
-            <button th:if="${data.manager()}"
+            <button th:if="${data.isManager()}"
                     class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl
                            text-left text-sm text-gray-600 hover:bg-gray-50 transition-colors"
                     data-target="section-apikey">
@@ -169,7 +169,7 @@
                     <div class="p-8">
 
                         <!-- ── MANAGER: 편집 가능 ── -->
-                        <th:block th:if="${data.manager()}">
+                        <th:block th:if="${data.isManager()}">
                             <div class="flex items-center gap-5">
 
                                 <!-- 로고 (왼쪽) — 우측 하단 연필 배지 -->
@@ -274,7 +274,7 @@
                         </th:block>
 
                         <!-- ── MEMBER: 읽기 전용 ── -->
-                        <th:block th:unless="${data.manager()}">
+                        <th:block th:unless="${data.isManager()}">
                             <div class="flex items-center gap-5">
                                 <div class="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center
                                             justify-center overflow-hidden ring-2 ring-gray-200
@@ -310,7 +310,7 @@
                     </div>
                 </section>
 
-                <section th:if="${data.manager()}"
+                <section th:if="${data.isManager()}"
                          id="section-apikey"
                          class="bg-white rounded-2xl border border-gray-200 shadow-sm
                                 overflow-hidden scroll-mt-8">
@@ -424,7 +424,7 @@
                                 justify-between">
                         <h2 class="text-base font-bold text-gray-900">액세스</h2>
                         <!-- 초대 버튼 (MANAGER 전용) -->
-                        <button th:if="${data.manager()}"
+                        <button th:if="${data.isManager()}"
                                 type="button" onclick="openInviteModal()"
                                 class="flex items-center gap-1.5 px-4 py-2 rounded-xl
                                        border border-gray-200 text-sm font-semibold text-gray-700
@@ -448,7 +448,7 @@
                                                text-gray-500 uppercase tracking-wide w-1/3">이메일</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold
                                                text-gray-500 uppercase tracking-wide w-36">권한</th>
-                                    <th th:if="${data.manager()}"
+                                    <th th:if="${data.isManager()}"
                                         class="px-6 py-3 text-right text-xs font-semibold
                                                text-gray-500 uppercase tracking-wide">작업</th>
                                 </tr>
@@ -491,7 +491,7 @@
                                     <!-- 권한 -->
                                     <td class="px-6 py-4">
                                         <!-- MANAGER 뷰: CEO는 배지, 나머지는 셀렉트 -->
-                                        <th:block th:if="${data.manager()}">
+                                        <th:block th:if="${data.isManager()}">
                                             <span th:if="${member.isCeo()}"
                                                   class="inline-flex items-center px-2.5 py-1
                                                          rounded-lg text-xs font-semibold
@@ -504,26 +504,26 @@
                                                            focus:outline-none focus:ring-1
                                                            focus:ring-blue-300 cursor-pointer">
                                                 <option value="MANAGER"
-                                                        th:selected="${member.manager()}">관리자</option>
+                                                        th:selected="${member.isManager()}">관리자</option>
                                                 <option value="MEMBER"
-                                                        th:selected="${!member.manager()}">구성원</option>
+                                                        th:selected="${!member.isManager()}">구성원</option>
                                             </select>
                                         </th:block>
                                         <!-- MEMBER 뷰: 배지 표시 -->
-                                        <th:block th:unless="${data.manager()}">
+                                        <th:block th:unless="${data.isManager()}">
                                             <span class="inline-flex items-center px-2.5 py-1
                                                          rounded-lg text-xs font-semibold"
-                                                  th:classappend="${member.manager()}
+                                                  th:classappend="${member.isManager()}
                                                                    ? 'bg-indigo-50 text-indigo-700'
                                                                    : 'bg-gray-100 text-gray-600'"
-                                                  th:text="${member.manager()} ? '관리자' : '구성원'">
+                                                  th:text="${member.isManager()} ? '관리자' : '구성원'">
                                                 구성원
                                             </span>
                                         </th:block>
                                     </td>
 
                                     <!-- 작업 (MANAGER 전용) -->
-                                    <td th:if="${data.manager()}" class="px-6 py-4 text-right">
+                                    <td th:if="${data.isManager()}" class="px-6 py-4 text-right">
                                         <!-- CEO나 자신은 제거 불가 -->
                                         <button th:unless="${member.isCeo() or member.isCurrentUser()}"
                                                 type="button"
@@ -585,7 +585,7 @@
                         </div>
 
                         <!-- 프로젝트 삭제 (CEO + MANAGER 인 경우) -->
-                        <div th:if="${data.isCeo() and data.manager()}"
+                        <div th:if="${data.isCeo() and data.isManager()}"
                              class="flex items-center justify-between p-5 rounded-xl
                                     border border-red-200 bg-red-50">
                             <div>
@@ -616,7 +616,7 @@
     <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
 
     <!-- 초대 모달 (MANAGER 전용) -->
-    <div th:if="${data.manager()}"
+    <div th:if="${data.isManager()}"
          id="invite-modal"
          class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
         <div class="bg-white rounded-2xl shadow-2xl w-96 p-8 flex flex-col gap-5">

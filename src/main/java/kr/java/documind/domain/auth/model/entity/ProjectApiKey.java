@@ -1,4 +1,4 @@
-package kr.java.documind.domain.member.model.entity;
+package kr.java.documind.domain.auth.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

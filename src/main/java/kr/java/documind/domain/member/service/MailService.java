@@ -18,7 +18,6 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 @RequiredArgsConstructor
 public class MailService {
 
-    /** 이메일에 표시할 만료 일시 형식: "2026년 3월 10일 15:30" */
     private static final DateTimeFormatter EXPIRES_AT_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy년 M월 d일 HH:mm");
 

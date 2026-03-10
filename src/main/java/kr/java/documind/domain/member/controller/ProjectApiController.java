@@ -8,7 +8,7 @@ import kr.java.documind.domain.member.model.dto.ApiKeyStatusUpdateRequest;
 import kr.java.documind.domain.member.model.dto.ProfileImageResponse;
 import kr.java.documind.domain.member.model.dto.ProjectCreateRequest;
 import kr.java.documind.domain.member.model.dto.ProjectCreateResponse;
-import kr.java.documind.domain.member.model.dto.ProjectRequestContext;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.member.model.dto.ProjectUpdateRequest;
 import kr.java.documind.domain.member.service.ProjectService;
 import kr.java.documind.global.annotation.CurrentProject;

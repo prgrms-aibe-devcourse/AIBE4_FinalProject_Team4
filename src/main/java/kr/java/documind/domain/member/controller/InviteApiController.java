@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.java.documind.domain.member.model.dto.InviteSendRequest;
-import kr.java.documind.domain.member.model.dto.ProjectRequestContext;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.member.service.InvitationService;
 import kr.java.documind.global.annotation.CurrentProject;
 import kr.java.documind.global.annotation.RequireProjectManager;

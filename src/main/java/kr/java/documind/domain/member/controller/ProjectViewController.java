@@ -1,6 +1,6 @@
 package kr.java.documind.domain.member.controller;
 
-import kr.java.documind.domain.member.model.dto.ProjectRequestContext;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.member.service.ProjectService;
 import kr.java.documind.global.annotation.CurrentProject;
 import kr.java.documind.global.annotation.RequireProjectMember;
@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller

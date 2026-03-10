@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.TooManyRequestsException;
+import kr.java.documind.global.util.HmacApiKeyUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,7 +68,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             long waitForRefillSeconds =
                     TimeUnit.NANOSECONDS.toSeconds(nanosToWaitForRefill + 999_999_999);
 
-            log.warn("API Key: {}의 요청 한도를 초과했습니다. {}초 후에 다시 시도해주세요.", apiKey, waitForRefillSeconds);
+            log.warn(
+                    "API Key: {}의 요청 한도를 초과했습니다. {}초 후에 다시 시도해주세요.",
+                    HmacApiKeyUtil.maskApiKey(apiKey),
+                    waitForRefillSeconds);
 
             throw new TooManyRequestsException("요청 한도를 초과했습니다.", waitForRefillSeconds);
         }

@@ -1,17 +1,17 @@
-package kr.java.documind.domain.member.web.interceptor;
+package kr.java.documind.domain.auth.web.interceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import java.util.UUID;
-import kr.java.documind.domain.member.exception.DeletedProjectException;
-import kr.java.documind.domain.member.exception.ProjectAccessDeniedException;
-import kr.java.documind.domain.member.exception.ProjectNotFoundException;
-import kr.java.documind.domain.member.model.dto.ProjectMemberProjection;
-import kr.java.documind.domain.member.model.dto.ProjectRequestContext;
+import kr.java.documind.domain.auth.exception.DeletedProjectException;
+import kr.java.documind.domain.auth.exception.ProjectAccessDeniedException;
+import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
+import kr.java.documind.domain.auth.model.dto.ProjectMemberProjection;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.member.model.enums.ProjectStatus;
-import kr.java.documind.domain.member.model.repository.ProjectRepository;
-import kr.java.documind.domain.member.web.ProjectContextHolder;
+import kr.java.documind.domain.auth.model.repository.ProjectRepository;
+import kr.java.documind.domain.auth.web.ProjectContextHolder;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -2,7 +2,7 @@ package kr.java.documind.domain.member.model.dto;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import kr.java.documind.domain.member.model.enums.ProjectRole;
+import kr.java.documind.domain.auth.model.enums.ProjectRole;
 
 public record InviteViewData(
         String rawToken,

@@ -1,7 +1,7 @@
 package kr.java.documind.global.security.oauth.profile;
 
 import java.util.Map;
-import kr.java.documind.domain.member.model.enums.OAuthProvider;
+import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 
 public class GoogleUserProfile implements OAuth2UserProfile {
 

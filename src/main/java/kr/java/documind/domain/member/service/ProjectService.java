@@ -5,8 +5,8 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import kr.java.documind.domain.member.exception.DeletedProjectException;
-import kr.java.documind.domain.member.exception.ProjectNotFoundException;
+import kr.java.documind.domain.auth.exception.DeletedProjectException;
+import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
 import kr.java.documind.domain.member.model.dto.ApiKeyIssueResponse;
 import kr.java.documind.domain.member.model.dto.ProfileImageResponse;
 import kr.java.documind.domain.member.model.dto.ProjectApiKeyInfo;
@@ -16,16 +16,16 @@ import kr.java.documind.domain.member.model.dto.ProjectMemberRow;
 import kr.java.documind.domain.member.model.dto.ProjectSettingPageData;
 import kr.java.documind.domain.member.model.dto.ProjectSummary;
 import kr.java.documind.domain.member.model.entity.Member;
-import kr.java.documind.domain.member.model.entity.Project;
-import kr.java.documind.domain.member.model.entity.ProjectApiKey;
+import kr.java.documind.domain.auth.model.entity.Project;
+import kr.java.documind.domain.auth.model.entity.ProjectApiKey;
 import kr.java.documind.domain.member.model.entity.ProjectMember;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.enums.ApiKeyStatus;
 import kr.java.documind.domain.member.model.enums.CompanyStatus;
-import kr.java.documind.domain.member.model.enums.ProjectRole;
-import kr.java.documind.domain.member.model.repository.ProjectApiKeyRepository;
+import kr.java.documind.domain.auth.model.enums.ProjectRole;
+import kr.java.documind.domain.auth.model.repository.ProjectApiKeyRepository;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
-import kr.java.documind.domain.member.model.repository.ProjectRepository;
+import kr.java.documind.domain.auth.model.repository.ProjectRepository;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ForbiddenException;
 import kr.java.documind.global.exception.NotFoundException;
@@ -128,20 +128,6 @@ public class ProjectService {
         return new ProfileImageResponse(url);
     }
 
-    public ProjectDetail getProjectDetail(String publicId) {
-        Project project =
-                projectRepository
-                        .findByPublicId(publicId)
-                        .orElseThrow(ProjectNotFoundException::new);
-
-        String profileUrl =
-                project.getProfileKey() != null
-                        ? fileStore.getAccessUrl(project.getProfileKey())
-                        : null;
-
-        return new ProjectDetail(project.getPublicId(), project.getName(), profileUrl);
-    }
-
     public ProjectSettingPageData getProjectSettingPageData(String publicId, UUID memberId) {
         Project project =
                 projectRepository
@@ -215,11 +201,7 @@ public class ProjectService {
                                     project, ApiKeyStatus.REVOKED);
             if (keyOpt.isPresent()) {
                 ProjectApiKey key = keyOpt.get();
-                String prefix = key.getKeyPrefix();
-                String masked =
-                        prefix.substring(0, Math.min(12, prefix.length()))
-                                + "****"
-                                + key.getKeyLast4();
+                String masked = HmacApiKeyUtil.maskApiKey(key.getKeyPrefix() + "..." + key.getKeyLast4());
                 apiKeyInfo = new ProjectApiKeyInfo(true, masked, key.getApiKeyStatus());
             } else {
                 apiKeyInfo = new ProjectApiKeyInfo(false, null, null);
@@ -325,9 +307,7 @@ public class ProjectService {
 
         projectApiKeyRepository.save(ProjectApiKey.create(project, hmacHash, keyPrefix, keyLast4));
 
-        // 마스킹 표시: prefix 앞 12자 + **** + last4
-        String masked =
-                keyPrefix.substring(0, Math.min(12, keyPrefix.length())) + "****" + keyLast4;
+        String masked = HmacApiKeyUtil.maskApiKey(plainKey);
 
         log.info("[ProjectService] API Key 발급: memberId={} publicId={}", memberId, publicId);
         return new ApiKeyIssueResponse(plainKey, masked);

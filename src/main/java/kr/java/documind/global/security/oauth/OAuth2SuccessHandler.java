@@ -7,7 +7,7 @@ import java.util.Set;
 import kr.java.documind.domain.member.model.entity.Company;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.CompanyStatus;
-import kr.java.documind.domain.member.model.enums.GlobalRole;
+import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.domain.member.service.MemberService;
 import kr.java.documind.global.config.JwtProperties;
 import kr.java.documind.global.security.RedisTokenService;
@@ -98,9 +98,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                                 request,
                                 HttpCookieOAuth2AuthorizationRequestRepository
                                         .REDIRECT_AFTER_LOGIN_COOKIE)
-                        .filter(path -> path.startsWith("/")) // 오픈 리다이렉트 방지
+                        .filter(path -> path.startsWith("/") && !path.startsWith("//")) // 오픈 리다이렉트 방지 강화
                         .orElse(null);
         if (redirectAfterLogin != null) {
+            cookieUtil.deleteCookie(
+                    response,
+                    HttpCookieOAuth2AuthorizationRequestRepository.REDIRECT_AFTER_LOGIN_COOKIE,
+            jwtProperties.isCookieSecure());
             log.info(
                     "[OAuth2SuccessHandler] 로그인 후 복귀 리다이렉트: memberId={}, path={}",
                     member.getId(),

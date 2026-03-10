@@ -1,9 +1,9 @@
-package kr.java.documind.domain.member.model.repository;
+package kr.java.documind.domain.auth.model.repository;
 
 import java.util.Optional;
 import java.util.UUID;
-import kr.java.documind.domain.member.model.dto.ProjectMemberProjection;
-import kr.java.documind.domain.member.model.entity.Project;
+import kr.java.documind.domain.auth.model.dto.ProjectMemberProjection;
+import kr.java.documind.domain.auth.model.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

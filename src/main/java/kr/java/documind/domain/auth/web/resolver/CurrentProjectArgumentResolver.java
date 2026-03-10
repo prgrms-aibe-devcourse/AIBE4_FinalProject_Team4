@@ -1,8 +1,8 @@
-package kr.java.documind.domain.member.web.resolver;
+package kr.java.documind.domain.auth.web.resolver;
 
 import jakarta.servlet.http.HttpServletRequest;
-import kr.java.documind.domain.member.model.dto.ProjectRequestContext;
-import kr.java.documind.domain.member.web.ProjectContextHolder;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
+import kr.java.documind.domain.auth.web.ProjectContextHolder;
 import kr.java.documind.global.annotation.CurrentProject;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;

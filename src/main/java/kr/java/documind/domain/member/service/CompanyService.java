@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import kr.java.documind.domain.member.exception.CompanyNotFoundException;
 import kr.java.documind.domain.member.model.dto.AdminCompanyCard;
-import kr.java.documind.domain.member.model.dto.HeaderInfo;
+import kr.java.documind.domain.auth.model.dto.HeaderInfo;
 import kr.java.documind.domain.member.model.entity.Company;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.AccountStatus;

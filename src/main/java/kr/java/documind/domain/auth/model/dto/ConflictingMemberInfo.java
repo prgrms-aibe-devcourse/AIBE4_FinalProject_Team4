@@ -1,7 +1,7 @@
-package kr.java.documind.domain.member.model.dto;
+package kr.java.documind.domain.auth.model.dto;
 
-import kr.java.documind.domain.member.model.enums.GlobalRole;
-import kr.java.documind.domain.member.model.enums.OAuthProvider;
+import kr.java.documind.domain.auth.model.enums.GlobalRole;
+import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 
 public record ConflictingMemberInfo(
         OAuthProvider provider,

@@ -1,4 +1,4 @@
-package kr.java.documind.domain.member.exception;
+package kr.java.documind.domain.auth.exception;
 
 import kr.java.documind.global.exception.NotFoundException;
 

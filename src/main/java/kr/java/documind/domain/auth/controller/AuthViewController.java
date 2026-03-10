@@ -1,4 +1,4 @@
-package kr.java.documind.domain.member.controller;
+package kr.java.documind.domain.auth.controller;
 
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

@@ -1,7 +1,7 @@
 package kr.java.documind.domain.member.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
-import kr.java.documind.domain.member.exception.AlreadyProjectMemberException;
+import kr.java.documind.domain.auth.exception.AlreadyProjectMemberException;
 import kr.java.documind.domain.member.exception.InvalidInviteTokenException;
 import kr.java.documind.domain.member.exception.InviteEmailMismatchException;
 import kr.java.documind.domain.member.model.dto.InviteViewData;
@@ -59,7 +59,7 @@ public class InviteViewController {
             return "member/invite-confirm";
 
         } catch (AlreadyProjectMemberException e) {
-            return "redirect:/projects/" + e.getProjectPublicId();
+            return "redirect:/projects/" + e.getProjectPublicId() + "/groups";
         } catch (InvalidInviteTokenException | InviteEmailMismatchException e) {
             model.addAttribute("errorMessage", e.getMessage());
             return "member/invite-error";
@@ -83,9 +83,7 @@ public class InviteViewController {
                     invitationService.acceptInvitation(
                             token, auth.getMemberId(), forceLeaveCompany);
             redirectAttributes.addFlashAttribute("topToast", "프로젝트에 합류했습니다!");
-            // TODO: 문서 메인 페이지로 매핑되어야 함
-            // return "redirect:/projects/" + publicId;
-            return "redirect:/projects/" + publicId + "/settings";
+            return "redirect:/projects/" + publicId + "/groups";
 
         } catch (BusinessException e) {
             // 수락 실패 → 초대 페이지로 돌아가며 에러 메시지 표시

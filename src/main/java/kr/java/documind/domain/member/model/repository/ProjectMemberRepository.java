@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.member.model.entity.Member;
-import kr.java.documind.domain.member.model.entity.Project;
+import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.domain.member.model.entity.ProjectMember;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import org.springframework.data.jpa.repository.JpaRepository;

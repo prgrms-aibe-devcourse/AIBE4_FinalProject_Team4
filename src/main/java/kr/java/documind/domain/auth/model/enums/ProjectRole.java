@@ -1,4 +1,4 @@
-package kr.java.documind.domain.member.model.enums;
+package kr.java.documind.domain.auth.model.enums;
 
 public enum ProjectRole {
     MANAGER,

@@ -1,9 +1,9 @@
-package kr.java.documind.domain.member.service;
+package kr.java.documind.domain.auth.service;
 
 import jakarta.servlet.http.HttpServletRequest;
-import kr.java.documind.domain.member.exception.ProjectAccessDeniedException;
-import kr.java.documind.domain.member.model.dto.ProjectRequestContext;
-import kr.java.documind.domain.member.web.ProjectContextHolder;
+import kr.java.documind.domain.auth.exception.ProjectAccessDeniedException;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
+import kr.java.documind.domain.auth.web.ProjectContextHolder;
 import kr.java.documind.global.exception.ForbiddenException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;

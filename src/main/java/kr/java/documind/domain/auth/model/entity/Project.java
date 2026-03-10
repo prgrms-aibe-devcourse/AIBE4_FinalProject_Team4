@@ -1,4 +1,4 @@
-package kr.java.documind.domain.member.model.entity;
+package kr.java.documind.domain.auth.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import kr.java.documind.domain.member.model.entity.Company;
 import kr.java.documind.domain.member.model.enums.ProjectStatus;
 import kr.java.documind.global.entity.UuidBaseEntity;
 import lombok.AccessLevel;

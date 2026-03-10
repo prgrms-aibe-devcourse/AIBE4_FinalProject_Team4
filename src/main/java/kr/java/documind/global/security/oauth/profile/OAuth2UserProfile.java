@@ -1,6 +1,6 @@
 package kr.java.documind.global.security.oauth.profile;
 
-import kr.java.documind.domain.member.model.enums.OAuthProvider;
+import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 
 public interface OAuth2UserProfile {
 

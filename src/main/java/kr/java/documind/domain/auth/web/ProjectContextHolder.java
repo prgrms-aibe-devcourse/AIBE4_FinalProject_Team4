@@ -1,8 +1,8 @@
-package kr.java.documind.domain.member.web;
+package kr.java.documind.domain.auth.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
-import kr.java.documind.domain.member.model.dto.ProjectRequestContext;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 
 public final class ProjectContextHolder {
 

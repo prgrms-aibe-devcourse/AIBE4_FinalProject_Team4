@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.UUID;
-import kr.java.documind.domain.member.model.enums.GlobalRole;
+import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.global.config.JwtProperties;
 import kr.java.documind.global.security.RedisTokenService;
 import kr.java.documind.global.security.jwt.CustomUserDetails;

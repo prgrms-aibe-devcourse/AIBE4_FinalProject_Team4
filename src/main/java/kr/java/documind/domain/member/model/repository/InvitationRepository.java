@@ -3,7 +3,7 @@ package kr.java.documind.domain.member.model.repository;
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.member.model.entity.Invitation;
-import kr.java.documind.domain.member.model.entity.Project;
+import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.domain.member.model.enums.InvitationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

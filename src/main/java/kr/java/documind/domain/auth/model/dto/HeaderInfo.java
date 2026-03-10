@@ -1,9 +1,9 @@
-package kr.java.documind.domain.member.model.dto;
+package kr.java.documind.domain.auth.model.dto;
 
 import kr.java.documind.domain.member.model.entity.Company;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.CompanyStatus;
-import kr.java.documind.domain.member.model.enums.GlobalRole;
+import kr.java.documind.domain.auth.model.enums.GlobalRole;
 
 public record HeaderInfo(
         String name,
