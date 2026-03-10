@@ -75,7 +75,7 @@ public class LogMapper {
                                                 : "UNKNOWN"))
                         .archive(dto.archive())
                         .occurredAt(occurredAt)
-                        .ingestedAt(dto.ingestedAt() != null ? dto.ingestedAt() : now)
+                        .ingestedAt(ingestedAt)
                         .traceId(dto.traceId())
                         .spanId(dto.spanId())
                         .fingerprint(null) // 임시값
