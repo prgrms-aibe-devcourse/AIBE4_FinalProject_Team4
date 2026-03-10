@@ -180,7 +180,7 @@ public class LogBufferService {
                     // 이슈 생성 실패해도 로그는 저장되었으므로 ACK는 보냄
                 }
 
-                // RecordId가 있는 경우에만 ACK 전송
+                // RecordId가 있는 경우에만 ACK 및 삭제 처리
                 List<RecordId> recordIds =
                         wrappersToSave.stream()
                                 .map(LogWrapper::recordId)
@@ -188,14 +188,13 @@ public class LogBufferService {
                                 .collect(Collectors.toList());
 
                 if (!recordIds.isEmpty()) {
-                    redisTemplate
-                            .opsForStream()
-                            .acknowledge(
-                                    streamKey, consumerGroup, recordIds.toArray(new RecordId[0]));
+                    RecordId[] ids = recordIds.toArray(new RecordId[0]);
+                    redisTemplate.opsForStream().acknowledge(streamKey, consumerGroup, ids);
+                    redisTemplate.opsForStream().delete(streamKey, ids);
                 }
 
                 log.info(
-                        "Flushed {} logs to DB in {}ms (state={}, ACK sent for {} items)",
+                        "Flushed {} logs to DB in {}ms (state={}, ACK/DEL sent for {} items)",
                         logs.size(),
                         latencyMs,
                         backpressureManager.getState(),
@@ -269,7 +268,7 @@ public class LogBufferService {
                     // 이슈 생성 실패해도 로그는 저장되었으므로 ACK는 보냄
                 }
 
-                // RecordId가 있는 경우에만 ACK 전송
+                // RecordId가 있는 경우에만 ACK 및 삭제 처리
                 List<RecordId> recordIds =
                         wrappersToRetry.stream()
                                 .map(LogWrapper::recordId)
@@ -277,14 +276,13 @@ public class LogBufferService {
                                 .collect(Collectors.toList());
 
                 if (!recordIds.isEmpty()) {
-                    redisTemplate
-                            .opsForStream()
-                            .acknowledge(
-                                    streamKey, consumerGroup, recordIds.toArray(new RecordId[0]));
+                    RecordId[] ids = recordIds.toArray(new RecordId[0]);
+                    redisTemplate.opsForStream().acknowledge(streamKey, consumerGroup, ids);
+                    redisTemplate.opsForStream().delete(streamKey, ids);
                 }
 
                 log.info(
-                        "[DLQ] Successfully retried {} logs to DB in {}ms (ACK sent for {} items)",
+                        "[DLQ] Successfully retried {} logs to DB in {}ms (ACK/DEL sent for {} items)",
                         logs.size(),
                         latencyMs,
                         recordIds.size());
