@@ -39,6 +39,16 @@ public enum IssueType {
         return description;
     }
 
+    /**
+     * JSON 역직렬화 및 String → Enum 변환 (대소문자 무시)
+     *
+     * <p>인식하지 못한 값은 UNKNOWN으로 fallback (예외 발생하지 않음)
+     *
+     * <p>미래 버전/레거시 데이터 호환성 유지
+     *
+     * @param value 이슈 타입 문자열
+     * @return IssueType enum
+     */
     @JsonCreator
     public static IssueType fromString(String value) {
         if (value == null || value.isBlank()) {
@@ -51,10 +61,9 @@ public enum IssueType {
             }
         }
 
-        throw new IllegalArgumentException(
-                "Unknown issue type: '"
-                        + value
-                        + "'. Supported values: BUG, CRASH, PERFORMANCE, NETWORK, etc.");
+        // 인식하지 못한 값은 UNKNOWN으로 fallback (예외 발생하지 않음)
+        // 미래 버전/레거시 데이터 호환성 유지
+        return UNKNOWN;
     }
 
     @Override

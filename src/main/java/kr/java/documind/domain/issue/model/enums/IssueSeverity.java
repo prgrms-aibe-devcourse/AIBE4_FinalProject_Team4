@@ -69,9 +69,12 @@ public enum IssueSeverity {
     /**
      * JSON 역직렬화 및 String → Enum 변환 (대소문자 무시)
      *
+     * <p>인식하지 못한 값은 MEDIUM으로 fallback (예외 발생하지 않음)
+     *
+     * <p>미래 버전/레거시 데이터 호환성 유지
+     *
      * @param value 심각도 문자열
      * @return IssueSeverity enum
-     * @throws IllegalArgumentException 지원하지 않는 심각도인 경우
      */
     @JsonCreator
     public static IssueSeverity fromString(String value) {
@@ -85,10 +88,9 @@ public enum IssueSeverity {
             }
         }
 
-        throw new IllegalArgumentException(
-                "Unknown issue severity: '"
-                        + value
-                        + "'. Supported values: CRITICAL, HIGH, MEDIUM, LOW");
+        // 인식하지 못한 값은 MEDIUM으로 fallback (예외 발생하지 않음)
+        // 미래 버전/레거시 데이터 호환성 유지
+        return MEDIUM;
     }
 
     /**
