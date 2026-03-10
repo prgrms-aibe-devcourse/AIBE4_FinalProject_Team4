@@ -29,10 +29,16 @@ public class FrequencyStrategy implements SeverityStrategy {
     private final UserCountTracker userCountTracker;
     private final LogJdbcRepository logJdbcRepository;
 
+    // ThreadLocal 캐시: calculate()와 generateReason() 간 중복 계산 방지
+    private final ThreadLocal<Double> cachedErrorRate = new ThreadLocal<>();
+
     @Override
     public int calculate(Issue issue, GameLog log) {
         // 에러 발생 비율 계산 (전체 로그 대비)
         double errorRate = calculateErrorRate(issue);
+
+        // ThreadLocal에 캐시 (같은 요청 스레드 내 generateReason()에서 재사용)
+        cachedErrorRate.set(errorRate);
 
         return mapErrorRateToScore(errorRate);
     }
@@ -155,11 +161,25 @@ public class FrequencyStrategy implements SeverityStrategy {
     @Override
     public String generateReason(int score, Issue issue, GameLog log) {
         if (score == 0) {
+            cachedErrorRate.remove(); // 메모리 누수 방지
             return null;
         }
 
-        // generateReason()에서 에러율 재계산 (동시성 안전)
-        double errorRate = calculateErrorRate(issue);
+        // ThreadLocal 캐시에서 조회 (중복 계산 방지)
+        Double errorRate = cachedErrorRate.get();
+
+        // Fallback: ThreadLocal 값이 없으면 재계산 (방어적 프로그래밍)
+        if (errorRate == null) {
+            log.warn(
+                    "ThreadLocal 캐시 없음. 에러율 재계산. issueId={}, fingerprint={}",
+                    issue.getId(),
+                    issue.getFingerprint());
+            errorRate = calculateErrorRate(issue);
+        }
+
+        // ThreadLocal 정리 (메모리 누수 방지)
+        cachedErrorRate.remove();
+
         return String.format("에러율 %.2f%% (%d점)", errorRate, score);
     }
 }

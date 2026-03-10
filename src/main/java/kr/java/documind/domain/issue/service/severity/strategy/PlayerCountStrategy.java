@@ -24,10 +24,16 @@ public class PlayerCountStrategy implements SeverityStrategy {
     private final UserCountTracker userCountTracker;
     private final SeverityProperties severityProperties;
 
+    // ThreadLocal 캐시: calculate()와 generateReason() 간 중복 Redis 조회 방지
+    private final ThreadLocal<Long> cachedUserCount = new ThreadLocal<>();
+
     @Override
     public int calculate(Issue issue, GameLog log) {
         // Redis HyperLogLog에서 실제 플레이어 수 조회
         long userCount = userCountTracker.getAffectedUserCount(issue.getFingerprint());
+
+        // ThreadLocal에 캐시 (같은 요청 스레드 내 generateReason()에서 재사용)
+        cachedUserCount.set(userCount);
 
         return mapUserCountToScore(userCount);
     }
@@ -54,11 +60,25 @@ public class PlayerCountStrategy implements SeverityStrategy {
     @Override
     public String generateReason(int score, Issue issue, GameLog log) {
         if (score == 0) {
+            cachedUserCount.remove(); // 메모리 누수 방지
             return null;
         }
 
-        // generateReason()에서 플레이어 수 재조회 (동시성 안전)
-        long userCount = userCountTracker.getAffectedUserCount(issue.getFingerprint());
+        // ThreadLocal 캐시에서 조회 (중복 Redis 호출 방지)
+        Long userCount = cachedUserCount.get();
+
+        // Fallback: ThreadLocal 값이 없으면 재조회 (방어적 프로그래밍)
+        if (userCount == null) {
+            log.warn(
+                    "ThreadLocal 캐시 없음. Redis 재조회. issueId={}, fingerprint={}",
+                    issue.getId(),
+                    issue.getFingerprint());
+            userCount = userCountTracker.getAffectedUserCount(issue.getFingerprint());
+        }
+
+        // ThreadLocal 정리 (메모리 누수 방지)
+        cachedUserCount.remove();
+
         return String.format("플레이어 %,d명 영향 (%d점)", userCount, score);
     }
 }
