@@ -1,8 +1,8 @@
 package kr.java.documind.global.config;
 
 import java.util.List;
-import kr.java.documind.domain.member.web.interceptor.ProjectAccessInterceptor;
-import kr.java.documind.domain.member.web.resolver.CurrentProjectArgumentResolver;
+import kr.java.documind.domain.auth.web.interceptor.ProjectAccessInterceptor;
+import kr.java.documind.domain.auth.web.resolver.CurrentProjectArgumentResolver;
 import kr.java.documind.global.resolver.ProjectIdArgumentResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;

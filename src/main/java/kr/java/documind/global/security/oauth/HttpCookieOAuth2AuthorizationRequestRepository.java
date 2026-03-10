@@ -72,12 +72,17 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
         String redirectAfterLogin = request.getParameter(REDIRECT_AFTER_LOGIN_COOKIE);
         if (redirectAfterLogin != null && !redirectAfterLogin.isBlank()) {
-            cookieUtil.addCookie(
-                    response,
-                    REDIRECT_AFTER_LOGIN_COOKIE,
-                    redirectAfterLogin,
-                    COOKIE_TTL_SECONDS,
-                    secure);
+            // 입력값 검증: /로 시작하고 //로 시작하지 않아야 함 (Open Redirect 방지)
+            if (redirectAfterLogin.startsWith("/") && !redirectAfterLogin.startsWith("//")) {
+                cookieUtil.addCookie(
+                        response,
+                        REDIRECT_AFTER_LOGIN_COOKIE,
+                        redirectAfterLogin,
+                        COOKIE_TTL_SECONDS,
+                        secure);
+            } else {
+                log.warn("[OAuth2RequestRepository] 유효하지 않은 리다이렉트 URL 무시: {}", redirectAfterLogin);
+            }
         }
     }
 

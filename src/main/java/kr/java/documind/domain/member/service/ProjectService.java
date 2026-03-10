@@ -5,8 +5,9 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import kr.java.documind.domain.member.exception.DeletedProjectException;
-import kr.java.documind.domain.member.exception.ProjectNotFoundException;
+import kr.java.documind.domain.auth.exception.DeletedProjectException;
+import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
+import kr.java.documind.domain.member.model.dto.ApiKeyIssueResponse;
 import kr.java.documind.domain.member.model.dto.ProfileImageResponse;
 import kr.java.documind.domain.member.model.dto.ProjectApiKeyInfo;
 import kr.java.documind.domain.member.model.dto.ProjectCreateResponse;
@@ -15,22 +16,25 @@ import kr.java.documind.domain.member.model.dto.ProjectMemberRow;
 import kr.java.documind.domain.member.model.dto.ProjectSettingPageData;
 import kr.java.documind.domain.member.model.dto.ProjectSummary;
 import kr.java.documind.domain.member.model.entity.Member;
-import kr.java.documind.domain.member.model.entity.Project;
-import kr.java.documind.domain.member.model.entity.ProjectApiKey;
+import kr.java.documind.domain.auth.model.entity.Project;
+import kr.java.documind.domain.auth.model.entity.ProjectApiKey;
 import kr.java.documind.domain.member.model.entity.ProjectMember;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.enums.ApiKeyStatus;
 import kr.java.documind.domain.member.model.enums.CompanyStatus;
-import kr.java.documind.domain.member.model.enums.ProjectRole;
-import kr.java.documind.domain.member.model.repository.ProjectApiKeyRepository;
+import kr.java.documind.domain.auth.model.enums.ProjectRole;
+import kr.java.documind.domain.auth.model.repository.ProjectApiKeyRepository;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
-import kr.java.documind.domain.member.model.repository.ProjectRepository;
+import kr.java.documind.domain.auth.model.repository.ProjectRepository;
+import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ForbiddenException;
 import kr.java.documind.global.exception.NotFoundException;
 import kr.java.documind.global.exception.StorageException;
 import kr.java.documind.global.storage.FileStore;
+import kr.java.documind.global.util.HmacApiKeyUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -51,6 +55,9 @@ public class ProjectService {
     private final MemberService memberService;
     private final FileStore fileStore;
     private final PlatformTransactionManager txManager;
+
+    @Value("${app.api-key.hmac-secret}")
+    private String hmacSecret;
 
     public ProjectCreateResponse createProject(UUID memberId, String name) {
         Member member = memberService.getMemberWithCompany(memberId);
@@ -89,7 +96,7 @@ public class ProjectService {
 
     @Transactional
     public ProfileImageResponse uploadProjectProfileImage(
-            UUID memberId, String publicId, MultipartFile file) {
+            String publicId, UUID memberId, MultipartFile file) {
 
         Project project =
                 projectRepository
@@ -119,20 +126,6 @@ public class ProjectService {
                 publicId,
                 newKey);
         return new ProfileImageResponse(url);
-    }
-
-    public ProjectDetail getProjectDetail(String publicId) {
-        Project project =
-                projectRepository
-                        .findByPublicId(publicId)
-                        .orElseThrow(ProjectNotFoundException::new);
-
-        String profileUrl =
-                project.getProfileKey() != null
-                        ? fileStore.getAccessUrl(project.getProfileKey())
-                        : null;
-
-        return new ProjectDetail(project.getPublicId(), project.getName(), profileUrl);
     }
 
     public ProjectSettingPageData getProjectSettingPageData(String publicId, UUID memberId) {
@@ -208,11 +201,7 @@ public class ProjectService {
                                     project, ApiKeyStatus.REVOKED);
             if (keyOpt.isPresent()) {
                 ProjectApiKey key = keyOpt.get();
-                String prefix = key.getKeyPrefix();
-                String masked =
-                        prefix.substring(0, Math.min(12, prefix.length()))
-                                + "****"
-                                + key.getKeyLast4();
+                String masked = HmacApiKeyUtil.maskApiKey(key.getKeyPrefix() + "..." + key.getKeyLast4());
                 apiKeyInfo = new ProjectApiKeyInfo(true, masked, key.getApiKeyStatus());
             } else {
                 apiKeyInfo = new ProjectApiKeyInfo(false, null, null);
@@ -296,6 +285,62 @@ public class ProjectService {
 
         project.softDelete();
         log.info("[ProjectService] 프로젝트 삭제: memberId={} publicId={}", memberId, publicId);
+    }
+
+    @Transactional
+    public ApiKeyIssueResponse issueApiKey(String publicId, UUID memberId) {
+        Project project =
+                projectRepository
+                        .findByPublicId(publicId)
+                        .orElseThrow(ProjectNotFoundException::new);
+
+        // 기존 ACTIVE/SUSPENDED 키 일괄 REVOKE (회전)
+        projectApiKeyRepository
+                .findAllByProjectAndApiKeyStatusNot(project, ApiKeyStatus.REVOKED)
+                .forEach(ProjectApiKey::revoke);
+
+        // 새 키 생성
+        String plainKey = HmacApiKeyUtil.generatePlainKey();
+        String hmacHash = HmacApiKeyUtil.computeHmac(plainKey, hmacSecret);
+        String keyPrefix = HmacApiKeyUtil.extractPrefix(plainKey);
+        String keyLast4 = HmacApiKeyUtil.extractLast4(plainKey);
+
+        projectApiKeyRepository.save(ProjectApiKey.create(project, hmacHash, keyPrefix, keyLast4));
+
+        String masked = HmacApiKeyUtil.maskApiKey(plainKey);
+
+        log.info("[ProjectService] API Key 발급: memberId={} publicId={}", memberId, publicId);
+        return new ApiKeyIssueResponse(plainKey, masked);
+    }
+
+    @Transactional
+    public void toggleApiKeyStatus(String publicId, UUID memberId, ApiKeyStatus newStatus) {
+        if (newStatus != ApiKeyStatus.ACTIVE && newStatus != ApiKeyStatus.SUSPENDED) {
+            throw new BadRequestException("ACTIVE 또는 SUSPENDED 상태만 설정할 수 있습니다.");
+        }
+
+        Project project =
+                projectRepository
+                        .findByPublicId(publicId)
+                        .orElseThrow(ProjectNotFoundException::new);
+
+        ProjectApiKey key =
+                projectApiKeyRepository
+                        .findFirstByProjectAndApiKeyStatusNotOrderByCreatedAtDesc(
+                                project, ApiKeyStatus.REVOKED)
+                        .orElseThrow(() -> new NotFoundException("활성화된 API 키가 없습니다."));
+
+        if (newStatus == ApiKeyStatus.ACTIVE) {
+            key.activate();
+        } else {
+            key.suspend();
+        }
+
+        log.info(
+                "[ProjectService] API Key 상태 변경: memberId={} publicId={} status={}",
+                memberId,
+                publicId,
+                newStatus);
     }
 
     private static final String PUBLIC_ID_CHARS =

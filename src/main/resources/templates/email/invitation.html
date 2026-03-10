@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DocuMind 프로젝트 초대</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f8;font-family:'Apple SD Gothic Neo',AppleGothic,'Malgun Gothic','맑은 고딕',sans-serif;">
+
+  <!-- Wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="background-color:#f4f6f8;padding:40px 0;">
+    <tr>
+      <td align="center">
+
+        <!-- Card -->
+        <table width="560" cellpadding="0" cellspacing="0" border="0"
+               style="background-color:#ffffff;border-radius:12px;
+                      box-shadow:0 2px 8px rgba(0,0,0,0.08);overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#1a1a2e;padding:32px 40px;text-align:center;">
+              <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">
+                📄 DocuMind
+              </span>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+
+              <!-- Title -->
+              <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#111827;line-height:1.4;">
+                프로젝트에 초대받으셨습니다!
+              </h1>
+              <p style="margin:0 0 28px;font-size:14px;color:#6b7280;">
+                아래 내용을 확인하고 초대를 수락해 주세요.
+              </p>
+
+              <!-- Info Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background-color:#f9fafb;border-radius:8px;
+                            border:1px solid #e5e7eb;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="padding:6px 0;">
+                          <span style="font-size:13px;color:#6b7280;display:inline-block;width:90px;">초대자</span>
+                          <span style="font-size:14px;color:#111827;font-weight:600;"
+                                th:text="${inviterName} + '님'">홍길동님</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;">
+                          <span style="font-size:13px;color:#6b7280;display:inline-block;width:90px;">프로젝트</span>
+                          <span style="font-size:14px;color:#111827;font-weight:600;"
+                                th:text="${projectName}">Project RPG</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;">
+                          <span style="font-size:13px;color:#6b7280;display:inline-block;width:90px;">로그인 계정</span>
+                          <span style="font-size:14px;color:#111827;font-weight:600;"
+                                th:text="${targetEmail}">dev_kim@gmail.com</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;">
+                          <span style="font-size:13px;color:#6b7280;display:inline-block;width:90px;">만료 일시</span>
+                          <span style="font-size:14px;color:#111827;font-weight:600;"
+                                th:text="${expiresAt}">2026년 3월 10일 15:30</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Notice -->
+              <p style="margin:0 0 28px;font-size:13px;color:#6b7280;line-height:1.6;">
+                ⚠️ &nbsp;위 계정으로 로그인해야 초대를 수락할 수 있습니다.<br/>
+                이미 가입된 계정이 없다면 소셜 로그인으로 가입 후 초대 링크를 다시 클릭해 주세요.
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <a th:href="${inviteUrl}"
+                       href="#"
+                       style="display:inline-block;padding:14px 40px;
+                              background-color:#4f46e5;color:#ffffff;
+                              font-size:15px;font-weight:600;text-decoration:none;
+                              border-radius:8px;letter-spacing:-0.3px;">
+                      초대 수락하기
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:0;"/>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 40px;text-align:center;">
+              <p style="margin:0 0 8px;font-size:12px;color:#9ca3af;">
+                이 메일은 DocuMind 플랫폼에서 자동 발송된 메일입니다.
+              </p>
+              <p style="margin:0;font-size:12px;color:#9ca3af;">
+                초대를 요청하지 않으셨다면 이 메일을 무시하셔도 됩니다.
+              </p>
+              <!-- Fallback URL for email clients that block buttons -->
+              <p style="margin:16px 0 0;font-size:11px;color:#d1d5db;word-break:break-all;">
+                버튼이 작동하지 않으면 아래 링크를 복사하여 브라우저에 붙여넣기 해주세요.<br/>
+                <a th:href="${inviteUrl}" th:text="${inviteUrl}"
+                   href="#"
+                   style="color:#9ca3af;text-decoration:underline;">초대 링크</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+  <!-- /Wrapper -->
+
+</body>
+</html>

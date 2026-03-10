@@ -124,7 +124,7 @@
             </button>
 
             <!-- API Key (MANAGER 전용) -->
-            <button th:if="${data.manager()}"
+            <button th:if="${data.isManager()}"
                     class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl
                            text-left text-sm text-gray-600 hover:bg-gray-50 transition-colors"
                     data-target="section-apikey">
@@ -169,7 +169,7 @@
                     <div class="p-8">
 
                         <!-- ── MANAGER: 편집 가능 ── -->
-                        <th:block th:if="${data.manager()}">
+                        <th:block th:if="${data.isManager()}">
                             <div class="flex items-center gap-5">
 
                                 <!-- 로고 (왼쪽) — 우측 하단 연필 배지 -->
@@ -274,7 +274,7 @@
                         </th:block>
 
                         <!-- ── MEMBER: 읽기 전용 ── -->
-                        <th:block th:unless="${data.manager()}">
+                        <th:block th:unless="${data.isManager()}">
                             <div class="flex items-center gap-5">
                                 <div class="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center
                                             justify-center overflow-hidden ring-2 ring-gray-200
@@ -310,7 +310,7 @@
                     </div>
                 </section>
 
-                <section th:if="${data.manager()}"
+                <section th:if="${data.isManager()}"
                          id="section-apikey"
                          class="bg-white rounded-2xl border border-gray-200 shadow-sm
                                 overflow-hidden scroll-mt-8">
@@ -398,7 +398,7 @@
                                 <!-- ACTIVE → 정지, SUSPENDED → 활성화 -->
                                 <button th:if="${data.apiKeyInfo().active()}"
                                         type="button"
-                                        th:attr="onclick='toggleApiKey(' + '&#39;ACTIVE&#39;' + ')'"
+                                        th:onclick="toggleApiKey('ACTIVE')"
                                         class="px-4 py-2.5 rounded-xl border border-red-200
                                                text-sm font-semibold text-red-600
                                                hover:bg-red-50 transition-colors">
@@ -406,7 +406,7 @@
                                 </button>
                                 <button th:unless="${data.apiKeyInfo().active()}"
                                         type="button"
-                                        th:attr="onclick='toggleApiKey(' + '&#39;SUSPENDED&#39;' + ')'"
+                                        th:onclick="toggleApiKey('SUSPENDED')"
                                         class="px-4 py-2.5 rounded-xl border border-green-200
                                                text-sm font-semibold text-green-600
                                                hover:bg-green-50 transition-colors">
@@ -424,7 +424,7 @@
                                 justify-between">
                         <h2 class="text-base font-bold text-gray-900">액세스</h2>
                         <!-- 초대 버튼 (MANAGER 전용) -->
-                        <button th:if="${data.manager()}"
+                        <button th:if="${data.isManager()}"
                                 type="button" onclick="openInviteModal()"
                                 class="flex items-center gap-1.5 px-4 py-2 rounded-xl
                                        border border-gray-200 text-sm font-semibold text-gray-700
@@ -448,7 +448,7 @@
                                                text-gray-500 uppercase tracking-wide w-1/3">이메일</th>
                                     <th class="px-6 py-3 text-left text-xs font-semibold
                                                text-gray-500 uppercase tracking-wide w-36">권한</th>
-                                    <th th:if="${data.manager()}"
+                                    <th th:if="${data.isManager()}"
                                         class="px-6 py-3 text-right text-xs font-semibold
                                                text-gray-500 uppercase tracking-wide">작업</th>
                                 </tr>
@@ -491,7 +491,7 @@
                                     <!-- 권한 -->
                                     <td class="px-6 py-4">
                                         <!-- MANAGER 뷰: CEO는 배지, 나머지는 셀렉트 -->
-                                        <th:block th:if="${data.manager()}">
+                                        <th:block th:if="${data.isManager()}">
                                             <span th:if="${member.isCeo()}"
                                                   class="inline-flex items-center px-2.5 py-1
                                                          rounded-lg text-xs font-semibold
@@ -504,26 +504,26 @@
                                                            focus:outline-none focus:ring-1
                                                            focus:ring-blue-300 cursor-pointer">
                                                 <option value="MANAGER"
-                                                        th:selected="${member.manager()}">관리자</option>
+                                                        th:selected="${member.isManager()}">관리자</option>
                                                 <option value="MEMBER"
-                                                        th:selected="${!member.manager()}">구성원</option>
+                                                        th:selected="${!member.isManager()}">구성원</option>
                                             </select>
                                         </th:block>
                                         <!-- MEMBER 뷰: 배지 표시 -->
-                                        <th:block th:unless="${data.manager()}">
+                                        <th:block th:unless="${data.isManager()}">
                                             <span class="inline-flex items-center px-2.5 py-1
                                                          rounded-lg text-xs font-semibold"
-                                                  th:classappend="${member.manager()}
+                                                  th:classappend="${member.isManager()}
                                                                    ? 'bg-indigo-50 text-indigo-700'
                                                                    : 'bg-gray-100 text-gray-600'"
-                                                  th:text="${member.manager()} ? '관리자' : '구성원'">
+                                                  th:text="${member.isManager()} ? '관리자' : '구성원'">
                                                 구성원
                                             </span>
                                         </th:block>
                                     </td>
 
                                     <!-- 작업 (MANAGER 전용) -->
-                                    <td th:if="${data.manager()}" class="px-6 py-4 text-right">
+                                    <td th:if="${data.isManager()}" class="px-6 py-4 text-right">
                                         <!-- CEO나 자신은 제거 불가 -->
                                         <button th:unless="${member.isCeo() or member.isCurrentUser()}"
                                                 type="button"
@@ -585,7 +585,7 @@
                         </div>
 
                         <!-- 프로젝트 삭제 (CEO + MANAGER 인 경우) -->
-                        <div th:if="${data.isCeo() and data.manager()}"
+                        <div th:if="${data.isCeo() and data.isManager()}"
                              class="flex items-center justify-between p-5 rounded-xl
                                     border border-red-200 bg-red-50">
                             <div>
@@ -616,7 +616,7 @@
     <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
 
     <!-- 초대 모달 (MANAGER 전용) -->
-    <div th:if="${data.manager()}"
+    <div th:if="${data.isManager()}"
          id="invite-modal"
          class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
         <div class="bg-white rounded-2xl shadow-2xl w-96 p-8 flex flex-col gap-5">
@@ -633,8 +633,26 @@
                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
                               text-sm text-gray-700 focus:outline-none focus:ring-2
                               focus:ring-blue-300 focus:border-transparent transition-all"/>
-                <p id="invite-error" class="hidden text-xs text-red-500"></p>
             </div>
+
+            <!-- 역할 선택 -->
+            <div class="flex flex-col gap-1.5">
+                <label for="invite-role"
+                       class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    역할
+                </label>
+                <select id="invite-role"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
+                               text-sm text-gray-700 focus:outline-none focus:ring-2
+                               focus:ring-blue-300 focus:border-transparent transition-all
+                               cursor-pointer">
+                    <option value="MEMBER" selected>구성원</option>
+                    <option value="MANAGER">관리자</option>
+                </select>
+            </div>
+
+            <p id="invite-error" class="hidden text-xs text-red-500 -mt-2"></p>
+
             <div class="flex gap-3">
                 <button type="button" onclick="closeInviteModal()"
                         class="flex-1 py-2.5 rounded-xl border border-gray-200
@@ -642,12 +660,45 @@
                                transition-colors">
                     취소
                 </button>
-                <button type="button" onclick="sendInvite()"
+                <button type="button" id="invite-send-btn" onclick="sendInvite()"
                         class="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
                                text-sm font-semibold text-white transition-colors">
                     초대 전송
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- API Key 평문 노출 모달 (발급/재발급 직후 1회만 표시) -->
+    <div id="api-key-reveal-modal"
+         class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+        <div class="bg-white rounded-2xl shadow-2xl w-[480px] p-8 flex flex-col gap-5">
+            <div>
+                <h3 class="text-base font-bold text-gray-900 mb-1">API 키가 발급되었습니다</h3>
+                <p class="text-sm text-red-500 font-semibold">
+                    이 화면을 벗어나면 키 원문을 다시 확인할 수 없습니다. 지금 바로 복사해 두세요.
+                </p>
+            </div>
+            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50
+                        border border-gray-200 rounded-xl">
+                <code id="plain-api-key-display"
+                      class="flex-1 text-sm font-mono text-gray-700 break-all select-all"></code>
+                <button type="button" onclick="copyPlainApiKey()"
+                        title="복사"
+                        class="shrink-0 p-1.5 rounded-lg hover:bg-gray-200
+                               transition-colors text-gray-500 hover:text-gray-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8
+                                 a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </button>
+            </div>
+            <button type="button" onclick="closeApiKeyRevealModal()"
+                    class="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
+                           text-sm font-semibold text-white transition-colors">
+                확인 (페이지 새로고침)
+            </button>
         </div>
     </div>
 

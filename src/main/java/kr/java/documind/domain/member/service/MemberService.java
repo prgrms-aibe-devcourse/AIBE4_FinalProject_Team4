@@ -8,13 +8,13 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import kr.java.documind.domain.member.model.dto.CompanyDetail;
-import kr.java.documind.domain.member.model.dto.ConflictingMemberInfo;
-import kr.java.documind.domain.member.model.dto.HeaderInfo;
+import kr.java.documind.domain.auth.model.dto.ConflictingMemberInfo;
+import kr.java.documind.domain.auth.model.dto.HeaderInfo;
 import kr.java.documind.domain.member.model.dto.MemberProfileDetail;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
-import kr.java.documind.domain.member.model.enums.GlobalRole;
-import kr.java.documind.domain.member.model.enums.OAuthProvider;
+import kr.java.documind.domain.auth.model.enums.GlobalRole;
+import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
 import kr.java.documind.global.exception.StorageException;
 import kr.java.documind.global.exception.UnauthorizedException;
@@ -52,17 +52,8 @@ public class MemberService {
         return buildHeaderInfo(getMemberWithCompany(memberId));
     }
 
-    /** 이미 로드된 Member 엔티티로 HeaderInfo를 빌드한다. DB 조회 없음. */
     public HeaderInfo getHeaderInfo(Member member) {
         return buildHeaderInfo(member);
-    }
-
-    public MemberProfileDetail getProfileDetail(UUID memberId) {
-        return buildProfileDetail(getMemberWithCompany(memberId));
-    }
-
-    public CompanyDetail getCompanyDetail(UUID memberId) {
-        return buildCompanyDetail(getMemberWithCompany(memberId));
     }
 
     public Optional<ConflictingMemberInfo> findConflictingMemberInfo(
@@ -83,31 +74,22 @@ public class MemberService {
                                         m.getGlobalRole()));
     }
 
-    public Optional<GlobalRole> findRoleByProviderAndId(OAuthProvider provider, String providerId) {
-        return memberRepository
-                .findByProviderAndProviderId(provider, providerId)
-                .map(Member::getGlobalRole);
-    }
-
     public boolean existsByProviderAndProviderId(OAuthProvider provider, String providerId) {
         return memberRepository.findByProviderAndProviderId(provider, providerId).isPresent();
     }
 
-    public Optional<Member> findCeoByCompanyId(Long companyId) {
-        return memberRepository.findFirstByCompanyIdAndGlobalRole(companyId, GlobalRole.CEO);
-    }
-
-    /**
-     * 여러 회사의 CEO를 단일 쿼리로 일괄 조회하여 companyId → Member 맵으로 반환한다.
-     *
-     * <p>ADMIN 회사 관리 페이지 N+1 방지 전용. 빈 목록이면 DB 조회 없이 빈 맵을 반환한다.
-     */
     public Map<Long, Member> findCeosByCompanyIds(List<Long> companyIds) {
         if (companyIds.isEmpty()) {
             return Map.of();
         }
         return memberRepository.findByCompanyIdInAndGlobalRole(companyIds, GlobalRole.CEO).stream()
                 .collect(Collectors.toMap(m -> m.getCompany().getId(), Function.identity()));
+    }
+
+    public Member getMember(UUID id) {
+        return memberRepository
+                .findById(id)
+                .orElseThrow(() -> new UnauthorizedException("인증된 회원을 찾을 수 없습니다."));
     }
 
     public Member getMemberWithCompany(UUID id) {

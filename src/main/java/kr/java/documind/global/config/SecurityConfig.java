@@ -82,13 +82,12 @@ public class SecurityConfig {
                                         .permitAll()
                                         .requestMatchers(HttpMethod.POST, PUBLIC_POST_PATHS)
                                         .permitAll()
-                                        // ── Actuator : health는 공개, 나머지는 ADMIN 전용 ──
                                         .requestMatchers(HttpMethod.GET, PUBLIC_ACTUATOR_PATHS)
                                         .permitAll()
                                         .requestMatchers("/actuator/**")
                                         .hasRole("ADMIN")
-                                        // ── 어드민 전용 페이지 ─────────────────────────────
-                                        .requestMatchers("/admin/**")
+                                        // ── 어드민 전용 페이지 및 API ───────────────────────
+                                        .requestMatchers("/admin/**", "/api/admin/**")
                                         .hasRole("ADMIN")
                                         // ── 그 외 모든 요청: 인증 필요 ───────────────────
                                         .anyRequest()

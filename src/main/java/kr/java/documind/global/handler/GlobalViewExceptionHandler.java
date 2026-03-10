@@ -4,7 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.stream.Collectors;
-import kr.java.documind.domain.member.exception.DeletedProjectException;
+import kr.java.documind.domain.auth.exception.DeletedProjectException;
 import kr.java.documind.global.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

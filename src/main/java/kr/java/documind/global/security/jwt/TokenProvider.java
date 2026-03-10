@@ -10,7 +10,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
-import kr.java.documind.domain.member.model.enums.GlobalRole;
+import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.global.config.JwtProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

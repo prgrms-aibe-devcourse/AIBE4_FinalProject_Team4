@@ -26,6 +26,19 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME}
+    password: ${GMAIL_APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
   # S3 설정
   cloud:
     aws:
@@ -144,6 +157,18 @@ app:
   rate-limit:
     capacity: 50 # 초당 허용할 최대 API 요청 횟수
     expiration-hours: 1 # 버킷 메모리 유지 시간 (hour 단위)
+
+  api-key:
+    # HMAC-SHA-256 서명 키(pepper) — DB와 분리 관리
+    # 운영 환경에서는 반드시 환경 변수로 주입: export API_KEY_HMAC_SECRET="<256비트 이상 랜덤 문자열>"
+    hmac-secret: ${API_KEY_HMAC_SECRET:dev-hmac-secret-must-change-in-production}
+
+  invitation:
+    expiration-hours: 72
+    hmac-secret: ${INVITATION_HMAC_SECRET:dev-invitation-hmac-secret-must-change-in-production}
+
+  mail:
+    from-address: ${GMAIL_FROM_ADDRESS}
 
 
 worker:
