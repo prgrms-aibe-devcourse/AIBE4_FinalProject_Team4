@@ -42,10 +42,10 @@ public interface SeverityStrategy {
      *
      * @param score 계산된 점수
      * @param issue 이슈
-     * @param log 로그
+     * @param gameLog 게임 로그
      * @return 근거 텍스트 (예: "크래시 발생 (50점)")
      */
-    default String generateReason(int score, Issue issue, GameLog log) {
+    default String generateReason(int score, Issue issue, GameLog gameLog) {
         if (score == 0) {
             return null; // 점수가 0이면 근거 텍스트 생략
         }

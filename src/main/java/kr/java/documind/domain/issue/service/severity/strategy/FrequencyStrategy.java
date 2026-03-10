@@ -159,7 +159,7 @@ public class FrequencyStrategy implements SeverityStrategy {
     }
 
     @Override
-    public String generateReason(int score, Issue issue, GameLog log) {
+    public String generateReason(int score, Issue issue, GameLog gameLog) {
         if (score == 0) {
             cachedErrorRate.remove(); // 메모리 누수 방지
             return null;

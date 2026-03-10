@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -41,14 +42,17 @@ public class UserCountTracker {
 
     private final RedisTemplate<String, String> redisTemplate;
 
-    /** HyperLogLog Key 접두사 */
-    private static final String KEY_PREFIX = "issue:users:";
+    /** HyperLogLog Key 접두사 (영향받은 유저 수 추적) */
+    @Value("${redis.hll.user-count-prefix}")
+    private String keyPrefix;
 
-    /** HyperLogLog Key 접미사 */
-    private static final String KEY_SUFFIX = ":hll";
+    /** HyperLogLog Key 접미사 (영향받은 유저 수 추적) */
+    @Value("${redis.hll.user-count-suffix}")
+    private String keySuffix;
 
     /** 전체 로그 카운터 Key 접두사 */
-    private static final String TOTAL_LOGS_PREFIX = "total_logs:";
+    @Value("${redis.hll.total-logs-prefix}")
+    private String totalLogsPrefix;
 
     /** 시간 포맷 (시간 단위) */
     private static final DateTimeFormatter HOUR_FORMATTER =
@@ -158,7 +162,7 @@ public class UserCountTracker {
      * @return Redis Key (예: "issue:users:abc123:hll")
      */
     private String buildKey(String fingerprint) {
-        return KEY_PREFIX + fingerprint + KEY_SUFFIX;
+        return keyPrefix + fingerprint + keySuffix;
     }
 
     /**
@@ -254,6 +258,6 @@ public class UserCountTracker {
      */
     private String buildTotalLogsKey(UUID projectId, OffsetDateTime timestamp) {
         String hourKey = timestamp.format(HOUR_FORMATTER);
-        return TOTAL_LOGS_PREFIX + projectId + ":" + hourKey;
+        return totalLogsPrefix + projectId + ":" + hourKey;
     }
 }

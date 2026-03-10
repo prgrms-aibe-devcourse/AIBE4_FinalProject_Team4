@@ -26,6 +26,17 @@ spring:
       genai:
         api-key: ${GENAI_API_KEY}
 
+# Redis HyperLogLog 키 설정 (통일된 키 관리)
+redis:
+  hll:
+    # LogSamplingService용 (샘플링 판단)
+    sampling-prefix: ${REDIS_HLL_SAMPLING_PREFIX:sampling:}
+    # UserCountTracker용 (영향받은 유저 수 추적)
+    user-count-prefix: ${REDIS_HLL_USER_COUNT_PREFIX:issue:users:}
+    user-count-suffix: ${REDIS_HLL_USER_COUNT_SUFFIX::hll}
+    # UserCountTracker용 (전체 로그 수 추적)
+    total-logs-prefix: ${REDIS_HLL_TOTAL_LOGS_PREFIX:total_logs:}
+
 # Cold Storage 설정
 cold-storage:
   s3-prefix: cold-storage/game-logs  # S3 저장 경로 접두사

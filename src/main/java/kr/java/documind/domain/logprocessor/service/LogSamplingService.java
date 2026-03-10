@@ -8,6 +8,7 @@ import kr.java.documind.domain.logprocessor.model.enums.BackpressureState;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,9 @@ public class LogSamplingService {
     private final BackpressureManager backpressureManager;
     private final UserCountTracker userCountTracker;
 
-    private static final String HLL_KEY_PREFIX = "sampling:";
+    /** HyperLogLog Key 접두사 (샘플링 판단용) */
+    @Value("${redis.hll.sampling-prefix}")
+    private String hllKeyPrefix;
 
     /**
      * 로그를 샘플링해야 하는지 결정 (Severity + Fingerprint + Backpressure)
@@ -241,7 +244,7 @@ public class LogSamplingService {
     private String buildHllKey(String fingerprint) {
         long currentTimeSeconds = System.currentTimeMillis() / 1000;
         long window = currentTimeSeconds / samplingConfig.getWindowSeconds();
-        return HLL_KEY_PREFIX + fingerprint + ":hll:" + window;
+        return hllKeyPrefix + fingerprint + ":hll:" + window;
     }
 
     /**

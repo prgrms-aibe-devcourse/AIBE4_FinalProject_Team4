@@ -34,7 +34,7 @@ public class CrashSeverityStrategy implements SeverityStrategy {
     }
 
     @Override
-    public String generateReason(int score, Issue issue, GameLog log) {
+    public String generateReason(int score, Issue issue, GameLog gameLog) {
         if (score == 0) {
             return null;
         }
