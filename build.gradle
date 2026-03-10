@@ -136,6 +136,8 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Source: https://mvnrepository.com/artifact/com.github.f4b6a3/uuid-creator
+    implementation 'com.github.f4b6a3:uuid-creator:6.1.1'
 
     //JWT
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")

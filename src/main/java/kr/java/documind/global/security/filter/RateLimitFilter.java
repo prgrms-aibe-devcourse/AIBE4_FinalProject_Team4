@@ -10,10 +10,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import kr.java.documind.domain.member.service.ProjectApiKeyValidationService;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.TooManyRequestsException;
 import kr.java.documind.global.util.HmacApiKeyUtil;
+import kr.java.documind.global.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,14 +37,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
     public static final String HEADER_RETRY_AFTER = "Retry-After";
 
     private final ProxyManager<String> proxyManager;
+    private final ProjectApiKeyValidationService apiKeyValidationService;
 
     @Value("${app.rate-limit.capacity:50}")
     private int capacity;
 
+    @Value("${app.rate-limit.redis-prefix}")
+    private String rateLimitPrefix;
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         // API 경로가 아닌 경우 필터를 적용하지 않음
-        return !request.getRequestURI().startsWith("/api/logs/");
+        return !request.getRequestURI().startsWith("/api/logs");
     }
 
     @Override
@@ -55,11 +62,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throw new BadRequestException(HEADER_API_KEY + " 헤더가 누락되었습니다.");
         }
 
-        Bucket bucket = proxyManager.builder().build(apiKey, this::createBucketConfiguration);
+        UUID projectId = apiKeyValidationService.getProjectIdByApiKey(apiKey);
+        if (projectId == null) {
+            throw new UnauthorizedException("유효하지 않거나 정지된 API Key입니다.");
+        }
+
+        String bucketKey = rateLimitPrefix + apiKey;
+        Bucket bucket = proxyManager.builder().build(bucketKey, this::createBucketConfiguration);
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
         if (probe.isConsumed()) {
             response.addHeader(HEADER_REMAINING_TOKEN, String.valueOf(probe.getRemainingTokens()));
+            request.setAttribute("projectId", projectId);
             filterChain.doFilter(request, response);
         } else {
             long nanosToWaitForRefill = probe.getNanosToWaitForRefill();

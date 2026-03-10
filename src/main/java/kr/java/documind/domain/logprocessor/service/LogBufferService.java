@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import kr.java.documind.domain.logcollector.model.dto.LogEvent;
 import kr.java.documind.domain.issue.service.tracking.UserCountTracker;
 import kr.java.documind.domain.logprocessor.model.dto.LogWrapper;
-import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository;
 import lombok.RequiredArgsConstructor;
@@ -95,7 +95,7 @@ public class LogBufferService {
     }
 
     // API 요청용 - DTO를 받아서 변환 (Service Layer에서 변환 처리)
-    public void addFromDto(RawLogRequest dto) {
+    public void addFromDto(LogEvent dto) {
         GameLog logEntity = logMapper.toEntity(dto);
 
         // 전체 로그 유입량 추적 (샘플링 여부와 무관하게 모든 API 로그 카운트)
@@ -123,7 +123,7 @@ public class LogBufferService {
     }
 
     // 일괄 처리용
-    public void addAllFromDtos(List<RawLogRequest> dtos) {
+    public void addAllFromDtos(List<LogEvent> dtos) {
         dtos.forEach(this::addFromDto);
     }
 

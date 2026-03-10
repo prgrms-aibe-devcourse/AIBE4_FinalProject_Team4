@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * <p>시스템 진단 및 디버깅을 위한 로그 레벨 분류
  */
 public enum LogSeverity {
+    UNKNOWN("UNKNOWN"),
     TRACE("TRACE"),
     DEBUG("DEBUG"),
     INFO("INFO"),
@@ -42,7 +43,7 @@ public enum LogSeverity {
     @JsonCreator
     public static LogSeverity fromString(String value) {
         if (value == null || value.isBlank()) {
-            return INFO; // 기본값
+            return UNKNOWN;
         }
 
         for (LogSeverity severity : LogSeverity.values()) {
@@ -51,10 +52,7 @@ public enum LogSeverity {
             }
         }
 
-        throw new IllegalArgumentException(
-                "Unknown log severity: '"
-                        + value
-                        + "'. Supported values: TRACE, DEBUG, INFO, WARN, ERROR, FATAL");
+        return UNKNOWN;
     }
 
     /**

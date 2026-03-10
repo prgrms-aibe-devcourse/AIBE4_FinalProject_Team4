@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * <p>게임 내에서 발생한 사건의 종류를 분류
  */
 public enum EventCategory {
+    UNKNOWN("알 수 없음", "UNKNOWN"), // 분류되지 않은 이벤트의 기본값
     SYSTEM("시스템", "SYSTEM"), // 부팅, 종료, 크래시, OS 시그널
     ERROR("에러", "ERROR"), // 예외, 런타임 오류, 핸들링 실패
     PERFORMANCE("성능", "PERFORMANCE"), // FPS, 메모리, 프레임타임, 온도
@@ -62,7 +63,7 @@ public enum EventCategory {
     @JsonCreator
     public static EventCategory fromString(String value) {
         if (value == null || value.isBlank()) {
-            return SYSTEM; // 기본값
+            return UNKNOWN;
         }
 
         for (EventCategory category : EventCategory.values()) {
@@ -72,13 +73,7 @@ public enum EventCategory {
             }
         }
 
-        throw new IllegalArgumentException(
-                "Unknown event category: '"
-                        + value
-                        + "'. Supported values: SYSTEM(시스템), ERROR(에러), PERFORMANCE(성능), "
-                        + "NETWORK(네트워크), GAMEPLAY(게임플레이), COMBAT(전투), SKILL(스킬), "
-                        + "ITEM(아이템), QUEST(퀘스트), STAGE(스테이지), MATCH(매치), SOCIAL(소셜), "
-                        + "ECONOMY(재화), PAYMENT(결제), AUTH(인증), ADMIN(관리), CHEAT(치트)");
+        return UNKNOWN;
     }
 
     /**
