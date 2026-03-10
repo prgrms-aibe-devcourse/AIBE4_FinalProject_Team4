@@ -1,6 +1,5 @@
 package kr.java.documind.domain.member.service;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,7 +15,6 @@ import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
-import kr.java.documind.global.exception.StorageException;
 import kr.java.documind.global.exception.UnauthorizedException;
 import kr.java.documind.global.storage.FileStore;
 import lombok.RequiredArgsConstructor;
@@ -153,22 +151,18 @@ public class MemberService {
         Member member = getMemberWithCompany(memberId);
         String oldKey = member.getProfileKey();
 
-        try {
-            // 1. 새 파일 먼저 업로드
-            String newKey = fileStore.save(file);
-            // 2. 롤백 시 newKey 자동 삭제 (orphan 방지)
-            fileStore.registerRollback(newKey);
-            // 3. DB 업데이트
-            member.updateProfile(null, newKey, null);
-            // 4. 커밋 확정 후 기존 파일 삭제 (롤백 시에는 삭제하지 않음)
-            if (oldKey != null) {
-                fileStore.registerDeleteAfterCommit(oldKey);
-            }
-            log.info("[MemberService] 프로필 이미지 업로드: memberId={} key={}", memberId, newKey);
-            return fileStore.getAccessUrl(newKey);
-        } catch (IOException e) {
-            throw new StorageException("프로필 이미지 저장 중 오류가 발생했습니다.", e);
+        // 1. 새 파일 먼저 업로드
+        String newKey = fileStore.save(file).storedKey();
+        // 2. 롤백 시 newKey 자동 삭제 (orphan 방지)
+        fileStore.deleteOnRollback(newKey);
+        // 3. DB 업데이트
+        member.updateProfile(null, newKey, null);
+        // 4. 커밋 확정 후 기존 파일 삭제 (롤백 시에는 삭제하지 않음)
+        if (oldKey != null) {
+            fileStore.deleteOnCommit(oldKey);
         }
+        log.info("[MemberService] 프로필 이미지 업로드: memberId={} key={}", memberId, newKey);
+        return fileStore.getAccessUrl(newKey);
     }
 
     private HeaderInfo buildHeaderInfo(Member member) {

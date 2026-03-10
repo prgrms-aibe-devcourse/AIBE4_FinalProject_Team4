@@ -29,51 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('pdfPreview').classList.add('hidden');
         document.getElementById('previewFallback').classList.remove('hidden');
     }
+
+    // 임베딩 진행중이면 SSE 구독
+    const embeddingStatus = document.getElementById('docEmbeddingStatus').value;
+    if (embeddingStatus === 'PENDING' || embeddingStatus === 'PROCESSING') {
+        subscribeEmbeddingStatus();
+    }
 });
-
-// ==================== 모달 공통 ====================
-
-function openModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-function showModalError(errorElId, message) {
-    const el = document.getElementById(errorElId);
-    el.textContent = message;
-    el.classList.remove('hidden');
-}
-
-function hideModalError(errorElId) {
-    document.getElementById(errorElId).classList.add('hidden');
-}
-
-function setupDropZone(zoneId, fileInputId) {
-    const zone = document.getElementById(zoneId);
-    if (!zone) return;
-
-    zone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        zone.classList.add('border-sky-400', 'bg-sky-50/30');
-    });
-    zone.addEventListener('dragleave', () => {
-        zone.classList.remove('border-sky-400', 'bg-sky-50/30');
-    });
-    zone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        zone.classList.remove('border-sky-400', 'bg-sky-50/30');
-        const fileInput = document.getElementById(fileInputId);
-        if (e.dataTransfer.files.length > 0) {
-            fileInput.files = e.dataTransfer.files;
-            fileInput.dispatchEvent(new Event('change'));
-        }
-    });
-}
 
 // ==================== 파일 수정 ====================
 
@@ -98,30 +60,6 @@ document.getElementById('btnEdit').addEventListener('click', () => {
     openModal('editModal');
 });
 
-function toggleEditFile() {
-    const area = document.getElementById('editFileArea');
-    if (document.getElementById('editFileToggle').checked) {
-        area.classList.remove('hidden');
-    } else {
-        area.classList.add('hidden');
-        clearEditFile();
-    }
-}
-
-function onEditFileSelected(input) {
-    if (input.files.length > 0) {
-        document.getElementById('editFileName').textContent = input.files[0].name;
-        document.getElementById('editFileInfo').classList.remove('hidden');
-        document.getElementById('editDropZone').classList.add('hidden');
-    }
-}
-
-function clearEditFile() {
-    document.getElementById('editFile').value = '';
-    document.getElementById('editFileInfo').classList.add('hidden');
-    document.getElementById('editDropZone').classList.remove('hidden');
-}
-
 async function submitEdit() {
     hideModalError('editError');
 
@@ -139,14 +77,18 @@ async function submitEdit() {
         formData.append('file', fileInput.files[0]);
     }
 
+    const btn = document.querySelector('#editModal button[onclick="submitEdit()"]');
+    startLoading(btn);
     try {
         const result = await callApi(`/api/projects/${projectId}/documents/${documentId}`, {
             method: 'PATCH',
             body: formData
         });
         if (result.success) {
+            await completeLoading(btn);
             closeModal('editModal');
             window.location.reload();
+            return;
         } else {
             showModalError('editError', result.error?.message || '수정에 실패했습니다.');
         }
@@ -154,6 +96,7 @@ async function submitEdit() {
         showModalError('editError', '수정에 실패했습니다.');
         console.error(e);
     }
+    stopLoading(btn);
 }
 
 // ==================== 삭제 ====================
@@ -165,19 +108,24 @@ document.getElementById('btnDelete').addEventListener('click', () => {
 });
 
 async function confirmDelete() {
+    const btn = document.querySelector('#deleteModal button[onclick="confirmDelete()"]');
+    startLoading(btn);
     try {
         const result = await callApi(
             `/api/projects/${projectId}/documents/${documentId}`,
             { method: 'DELETE' }
         );
         if (result.success) {
+            await completeLoading(btn);
             closeModal('deleteModal');
             window.location.href = `/projects/${projectId}/groups`;
+            return;
         }
     } catch (e) {
         alert('문서 삭제에 실패했습니다.');
         console.error(e);
     }
+    stopLoading(btn);
 }
 
 // ==================== 다운로드/채팅 ====================
@@ -189,3 +137,39 @@ document.getElementById('btnDownload').addEventListener('click', () => {
 document.getElementById('btnChat').addEventListener('click', () => {
     // TODO: 채팅 페이지로 이동
 });
+
+// ==================== 임베딩 SSE ====================
+
+const EMBEDDING_STATUS_MAP = {
+    NONE:       { classes: 'font-medium text-gray-400', label: '-' },
+    PENDING:    { classes: 'font-medium text-gray-500', label: '대기' },
+    PROCESSING: { classes: 'font-medium text-blue-600', label: '진행중' },
+    SUCCESS:    { classes: 'font-medium text-green-600', label: '성공' },
+    FAILED:     { classes: 'font-medium text-red-600', label: '실패' },
+};
+
+function subscribeEmbeddingStatus() {
+    const source = new EventSource(`/api/projects/${projectId}/documents/${documentId}/embedding-status`);
+
+    source.addEventListener('embedding-status', (e) => {
+        const status = e.data;
+        updateEmbeddingBadge(status);
+
+        if (status === 'SUCCESS' || status === 'FAILED') {
+            source.close();
+        }
+    });
+
+    source.onerror = () => {
+        source.close();
+    };
+}
+
+function updateEmbeddingBadge(status) {
+    const badge = document.getElementById('embeddingStatusBadge');
+    if (!badge) return;
+
+    const config = EMBEDDING_STATUS_MAP[status] || EMBEDDING_STATUS_MAP.NONE;
+    badge.className = config.classes;
+    badge.textContent = config.label;
+}

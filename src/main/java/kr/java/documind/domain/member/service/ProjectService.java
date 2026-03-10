@@ -1,6 +1,5 @@
 package kr.java.documind.domain.member.service;
 
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +28,6 @@ import kr.java.documind.domain.auth.model.repository.ProjectRepository;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ForbiddenException;
 import kr.java.documind.global.exception.NotFoundException;
-import kr.java.documind.global.exception.StorageException;
 import kr.java.documind.global.storage.FileStore;
 import kr.java.documind.global.util.HmacApiKeyUtil;
 import lombok.RequiredArgsConstructor;
@@ -104,20 +102,14 @@ public class ProjectService {
                         .orElseThrow(ProjectNotFoundException::new);
 
         String oldKey = project.getProfileKey();
-
-        String newKey;
-        try {
-            newKey = fileStore.save(file);
-        } catch (IOException e) {
-            throw new StorageException("이미지 업로드에 실패했습니다.", e);
-        }
+        String newKey = fileStore.save(file).storedKey();
 
         project.updateInfo(null, newKey);
 
         if (oldKey != null) {
-            fileStore.registerDeleteAfterCommit(oldKey);
+            fileStore.deleteOnCommit(oldKey);
         }
-        fileStore.registerRollback(newKey);
+        fileStore.deleteOnRollback(newKey);
 
         String url = fileStore.getAccessUrl(newKey);
         log.info(

@@ -1,10 +1,13 @@
 package kr.java.documind.domain.archive.document.model.dto.response;
 
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
+import kr.java.documind.global.enums.AllowedFileType;
 import org.springframework.core.io.Resource;
 
 public record DocumentDownloadResult(
         Resource resource, String downloadFilename, String contentType) {
+
+    private static final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
 
     public static DocumentDownloadResult of(Resource resource, DocumentMetadata metadata) {
         String filename = metadata.getDocumentName() + "." + metadata.getExtension();
@@ -13,11 +16,7 @@ public record DocumentDownloadResult(
     }
 
     private static String resolveContentType(String extension) {
-        return switch (extension.toLowerCase()) {
-            case "pdf" -> "application/pdf";
-            case "jpg", "jpeg" -> "image/jpeg";
-            case "png" -> "image/png";
-            default -> "application/octet-stream";
-        };
+        AllowedFileType fileType = AllowedFileType.fromExtension(extension);
+        return fileType != null ? fileType.getMimeType() : DEFAULT_CONTENT_TYPE;
     }
 }

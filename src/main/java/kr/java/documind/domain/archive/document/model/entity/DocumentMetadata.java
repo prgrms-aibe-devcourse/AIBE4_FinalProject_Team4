@@ -1,8 +1,11 @@
 package kr.java.documind.domain.archive.document.model.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -12,8 +15,10 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
+import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.global.entity.DomainSource;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -38,7 +43,7 @@ public class DocumentMetadata {
 
     @Id private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     @MapsId
     @JoinColumn(name = "id")
     private DomainSource domainSource;
@@ -77,6 +82,10 @@ public class DocumentMetadata {
     @Column(nullable = false)
     private boolean isProcessed;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EmbeddingStatus embeddingStatus;
+
     @Column(nullable = false)
     private LocalDateTime uploadedAt;
 
@@ -88,6 +97,7 @@ public class DocumentMetadata {
 
     @LastModifiedDate private LocalDateTime updatedAt;
 
+    @Builder
     private DocumentMetadata(
             DomainSource domainSource,
             DocumentGroup documentGroup,
@@ -101,6 +111,7 @@ public class DocumentMetadata {
             long size,
             String storedKey,
             boolean isProcessed,
+            EmbeddingStatus embeddingStatus,
             LocalDateTime uploadedAt) {
         this.domainSource = domainSource;
         this.documentGroup = documentGroup;
@@ -114,37 +125,8 @@ public class DocumentMetadata {
         this.size = size;
         this.storedKey = storedKey;
         this.isProcessed = isProcessed;
+        this.embeddingStatus = embeddingStatus;
         this.uploadedAt = uploadedAt;
-    }
-
-    public static DocumentMetadata create(
-            DomainSource domainSource,
-            DocumentGroup documentGroup,
-            String documentName,
-            String choseong,
-            String extension,
-            int majorVersion,
-            int minorVersion,
-            int patchVersion,
-            String hash,
-            long size,
-            String storedKey,
-            boolean isProcessed,
-            LocalDateTime uploadedAt) {
-        return new DocumentMetadata(
-                domainSource,
-                documentGroup,
-                documentName,
-                choseong,
-                extension,
-                majorVersion,
-                minorVersion,
-                patchVersion,
-                hash,
-                size,
-                storedKey,
-                isProcessed,
-                uploadedAt);
     }
 
     public String getVersionString() {
@@ -174,6 +156,10 @@ public class DocumentMetadata {
 
     public void changeProcessed(boolean isProcessed) {
         this.isProcessed = isProcessed;
+    }
+
+    public void changeEmbeddingStatus(EmbeddingStatus embeddingStatus) {
+        this.embeddingStatus = embeddingStatus;
     }
 
     public void markModified() {

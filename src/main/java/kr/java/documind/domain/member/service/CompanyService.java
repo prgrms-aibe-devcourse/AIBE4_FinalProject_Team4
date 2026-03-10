@@ -1,6 +1,5 @@
 package kr.java.documind.domain.member.service;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -16,7 +15,6 @@ import kr.java.documind.domain.member.model.enums.CompanyStatus;
 import kr.java.documind.domain.member.model.repository.CompanyRepository;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
-import kr.java.documind.global.exception.StorageException;
 import kr.java.documind.global.storage.FileStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -181,26 +179,22 @@ public class CompanyService {
         Company company = getCompanyByMember(memberId);
         String oldKey = company.getProfileKey();
 
-        try {
-            // 1. 새 파일 먼저 업로드
-            String newKey = fileStore.save(file);
-            // 2. 롤백 시 newKey 자동 삭제 (orphan 방지)
-            fileStore.registerRollback(newKey);
-            // 3. DB 업데이트
-            company.updateProfileKey(newKey);
-            // 4. 커밋 확정 후 기존 파일 삭제 (롤백 시에는 삭제하지 않음)
-            if (oldKey != null) {
-                fileStore.registerDeleteAfterCommit(oldKey);
-            }
-            log.info(
-                    "[CompanyService] 회사 프로필 이미지 업로드: memberId={} companyId={} key={}",
-                    memberId,
-                    company.getId(),
-                    newKey);
-            return fileStore.getAccessUrl(newKey);
-        } catch (IOException e) {
-            throw new StorageException("회사 프로필 이미지 저장 중 오류가 발생했습니다.", e);
+        // 1. 새 파일 먼저 업로드
+        String newKey = fileStore.save(file).storedKey();
+        // 2. 롤백 시 newKey 자동 삭제 (orphan 방지)
+        fileStore.deleteOnRollback(newKey);
+        // 3. DB 업데이트
+        company.updateProfileKey(newKey);
+        // 4. 커밋 확정 후 기존 파일 삭제 (롤백 시에는 삭제하지 않음)
+        if (oldKey != null) {
+            fileStore.deleteOnCommit(oldKey);
         }
+        log.info(
+                "[CompanyService] 회사 프로필 이미지 업로드: memberId={} companyId={} key={}",
+                memberId,
+                company.getId(),
+                newKey);
+        return fileStore.getAccessUrl(newKey);
     }
 
     private Company getCompanyByMember(UUID memberId) {

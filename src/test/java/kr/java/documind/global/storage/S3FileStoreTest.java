@@ -52,15 +52,18 @@ class S3FileStoreTest {
     class Save {
 
         @Test
-        @DisplayName("파일 저장 시 UUID 기반 저장키를 반환한다")
+        @DisplayName("PDF 파일 저장 시 UUID 기반 저장키를 반환한다")
         void returnsUuidBasedKey() throws IOException {
-            MultipartFile file = mock(MultipartFile.class);
+            // PDF 매직 바이트 (%PDF-1.4)
+            byte[] pdfBytes = {0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34};
 
+            MultipartFile file = mock(MultipartFile.class);
             given(file.getOriginalFilename()).willReturn("document.pdf");
-            given(file.getContentType()).willReturn("application/pdf");
-            given(file.getSize()).willReturn(1024L);
+            given(file.getSize()).willReturn((long) pdfBytes.length);
             given(file.isEmpty()).willReturn(false);
-            given(file.getInputStream()).willReturn(new ByteArrayInputStream(new byte[0]));
+            given(file.getInputStream())
+                    .willReturn(new ByteArrayInputStream(pdfBytes))
+                    .willReturn(new ByteArrayInputStream(pdfBytes));
 
             String storedKey = s3FileStore.save(file);
 
@@ -88,32 +91,20 @@ class S3FileStoreTest {
         }
 
         @Test
-        @DisplayName("허용되지 않는 MIME 타입이면 BadRequestException을 던진다")
-        void throwsExceptionWhenMimeTypeNotAllowed() {
-            MultipartFile file = mock(MultipartFile.class);
+        @DisplayName("허용되지 않는 파일 형식이면 BadRequestException을 던진다")
+        void throwsExceptionWhenMimeTypeNotAllowed() throws IOException {
+            // ELF 바이너리 매직 바이트 (허용되지 않는 형식)
+            byte[] elfBytes = {0x7F, 0x45, 0x4C, 0x46};
 
+            MultipartFile file = mock(MultipartFile.class);
             given(file.isEmpty()).willReturn(false);
-            given(file.getSize()).willReturn(1024L);
-            given(file.getContentType()).willReturn("text/plain");
+            given(file.getSize()).willReturn((long) elfBytes.length);
+            given(file.getOriginalFilename()).willReturn("malicious.exe");
+            given(file.getInputStream()).willReturn(new ByteArrayInputStream(elfBytes));
 
             assertThatThrownBy(() -> s3FileStore.save(file))
                     .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("파일 형식");
-        }
-
-        @Test
-        @DisplayName("허용되지 않는 확장자면 BadRequestException을 던진다")
-        void throwsExceptionWhenExtensionNotAllowed() {
-            MultipartFile file = mock(MultipartFile.class);
-
-            given(file.isEmpty()).willReturn(false);
-            given(file.getSize()).willReturn(1024L);
-            given(file.getContentType()).willReturn("application/pdf");
-            given(file.getOriginalFilename()).willReturn("file.exe");
-
-            assertThatThrownBy(() -> s3FileStore.save(file))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("확장자");
+                    .hasMessageContaining("허용되지 않는 파일 형식");
         }
     }
 
@@ -156,8 +147,8 @@ class S3FileStoreTest {
         }
 
         @Test
-        @DisplayName("S3 인프라 오류이면 BusinessException(500)을 던진다")
-        void throwsBusinessExceptionOnS3InfraError() {
+        @DisplayName("S3 인프라 오류이면 StorageException을 던진다")
+        void throwsStorageExceptionOnS3InfraError() {
             S3Exception accessDeniedException =
                     (S3Exception)
                             S3Exception.builder()
@@ -177,7 +168,7 @@ class S3FileStoreTest {
         }
 
         @Test
-        @DisplayName("알 수 없는 예외이면 StorageException(500)을 던진다")
+        @DisplayName("알 수 없는 예외이면 StorageException을 던진다")
         void throwsStorageExceptionOnUnexpectedError() {
             given(s3Template.download(BUCKET, "test-key"))
                     .willThrow(new RuntimeException("unexpected"));
@@ -185,19 +176,6 @@ class S3FileStoreTest {
             assertThatThrownBy(() -> s3FileStore.load("test-key"))
                     .isInstanceOf(StorageException.class)
                     .hasMessageContaining("test-key");
-        }
-    }
-
-    @Nested
-    @DisplayName("delete")
-    class Delete {
-
-        @Test
-        @DisplayName("저장키로 파일을 삭제한다")
-        void deletesObject() {
-            s3FileStore.delete("test-key");
-
-            then(s3Template).should().deleteObject(BUCKET, "test-key");
         }
     }
 
@@ -220,6 +198,32 @@ class S3FileStoreTest {
             String url = s3FileStore.getAccessUrl("test-key");
 
             assertThat(url).contains("test-bucket", "test-key");
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteOnCommit")
+    class DeleteOnCommit {
+
+        @Test
+        @DisplayName("트랜잭션 없이 호출하면 IllegalStateException을 던진다")
+        void throwsExceptionWithoutTransaction() {
+            assertThatThrownBy(() -> s3FileStore.deleteOnCommit("test-key"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("활성 트랜잭션");
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteOnRollback")
+    class DeleteOnRollback {
+
+        @Test
+        @DisplayName("트랜잭션 없이 호출하면 IllegalStateException을 던진다")
+        void throwsExceptionWithoutTransaction() {
+            assertThatThrownBy(() -> s3FileStore.deleteOnRollback("test-key"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("활성 트랜잭션");
         }
     }
 }

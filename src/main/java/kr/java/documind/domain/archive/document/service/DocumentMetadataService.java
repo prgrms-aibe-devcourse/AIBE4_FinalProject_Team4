@@ -1,9 +1,14 @@
 package kr.java.documind.domain.archive.document.service;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import kr.java.documind.domain.archive.document.infrastructure.DocumentGroupManager;
+import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUploadRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.NewVersionDocumentUploadRequest;
@@ -13,60 +18,59 @@ import kr.java.documind.domain.archive.document.model.dto.response.DocumentDownl
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetadataResponse;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
-import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
-import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
+import kr.java.documind.domain.archive.document.model.event.DocumentVectorCreateEvent;
+import kr.java.documind.domain.archive.document.model.event.DocumentVectorDeleteEvent;
+import kr.java.documind.domain.archive.document.model.event.DocumentVectorReplaceEvent;
+import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.domain.member.model.entity.Project;
-import kr.java.documind.domain.member.model.repository.ProjectRepository;
 import kr.java.documind.global.entity.DomainSource;
-import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
-import kr.java.documind.global.exception.NotFoundException;
 import kr.java.documind.global.exception.StorageException;
-import kr.java.documind.global.repository.DomainSourceRepository;
 import kr.java.documind.global.storage.FileStore;
+import kr.java.documind.global.storage.FileStoreResult;
 import kr.java.documind.global.util.FileUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DocumentMetadataService {
 
-    private final DocumentGroupRepository documentGroupRepository;
-    private final DocumentMetadataRepository documentMetadataRepository;
-    private final DomainSourceRepository domainSourceRepository;
-    private final ProjectRepository projectRepository;
+    private static final Set<String> EMBEDDABLE_EXTENSIONS = Set.of("pdf");
+
+    private final DocumentGroupManager documentGroupManager;
+    private final DocumentMetadataManager documentMetadataManager;
+
     private final FileStore fileStore;
+    private final ApplicationEventPublisher eventPublisher;
 
-    // ==================== DocumentViewController ====================
-
-    public DocumentDetailResponse getDocumentDetail(Long documentId) {
-        DocumentMetadata metadata = findMetadataById(documentId);
-        DocumentGroup group = metadata.getDocumentGroup();
+    public DocumentDetailResponse getDocumentDetail(UUID projectId, Long documentId) {
+        DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
+        DocumentGroup group = documentMetadata.getDocumentGroup();
 
         List<DocumentMetadataResponse> versions =
-                documentMetadataRepository
-                        .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(
-                                group)
-                        .stream()
+                documentMetadataManager.findVersionsByGroup(group).stream()
                         .map(DocumentMetadataResponse::from)
                         .toList();
 
-        return DocumentDetailResponse.of(metadata, group, versions);
+        return DocumentDetailResponse.of(documentMetadata, group, versions);
     }
 
-    // ==================== DocumentMetadataApiController ====================
-
-    public DocumentDownloadResult downloadDocument(Long documentId) {
-        DocumentMetadata metadata = findMetadataById(documentId);
-        Resource resource = fileStore.load(metadata.getStoredKey());
-        return DocumentDownloadResult.of(resource, metadata);
+    public DocumentDownloadResult downloadDocument(UUID projectId, Long documentId) {
+        DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
+        Resource resource = fileStore.load(documentMetadata.getStoredKey());
+        return DocumentDownloadResult.of(resource, documentMetadata);
     }
 
     @Transactional
@@ -74,128 +78,109 @@ public class DocumentMetadataService {
             UUID projectId, DocumentUploadRequest request, MultipartFile file) {
         validateFile(file);
 
-        Project project = findProjectById(projectId);
+        Project project = documentGroupManager.findProjectById(projectId);
 
-        validateGroupNameUniqueness(project, request.category(), request.groupName());
+        documentGroupManager.validateGroupNameUniqueness(
+                projectId, request.category(), request.groupName());
 
         // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
         DocumentGroup group =
-                documentGroupRepository.save(
+                documentGroupManager.save(
                         DocumentGroup.create(project, request.category(), request.groupName(), ""));
 
         return saveFileAndCreateMetadata(group, file, request);
     }
 
     @Transactional
-    public void updateDocument(Long documentId, DocumentUpdateRequest request, MultipartFile file) {
-        DocumentMetadata metadata = findMetadataById(documentId);
-
-        boolean isProcessed = Boolean.TRUE.equals(request.isProcessed());
-
-        boolean versionChanged =
-                metadata.getMajorVersion() != request.majorVersion()
-                        || metadata.getMinorVersion() != request.minorVersion()
-                        || metadata.getPatchVersion() != request.patchVersion();
-
-        boolean processedChanged = metadata.isProcessed() != isProcessed;
-
-        String newHash = computeHashIfChanged(metadata, file);
-        boolean fileChanged = newHash != null;
-
-        if (!versionChanged && !fileChanged && !processedChanged) {
-            throw new ConflictException("문서 정보가 현재와 동일합니다.");
-        }
-
-        DocumentGroup group = metadata.getDocumentGroup();
-
-        if (versionChanged) {
-            validateVersionUniqueness(group, request);
-        }
-
-        if (fileChanged) {
-            replaceFile(metadata, file, newHash);
-        }
-
-        if (versionChanged) {
-            metadata.updateVersion(
-                    request.majorVersion(), request.minorVersion(), request.patchVersion());
-        }
-
-        if (processedChanged) {
-            metadata.changeProcessed(isProcessed);
-        }
-
-        metadata.markModified();
-    }
-
-    @Transactional
-    public void deleteDocument(Long documentId) {
-        DocumentMetadata metadata = findMetadataById(documentId);
-        DocumentGroup group = metadata.getDocumentGroup();
-
-        DomainSource domainSource = metadata.getDomainSource();
-        documentMetadataRepository.delete(metadata);
-        domainSourceRepository.delete(domainSource);
-        fileStore.delete(metadata.getStoredKey());
-
-        if (documentMetadataRepository.countByDocumentGroup(group) == 0) {
-            documentGroupRepository.delete(group);
-        }
-    }
-
-    // ==================== DocumentGroupApiController ====================
-
-    @Transactional
-    public DocumentMetadataResponse uploadNewVersion(
-            Long groupId, NewVersionDocumentUploadRequest request, MultipartFile file) {
+    public DocumentMetadataResponse uploadNewVersionDocument(
+            UUID projectId,
+            Long groupId,
+            NewVersionDocumentUploadRequest request,
+            MultipartFile file) {
         validateFile(file);
 
-        DocumentGroup group =
-                documentGroupRepository
-                        .findById(groupId)
-                        .orElseThrow(
-                                () ->
-                                        new NotFoundException(
-                                                String.format(
-                                                        "문서 그룹(id=%d)을 찾을 수 없습니다.", groupId)));
+        DocumentGroup group = documentGroupManager.findByIdAndProjectId(groupId, projectId);
 
         validateVersionUniqueness(group, request);
 
         return saveFileAndCreateMetadata(group, file, request);
     }
 
-    // ==================== private ====================
+    @Transactional
+    public void updateDocument(
+            UUID projectId, Long documentId, DocumentUpdateRequest request, MultipartFile file) {
+        DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
 
-    private DocumentMetadata findMetadataById(Long documentId) {
-        return documentMetadataRepository
-                .findById(documentId)
-                .orElseThrow(
-                        () ->
-                                new NotFoundException(
-                                        String.format("문서(id=%d)를 찾을 수 없습니다.", documentId)));
+        boolean isProcessed = Boolean.TRUE.equals(request.isProcessed());
+
+        boolean versionChanged =
+                documentMetadata.getMajorVersion() != request.majorVersion()
+                        || documentMetadata.getMinorVersion() != request.minorVersion()
+                        || documentMetadata.getPatchVersion() != request.patchVersion();
+
+        boolean processedChanged = documentMetadata.isProcessed() != isProcessed;
+
+        String newHash = computeHashIfChanged(documentMetadata, file);
+        boolean fileChanged = newHash != null;
+
+        if (!versionChanged && !fileChanged && !processedChanged) {
+            throw new ConflictException("문서 정보가 현재와 동일합니다.");
+        }
+
+        DocumentGroup group = documentMetadata.getDocumentGroup();
+
+        if (versionChanged) {
+            validateVersionUniqueness(group, request);
+        }
+
+        if (fileChanged) {
+            validateHashUniqueness(newHash, documentMetadata.getDocumentGroup().getProjectId());
+            replaceFile(documentMetadata, file, newHash);
+        }
+
+        if (versionChanged) {
+            documentMetadata.updateVersion(
+                    request.majorVersion(), request.minorVersion(), request.patchVersion());
+        }
+
+        if (processedChanged) {
+            documentMetadata.changeProcessed(isProcessed);
+        }
+
+        documentMetadata.markModified();
     }
 
-    private void validateGroupNameUniqueness(Project project, String category, String groupName) {
-        if (documentGroupRepository.existsByProjectAndCategoryAndGroupName(
-                project, category, groupName)) {
-            throw new ConflictException(
-                    String.format("카테고리(%s)에 이미 존재하는 문서 그룹명(%s)입니다.", category, groupName));
+    @Transactional
+    public void deleteDocument(UUID projectId, Long documentId) {
+        DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
+        DocumentGroup group = documentMetadata.getDocumentGroup();
+        String storedKey = documentMetadata.getStoredKey();
+
+        fileStore.deleteOnCommit(storedKey);
+        eventPublisher.publishEvent(new DocumentVectorDeleteEvent(documentMetadata.getId()));
+
+        documentMetadataManager.delete(documentMetadata);
+
+        if (documentMetadataManager.countByGroup(group) == 0) {
+            documentGroupManager.delete(group);
         }
     }
 
-    private Project findProjectById(UUID projectId) {
-        return projectRepository
-                .findById(projectId)
-                .orElseThrow(() -> new NotFoundException("프로젝트를 찾을 수 없습니다."));
+    // ==================== private ====================
+
+    private DocumentMetadata findMetadata(Long documentId, UUID projectId) {
+        return documentMetadataManager.findByIdAndProjectId(documentId, projectId);
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file.isEmpty() || !StringUtils.hasText(file.getOriginalFilename())) {
+            throw new BadRequestException("파일이 비어있거나 파일명이 없습니다.");
+        }
     }
 
     private void validateVersionUniqueness(DocumentGroup group, VersionFields version) {
-        if (documentMetadataRepository
-                .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                        group,
-                        version.majorVersion(),
-                        version.minorVersion(),
-                        version.patchVersion())) {
+        if (documentMetadataManager.existsByGroupAndVersion(
+                group, version.majorVersion(), version.minorVersion(), version.patchVersion())) {
             throw new ConflictException(
                     String.format(
                             "문서 그룹 내에 이미 존재하는 버전(v%d.%d.%d)입니다.",
@@ -205,94 +190,136 @@ public class DocumentMetadataService {
         }
     }
 
-    private void validateFile(MultipartFile file) {
-        if (file.isEmpty() || !StringUtils.hasText(file.getOriginalFilename())) {
-            throw new BadRequestException("파일이 비어있거나 파일명이 없습니다.");
-        }
-    }
-
-    private String computeHashIfChanged(DocumentMetadata metadata, MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            return null;
-        }
-        try {
-            String hash = FileUtil.computeSha256(file);
-            return hash.equals(metadata.getHash()) ? null : hash;
-        } catch (IOException e) {
-            throw new StorageException("파일 해시 계산에 실패했습니다.", e);
-        }
-    }
-
-    private void replaceFile(DocumentMetadata metadata, MultipartFile file, String newHash) {
-        UUID projectId = metadata.getDocumentGroup().getProjectId();
-        if (documentMetadataRepository.existsByProjectIdAndHash(projectId, newHash)) {
+    private void validateHashUniqueness(String hash, UUID projectId) {
+        if (documentMetadataManager.existsByProjectIdAndHash(projectId, hash)) {
             throw new ConflictException("동일한 내용의 파일이 프로젝트 내에 이미 존재합니다.");
         }
-
-        try {
-            String storedKey = fileStore.save(file);
-            fileStore.registerRollback(storedKey);
-
-            String oldStoredKey = metadata.getStoredKey();
-            ParsedFile parsed = parseFilename(file);
-
-            // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
-            metadata.updateFile(
-                    parsed.filename(), "", parsed.extension(), newHash, file.getSize(), storedKey);
-
-            fileStore.delete(oldStoredKey);
-        } catch (IOException e) {
-            throw new StorageException("파일 업로드에 실패했습니다.", e);
-        }
-    }
-
-    private record ParsedFile(String filename, String extension) {}
-
-    private ParsedFile parseFilename(MultipartFile file) {
-        String originalFilename = file.getOriginalFilename();
-        return new ParsedFile(
-                StringUtils.stripFilenameExtension(originalFilename),
-                StringUtils.getFilenameExtension(originalFilename));
     }
 
     private DocumentMetadataResponse saveFileAndCreateMetadata(
             DocumentGroup group, MultipartFile file, VersionFields version) {
-        try {
-            String storedKey = fileStore.save(file);
-            fileStore.registerRollback(storedKey);
+        String hash = FileUtil.computeSha256(file);
+        validateHashUniqueness(hash, group.getProjectId());
 
-            ParsedFile parsed = parseFilename(file);
-            String hash = FileUtil.computeSha256(file);
+        FileStoreResult storeResult = fileStore.save(file);
+        fileStore.deleteOnRollback(storeResult.storedKey());
 
-            UUID projectId = group.getProjectId();
-            if (documentMetadataRepository.existsByProjectIdAndHash(projectId, hash)) {
-                throw new ConflictException("동일한 내용의 파일이 프로젝트 내에 이미 존재합니다.");
+        String displayName = extractDisplayName(file);
+        String extension = storeResult.extension();
+
+        // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
+        DomainSource domainSource = documentMetadataManager.createDomainSource();
+        boolean isProcessed = Boolean.TRUE.equals(version.isProcessed());
+
+        DocumentMetadata documentMetadata =
+                documentMetadataManager.save(
+                        DocumentMetadata.builder()
+                                .domainSource(domainSource)
+                                .documentGroup(group)
+                                .documentName(displayName)
+                                .choseong("")
+                                .extension(extension)
+                                .majorVersion(version.majorVersion())
+                                .minorVersion(version.minorVersion())
+                                .patchVersion(version.patchVersion())
+                                .hash(hash)
+                                .size(file.getSize())
+                                .storedKey(storeResult.storedKey())
+                                .isProcessed(isProcessed)
+                                .embeddingStatus(EmbeddingStatus.NONE)
+                                .uploadedAt(LocalDateTime.now())
+                                .build());
+
+        handleEmbeddingAfterSave(documentMetadata, file, extension, false);
+
+        return DocumentMetadataResponse.from(documentMetadata);
+    }
+
+    private String extractDisplayName(MultipartFile file) {
+        return StringUtils.stripFilenameExtension(file.getOriginalFilename());
+    }
+
+    private String computeHashIfChanged(DocumentMetadata documentMetadata, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+        String hash = FileUtil.computeSha256(file);
+        return hash.equals(documentMetadata.getHash()) ? null : hash;
+    }
+
+    private void replaceFile(
+            DocumentMetadata documentMetadata, MultipartFile file, String newHash) {
+        FileStoreResult storeResult = fileStore.save(file);
+        fileStore.deleteOnRollback(storeResult.storedKey());
+
+        String oldStoredKey = documentMetadata.getStoredKey();
+        String displayName = extractDisplayName(file);
+        String extension = storeResult.extension();
+
+        // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
+        documentMetadata.updateFile(
+                displayName, "", extension, newHash, file.getSize(), storeResult.storedKey());
+
+        fileStore.deleteOnCommit(oldStoredKey);
+
+        handleEmbeddingAfterSave(documentMetadata, file, extension, true);
+    }
+
+    private boolean isEmbeddable(String extension) {
+        return extension != null && EMBEDDABLE_EXTENSIONS.contains(extension.toLowerCase());
+    }
+
+    private void handleEmbeddingAfterSave(
+            DocumentMetadata documentMetadata,
+            MultipartFile file,
+            String extension,
+            boolean isReplace) {
+        if (isEmbeddable(extension)) {
+            documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
+            Path tempFile = saveTempFile(file, extension);
+            deleteTempFileOnRollback(tempFile);
+
+            if (isReplace) {
+                eventPublisher.publishEvent(
+                        new DocumentVectorReplaceEvent(documentMetadata.getId(), tempFile));
+            } else {
+                eventPublisher.publishEvent(
+                        new DocumentVectorCreateEvent(documentMetadata.getId(), tempFile));
             }
+        } else {
+            documentMetadata.changeEmbeddingStatus(EmbeddingStatus.NONE);
 
-            // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
-            DomainSource domainSource =
-                    domainSourceRepository.save(DomainSource.create(SourceType.DOCUMENT));
-            boolean isProcessed = Boolean.TRUE.equals(version.isProcessed());
-            DocumentMetadata metadata =
-                    documentMetadataRepository.save(
-                            DocumentMetadata.create(
-                                    domainSource,
-                                    group,
-                                    parsed.filename(),
-                                    "",
-                                    parsed.extension(),
-                                    version.majorVersion(),
-                                    version.minorVersion(),
-                                    version.patchVersion(),
-                                    hash,
-                                    file.getSize(),
-                                    storedKey,
-                                    isProcessed,
-                                    LocalDateTime.now()));
+            if (isReplace) {
+                eventPublisher.publishEvent(
+                        new DocumentVectorDeleteEvent(documentMetadata.getId()));
+            }
+        }
+    }
 
-            return DocumentMetadataResponse.from(metadata);
+    private void deleteTempFileOnRollback(Path tempFile) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (status == STATUS_ROLLED_BACK) {
+                            try {
+                                Files.deleteIfExists(tempFile);
+                            } catch (IOException e) {
+                                log.warn("롤백 후 임시 파일 삭제 실패: {}", tempFile, e);
+                            }
+                        }
+                    }
+                });
+    }
+
+    private Path saveTempFile(MultipartFile file, String extension) {
+        try {
+            Path tempFile = Files.createTempFile("documind-etl-", "." + extension);
+            file.transferTo(tempFile);
+            return tempFile;
         } catch (IOException e) {
-            throw new StorageException("파일 업로드에 실패했습니다.", e);
+            log.error("[ETL] 임시 파일 저장 실패", e);
+            throw new StorageException("임시 파일 저장에 실패했습니다.", e);
         }
     }
 }

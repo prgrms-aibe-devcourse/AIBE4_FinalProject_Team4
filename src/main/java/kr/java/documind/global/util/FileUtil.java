@@ -2,18 +2,18 @@ package kr.java.documind.global.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import kr.java.documind.global.exception.StorageException;
 import org.springframework.web.multipart.MultipartFile;
 
 public final class FileUtil {
 
     private FileUtil() {}
 
-    public static String computeSha256(MultipartFile file) throws IOException {
+    public static String computeSha256(MultipartFile file) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             try (InputStream is = file.getInputStream();
@@ -25,7 +25,9 @@ public final class FileUtil {
             }
             return HexFormat.of().formatHex(digest.digest());
         } catch (NoSuchAlgorithmException e) {
-            throw new StorageException("SHA-256 알고리즘을 사용할 수 없습니다.");
+            throw new IllegalStateException("SHA-256 알고리즘을 사용할 수 없습니다.", e);
+        } catch (IOException e) {
+            throw new UncheckedIOException("파일 해시 계산에 실패했습니다.", e);
         }
     }
 }

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
+import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 
 public record DocumentDetailResponse(
         Long documentId,
@@ -13,6 +14,7 @@ public record DocumentDetailResponse(
         String groupName,
         String category,
         boolean isProcessed,
+        EmbeddingStatus embeddingStatus,
         LocalDateTime uploadedAt,
         LocalDateTime reuploadedAt,
         List<DocumentMetadataResponse> versions) {
@@ -29,6 +31,7 @@ public record DocumentDetailResponse(
                 group.getGroupName(),
                 group.getCategory(),
                 metadata.isProcessed(),
+                metadata.getEmbeddingStatus(),
                 metadata.getUploadedAt(),
                 metadata.getReuploadedAt(),
                 versions);
