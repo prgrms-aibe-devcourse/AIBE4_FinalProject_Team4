@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
@@ -20,9 +19,7 @@ public class ProjectViewController {
 
     @RequireProjectMember
     @GetMapping("/{publicId}/settings")
-    public String settings(
-            @CurrentProject ProjectRequestContext ctx,
-            Model model) {
+    public String settings(@CurrentProject ProjectRequestContext ctx, Model model) {
 
         var pageData =
                 projectService.getProjectSettingPageData(ctx.publicId(), ctx.actorMemberId());

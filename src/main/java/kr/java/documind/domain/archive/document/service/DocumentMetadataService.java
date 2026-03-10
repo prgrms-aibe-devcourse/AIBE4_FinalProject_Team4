@@ -22,7 +22,7 @@ import kr.java.documind.domain.archive.document.model.event.DocumentVectorCreate
 import kr.java.documind.domain.archive.document.model.event.DocumentVectorDeleteEvent;
 import kr.java.documind.domain.archive.document.model.event.DocumentVectorReplaceEvent;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
-import kr.java.documind.domain.member.model.entity.Project;
+import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;

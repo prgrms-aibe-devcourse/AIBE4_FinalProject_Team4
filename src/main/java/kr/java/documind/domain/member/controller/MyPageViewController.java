@@ -2,8 +2,8 @@ package kr.java.documind.domain.member.controller;
 
 import java.util.List;
 import kr.java.documind.domain.auth.model.dto.HeaderInfo;
-import kr.java.documind.domain.member.model.dto.ProjectSummary;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
+import kr.java.documind.domain.member.model.dto.ProjectSummary;
 import kr.java.documind.domain.member.service.CompanyService;
 import kr.java.documind.domain.member.service.CompanyService.AdminPageData;
 import kr.java.documind.domain.member.service.MemberService;

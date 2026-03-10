@@ -5,22 +5,22 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
-import kr.java.documind.domain.member.event.InvitationCreatedEvent;
 import kr.java.documind.domain.auth.exception.AlreadyProjectMemberException;
+import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
+import kr.java.documind.domain.auth.model.entity.Project;
+import kr.java.documind.domain.auth.model.repository.ProjectRepository;
+import kr.java.documind.domain.member.event.InvitationCreatedEvent;
 import kr.java.documind.domain.member.exception.InvalidInviteTokenException;
 import kr.java.documind.domain.member.exception.InviteEmailMismatchException;
-import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
 import kr.java.documind.domain.member.model.dto.InviteSendRequest;
 import kr.java.documind.domain.member.model.dto.InviteViewData;
 import kr.java.documind.domain.member.model.entity.Company;
 import kr.java.documind.domain.member.model.entity.Invitation;
 import kr.java.documind.domain.member.model.entity.Member;
-import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.domain.member.model.entity.ProjectMember;
 import kr.java.documind.domain.member.model.enums.InvitationStatus;
 import kr.java.documind.domain.member.model.repository.InvitationRepository;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
-import kr.java.documind.domain.auth.model.repository.ProjectRepository;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ForbiddenException;
 import kr.java.documind.global.util.HmacApiKeyUtil;
@@ -167,7 +167,8 @@ public class InvitationService {
         }
     }
 
-    private void saveTokenToRedis(String tokenHash, UUID invitationId,LocalDateTime now, LocalDateTime expiresAt) {
+    private void saveTokenToRedis(
+            String tokenHash, UUID invitationId, LocalDateTime now, LocalDateTime expiresAt) {
         long ttlSeconds = ChronoUnit.SECONDS.between(now, expiresAt);
         redisTemplate
                 .opsForValue()

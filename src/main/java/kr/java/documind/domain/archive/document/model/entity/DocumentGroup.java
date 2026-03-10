@@ -9,7 +9,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
-import kr.java.documind.domain.member.model.entity.Project;
+import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.global.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Getter;

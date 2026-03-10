@@ -3,12 +3,12 @@ package kr.java.documind.domain.member.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.member.model.dto.ApiKeyIssueResponse;
 import kr.java.documind.domain.member.model.dto.ApiKeyStatusUpdateRequest;
 import kr.java.documind.domain.member.model.dto.ProfileImageResponse;
 import kr.java.documind.domain.member.model.dto.ProjectCreateRequest;
 import kr.java.documind.domain.member.model.dto.ProjectCreateResponse;
-import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.member.model.dto.ProjectUpdateRequest;
 import kr.java.documind.domain.member.service.ProjectService;
 import kr.java.documind.global.annotation.CurrentProject;
@@ -67,8 +67,7 @@ public class ProjectApiController {
             value = "/{publicId}/profile-image",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ProfileImageResponse>> uploadProfileImage(
-            @CurrentProject ProjectRequestContext ctx,
-            @RequestPart("file") MultipartFile file) {
+            @CurrentProject ProjectRequestContext ctx, @RequestPart("file") MultipartFile file) {
 
         ProfileImageResponse response =
                 projectService.uploadProjectProfileImage(ctx.publicId(), ctx.actorMemberId(), file);
@@ -121,8 +120,7 @@ public class ProjectApiController {
             @CurrentProject ProjectRequestContext ctx,
             @Valid @RequestBody ApiKeyStatusUpdateRequest request) {
 
-        projectService.toggleApiKeyStatus(
-                ctx.publicId(), ctx.actorMemberId(), request.status());
+        projectService.toggleApiKeyStatus(ctx.publicId(), ctx.actorMemberId(), request.status());
         return ResponseEntity.ok(ApiResponse.success("API 키 상태가 변경되었습니다."));
     }
 }

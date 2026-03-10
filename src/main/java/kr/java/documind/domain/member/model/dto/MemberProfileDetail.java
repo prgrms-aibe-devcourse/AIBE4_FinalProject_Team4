@@ -1,10 +1,10 @@
 package kr.java.documind.domain.member.model.dto;
 
 import java.time.format.DateTimeFormatter;
+import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.domain.member.model.entity.Company;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.CompanyStatus;
-import kr.java.documind.domain.auth.model.enums.GlobalRole;
 
 public record MemberProfileDetail(
         String name,

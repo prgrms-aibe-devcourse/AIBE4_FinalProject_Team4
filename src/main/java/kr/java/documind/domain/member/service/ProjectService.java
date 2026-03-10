@@ -6,6 +6,11 @@ import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.auth.exception.DeletedProjectException;
 import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
+import kr.java.documind.domain.auth.model.entity.Project;
+import kr.java.documind.domain.auth.model.entity.ProjectApiKey;
+import kr.java.documind.domain.auth.model.enums.ProjectRole;
+import kr.java.documind.domain.auth.model.repository.ProjectApiKeyRepository;
+import kr.java.documind.domain.auth.model.repository.ProjectRepository;
 import kr.java.documind.domain.member.model.dto.ApiKeyIssueResponse;
 import kr.java.documind.domain.member.model.dto.ProfileImageResponse;
 import kr.java.documind.domain.member.model.dto.ProjectApiKeyInfo;
@@ -15,16 +20,11 @@ import kr.java.documind.domain.member.model.dto.ProjectMemberRow;
 import kr.java.documind.domain.member.model.dto.ProjectSettingPageData;
 import kr.java.documind.domain.member.model.dto.ProjectSummary;
 import kr.java.documind.domain.member.model.entity.Member;
-import kr.java.documind.domain.auth.model.entity.Project;
-import kr.java.documind.domain.auth.model.entity.ProjectApiKey;
 import kr.java.documind.domain.member.model.entity.ProjectMember;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.enums.ApiKeyStatus;
 import kr.java.documind.domain.member.model.enums.CompanyStatus;
-import kr.java.documind.domain.auth.model.enums.ProjectRole;
-import kr.java.documind.domain.auth.model.repository.ProjectApiKeyRepository;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
-import kr.java.documind.domain.auth.model.repository.ProjectRepository;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ForbiddenException;
 import kr.java.documind.global.exception.NotFoundException;
@@ -193,7 +193,8 @@ public class ProjectService {
                                     project, ApiKeyStatus.REVOKED);
             if (keyOpt.isPresent()) {
                 ProjectApiKey key = keyOpt.get();
-                String masked = HmacApiKeyUtil.maskApiKey(key.getKeyPrefix() + "..." + key.getKeyLast4());
+                String masked =
+                        HmacApiKeyUtil.maskApiKey(key.getKeyPrefix() + "..." + key.getKeyLast4());
                 apiKeyInfo = new ProjectApiKeyInfo(true, masked, key.getApiKeyStatus());
             } else {
                 apiKeyInfo = new ProjectApiKeyInfo(false, null, null);
