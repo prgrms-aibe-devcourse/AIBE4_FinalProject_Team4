@@ -327,18 +327,19 @@ public class LogBufferService {
     }
 
     /**
-     * 처리 실패한 메시지를 ACK하여 PEL에서 제거
+     * 처리 실패한 메시지를 ACK 및 DEL하여 PEL과 스트림에서 제거
      *
      * @param recordId 실패한 메시지의 RecordId
      */
     public void acknowledgeFailedMessage(RecordId recordId) {
         try {
             redisTemplate.opsForStream().acknowledge(streamKey, consumerGroup, recordId);
+            redisTemplate.opsForStream().delete(streamKey, recordId);
             log.warn(
-                    "[ACK] Failed message acknowledged to prevent PEL buildup. RecordId: {}",
+                    "[ACK & DEL] Failed message acknowledged and deleted to prevent stream/PEL buildup. RecordId: {}",
                     recordId);
         } catch (Exception e) {
-            log.error("[ACK] Failed to acknowledge message. RecordId: {}", recordId, e);
+            log.error("[ACK & DEL] Failed to acknowledge and delete message. RecordId: {}", recordId, e);
         }
     }
 }
