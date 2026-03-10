@@ -4,9 +4,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.enums.ErrorType;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.issue.service.fingerprint.FingerprintResult;
+import kr.java.documind.domain.issue.service.severity.IssueSeverityService;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class IssueGroupingService {
 
     private final IssueRepository issueRepository;
+    private final IssueSeverityService issueSeverityService;
 
     /**
      * 로그에 대한 이슈를 찾거나 생성
@@ -51,9 +54,14 @@ public class IssueGroupingService {
                                 existingIssue.incrementOccurrence(gameLog.getOccurredAt());
                                 log.debug(
                                         "Existing issue found. issueId={}, fingerprint={}, occurrenceCount={}",
-                                        existingIssue.getIssueId(),
+                                        existingIssue.getId(),
                                         fingerprint,
                                         existingIssue.getOccurrenceCount());
+
+                                // 심각도 재계산 (발생 빈도 변경으로 점수 변경 가능)
+                                issueSeverityService.calculateAndUpdateSeverity(
+                                        existingIssue, gameLog);
+
                                 return existingIssue;
                             })
                     .orElseGet(
@@ -61,12 +69,16 @@ public class IssueGroupingService {
                                 // 새 이슈 생성
                                 Issue newIssue = createNewIssue(gameLog, fingerprintResult);
                                 issueRepository.save(newIssue);
-                                log.info(
+                                log.debug(
                                         "New issue created. issueId={}, fingerprint={}, quality={}, status={}",
-                                        newIssue.getIssueId(),
+                                        newIssue.getId(),
                                         fingerprint,
                                         fingerprintResult.getQuality(),
                                         newIssue.getStatus());
+
+                                // 신규 이슈 심각도 계산
+                                issueSeverityService.calculateAndUpdateSeverity(newIssue, gameLog);
+
                                 return newIssue;
                             });
         } catch (DataIntegrityViolationException e) {
@@ -82,10 +94,15 @@ public class IssueGroupingService {
                     .map(
                             existingIssue -> {
                                 existingIssue.incrementOccurrence(gameLog.getOccurredAt());
-                                log.info(
+                                log.debug(
                                         "Recovered from race condition. issueId={}, occurrenceCount={}",
-                                        existingIssue.getIssueId(),
+                                        existingIssue.getId(),
                                         existingIssue.getOccurrenceCount());
+
+                                // 심각도 재계산
+                                issueSeverityService.calculateAndUpdateSeverity(
+                                        existingIssue, gameLog);
+
                                 return existingIssue;
                             })
                     .orElseThrow(
@@ -97,7 +114,7 @@ public class IssueGroupingService {
     }
 
     /**
-     * 새 이슈 생성
+     * 새 이슈 생성 (ERD 기준)
      *
      * @param gameLog 게임 로그
      * @param fingerprintResult 핑거프린트 생성 결과
@@ -109,24 +126,69 @@ public class IssueGroupingService {
         // 이슈 제목 생성 (archive에서 첫 줄 추출)
         String title = extractTitle(gameLog.getArchive());
 
-        // 품질에 따른 상태 결정
-        IssueStatus status =
-                fingerprintResult.requiresReview() ? IssueStatus.REQUIRES_REVIEW : IssueStatus.OPEN;
+        // ErrorType 추론 (archive에서 예외 클래스명 파싱)
+        ErrorType errorType = inferErrorType(gameLog.getArchive());
+
+        // StackKey 생성 (archive에서 직접 추출)
+        String stackKey = extractStackKeyFromArchive(gameLog.getArchive());
 
         return Issue.builder()
-                .issueId(UUID.randomUUID())
+                .assigneeId(UUID.randomUUID()) // TODO: 실제 담당자 배정 로직 필요
                 .projectId(gameLog.getProjectId())
                 .fingerprint(fingerprintResult.getFingerprint())
                 .title(title)
-                .status(status)
-                .severity(gameLog.getSeverity())
-                .fingerprintQuality(fingerprintResult.getQuality())
-                .occurrenceCount(1L)
+                .status(IssueStatus.TODO)
+                .errorType(errorType)
+                .stackKey(stackKey)
+                .occurrenceCount(1)
                 .firstOccurredAt(gameLog.getOccurredAt())
                 .lastOccurredAt(gameLog.getOccurredAt())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
+    }
+
+    /**
+     * archive에서 ErrorType 추론
+     *
+     * @param archive 로그 본문
+     * @return ErrorType
+     */
+    private ErrorType inferErrorType(String archive) {
+        if (archive == null || archive.isEmpty()) {
+            return ErrorType.UNKNOWN;
+        }
+
+        // 첫 줄에서 예외 클래스명 추출 (예: "NullPointerException: ...")
+        String firstLine = archive.split("\\r?\\n")[0];
+        return ErrorType.fromExceptionClassName(firstLine);
+    }
+
+    /**
+     * archive에서 stackKey 추출
+     *
+     * <p>스택트레이스의 첫 번째 "at" 라인을 stackKey로 사용
+     *
+     * @param archive 로그 본문
+     * @return 스택 키 (없으면 null)
+     */
+    private String extractStackKeyFromArchive(String archive) {
+        if (archive == null || archive.isEmpty()) {
+            return null;
+        }
+
+        // 스택트레이스에서 첫 번째 "at " 라인 찾기
+        String[] lines = archive.split("\\r?\\n");
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("at ")) {
+                // "at com.example.Service.method(Service.java:42)" 형식
+                // 최대 255자로 제한 (DB 컬럼 길이)
+                return trimmed.length() > 255 ? trimmed.substring(0, 255) : trimmed;
+            }
+        }
+
+        return null;
     }
 
     /**

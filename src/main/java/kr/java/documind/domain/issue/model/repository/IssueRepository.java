@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface IssueRepository extends JpaRepository<Issue, UUID> {
+public interface IssueRepository extends JpaRepository<Issue, Long> {
 
     /**
      * fingerprint와 projectId로 이슈 조회
