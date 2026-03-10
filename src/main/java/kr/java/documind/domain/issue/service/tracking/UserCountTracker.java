@@ -59,6 +59,8 @@ public class UserCountTracker {
      *
      * <p>동일한 userId를 여러 번 추가해도 1명으로 카운팅됨 (HyperLogLog 특성)
      *
+     * <p>TTL 7일 자동 설정 (전체 로그 카운터와 동일한 보관 정책)
+     *
      * @param fingerprint 이슈 고유 지문
      * @param userId 사용자 ID
      */
@@ -76,6 +78,13 @@ public class UserCountTracker {
         try {
             String key = buildKey(fingerprint);
             redisTemplate.opsForHyperLogLog().add(key, userId);
+
+            // TTL 설정 (없거나 -1인 경우에만 설정)
+            Long ttl = redisTemplate.getExpire(key);
+            if (ttl == null || ttl == -1) {
+                redisTemplate.expire(key, Duration.ofDays(7));
+                log.debug("HyperLogLog TTL 설정: key={}, ttl=7일", key);
+            }
 
             log.debug("사용자 추가 완료: Fingerprint={}, userId={}, key={}", fingerprint, userId, key);
         } catch (Exception e) {

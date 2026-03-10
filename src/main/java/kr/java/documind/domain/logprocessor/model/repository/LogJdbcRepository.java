@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -165,5 +167,27 @@ public class LogJdbcRepository {
                     batchEnd,
                     batchList.size());
         }
+    }
+
+    /**
+     * 특정 시간 범위 내 fingerprint별 로그 수 조회
+     *
+     * <p>FrequencyStrategy에서 윈도우 범위 내 에러 수 계산 시 사용
+     *
+     * @param projectId 프로젝트 ID
+     * @param fingerprint 이슈 고유 지문
+     * @param start 시작 시각 (inclusive)
+     * @param end 종료 시각 (inclusive)
+     * @return 범위 내 로그 수
+     */
+    public long countByProjectIdAndFingerprintAndOccurredAtBetween(
+            UUID projectId, String fingerprint, OffsetDateTime start, OffsetDateTime end) {
+        String sql =
+                "SELECT COUNT(*) FROM game_log "
+                        + "WHERE project_id = ? AND fingerprint = ? AND occurred_at BETWEEN ? AND ?";
+
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, projectId, fingerprint, start, end);
+
+        return count != null ? count : 0L;
     }
 }

@@ -98,7 +98,8 @@ public class LogBufferService {
     public void addFromDto(RawLogRequest dto) {
         GameLog logEntity = logMapper.toEntity(dto);
 
-        // 전체 로그 유입량 추적 (샘플링 여부와 무관하게 모든 로그 카운트)
+        // 전체 로그 유입량 추적 (샘플링 여부와 무관하게 모든 API 로그 카운트)
+        // Redis Stream 로그는 flush()에서 카운트하므로 여기서는 API 로그만 추적
         userCountTracker.trackTotalLogs(logEntity.getProjectId(), logEntity.getOccurredAt());
 
         // 샘플링 체크 (Severity + Fingerprint + Backpressure)
@@ -159,11 +160,15 @@ public class LogBufferService {
                 long latencyMs = System.currentTimeMillis() - start;
                 backpressureManager.recordLatency(latencyMs);
 
-                // 전체 로그 유입량 추적 (Redis Stream에서 온 로그들)
-                logs.forEach(
-                        log ->
-                                userCountTracker.trackTotalLogs(
-                                        log.getProjectId(), log.getOccurredAt()));
+                // 전체 로그 유입량 추적 (Redis Stream에서 온 로그만)
+                // recordId가 있는 경우만 카운트 (API 로그는 addFromDto()에서 이미 카운트됨)
+                wrappersToSave.stream()
+                        .filter(w -> w.recordId() != null)
+                        .forEach(
+                                w ->
+                                        userCountTracker.trackTotalLogs(
+                                                w.log().getProjectId(),
+                                                w.log().getOccurredAt()));
 
                 // 로그 저장 후 이슈 그룹핑 수행
                 try {
@@ -243,6 +248,16 @@ public class LogBufferService {
                 long start = System.currentTimeMillis();
                 logJdbcRepository.saveAll(logs);
                 long latencyMs = System.currentTimeMillis() - start;
+
+                // 전체 로그 유입량 추적 (Redis Stream에서 온 로그만)
+                // recordId가 있는 경우만 카운트 (API 로그는 addFromDto()에서 이미 카운트됨)
+                wrappersToRetry.stream()
+                        .filter(w -> w.recordId() != null)
+                        .forEach(
+                                w ->
+                                        userCountTracker.trackTotalLogs(
+                                                w.log().getProjectId(),
+                                                w.log().getOccurredAt()));
 
                 // DLQ 재시도 성공 후 이슈 그룹핑 수행
                 try {

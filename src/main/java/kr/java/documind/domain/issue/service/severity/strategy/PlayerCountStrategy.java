@@ -24,15 +24,12 @@ public class PlayerCountStrategy implements SeverityStrategy {
     private final UserCountTracker userCountTracker;
     private final SeverityProperties severityProperties;
 
-    // Redis 중복 조회 방지를 위한 캐시 (calculate()와 generateReason() 간 공유)
-    private long cachedUserCount = 0;
-
     @Override
     public int calculate(Issue issue, GameLog log) {
-        // Redis HyperLogLog에서 실제 플레이어 수 조회 (캐시에 저장)
-        cachedUserCount = userCountTracker.getAffectedUserCount(issue.getFingerprint());
+        // Redis HyperLogLog에서 실제 플레이어 수 조회
+        long userCount = userCountTracker.getAffectedUserCount(issue.getFingerprint());
 
-        return mapUserCountToScore(cachedUserCount);
+        return mapUserCountToScore(userCount);
     }
 
     /**
@@ -60,7 +57,8 @@ public class PlayerCountStrategy implements SeverityStrategy {
             return null;
         }
 
-        // 캐시된 값 사용 (중복 Redis 조회 방지)
-        return String.format("플레이어 %,d명 영향 (%d점)", cachedUserCount, score);
+        // generateReason()에서 플레이어 수 재조회 (동시성 안전)
+        long userCount = userCountTracker.getAffectedUserCount(issue.getFingerprint());
+        return String.format("플레이어 %,d명 영향 (%d점)", userCount, score);
     }
 }

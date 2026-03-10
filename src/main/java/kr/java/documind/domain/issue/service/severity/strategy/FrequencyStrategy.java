@@ -7,6 +7,7 @@ import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.SeverityFactor;
 import kr.java.documind.domain.issue.service.tracking.UserCountTracker;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
+import kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository;
 import kr.java.documind.global.config.SeverityProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,16 +27,14 @@ public class FrequencyStrategy implements SeverityStrategy {
 
     private final SeverityProperties severityProperties;
     private final UserCountTracker userCountTracker;
-
-    // Redis 중복 조회 방지를 위한 캐시 (calculate()와 generateReason() 간 공유)
-    private double cachedErrorRate = 0.0;
+    private final LogJdbcRepository logJdbcRepository;
 
     @Override
     public int calculate(Issue issue, GameLog log) {
         // 에러 발생 비율 계산 (전체 로그 대비)
-        cachedErrorRate = calculateErrorRate(issue);
+        double errorRate = calculateErrorRate(issue);
 
-        return mapErrorRateToScore(cachedErrorRate);
+        return mapErrorRateToScore(errorRate);
     }
 
     /**
@@ -45,6 +44,8 @@ public class FrequencyStrategy implements SeverityStrategy {
      *
      * <p>Redis TTL(7일) 제약으로 인해 계산 범위를 최근 7일로 제한
      *
+     * <p>분자(에러 수)와 분모(전체 로그)의 시간 범위를 일치시켜 정확한 비율 계산
+     *
      * @param issue 이슈
      * @return 에러 발생 비율 (%, 0.0 ~ 100.0)
      */
@@ -52,7 +53,6 @@ public class FrequencyStrategy implements SeverityStrategy {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         OffsetDateTime firstOccurred = issue.getFirstOccurredAt();
         OffsetDateTime lastOccurred = issue.getLastOccurredAt();
-        long errorCount = issue.getOccurrenceCount();
 
         // Redis TTL(7일) 이내 데이터만 사용
         // 8일 이상 지속된 이슈는 최근 7일 데이터만으로 에러율 계산
@@ -66,7 +66,12 @@ public class FrequencyStrategy implements SeverityStrategy {
                     limitedStart);
         }
 
-        // Redis에서 전체 로그 수 조회
+        // DB에서 윈도우 범위 내 에러 수 조회 (분자)
+        long errorCountWindow =
+                logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                        issue.getProjectId(), issue.getFingerprint(), limitedStart, lastOccurred);
+
+        // Redis에서 윈도우 범위 내 전체 로그 수 조회 (분모)
         long totalLogs =
                 userCountTracker.getTotalLogsInTimeRange(
                         issue.getProjectId(), limitedStart, lastOccurred);
@@ -77,18 +82,20 @@ public class FrequencyStrategy implements SeverityStrategy {
                     "전체 로그 데이터 없음. 절대적인 발생 횟수로 fallback. issueId={}, fingerprint={}",
                     issue.getId(),
                     issue.getFingerprint());
-            return calculateFallbackRate(errorCount, limitedStart, lastOccurred);
+            return calculateFallbackRate(errorCountWindow, limitedStart, lastOccurred);
         }
 
-        // 에러율 = (에러 발생 횟수 / 전체 로그 수) * 100
-        double errorRate = ((double) errorCount / totalLogs) * 100;
+        // 에러율 = (윈도우 내 에러 수 / 윈도우 내 전체 로그 수) * 100
+        double errorRate = ((double) errorCountWindow / totalLogs) * 100;
 
         log.debug(
-                "에러율 계산 완료: errorCount={}, totalLogs={}, errorRate={}%, issueId={}",
-                errorCount,
+                "에러율 계산 완료: errorCountWindow={}, totalLogs={}, errorRate={}%, issueId={}, window=[{} ~ {}]",
+                errorCountWindow,
                 totalLogs,
                 String.format("%.2f", errorRate),
-                issue.getId());
+                issue.getId(),
+                limitedStart,
+                lastOccurred);
 
         return errorRate;
     }
@@ -151,7 +158,8 @@ public class FrequencyStrategy implements SeverityStrategy {
             return null;
         }
 
-        // 캐시된 에러율 사용 (중복 계산 방지)
-        return String.format("에러율 %.2f%% (%d점)", cachedErrorRate, score);
+        // generateReason()에서 에러율 재계산 (동시성 안전)
+        double errorRate = calculateErrorRate(issue);
+        return String.format("에러율 %.2f%% (%d점)", errorRate, score);
     }
 }
