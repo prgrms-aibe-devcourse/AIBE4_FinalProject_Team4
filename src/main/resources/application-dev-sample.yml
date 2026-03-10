@@ -25,6 +25,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      database: 0 # ElastiCache 클러스터 모드 호환을 위해 명시적으로 0번 고정
 
   mail:
     host: smtp.gmail.com
@@ -95,7 +96,7 @@ spring:
 # Redis Stream 설정
 redis:
   stream:
-    key: ${REDIS_STREAM_KEY:log-stream}
+    key: ${REDIS_STREAM_KEY:stream:log-stream}
     group: ${REDIS_STREAM_GROUP:log-group}
     consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
 
@@ -127,6 +128,7 @@ app:
     access-cookie-name: access_token
     refresh-cookie-name: refresh_token
     cookie-secure: false   # 개발 환경: HTTP이므로 false (운영: true)
+    redis-prefix: "jwt:"
 
   oauth2:
     redirect-base-url: http://localhost:8080
@@ -158,6 +160,7 @@ app:
   rate-limit:
     capacity: 50 # 초당 허용할 최대 API 요청 횟수
     expiration-hours: 1 # 버킷 메모리 유지 시간 (hour 단위)
+    redis-prefix: "ratelimit:"
 
   api-key:
     # HMAC-SHA-256 서명 키(pepper) — DB와 분리 관리
@@ -170,7 +173,6 @@ app:
 
   mail:
     from-address: ${GMAIL_FROM_ADDRESS}
-
 
 worker:
   # 배치 처리 설정

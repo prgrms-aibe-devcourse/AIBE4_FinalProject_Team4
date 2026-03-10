@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import kr.java.documind.domain.logcollector.model.dto.LogEvent;
 import kr.java.documind.domain.issue.service.tracking.UserCountTracker;
 import kr.java.documind.domain.logprocessor.model.dto.LogWrapper;
-import kr.java.documind.domain.logprocessor.model.dto.request.RawLogRequest;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository;
 import lombok.RequiredArgsConstructor;
@@ -95,7 +95,7 @@ public class LogBufferService {
     }
 
     // API 요청용 - DTO를 받아서 변환 (Service Layer에서 변환 처리)
-    public void addFromDto(RawLogRequest dto) {
+    public void addFromDto(LogEvent dto) {
         GameLog logEntity = logMapper.toEntity(dto);
 
         // 전체 로그 유입량 추적 (샘플링 여부와 무관하게 모든 API 로그 카운트)
@@ -123,7 +123,7 @@ public class LogBufferService {
     }
 
     // 일괄 처리용
-    public void addAllFromDtos(List<RawLogRequest> dtos) {
+    public void addAllFromDtos(List<LogEvent> dtos) {
         dtos.forEach(this::addFromDto);
     }
 
@@ -180,7 +180,7 @@ public class LogBufferService {
                     // 이슈 생성 실패해도 로그는 저장되었으므로 ACK는 보냄
                 }
 
-                // RecordId가 있는 경우에만 ACK 전송
+                // RecordId가 있는 경우에만 ACK 및 삭제 처리
                 List<RecordId> recordIds =
                         wrappersToSave.stream()
                                 .map(LogWrapper::recordId)
@@ -188,14 +188,13 @@ public class LogBufferService {
                                 .collect(Collectors.toList());
 
                 if (!recordIds.isEmpty()) {
-                    redisTemplate
-                            .opsForStream()
-                            .acknowledge(
-                                    streamKey, consumerGroup, recordIds.toArray(new RecordId[0]));
+                    RecordId[] ids = recordIds.toArray(new RecordId[0]);
+                    redisTemplate.opsForStream().acknowledge(streamKey, consumerGroup, ids);
+                    redisTemplate.opsForStream().delete(streamKey, ids);
                 }
 
                 log.info(
-                        "Flushed {} logs to DB in {}ms (state={}, ACK sent for {} items)",
+                        "Flushed {} logs to DB in {}ms (state={}, ACK/DEL sent for {} items)",
                         logs.size(),
                         latencyMs,
                         backpressureManager.getState(),
@@ -269,7 +268,7 @@ public class LogBufferService {
                     // 이슈 생성 실패해도 로그는 저장되었으므로 ACK는 보냄
                 }
 
-                // RecordId가 있는 경우에만 ACK 전송
+                // RecordId가 있는 경우에만 ACK 및 삭제 처리
                 List<RecordId> recordIds =
                         wrappersToRetry.stream()
                                 .map(LogWrapper::recordId)
@@ -277,14 +276,13 @@ public class LogBufferService {
                                 .collect(Collectors.toList());
 
                 if (!recordIds.isEmpty()) {
-                    redisTemplate
-                            .opsForStream()
-                            .acknowledge(
-                                    streamKey, consumerGroup, recordIds.toArray(new RecordId[0]));
+                    RecordId[] ids = recordIds.toArray(new RecordId[0]);
+                    redisTemplate.opsForStream().acknowledge(streamKey, consumerGroup, ids);
+                    redisTemplate.opsForStream().delete(streamKey, ids);
                 }
 
                 log.info(
-                        "[DLQ] Successfully retried {} logs to DB in {}ms (ACK sent for {} items)",
+                        "[DLQ] Successfully retried {} logs to DB in {}ms (ACK/DEL sent for {} items)",
                         logs.size(),
                         latencyMs,
                         recordIds.size());
@@ -329,18 +327,19 @@ public class LogBufferService {
     }
 
     /**
-     * 처리 실패한 메시지를 ACK하여 PEL에서 제거
+     * 처리 실패한 메시지를 ACK 및 DEL하여 PEL과 스트림에서 제거
      *
      * @param recordId 실패한 메시지의 RecordId
      */
     public void acknowledgeFailedMessage(RecordId recordId) {
         try {
             redisTemplate.opsForStream().acknowledge(streamKey, consumerGroup, recordId);
+            redisTemplate.opsForStream().delete(streamKey, recordId);
             log.warn(
-                    "[ACK] Failed message acknowledged to prevent PEL buildup. RecordId: {}",
+                    "[ACK & DEL] Failed message acknowledged and deleted to prevent stream/PEL buildup. RecordId: {}",
                     recordId);
         } catch (Exception e) {
-            log.error("[ACK] Failed to acknowledge message. RecordId: {}", recordId, e);
+            log.error("[ACK & DEL] Failed to acknowledge and delete message. RecordId: {}", recordId, e);
         }
     }
 }

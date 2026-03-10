@@ -54,7 +54,7 @@ public class SecurityConfig {
 
     /** 인증 없이 접근 가능한 POST 경로 */
     private static final String[] PUBLIC_POST_PATHS = {
-        "/api/auth/refresh", "/api/auth/logout",
+        "/api/auth/refresh", "/api/auth/logout", "/api/logs"
     };
 
     /** 인증 없이 접근 가능한 Actuator 엔드포인트 */

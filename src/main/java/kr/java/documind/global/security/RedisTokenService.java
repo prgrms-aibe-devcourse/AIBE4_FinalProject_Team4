@@ -4,6 +4,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import kr.java.documind.global.security.jwt.TokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,9 @@ public class RedisTokenService {
 
     private final StringRedisTemplate redisTemplate;
     private final TokenProvider tokenProvider;
+
+    @Value("${app.jwt.redis-prefix:jwt:}")
+    private String jwtPrefix;
 
     public void saveRefreshToken(UUID memberId, String refreshToken, long ttlSeconds) {
         redisTemplate
@@ -80,18 +84,18 @@ public class RedisTokenService {
     }
 
     private String refreshKey(UUID memberId) {
-        return REFRESH_PREFIX + memberId;
+        return jwtPrefix + REFRESH_PREFIX + memberId;
     }
 
     private String blacklistKey(String token) {
-        return BLACKLIST_PREFIX + tokenProvider.getTokenId(token);
+        return jwtPrefix + BLACKLIST_PREFIX + tokenProvider.getTokenId(token);
     }
 
     private String oauth2StateKey(String requestId) {
-        return OAUTH2_STATE_PREFIX + requestId;
+        return jwtPrefix + OAUTH2_STATE_PREFIX + requestId;
     }
 
     private String suspendedKey(UUID memberId) {
-        return SUSPENDED_PREFIX + memberId;
+        return jwtPrefix + SUSPENDED_PREFIX + memberId;
     }
 }

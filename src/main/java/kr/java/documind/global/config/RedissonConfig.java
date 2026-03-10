@@ -27,8 +27,7 @@ public class RedissonConfig {
                 .setRetryAttempts(3)
                 .setRetryInterval(1500)
                 .setConnectionMinimumIdleSize(10)
-                .setConnectionPoolSize(64)
-                .setDatabase(1); // Rate Limit 전용 DB
+                .setConnectionPoolSize(64);
         return Redisson.create(config);
     }
 }

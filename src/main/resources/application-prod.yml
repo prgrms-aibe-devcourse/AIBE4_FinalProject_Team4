@@ -22,6 +22,7 @@ spring:
     redis:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
+      database: 0
 
   mail:
       host: smtp.gmail.com
@@ -68,6 +69,17 @@ spring:
         initialize-schema: false # 운영 환경에서는 수동 스키마 관리
         dimensions: 1536 # 임베딩 벡터 차원 (text-embedding-3-large 축소)
 
+redis:
+    stream:
+        key: ${REDIS_STREAM_KEY:stream:log-stream}
+        group: ${REDIS_STREAM_GROUP:log-group}
+        consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
+
+        # 향후 스트림 전용 ElastiCache 도입 시 코드를 분리하기 위한 설정
+        # 기본값은 REDIS_HOST를 따라가게 하여 1개일 때도 작동함
+        host: ${STREAM_REDIS_HOST:${REDIS_HOST:redis}}
+        port: ${STREAM_REDIS_PORT:${REDIS_PORT:6379}}
+
 management:
   endpoints:
     web:
@@ -88,6 +100,7 @@ app:
     access-cookie-name: access_token
     refresh-cookie-name: refresh_token
     cookie-secure: true   # 운영 환경: HTTPS 필수
+    redis-prefix: "jwt:"
 
   oauth2:
     redirect-base-url: ${APP_BASE_URL}
@@ -125,6 +138,7 @@ app:
   rate-limit:
     capacity: 50
     expiration-hours: 1
+    redis-prefix: "ratelimit:"
 
   api-key:
       hmac-secret: ${API_KEY_HMAC_SECRET}
