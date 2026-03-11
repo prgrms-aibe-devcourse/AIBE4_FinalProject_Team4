@@ -4,4 +4,4 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app.chat")
-public record SupportedChatModel(String defaultModel, List<ChatModelInfo> models) {}
+public record SupportedChatModels(String defaultModel, List<ChatModelInfo> models) {}
