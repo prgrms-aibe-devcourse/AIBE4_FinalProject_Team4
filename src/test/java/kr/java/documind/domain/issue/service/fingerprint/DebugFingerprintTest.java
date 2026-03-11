@@ -1,6 +1,19 @@
 package kr.java.documind.domain.issue.service.fingerprint;
 
-import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.*;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.CLASS_CAST;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.CONCURRENT_MODIFICATION;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.DB_DEADLOCK;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.DB_QUERY_TIMEOUT;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.GSON_SYNTAX_EXCEPTION;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.ILLEGAL_MONITOR_STATE;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.INDEX_OUT_OF_BOUNDS;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.JSON_MAPPING_EXCEPTION;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.NETWORK_CONNECT_TIMEOUT;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.NETWORK_SOCKET_TIMEOUT;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.NETWORK_UNKNOWN_HOST;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.NPE_STANDARD;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.OUT_OF_MEMORY;
+import static kr.java.documind.domain.issue.service.fingerprint.GameErrorPatterns.UNITY_NULL_REFERENCE;
 
 import java.time.OffsetDateTime;
 import java.util.Map;

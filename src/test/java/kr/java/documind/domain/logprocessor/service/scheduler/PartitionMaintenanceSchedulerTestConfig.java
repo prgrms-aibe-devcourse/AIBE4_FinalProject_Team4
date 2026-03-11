@@ -1,6 +1,6 @@
 package kr.java.documind.domain.logprocessor.service.scheduler;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 import kr.java.documind.domain.logprocessor.service.coldstorage.ColdStorageService;
 import kr.java.documind.domain.logprocessor.service.coldstorage.ParquetExporter;

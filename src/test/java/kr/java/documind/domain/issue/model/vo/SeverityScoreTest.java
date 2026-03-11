@@ -1,6 +1,7 @@
 package kr.java.documind.domain.issue.model.vo;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Map;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;

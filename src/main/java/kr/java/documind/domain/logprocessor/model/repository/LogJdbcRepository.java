@@ -186,7 +186,8 @@ public class LogJdbcRepository {
                 "SELECT COUNT(*) FROM game_log "
                         + "WHERE project_id = ? AND fingerprint = ? AND occurred_at BETWEEN ? AND ?";
 
-        Long count = jdbcTemplate.queryForObject(sql, Long.class, projectId, fingerprint, start, end);
+        Long count =
+                jdbcTemplate.queryForObject(sql, Long.class, projectId, fingerprint, start, end);
 
         return count != null ? count : 0L;
     }

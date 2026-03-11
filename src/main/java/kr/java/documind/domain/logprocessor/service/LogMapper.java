@@ -30,7 +30,8 @@ public class LogMapper {
     public GameLog toEntity(Map<String, String> map) throws JsonProcessingException {
         String payloadJson = map.get("payload");
         if (payloadJson == null) {
-            throw new InternalServerException("시스템 오류: Redis Stream 메시지에 필수 데이터(payload)가 누락되었습니다.");
+            throw new InternalServerException(
+                    "시스템 오류: Redis Stream 메시지에 필수 데이터(payload)가 누락되었습니다.");
         }
 
         LogEvent flatLog = objectMapper.readValue(payloadJson, LogEvent.class);
@@ -43,7 +44,8 @@ public class LogMapper {
 
     public LogWithFingerprint toEntityWithFingerprint(LogEvent dto) {
         if (dto.projectId() == null) {
-            throw new InternalServerException("시스템 오류: 로그 이벤트에 프로젝트 식별자(projectId)가 누락되어 처리를 중단합니다.");
+            throw new InternalServerException(
+                    "시스템 오류: 로그 이벤트에 프로젝트 식별자(projectId)가 누락되어 처리를 중단합니다.");
         }
 
         UUID logId = dto.logId() != null ? dto.logId() : UuidGenerator.generateV7();
@@ -114,6 +116,7 @@ public class LogMapper {
 
     /**
      * 시간 문자열 파싱 및 유효성 검증(보정) 수행
+     *
      * @param timeStr 파싱할 클라이언트 전송 시간 문자열
      * @param fallbackTime 파싱 실패 또는 유효 범위 초과 시 대체할 시간 (주로 ingestedAt)
      */
@@ -134,7 +137,10 @@ public class LogMapper {
         // 유효하지 않은 과거/미래 시간인 경우 fallbackTime으로 대체
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         if (parsedTime.isAfter(now.plusHours(1)) || parsedTime.isBefore(now.minusDays(30))) {
-            log.warn("유효하지 않은 발생 시간(occurred_at)이 감지되었습니다: {}. 대체 시간으로 조정합니다: {}", parsedTime, fallbackTime);
+            log.warn(
+                    "유효하지 않은 발생 시간(occurred_at)이 감지되었습니다: {}. 대체 시간으로 조정합니다: {}",
+                    parsedTime,
+                    fallbackTime);
             return fallbackTime;
         }
 

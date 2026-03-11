@@ -11,9 +11,7 @@ public class UuidGenerator {
         throw new IllegalStateException("Utility class");
     }
 
-    /**
-     * 표준 UUID v7 명세(RFC 9562)에 따라 UUID를 생성한다
-     */
+    /** 표준 UUID v7 명세(RFC 9562)에 따라 UUID를 생성한다 */
     public static UUID generateV7() {
         return UuidCreator.getTimeOrderedEpoch();
     }
