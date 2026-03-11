@@ -1,6 +1,6 @@
 package kr.java.documind.global.config;
 
-import kr.java.documind.domain.chatbot.properties.SupportedChatModel;
+import kr.java.documind.domain.chatbot.properties.SupportedChatModels;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties(SupportedChatModel.class)
+@EnableConfigurationProperties(SupportedChatModels.class)
 public class ChatConfig {
 
     @Bean

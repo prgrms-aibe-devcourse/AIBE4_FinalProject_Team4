@@ -19,8 +19,7 @@ public class ChatbotViewController {
     private final ChatbotMetaService chatbotMetaService;
 
     @GetMapping
-    public String chatbotMainPage(
-        @CurrentProject ProjectRequestContext project, Model model) {
+    public String chatbotMainPage(@CurrentProject ProjectRequestContext project, Model model) {
         List<ChatModelInfoResponse> chatModels = chatbotMetaService.getChatModels();
 
         model.addAttribute("publicId", project.publicId());
