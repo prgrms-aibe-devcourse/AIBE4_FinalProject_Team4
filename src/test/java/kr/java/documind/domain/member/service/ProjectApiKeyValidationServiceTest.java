@@ -78,7 +78,7 @@ class ProjectApiKeyValidationServiceTest {
     @DisplayName("API Key 검증 실패: 존재하지 않는 API Key → null 반환")
     void getProjectIdByApiKey_NonExistentHash_ReturnsNull() {
         // Given
-        String rawApiKey = "docu_nonexistentkey";
+        String rawApiKey = HmacApiKeyUtil.generatePlainKey();
         String hashedApiKey = HmacApiKeyUtil.computeHmac(rawApiKey, hmacSecret);
 
         // DB에 해당 해시값이 없을 때 (Optional.empty 반환)
