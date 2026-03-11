@@ -54,7 +54,7 @@ public class ProjectApiKeyValidationService {
             return null;
         }
 
-        log.info("API Key 검증 성공! Project PublicId: {}", apiKey.getProject().getPublicId());
+        log.info("API Key 검증 성공: {}", HmacApiKeyUtil.maskApiKey(rawApiKey));
         return apiKey.getProject().getId();
     }
 }
