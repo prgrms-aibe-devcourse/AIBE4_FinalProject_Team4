@@ -12,6 +12,7 @@ import java.util.UUID;
 import javax.crypto.SecretKey;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.global.config.JwtProperties;
+import kr.java.documind.global.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -98,16 +99,13 @@ public class TokenProvider {
         }
     }
 
-    public boolean validateToken(String token) {
+    public void validateToken(String token) {
         try {
             parseClaims(token);
-            return true;
         } catch (ExpiredJwtException e) {
-            log.debug("[JWT] 토큰 만료: {}", e.getMessage());
-            return false;
+            throw e;
         } catch (JwtException | IllegalArgumentException e) {
-            log.warn("[JWT] 토큰 검증 실패: {}", e.getMessage());
-            return false;
+            throw new UnauthorizedException("유효하지 않은 토큰입니다.", e);
         }
     }
 

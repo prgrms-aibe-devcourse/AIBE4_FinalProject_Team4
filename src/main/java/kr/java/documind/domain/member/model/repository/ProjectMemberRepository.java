@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.auth.model.entity.Project;
+import kr.java.documind.domain.auth.model.enums.ProjectRole;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.entity.ProjectMember;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
@@ -56,4 +57,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
 
     /** 프로젝트에 속한 삭제되지 않은(ACTIVE/SUSPENDED) 모든 멤버를 조회한다. (프로젝트 삭제 시 일괄 소프트 딜리트용) */
     List<ProjectMember> findAllByProjectAndStatusNot(Project project, AccountStatus status);
+
+    /** 프로젝트와 역할에 해당하는 멤버 수를 카운트한다. (마지막 관리자 강등 방지용) */
+    long countByProjectAndProjectRole(Project project, ProjectRole projectRole);
 }

@@ -502,8 +502,8 @@
                                                          rounded-lg text-xs font-semibold
                                                          bg-indigo-50 text-indigo-700">관리자</span>
                                         <select th:unless="${member.isCeo()}"
-                                                th:attr="data-mid=${member.memberId()}"
-                                                onchange="changeRole(this.dataset.mid, this.value)"
+                                                th:attr="data-mid=${member.memberId()}, data-is-me=${member.isCurrentUser()}"
+                                                onchange="changeRole(this)"
                                                 class="text-xs border border-gray-200 rounded-lg
                                                            px-2 py-1 bg-white text-gray-700
                                                            focus:outline-none focus:ring-1

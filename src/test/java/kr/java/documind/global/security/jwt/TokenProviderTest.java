@@ -1,11 +1,15 @@
 package kr.java.documind.global.security.jwt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import java.util.Base64;
 import java.util.UUID;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.global.config.JwtProperties;
+import kr.java.documind.global.exception.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -44,14 +48,6 @@ class TokenProviderTest {
         return expiredProvider.generateAccessToken(memberId, role);
     }
 
-    private String buildExpiredRefreshToken(UUID memberId, GlobalRole role) {
-        JwtProperties expiredProps =
-                new JwtProperties(TEST_SECRET, -1L, -1L, "access_token", "refresh_token", false);
-        TokenProvider expiredProvider = new TokenProvider(expiredProps);
-        expiredProvider.init();
-        return expiredProvider.generateRefreshToken(memberId, role);
-    }
-
     @Nested
     @DisplayName("generateAccessToken()")
     class GenerateAccessToken {
@@ -67,7 +63,7 @@ class TokenProviderTest {
 
             // Then
             assertThat(token).isNotNull().isNotBlank();
-            assertThat(tokenProvider.validateToken(token)).isTrue();
+            assertThatCode(() -> tokenProvider.validateToken(token)).doesNotThrowAnyException();
         }
 
         @Test
@@ -143,41 +139,46 @@ class TokenProviderTest {
     class ValidateToken {
 
         @Test
-        @DisplayName("기능: 유효한 토큰 → true 반환")
-        void validateToken_유효한토큰_true반환() {
+        @DisplayName("기능: 유효한 토큰 → 예외 발생 안함")
+        void validateToken_유효한토큰_통과() {
             // Given
             String token =
                     tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When & Then
-            assertThat(tokenProvider.validateToken(token)).isTrue();
+            assertThatCode(() -> tokenProvider.validateToken(token)).doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("예외: 만료된 토큰 → false 반환")
-        void validateToken_만료된토큰_false반환() {
+        @DisplayName("예외: 만료된 토큰 → ExpiredJwtException 발생")
+        void validateToken_만료된토큰_ExpiredJwtException발생() {
             // Given
             String expiredToken = buildExpiredAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When & Then
-            assertThat(tokenProvider.validateToken(expiredToken)).isFalse();
+            assertThatThrownBy(() -> tokenProvider.validateToken(expiredToken))
+                    .isInstanceOf(ExpiredJwtException.class);
         }
 
         @Test
-        @DisplayName("예외: 변조된 시그니처 → false 반환")
-        void validateToken_변조된시그니처_false반환() {
+        @DisplayName("예외: 변조된 시그니처 → UnauthorizedException 발생")
+        void validateToken_변조된시그니처_UnauthorizedException발생() {
             // Given
             String tamperedToken = "eyJhbGciOiJIUzI1NiJ9.tampered-payload.invalid-signature";
 
             // When & Then
-            assertThat(tokenProvider.validateToken(tamperedToken)).isFalse();
+            assertThatThrownBy(() -> tokenProvider.validateToken(tamperedToken))
+                    .isInstanceOf(UnauthorizedException.class)
+                    .hasMessageContaining("유효하지 않은 토큰");
         }
 
         @Test
-        @DisplayName("예외: 빈 문자열 → false 반환")
-        void validateToken_빈문자열_false반환() {
+        @DisplayName("예외: 빈 문자열 → UnauthorizedException 발생")
+        void validateToken_빈문자열_UnauthorizedException발생() {
             // When & Then
-            assertThat(tokenProvider.validateToken("")).isFalse();
+            assertThatThrownBy(() -> tokenProvider.validateToken(""))
+                    .isInstanceOf(UnauthorizedException.class)
+                    .hasMessageContaining("유효하지 않은 토큰");
         }
     }
 

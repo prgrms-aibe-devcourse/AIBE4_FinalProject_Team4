@@ -58,7 +58,9 @@ public class SecurityConfig {
     };
 
     /** 인증 없이 접근 가능한 Actuator 엔드포인트 */
-    private static final String[] PUBLIC_ACTUATOR_PATHS = {"/actuator/health", "/actuator/env"};
+    private static final String[] PUBLIC_ACTUATOR_PATHS = {
+        "/actuator/health",
+    };
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -70,11 +72,15 @@ public class SecurityConfig {
                                         .csrfTokenRequestHandler(
                                                 new CsrfTokenRequestAttributeHandler())
                                         .ignoringRequestMatchers(
-                                                "/oauth2/**", "/login/oauth2/**", "/api/**"))
+                                                "/oauth2/**",
+                                                "/login/oauth2/**",
+                                                "/api/**",
+                                                "/invite/accept"))
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(
                         auth ->
-                                auth
+                                auth.requestMatchers(HttpMethod.POST, "/invite/accept")
+                                        .authenticated()
                                         // ── 공개 페이지 / 정적 리소스 ──────────────────────
                                         .requestMatchers(HttpMethod.GET, PUBLIC_GET_PATHS)
                                         .permitAll()

@@ -3,6 +3,7 @@ package kr.java.documind.global.security.oauth;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Set;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.domain.member.model.entity.Company;
@@ -44,7 +45,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             throws IOException {
 
         CustomUserDetails authMember = (CustomUserDetails) authentication.getPrincipal();
-
         Member member = memberService.getMemberWithCompany(authMember.getMemberId());
 
         if (!member.isActive()) {
@@ -54,6 +54,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             response.sendRedirect("/auth/login?error=account_suspended");
             return;
         }
+
+        String redirectUrl = determineRedirectUrl(request, member);
+
+        authRequestRepository.removeAuthorizationRequestCookies(request, response);
+        deletePendingRoleCookie(response);
+        deleteAllowEmailDuplicateCookie(response);
+        clearAuthenticationAttributes(request);
 
         String accessToken =
                 jwtProvider.generateAccessToken(member.getId(), member.getGlobalRole());
@@ -78,47 +85,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 member.getId(), refreshToken, jwtProperties.getRefreshExpirationSeconds());
 
         GlobalRole selectedRole = resolveRoleFromCookie(request);
-        boolean roleMismatch = false;
         if (selectedRole != null && selectedRole != member.getGlobalRole()) {
             log.info(
                     "[OAuth2SuccessHandler] 역할 불일치 감지: selected={}, actual={}",
                     selectedRole,
                     member.getGlobalRole());
-            roleMismatch = true;
-        }
-
-        authRequestRepository.removeAuthorizationRequestCookies(request, response);
-        deletePendingRoleCookie(response);
-        deleteAllowEmailDuplicateCookie(response);
-        clearAuthenticationAttributes(request);
-
-        String redirectAfterLogin =
-                cookieUtil
-                        .getCookieValue(
-                                request,
-                                HttpCookieOAuth2AuthorizationRequestRepository
-                                        .REDIRECT_AFTER_LOGIN_COOKIE)
-                        .filter(
-                                path ->
-                                        path.startsWith("/")
-                                                && !path.startsWith("//")) // 오픈 리다이렉트 방지 강화
-                        .orElse(null);
-        if (redirectAfterLogin != null) {
-            cookieUtil.deleteCookie(
-                    response,
-                    HttpCookieOAuth2AuthorizationRequestRepository.REDIRECT_AFTER_LOGIN_COOKIE,
-                    jwtProperties.isCookieSecure());
-            log.info(
-                    "[OAuth2SuccessHandler] 로그인 후 복귀 리다이렉트: memberId={}, path={}",
-                    member.getId(),
-                    redirectAfterLogin);
-            response.sendRedirect(redirectAfterLogin);
-            return;
-        }
-
-        String redirectUrl = resolveRedirectUrl(member);
-
-        if (roleMismatch) {
             String toastValue = member.isCeo() ? "role_mismatch_ceo" : "role_mismatch_employee";
             redirectUrl += (redirectUrl.contains("?") ? "&" : "?") + "toast_message=" + toastValue;
         }
@@ -128,10 +99,31 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 member.getId(),
                 member.getGlobalRole(),
                 redirectUrl);
+
         response.sendRedirect(redirectUrl);
     }
 
-    private String resolveRedirectUrl(Member member) {
+    private String determineRedirectUrl(HttpServletRequest request, Member member) {
+        Optional<String> redirectAfterLogin =
+                cookieUtil
+                        .getCookieValue(
+                                request,
+                                HttpCookieOAuth2AuthorizationRequestRepository
+                                        .REDIRECT_AFTER_LOGIN_COOKIE)
+                        .filter(path -> path.startsWith("/") && !path.startsWith("//"));
+
+        if (redirectAfterLogin.isPresent()) {
+            log.info(
+                    "[OAuth2SuccessHandler] 로그인 후 복귀 리다이렉트: memberId={}, path={}",
+                    member.getId(),
+                    redirectAfterLogin.get());
+            return redirectAfterLogin.get();
+        }
+
+        return resolveDefaultRedirectUrl(member);
+    }
+
+    private String resolveDefaultRedirectUrl(Member member) {
         String resolved;
 
         if (member.isAdmin()) {

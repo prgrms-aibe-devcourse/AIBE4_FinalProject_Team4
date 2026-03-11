@@ -18,7 +18,7 @@
     <div th:replace="~{::user-info-area}"></div>
 </div>
 
-<div th:fragment="~{::user-info-area}" class="flex items-center gap-4">
+<div th:fragment="user-info-area" class="flex items-center gap-4">
 
     <!-- 무료 플랜 뱃지 (ADMIN 제외) -->
     <span th:unless="${headerInfo != null

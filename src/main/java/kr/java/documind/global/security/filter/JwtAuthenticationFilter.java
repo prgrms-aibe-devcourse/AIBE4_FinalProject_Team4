@@ -1,5 +1,6 @@
 package kr.java.documind.global.security.filter;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.global.config.JwtProperties;
+import kr.java.documind.global.exception.UnauthorizedException;
 import kr.java.documind.global.security.RedisTokenService;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import kr.java.documind.global.security.jwt.TokenProvider;
@@ -35,29 +37,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String token = extractToken(request);
 
-        if (StringUtils.hasText(token)
-                && tokenProvider.validateToken(token)
-                && tokenProvider.isAccessToken(token)) {
-            if (redisTokenService.isBlacklisted(token)) {
-                SecurityContextHolder.clearContext();
-                log.debug(
-                        "[JWT] Blacklisted JWT — cleared SecurityContext for {}",
-                        request.getRequestURI());
-            } else {
-                UUID memberId = tokenProvider.getMemberId(token);
-                if (redisTokenService.isMemberSuspended(memberId)) {
-                    SecurityContextHolder.clearContext();
-                    log.warn(
-                            "[JWT] 정지된 계정 요청 차단: memberId={} uri={}",
-                            memberId,
-                            request.getRequestURI());
-                } else {
-                    setAuthentication(request, token);
+        if (StringUtils.hasText(token)) {
+            try {
+                tokenProvider.validateToken(token);
+
+                if (tokenProvider.isAccessToken(token)) {
+                    if (redisTokenService.isBlacklisted(token)) {
+                        SecurityContextHolder.clearContext();
+                        log.debug(
+                                "[JWT] Blacklisted JWT — cleared SecurityContext for {}",
+                                request.getRequestURI());
+                    } else {
+                        UUID memberId = tokenProvider.getMemberId(token);
+                        if (redisTokenService.isMemberSuspended(memberId)) {
+                            SecurityContextHolder.clearContext();
+                            log.warn(
+                                    "[JWT] 정지된 계정 요청 차단: memberId={} uri={}",
+                                    memberId,
+                                    request.getRequestURI());
+                        } else {
+                            setAuthentication(request, token);
+                        }
+                    }
                 }
+            } catch (ExpiredJwtException e) {
+                SecurityContextHolder.clearContext();
+                log.debug("[JWT] 만료된 JWT: SecurityContext 초기화 - {}", request.getRequestURI());
+            } catch (UnauthorizedException | IllegalArgumentException e) {
+                SecurityContextHolder.clearContext();
+                log.warn(
+                        "[JWT] 유효하지 않은 JWT: SecurityContext 초기화 - {} ({})",
+                        request.getRequestURI(),
+                        e.getMessage());
             }
-        } else if (StringUtils.hasText(token)) {
-            SecurityContextHolder.clearContext();
-            log.debug("[JWT] 만료되거나 유효하지 않은 JWT: SecurityContext 초기화 - {}", request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);

@@ -1,5 +1,6 @@
 package kr.java.documind.domain.auth.service;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import java.util.UUID;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.domain.member.model.entity.Member;
@@ -30,8 +31,12 @@ public class AuthService {
             throw new UnauthorizedException("Refresh Token이 없습니다.");
         }
 
-        if (!jwtProvider.validateToken(refreshToken)) {
-            throw new UnauthorizedException("Refresh Token이 만료되었습니다. 다시 로그인하세요.");
+        try {
+            jwtProvider.validateToken(refreshToken);
+        } catch (ExpiredJwtException e) {
+            throw new UnauthorizedException("Refresh Token이 만료되었습니다. 다시 로그인하세요.", e);
+        } catch (UnauthorizedException e) {
+            throw new UnauthorizedException("유효하지 않은 Refresh Token입니다. 다시 로그인하세요.", e);
         }
 
         UUID memberId = jwtProvider.getMemberId(refreshToken);

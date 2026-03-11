@@ -128,17 +128,33 @@ public class InvitationService {
 
     @Transactional
     public String acceptInvitation(String rawToken, UUID memberId, boolean forceLeaveCompany) {
+        log.info(
+                "[InvitationService] acceptInvitation 호출 시작: tokenHashPrefix={}..., memberId={}",
+                rawToken.substring(0, Math.min(5, rawToken.length())),
+                memberId);
+
         InviteResolution resolution = resolveToken(rawToken);
         Invitation invitation = resolution.invitation();
         String tokenHash = resolution.tokenHash();
-        Project project = invitation.getProject();
+
+        String publicId = invitation.getProject().getPublicId();
+        Project project =
+                projectRepository
+                        .findByPublicIdWithCompany(publicId)
+                        .orElseThrow(ProjectNotFoundException::new);
 
         validateProjectNotDeleted(project);
 
         Member member = memberService.getMemberWithCompany(memberId);
         validateMemberEmailMatch(member, invitation.getTargetEmail());
 
-        if (checkDifferentCompany(member, project)) {
+        if (member.getCompany() == null) {
+            member.assignCompany(project.getCompany());
+            log.info(
+                    "[InvitationService] 회사 할당: memberId={} company={}",
+                    member.getId(),
+                    project.getCompany().getName());
+        } else if (checkDifferentCompany(member, project)) {
             handleCompanySwitch(member, project.getCompany(), forceLeaveCompany);
         }
 
@@ -155,8 +171,6 @@ public class InvitationService {
 
         return project.getPublicId();
     }
-
-    // ── Helper Methods ─────────────────────────────────────────────────────────────
 
     private void validateInvitationRequest(Member inviter, Project project, String targetEmail) {
         if (inviter.getEmail() != null && inviter.getEmail().equalsIgnoreCase(targetEmail)) {

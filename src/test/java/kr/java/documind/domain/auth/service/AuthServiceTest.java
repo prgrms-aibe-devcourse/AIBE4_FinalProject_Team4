@@ -7,8 +7,10 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import java.util.UUID;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.domain.auth.model.enums.OAuthProvider;
@@ -54,16 +56,33 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("예외: 만료되거나 유효하지 않은 refreshToken → UnauthorizedException 발생")
-        void refresh_유효하지않은리프레시토큰_UnauthorizedException발생() {
+        @DisplayName("예외: 만료된 refreshToken → UnauthorizedException 발생")
+        void refresh_만료된리프레시토큰_UnauthorizedException발생() {
             // Given
-            String invalidToken = "expired.or.invalid.token";
-            given(jwtProvider.validateToken(invalidToken)).willReturn(false);
+            String expiredToken = "expired.token";
+            doThrow(new ExpiredJwtException(null, null, "만료"))
+                    .when(jwtProvider)
+                    .validateToken(expiredToken);
+
+            // When & Then
+            assertThatThrownBy(() -> authService.refresh(expiredToken))
+                    .isInstanceOf(UnauthorizedException.class)
+                    .hasMessageContaining("만료되었습니다");
+        }
+
+        @Test
+        @DisplayName("예외: 변조된 refreshToken → UnauthorizedException 발생")
+        void refresh_변조된리프레시토큰_UnauthorizedException발생() {
+            // Given
+            String invalidToken = "invalid.token";
+            doThrow(new UnauthorizedException("유효하지 않은 토큰입니다."))
+                    .when(jwtProvider)
+                    .validateToken(invalidToken);
 
             // When & Then
             assertThatThrownBy(() -> authService.refresh(invalidToken))
                     .isInstanceOf(UnauthorizedException.class)
-                    .hasMessageContaining("만료되었습니다");
+                    .hasMessageContaining("유효하지 않은 Refresh Token");
         }
 
         @Test
@@ -72,7 +91,6 @@ class AuthServiceTest {
             // Given
             String requestToken = "valid.refresh.token";
             UUID memberId = UUID.randomUUID();
-            given(jwtProvider.validateToken(requestToken)).willReturn(true);
             given(jwtProvider.getMemberId(requestToken)).willReturn(memberId);
             given(jwtProvider.getGlobalRole(requestToken)).willReturn(GlobalRole.EMPLOYEE);
             given(redisTokenService.consumeRefreshToken(memberId)).willReturn("different.token");
@@ -89,7 +107,6 @@ class AuthServiceTest {
             // Given
             String requestToken = "valid.refresh.token";
             UUID memberId = UUID.randomUUID();
-            given(jwtProvider.validateToken(requestToken)).willReturn(true);
             given(jwtProvider.getMemberId(requestToken)).willReturn(memberId);
             given(jwtProvider.getGlobalRole(requestToken)).willReturn(GlobalRole.EMPLOYEE);
             given(redisTokenService.consumeRefreshToken(memberId)).willReturn(null);
@@ -108,7 +125,6 @@ class AuthServiceTest {
             UUID memberId = UUID.randomUUID();
             Member suspendedMember = createMember(AccountStatus.SUSPENDED);
 
-            given(jwtProvider.validateToken(requestToken)).willReturn(true);
             given(jwtProvider.getMemberId(requestToken)).willReturn(memberId);
             given(jwtProvider.getGlobalRole(requestToken)).willReturn(GlobalRole.EMPLOYEE);
             given(redisTokenService.consumeRefreshToken(memberId)).willReturn(requestToken);
@@ -128,7 +144,6 @@ class AuthServiceTest {
             UUID memberId = UUID.randomUUID();
             Member deletedMember = createMember(AccountStatus.DELETED);
 
-            given(jwtProvider.validateToken(requestToken)).willReturn(true);
             given(jwtProvider.getMemberId(requestToken)).willReturn(memberId);
             given(jwtProvider.getGlobalRole(requestToken)).willReturn(GlobalRole.EMPLOYEE);
             given(redisTokenService.consumeRefreshToken(memberId)).willReturn(requestToken);
@@ -150,7 +165,6 @@ class AuthServiceTest {
             String newAccessToken = "new.access.token";
             String newRefreshToken = "new.refresh.token";
 
-            given(jwtProvider.validateToken(oldRefreshToken)).willReturn(true);
             given(jwtProvider.getMemberId(oldRefreshToken)).willReturn(memberId);
             given(jwtProvider.getGlobalRole(oldRefreshToken)).willReturn(GlobalRole.CEO);
             given(redisTokenService.consumeRefreshToken(memberId)).willReturn(oldRefreshToken);

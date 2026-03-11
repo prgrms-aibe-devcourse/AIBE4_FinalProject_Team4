@@ -379,6 +379,9 @@ class InvitationServiceTest {
             stubRedisForToken(rawToken, invitationId);
             given(invitationRepository.findById(invitationId)).willReturn(Optional.of(invitation));
 
+            given(projectRepository.findByPublicIdWithCompany(publicId))
+                    .willReturn(Optional.of(project));
+
             return new AcceptFixture(project, invitation, invitationId);
         }
 
@@ -590,6 +593,7 @@ class InvitationServiceTest {
 
             stubRedisForToken(rawToken, invitationId);
             given(invitationRepository.findById(invitationId)).willReturn(Optional.of(invitation));
+
             given(memberService.getMemberWithCompany(memberId)).willReturn(member);
             given(projectMemberRepository.findByProjectAndMember(project, member))
                     .willReturn(Optional.of(activePm)); // 이미 ACTIVE 멤버
