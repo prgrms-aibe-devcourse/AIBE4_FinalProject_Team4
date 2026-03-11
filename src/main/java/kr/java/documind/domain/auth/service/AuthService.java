@@ -90,8 +90,7 @@ public class AuthService {
                         "[AuthService] 만료된 토큰으로 로그아웃 처리 (Refresh Token 정리): memberId={}",
                         extractedMemberId);
             } catch (Exception e) {
-                log.debug(
-                        "Refresh Token에서 memberId 추출 실패 (이미 정리되었거나 서명 오류): {}", e.getMessage());
+                log.debug("Refresh Token에서 memberId 추출 실패 (이미 정리되었거나 서명 오류): {}", e.getMessage());
             }
         }
     }
