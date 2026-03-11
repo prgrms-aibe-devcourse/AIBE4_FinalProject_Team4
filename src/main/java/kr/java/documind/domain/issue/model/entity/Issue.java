@@ -134,8 +134,12 @@ public class Issue {
         this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
 
         // RESOLVED 상태로 변경 시 resolved_at 설정
-        if (newStatus == IssueStatus.RESOLVED && this.resolvedAt == null) {
+        if (newStatus == IssueStatus.RESOLVED) {
             this.resolvedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        }
+        // RESOLVED에서 다른 상태로 되돌릴 시 resolved_at 초기화
+        else if (this.resolvedAt != null) {
+            this.resolvedAt = null;
         }
     }
 
