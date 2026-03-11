@@ -36,6 +36,7 @@ public class AuthService {
         } catch (ExpiredJwtException e) {
             throw new UnauthorizedException("Refresh Token이 만료되었습니다. 다시 로그인하세요.", e);
         } catch (UnauthorizedException e) {
+            log.warn("[AuthService] Refresh Token 검증 실패: {}", e.getMessage());
             throw new UnauthorizedException("유효하지 않은 Refresh Token입니다. 다시 로그인하세요.", e);
         }
 
@@ -89,7 +90,8 @@ public class AuthService {
                         "[AuthService] 만료된 토큰으로 로그아웃 처리 (Refresh Token 정리): memberId={}",
                         extractedMemberId);
             } catch (Exception e) {
-                log.debug("Refresh Token에서 memberId 추출 실패 (이미 정리되었거나 서명 오류): {}", e.getMessage());
+                log.debug(
+                        "Refresh Token에서 memberId 추출 실패 (이미 정리되었거나 서명 오류): {}", e.getMessage());
             }
         }
     }

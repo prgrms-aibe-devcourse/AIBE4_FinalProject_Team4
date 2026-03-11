@@ -88,8 +88,6 @@ public class InviteViewController {
             @AuthenticationPrincipal CustomUserDetails auth,
             RedirectAttributes redirectAttributes) {
 
-        log.info("[InviteViewController] acceptInvite 요청 받음: token={}", token);
-
         try {
             String publicId =
                     invitationService.acceptInvitation(

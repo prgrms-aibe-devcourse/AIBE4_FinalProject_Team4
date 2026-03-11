@@ -94,6 +94,7 @@
 
         <!-- 소셜 로그인 버튼 -->
         <div class="space-y-3">
+            <!-- InviteViewController에서 쿠키를 설정하지만, 쿠키 유실(Cross-Site/Secure 등)에 대비해 URL 파라미터로도 전달하여 재설정을 유도함 -->
             <!-- Google -->
             <a id="google-oauth-btn"
                th:href="@{/oauth2/authorization/google(redirect_after_login=${redirectUrl})}"

@@ -36,23 +36,30 @@ public class AuthApiController {
                         .getCookieValue(request, jwtProperties.getRefreshCookieName())
                         .orElse(null);
 
-        AuthTokens newTokens = authService.refresh(refreshToken);
+        try {
+            AuthTokens newTokens = authService.refresh(refreshToken);
 
-        boolean secure = jwtProperties.isCookieSecure();
-        cookieUtil.addCookie(
-                response,
-                jwtProperties.getAccessCookieName(),
-                newTokens.accessToken(),
-                jwtProperties.getAccessExpirationSeconds(),
-                secure);
-        cookieUtil.addCookie(
-                response,
-                jwtProperties.getRefreshCookieName(),
-                newTokens.refreshToken(),
-                jwtProperties.getRefreshExpirationSeconds(),
-                secure);
+            boolean secure = jwtProperties.isCookieSecure();
+            cookieUtil.addCookie(
+                    response,
+                    jwtProperties.getAccessCookieName(),
+                    newTokens.accessToken(),
+                    jwtProperties.getAccessExpirationSeconds(),
+                    secure);
+            cookieUtil.addCookie(
+                    response,
+                    jwtProperties.getRefreshCookieName(),
+                    newTokens.refreshToken(),
+                    jwtProperties.getRefreshExpirationSeconds(),
+                    secure);
 
-        return ResponseEntity.ok(ApiResponse.success(null));
+            return ResponseEntity.ok(ApiResponse.success(null));
+
+        } catch (RuntimeException e) {
+            log.debug("[AuthApiController] 토큰 갱신 실패 - 쿠키 삭제: {}", e.getMessage());
+            deleteAuthCookies(response);
+            throw e;
+        }
     }
 
     @PostMapping("/logout")

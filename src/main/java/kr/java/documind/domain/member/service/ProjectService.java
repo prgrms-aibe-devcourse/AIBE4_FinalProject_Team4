@@ -262,7 +262,8 @@ public class ProjectService {
                         .orElseThrow(() -> new NotFoundException("대상이 프로젝트 멤버가 아닙니다."));
 
         if (targetPm.isManager() && newRole == ProjectRole.MEMBER) {
-            if (projectMemberRepository.countByProjectAndProjectRole(project, ProjectRole.MANAGER)
+            if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
+                            project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
                     <= 1) {
                 throw new BadRequestException("프로젝트에는 최소 한 명 이상의 관리자가 필요합니다.");
             }
@@ -299,6 +300,14 @@ public class ProjectService {
                         .findByProjectAndMember(project, targetMember)
                         .orElseThrow(() -> new NotFoundException("대상이 프로젝트 멤버가 아닙니다."));
 
+        if (targetPm.isManager()) {
+            if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
+                            project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
+                    <= 1) {
+                throw new BadRequestException("프로젝트에는 최소 한 명 이상의 관리자가 필요합니다.");
+            }
+        }
+
         targetPm.softDelete();
         log.info(
                 "[ProjectService] 멤버 제거: actorId={}, targetId={}, projectId={}",
@@ -324,6 +333,14 @@ public class ProjectService {
                 projectMemberRepository
                         .findByProjectAndMember(project, member)
                         .orElseThrow(() -> new NotFoundException("프로젝트 멤버를 찾을 수 없습니다."));
+
+        if (pm.isManager()) {
+            if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
+                            project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
+                    <= 1) {
+                throw new BadRequestException("프로젝트에는 최소 한 명 이상의 관리자가 필요합니다. 나갈 수 없습니다.");
+            }
+        }
 
         pm.softDelete();
         log.info("[ProjectService] 프로젝트 나가기: memberId={} publicId={}", memberId, publicId);
