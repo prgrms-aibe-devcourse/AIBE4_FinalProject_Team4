@@ -1,8 +1,10 @@
 package kr.java.documind.domain.issue.model.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -25,4 +27,21 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
      * @return 존재하면 true
      */
     boolean existsByFingerprint(String fingerprint);
+
+    /**
+     * 프로젝트별 이슈 목록 조회 (최신순)
+     *
+     * @param projectId 프로젝트 ID
+     * @return 이슈 목록
+     */
+    List<Issue> findByProjectIdOrderByCreatedAtDesc(UUID projectId);
+
+    /**
+     * 프로젝트별 특정 상태의 이슈 목록 조회 (최신순)
+     *
+     * @param projectId 프로젝트 ID
+     * @param status 이슈 상태
+     * @return 이슈 목록
+     */
+    List<Issue> findByProjectIdAndStatusOrderByCreatedAtDesc(UUID projectId, IssueStatus status);
 }

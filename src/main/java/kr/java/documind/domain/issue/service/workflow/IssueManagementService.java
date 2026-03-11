@@ -1,5 +1,6 @@
 package kr.java.documind.domain.issue.service.workflow;
 
+import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.issue.event.IssueResolvedEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
@@ -84,6 +85,31 @@ public class IssueManagementService {
                             modifierId);
             eventPublisher.publishEvent(event);
         }
+    }
+
+    /**
+     * 프로젝트별 이슈 목록 조회
+     *
+     * @param projectId 프로젝트 ID
+     * @param status 필터링할 상태 (null이면 전체 조회)
+     * @return 이슈 목록
+     */
+    public List<Issue> getIssueList(UUID projectId, IssueStatus status) {
+        if (status == null) {
+            return issueRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
+        }
+        return issueRepository.findByProjectIdAndStatusOrderByCreatedAtDesc(projectId, status);
+    }
+
+    /**
+     * 이슈 상세 조회
+     *
+     * @param issueId 이슈 ID
+     * @return 이슈 엔티티
+     * @throws NotFoundException 이슈가 존재하지 않는 경우
+     */
+    public Issue getIssueDetail(Long issueId) {
+        return getIssueOrThrow(issueId);
     }
 
     /**
