@@ -1,5 +1,6 @@
 package kr.java.documind.domain.archive.document.model.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
@@ -22,6 +23,12 @@ public interface DocumentGroupRepository extends JpaRepository<DocumentGroup, Lo
             @Param("projectId") UUID projectId, Pageable pageable);
 
     Optional<DocumentGroup> findByIdAndProjectId(Long id, UUID projectId);
+
+    @Query("SELECT DISTINCT dg.groupName FROM DocumentGroup dg WHERE dg.projectId = :projectId")
+    List<String> findDistinctGroupNamesByProjectId(@Param("projectId") UUID projectId);
+
+    @Query("SELECT DISTINCT dg.category FROM DocumentGroup dg WHERE dg.projectId = :projectId")
+    List<String> findDistinctCategoriesByProjectId(@Param("projectId") UUID projectId);
 
     boolean existsByProjectIdAndCategoryAndGroupName(
             UUID projectId, String category, String groupName);

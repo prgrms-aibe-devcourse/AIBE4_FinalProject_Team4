@@ -2,6 +2,7 @@ package kr.java.documind.domain.chatbot.service;
 
 import java.util.List;
 import java.util.UUID;
+import kr.java.documind.domain.archive.document.infrastructure.DocumentGroupManager;
 import kr.java.documind.domain.chatbot.model.dto.response.ChatModelInfoResponse;
 import kr.java.documind.domain.chatbot.properties.SupportedChatModels;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class ChatbotMetaService {
 
     private final SupportedChatModels supportedChatModels;
+    private final DocumentGroupManager documentGroupManager;
 
     public List<ChatModelInfoResponse> getChatModels() {
         String defaultModel = supportedChatModels.defaultModel();
@@ -27,10 +29,10 @@ public class ChatbotMetaService {
     }
 
     public List<String> getGroupNames(UUID projectId) {
-        return null;
+        return documentGroupManager.findDistinctGroupNames(projectId);
     }
 
     public List<String> getCategoryNames(UUID projectId) {
-        return null;
+        return documentGroupManager.findDistinctCategories(projectId);
     }
 }

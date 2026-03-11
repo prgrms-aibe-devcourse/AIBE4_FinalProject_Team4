@@ -1,5 +1,6 @@
 package kr.java.documind.domain.archive.document.infrastructure;
 
+import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
@@ -25,6 +26,14 @@ public class DocumentGroupManager {
         return documentGroupRepository
                 .findByIdAndProjectId(groupId, projectId)
                 .orElseThrow(() -> new NotFoundException("프로젝트에서 문서 그룹을 찾을 수 없습니다."));
+    }
+
+    public List<String> findDistinctGroupNames(UUID projectId) {
+        return documentGroupRepository.findDistinctGroupNamesByProjectId(projectId);
+    }
+
+    public List<String> findDistinctCategories(UUID projectId) {
+        return documentGroupRepository.findDistinctCategoriesByProjectId(projectId);
     }
 
     public DocumentGroup save(DocumentGroup group) {
