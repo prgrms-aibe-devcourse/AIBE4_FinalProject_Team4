@@ -19,7 +19,7 @@ public class ProjectApiKeyValidationService {
 
     private final ProjectApiKeyRepository projectApiKeyRepository;
 
-    @Value("${api-key.hmac-secret}")
+    @Value("${app.api-key.hmac-secret}")
     private String hmacSecret;
 
     /**
