@@ -4,8 +4,8 @@ import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.auth.model.entity.ProjectApiKey;
 import kr.java.documind.domain.auth.model.repository.ProjectApiKeyRepository;
-import kr.java.documind.global.util.HmacApiKeyUtil;
 import kr.java.documind.domain.member.model.enums.ApiKeyStatus;
+import kr.java.documind.global.util.HmacApiKeyUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,35 +30,31 @@ public class ProjectApiKeyValidationService {
      */
     @Transactional(readOnly = true)
     public UUID getProjectIdByApiKey(String rawApiKey) {
-        if (rawApiKey == null) {
+        if (rawApiKey == null || rawApiKey.isBlank()) {
             log.warn("API Key가 제공되지 않았습니다.");
             return null;
         }
 
-        String prefix = HmacApiKeyUtil.extractPrefix(rawApiKey);
-        Optional<ProjectApiKey> apiKeyOptional = projectApiKeyRepository.findByKeyPrefix(prefix);
+        String requestHashedKey = HmacApiKeyUtil.computeHmac(rawApiKey, hmacSecret);
+        Optional<ProjectApiKey> apiKeyOptional =
+                projectApiKeyRepository.findByApiKeyHash(requestHashedKey);
 
         if (apiKeyOptional.isEmpty()) {
-            log.warn("제공된 API Key prefix와 일치하는 키가 없습니다: {}", HmacApiKeyUtil.maskApiKey(rawApiKey));
+            log.warn("유효하지 않은 API Key 접근 시도: {}", HmacApiKeyUtil.maskApiKey(rawApiKey));
             return null;
         }
 
         ProjectApiKey apiKey = apiKeyOptional.get();
 
         if (apiKey.getApiKeyStatus() != ApiKeyStatus.ACTIVE) {
-            log.warn("비활성 API Key입니다 (상태: {}): {}", apiKey.getApiKeyStatus(), HmacApiKeyUtil.maskApiKey(rawApiKey));
+            log.warn(
+                    "비활성 API Key입니다 (상태: {}): {}",
+                    apiKey.getApiKeyStatus(),
+                    HmacApiKeyUtil.maskApiKey(rawApiKey));
             return null;
         }
 
-        String requestHashedKey = HmacApiKeyUtil.computeHmac(rawApiKey, hmacSecret);
-
-        // DB에 저장된 해시값과 비교할 때 타이밍 공격에 안전한 방식으로 비교
-        if (HmacApiKeyUtil.constantTimeEquals(apiKey.getApiKeyHash(), requestHashedKey)) {
-            log.info("API Key 검증 성공! ProjectId: {}", apiKey.getProject().getPublicId());
-            return apiKey.getProject().getId();
-        } else {
-            log.warn("API Key 해시 값이 일치하지 않습니다: {}", HmacApiKeyUtil.maskApiKey(rawApiKey));
-            return null;
-        }
+        log.info("API Key 검증 성공! Project PublicId: {}", apiKey.getProject().getPublicId());
+        return apiKey.getProject().getId();
     }
 }

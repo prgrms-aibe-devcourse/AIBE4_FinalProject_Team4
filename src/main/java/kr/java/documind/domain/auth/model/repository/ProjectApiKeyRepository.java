@@ -14,5 +14,5 @@ public interface ProjectApiKeyRepository extends JpaRepository<ProjectApiKey, Lo
 
     List<ProjectApiKey> findAllByProjectAndApiKeyStatusNot(Project project, ApiKeyStatus status);
 
-    Optional<ProjectApiKey> findByKeyPrefix(String prefix);
+    Optional<ProjectApiKey> findByApiKeyHash(String apiKeyHash);
 }

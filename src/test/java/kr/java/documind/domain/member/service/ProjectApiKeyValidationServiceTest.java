@@ -1,7 +1,6 @@
 package kr.java.documind.domain.member.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -41,15 +40,18 @@ class ProjectApiKeyValidationServiceTest {
     @Test
     @DisplayName("API Key 발급부터 검증까지 전체 흐름: 유효한 키 → ProjectId 반환")
     void getProjectIdByApiKey_ValidKey_ReturnsProjectId() {
-        // Given: HmacApiKeyUtil을 사용하여 API Key 생성 및 저장 준비
+        // Given: HmacApiKeyUtil을 사용하여 API Key 생성
         String generatedRawApiKey = HmacApiKeyUtil.generatePlainKey();
         String extractedPrefix = HmacApiKeyUtil.extractPrefix(generatedRawApiKey);
         String last4 = HmacApiKeyUtil.extractLast4(generatedRawApiKey);
         String hashedApiKey = HmacApiKeyUtil.computeHmac(generatedRawApiKey, hmacSecret);
 
-        ProjectApiKey apiKey = ProjectApiKey.create(testProject, hashedApiKey, extractedPrefix, last4);
+        ProjectApiKey apiKey =
+                ProjectApiKey.create(testProject, hashedApiKey, extractedPrefix, last4);
 
-        when(projectApiKeyRepository.findByKeyPrefix(extractedPrefix)).thenReturn(Optional.of(apiKey));
+        // 해시 검색으로 Mocking
+        when(projectApiKeyRepository.findByApiKeyHash(hashedApiKey))
+                .thenReturn(Optional.of(apiKey));
 
         // When: 생성된 API Key로 검증 시도
         UUID resultProjectId = validationService.getProjectIdByApiKey(generatedRawApiKey);
@@ -73,11 +75,14 @@ class ProjectApiKeyValidationServiceTest {
     }
 
     @Test
-    @DisplayName("API Key 검증 실패: 존재하지 않는 Prefix → null 반환")
-    void getProjectIdByApiKey_NonExistentPrefix_ReturnsNull() {
+    @DisplayName("API Key 검증 실패: 존재하지 않는 API Key → null 반환")
+    void getProjectIdByApiKey_NonExistentHash_ReturnsNull() {
         // Given
         String rawApiKey = "docu_nonexistentkey";
-        when(projectApiKeyRepository.findByKeyPrefix(anyString())).thenReturn(Optional.empty());
+        String hashedApiKey = HmacApiKeyUtil.computeHmac(rawApiKey, hmacSecret);
+
+        // DB에 해당 해시값이 없을 때 (Optional.empty 반환)
+        when(projectApiKeyRepository.findByApiKeyHash(hashedApiKey)).thenReturn(Optional.empty());
 
         // When
         UUID resultProjectId = validationService.getProjectIdByApiKey(rawApiKey);
@@ -87,22 +92,24 @@ class ProjectApiKeyValidationServiceTest {
     }
 
     @Test
-    @DisplayName("API Key 검증 실패: 해시 값이 일치하지 않는 경우 → null 반환")
+    @DisplayName("API Key 검증 실패: 변조된 API Key 입력 시 (해시 불일치) → null 반환")
     void getProjectIdByApiKey_HashMismatch_ReturnsNull() {
-        // Given
-        String rawApiKey = "docu_1234567890abcdef";
-        String prefix = HmacApiKeyUtil.extractPrefix(rawApiKey);
-        String last4 = HmacApiKeyUtil.extractLast4(rawApiKey);
-        // DB에는 다른 키의 해시가 저장되어 있다고 가정
-        String wrongHashedApiKey = HmacApiKeyUtil.computeHmac("wrong-api-key", hmacSecret);
-        ProjectApiKey apiKey = ProjectApiKey.create(testProject, wrongHashedApiKey, prefix, last4);
+        // Given: 정상적인 키가 발급되었으나
+        String originalRawApiKey = HmacApiKeyUtil.generatePlainKey();
 
-        when(projectApiKeyRepository.findByKeyPrefix(prefix)).thenReturn(Optional.of(apiKey));
+        // 클라이언트가 끝자리를 'X'로 변조하여 요청했다고 가정
+        String tamperedRawApiKey =
+                originalRawApiKey.substring(0, originalRawApiKey.length() - 1) + "X";
+        String tamperedHashedApiKey = HmacApiKeyUtil.computeHmac(tamperedRawApiKey, hmacSecret);
 
-        // When
-        UUID resultProjectId = validationService.getProjectIdByApiKey(rawApiKey);
+        // 변조된 키로 만든 해시값은 DB에 존재하지 않음
+        when(projectApiKeyRepository.findByApiKeyHash(tamperedHashedApiKey))
+                .thenReturn(Optional.empty());
 
-        // Then
+        // When: 변조된 키로 검증 시도
+        UUID resultProjectId = validationService.getProjectIdByApiKey(tamperedRawApiKey);
+
+        // Then: 식별 실패로 null 반환
         assertThat(resultProjectId).isNull();
     }
 
@@ -115,10 +122,12 @@ class ProjectApiKeyValidationServiceTest {
         String last4 = HmacApiKeyUtil.extractLast4(generatedRawApiKey);
         String hashedApiKey = HmacApiKeyUtil.computeHmac(generatedRawApiKey, hmacSecret);
 
-        ProjectApiKey apiKey = ProjectApiKey.create(testProject, hashedApiKey, extractedPrefix, last4);
-        apiKey.suspend();
+        ProjectApiKey apiKey =
+                ProjectApiKey.create(testProject, hashedApiKey, extractedPrefix, last4);
+        apiKey.suspend(); // 상태 변경
 
-        when(projectApiKeyRepository.findByKeyPrefix(extractedPrefix)).thenReturn(Optional.of(apiKey));
+        when(projectApiKeyRepository.findByApiKeyHash(hashedApiKey))
+                .thenReturn(Optional.of(apiKey));
 
         // When
         UUID resultProjectId = validationService.getProjectIdByApiKey(generatedRawApiKey);
@@ -136,10 +145,12 @@ class ProjectApiKeyValidationServiceTest {
         String last4 = HmacApiKeyUtil.extractLast4(generatedRawApiKey);
         String hashedApiKey = HmacApiKeyUtil.computeHmac(generatedRawApiKey, hmacSecret);
 
-        ProjectApiKey apiKey = ProjectApiKey.create(testProject, hashedApiKey, extractedPrefix, last4);
-        apiKey.revoke();
+        ProjectApiKey apiKey =
+                ProjectApiKey.create(testProject, hashedApiKey, extractedPrefix, last4);
+        apiKey.revoke(); // 상태 변경
 
-        when(projectApiKeyRepository.findByKeyPrefix(extractedPrefix)).thenReturn(Optional.of(apiKey));
+        when(projectApiKeyRepository.findByApiKeyHash(hashedApiKey))
+                .thenReturn(Optional.of(apiKey));
 
         // When
         UUID resultProjectId = validationService.getProjectIdByApiKey(generatedRawApiKey);
