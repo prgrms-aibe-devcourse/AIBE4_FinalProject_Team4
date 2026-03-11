@@ -1,7 +1,7 @@
 package kr.java.documind.domain.logprocessor.service;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import java.util.Set;
 import java.util.UUID;

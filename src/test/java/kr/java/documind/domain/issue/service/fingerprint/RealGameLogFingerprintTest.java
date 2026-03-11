@@ -1,13 +1,17 @@
 package kr.java.documind.domain.issue.service.fingerprint;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import kr.java.documind.domain.issue.model.enums.FingerprintQuality;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;

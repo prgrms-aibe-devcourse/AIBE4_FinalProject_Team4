@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import kr.java.documind.domain.logcollector.model.dto.LogEvent;
 import kr.java.documind.domain.issue.service.tracking.UserCountTracker;
+import kr.java.documind.domain.logcollector.model.dto.LogEvent;
 import kr.java.documind.domain.logprocessor.model.dto.LogWrapper;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository;
@@ -167,8 +167,7 @@ public class LogBufferService {
                         .forEach(
                                 w ->
                                         userCountTracker.trackTotalLogs(
-                                                w.log().getProjectId(),
-                                                w.log().getOccurredAt()));
+                                                w.log().getProjectId(), w.log().getOccurredAt()));
 
                 // 로그 저장 후 이슈 그룹핑 수행
                 try {
@@ -255,8 +254,7 @@ public class LogBufferService {
                         .forEach(
                                 w ->
                                         userCountTracker.trackTotalLogs(
-                                                w.log().getProjectId(),
-                                                w.log().getOccurredAt()));
+                                                w.log().getProjectId(), w.log().getOccurredAt()));
 
                 // DLQ 재시도 성공 후 이슈 그룹핑 수행
                 try {
@@ -339,7 +337,10 @@ public class LogBufferService {
                     "[ACK & DEL] Failed message acknowledged and deleted to prevent stream/PEL buildup. RecordId: {}",
                     recordId);
         } catch (Exception e) {
-            log.error("[ACK & DEL] Failed to acknowledge and delete message. RecordId: {}", recordId, e);
+            log.error(
+                    "[ACK & DEL] Failed to acknowledge and delete message. RecordId: {}",
+                    recordId,
+                    e);
         }
     }
 }

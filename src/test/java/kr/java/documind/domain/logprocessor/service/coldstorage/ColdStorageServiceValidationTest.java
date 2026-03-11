@@ -1,6 +1,7 @@
 package kr.java.documind.domain.logprocessor.service.coldstorage;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Method;
 import java.time.LocalDate;

@@ -24,11 +24,6 @@ spotless {
     lineEndings 'UNIX'
 }
 
-// 컴파일 시 자동으로 포맷팅 적용 (선택)
-tasks.named('compileJava') {
-    dependsOn 'spotlessApply'
-}
-
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)

@@ -1,0 +1,5 @@
+# 모든 텍스트 파일은 Git 저장소에 들어올 때 LF로 변환되도록 강제
+* text=auto eol=lf
+
+# Java 소스 코드는 명시적으로 LF 사용
+*.java text eol=lf

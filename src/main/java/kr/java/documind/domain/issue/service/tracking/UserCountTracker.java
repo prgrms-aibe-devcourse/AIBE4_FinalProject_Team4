@@ -239,11 +239,7 @@ public class UserCountTracker {
 
         } catch (Exception e) {
             log.error(
-                    "전체 로그 수 조회 실패 - projectId: {}, start: {}, end: {}",
-                    projectId,
-                    start,
-                    end,
-                    e);
+                    "전체 로그 수 조회 실패 - projectId: {}, start: {}, end: {}", projectId, start, end, e);
             // Redis 장애 시 0 반환 (fallback)
             return 0L;
         }

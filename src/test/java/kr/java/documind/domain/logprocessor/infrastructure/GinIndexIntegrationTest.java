@@ -1,6 +1,6 @@
 package kr.java.documind.domain.logprocessor.infrastructure;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.OffsetDateTime;
 import java.util.List;
