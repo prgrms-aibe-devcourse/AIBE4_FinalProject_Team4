@@ -67,42 +67,42 @@
                             border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
                     <!-- 최대 5개 높이(~240px)까지만 표시, 초과 시 스크롤 -->
                     <div class="overflow-y-auto max-h-[240px]">
-                    <div th:each="proj : ${data.myProjects()}"
-                         class="border-b border-gray-50 last:border-0">
-                        <a th:href="@{/projects/{id}/settings(id=${proj.publicId()})}"
-                           class="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50
+                        <div th:each="proj : ${data.myProjects()}"
+                             class="border-b border-gray-50 last:border-0">
+                            <a th:href="@{/projects/{id}/settings(id=${proj.publicId()})}"
+                               class="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50
                                   transition-colors">
-                            <div class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center
+                                <div class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center
                                         justify-center overflow-hidden shrink-0">
-                                <img th:if="${proj.profileUrl() != null}"
-                                     th:src="${proj.profileUrl()}" alt=""
-                                     class="w-full h-full object-cover"/>
-                                <svg th:unless="${proj.profileUrl() != null}"
-                                     class="w-3.5 h-3.5 text-indigo-400" fill="none"
-                                     stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          stroke-width="1.5"
-                                          d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
+                                    <img th:if="${proj.profileUrl() != null}"
+                                         th:src="${proj.profileUrl()}" alt=""
+                                         class="w-full h-full object-cover"/>
+                                    <svg th:unless="${proj.profileUrl() != null}"
+                                         class="w-3.5 h-3.5 text-indigo-400" fill="none"
+                                         stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              stroke-width="1.5"
+                                              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
                                              a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2
                                              a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"/>
+                                    </svg>
+                                </div>
+                                <span class="flex-1 text-sm text-gray-700 truncate"
+                                      th:text="${proj.name()}">프로젝트명</span>
+                                <!-- 현재 선택된 프로젝트 체크 -->
+                                <svg th:if="${proj.publicId() == data.project().publicId()}"
+                                     class="w-4 h-4 text-blue-500 shrink-0" fill="none"
+                                     stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="2" d="M5 13l4 4L19 7"/>
                                 </svg>
-                            </div>
-                            <span class="flex-1 text-sm text-gray-700 truncate"
-                                  th:text="${proj.name()}">프로젝트명</span>
-                            <!-- 현재 선택된 프로젝트 체크 -->
-                            <svg th:if="${proj.publicId() == data.project().publicId()}"
-                                 class="w-4 h-4 text-blue-500 shrink-0" fill="none"
-                                 stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                      stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                        </a>
-                    </div>
-                    <!-- 빈 목록 대비 -->
-                    <div th:if="${data.myProjects().isEmpty()}"
-                         class="px-4 py-3 text-xs text-gray-400 text-center">
-                        참여 중인 프로젝트가 없습니다.
-                    </div>
+                            </a>
+                        </div>
+                        <!-- 빈 목록 대비 -->
+                        <div th:if="${data.myProjects().isEmpty()}"
+                             class="px-4 py-3 text-xs text-gray-400 text-center">
+                            참여 중인 프로젝트가 없습니다.
+                        </div>
                     </div><!-- /overflow-y-auto -->
                 </div>
             </div>
@@ -441,76 +441,83 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
-                                <tr class="border-b border-gray-100">
-                                    <th class="px-6 py-3 text-left text-xs font-semibold
-                                               text-gray-500 uppercase tracking-wide w-1/3">이름</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold
-                                               text-gray-500 uppercase tracking-wide w-1/3">이메일</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold
-                                               text-gray-500 uppercase tracking-wide w-36">권한</th>
-                                    <th th:if="${data.isManager()}"
-                                        class="px-6 py-3 text-right text-xs font-semibold
-                                               text-gray-500 uppercase tracking-wide">작업</th>
-                                </tr>
+                            <tr class="border-b border-gray-100">
+                                <th class="px-6 py-3 text-left text-xs font-semibold
+                                               text-gray-500 uppercase tracking-wide w-1/3">이름
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold
+                                               text-gray-500 uppercase tracking-wide w-1/3">이메일
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold
+                                               text-gray-500 uppercase tracking-wide w-36">권한
+                                </th>
+                                <th th:if="${data.isManager()}"
+                                    class="px-6 py-3 text-right text-xs font-semibold
+                                               text-gray-500 uppercase tracking-wide">작업
+                                </th>
+                            </tr>
                             </thead>
                             <tbody>
-                                <tr th:each="member : ${data.members()}"
-                                    class="border-b border-gray-50 last:border-0
+                            <tr th:each="member : ${data.members()}"
+                                class="border-b border-gray-50 last:border-0
                                            hover:bg-gray-50 transition-colors">
 
-                                    <!-- 이름 + 아바타 -->
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-3">
-                                            <!-- 프로필 이미지 -->
-                                            <div class="w-8 h-8 rounded-full overflow-hidden shrink-0">
-                                                <img th:if="${member.profileUrl() != null}"
-                                                     th:src="${member.profileUrl()}"
-                                                     alt="" class="w-full h-full object-cover"/>
-                                                <div th:unless="${member.profileUrl() != null}"
-                                                     class="w-8 h-8 rounded-full bg-indigo-400
+                                <!-- 이름 + 아바타 -->
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <!-- 프로필 이미지 -->
+                                        <div class="w-8 h-8 rounded-full overflow-hidden shrink-0">
+                                            <img th:if="${member.profileUrl() != null}"
+                                                 th:src="${member.profileUrl()}"
+                                                 alt="" class="w-full h-full object-cover"/>
+                                            <div th:unless="${member.profileUrl() != null}"
+                                                 class="w-8 h-8 rounded-full bg-indigo-400
                                                             flex items-center justify-center">
                                                     <span class="text-white text-xs font-bold"
                                                           th:text="${member.nickname() != null
                                                                      ? #strings.substring(member.nickname(), 0, 1)
                                                                      : 'U'}">U</span>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p class="font-semibold text-gray-900"
-                                                   th:text="${member.name()}">이름</p>
-                                                <p class="text-xs text-gray-400"
-                                                   th:text="${member.nickname()}">닉네임</p>
                                             </div>
                                         </div>
-                                    </td>
+                                        <div>
+                                            <p class="font-semibold text-gray-900"
+                                               th:text="${member.name()}">이름</p>
+                                            <p class="text-xs text-gray-400"
+                                               th:text="${member.nickname()}">닉네임</p>
+                                        </div>
+                                    </div>
+                                </td>
 
-                                    <!-- 이메일 -->
-                                    <td class="px-6 py-4 text-gray-500"
-                                        th:text="${member.email()}">email</td>
+                                <!-- 이메일 -->
+                                <td class="px-6 py-4 text-gray-500"
+                                    th:text="${member.email()}">email
+                                </td>
 
-                                    <!-- 권한 -->
-                                    <td class="px-6 py-4">
-                                        <!-- MANAGER 뷰: CEO는 배지, 나머지는 셀렉트 -->
-                                        <th:block th:if="${data.isManager()}">
+                                <!-- 권한 -->
+                                <td class="px-6 py-4">
+                                    <!-- MANAGER 뷰: CEO는 배지, 나머지는 셀렉트 -->
+                                    <th:block th:if="${data.isManager()}">
                                             <span th:if="${member.isCeo()}"
                                                   class="inline-flex items-center px-2.5 py-1
                                                          rounded-lg text-xs font-semibold
                                                          bg-indigo-50 text-indigo-700">관리자</span>
-                                            <select th:unless="${member.isCeo()}"
-                                                    th:attr="data-mid=${member.memberId()}"
-                                                    onchange="changeRole(this.dataset.mid, this.value)"
-                                                    class="text-xs border border-gray-200 rounded-lg
+                                        <select th:unless="${member.isCeo()}"
+                                                th:attr="data-mid=${member.memberId()}"
+                                                onchange="changeRole(this.dataset.mid, this.value)"
+                                                class="text-xs border border-gray-200 rounded-lg
                                                            px-2 py-1 bg-white text-gray-700
                                                            focus:outline-none focus:ring-1
                                                            focus:ring-blue-300 cursor-pointer">
-                                                <option value="MANAGER"
-                                                        th:selected="${member.isManager()}">관리자</option>
-                                                <option value="MEMBER"
-                                                        th:selected="${!member.isManager()}">구성원</option>
-                                            </select>
-                                        </th:block>
-                                        <!-- MEMBER 뷰: 배지 표시 -->
-                                        <th:block th:unless="${data.isManager()}">
+                                            <option value="MANAGER"
+                                                    th:selected="${member.isManager()}">관리자
+                                            </option>
+                                            <option value="MEMBER"
+                                                    th:selected="${!member.isManager()}">구성원
+                                            </option>
+                                        </select>
+                                    </th:block>
+                                    <!-- MEMBER 뷰: 배지 표시 -->
+                                    <th:block th:unless="${data.isManager()}">
                                             <span class="inline-flex items-center px-2.5 py-1
                                                          rounded-lg text-xs font-semibold"
                                                   th:classappend="${member.isManager()}
@@ -519,23 +526,23 @@
                                                   th:text="${member.isManager()} ? '관리자' : '구성원'">
                                                 구성원
                                             </span>
-                                        </th:block>
-                                    </td>
+                                    </th:block>
+                                </td>
 
-                                    <!-- 작업 (MANAGER 전용) -->
-                                    <td th:if="${data.isManager()}" class="px-6 py-4 text-right">
-                                        <!-- CEO나 자신은 제거 불가 -->
-                                        <button th:unless="${member.isCeo() or member.isCurrentUser()}"
-                                                type="button"
-                                                th:attr="data-mid=${member.memberId()},
+                                <!-- 작업 (MANAGER 전용) -->
+                                <td th:if="${data.isManager()}" class="px-6 py-4 text-right">
+                                    <!-- CEO나 자신은 제거 불가 -->
+                                    <button th:unless="${member.isCeo() or member.isCurrentUser()}"
+                                            type="button"
+                                            th:attr="data-mid=${member.memberId()},
                                                          data-mname=${member.name()}"
-                                                onclick="removeMember(this.dataset.mid, this.dataset.mname)"
-                                                class="text-xs font-semibold text-red-500
+                                            onclick="removeMember(this.dataset.mid, this.dataset.mname)"
+                                            class="text-xs font-semibold text-red-500
                                                        hover:text-red-700 transition-colors">
-                                            제거
-                                        </button>
-                                    </td>
-                                </tr>
+                                        제거
+                                    </button>
+                                </td>
+                            </tr>
                             </tbody>
                         </table>
 
@@ -703,8 +710,6 @@
     </div>
 
     <script th:src="@{/js/member/Auth.js}"></script>
-    <script th:src="@{/js/member/ProjectSetting.js}"></script>
-
     <script th:inline="javascript">
         /*<![CDATA[*/
         const _PS = {
@@ -715,6 +720,7 @@
         };
         /*]]>*/
     </script>
+    <script th:src="@{/js/member/ProjectSetting.js}"></script>
 
 </div>
 </body>

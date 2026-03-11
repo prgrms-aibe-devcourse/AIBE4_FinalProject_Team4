@@ -58,9 +58,7 @@ public class SecurityConfig {
     };
 
     /** 인증 없이 접근 가능한 Actuator 엔드포인트 */
-    private static final String[] PUBLIC_ACTUATOR_PATHS = {
-        "/actuator/health",
-    };
+    private static final String[] PUBLIC_ACTUATOR_PATHS = {"/actuator/health", "/actuator/env"};
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -86,6 +84,9 @@ public class SecurityConfig {
                                         .permitAll()
                                         .requestMatchers("/actuator/**")
                                         .hasRole("ADMIN")
+                                        // ── OAuth2 관련 경로 ──────────────────────────────
+                                        .requestMatchers("/oauth2/**", "/login/oauth2/**")
+                                        .permitAll()
                                         // ── 어드민 전용 페이지 및 API ───────────────────────
                                         .requestMatchers("/admin/**", "/api/admin/**")
                                         .hasRole("ADMIN")

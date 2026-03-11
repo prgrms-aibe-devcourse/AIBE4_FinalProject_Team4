@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
@@ -11,15 +10,15 @@
         <img src="/images/logo.png" alt="DOCUMIND" class="h-8 w-auto object-contain">
     </a>
 
-    <div th:replace="::user-info-area"></div>
+    <div th:replace="~{::user-info-area}"></div>
 </header>
 
 <div th:fragment="user-bar"
      class="h-14 bg-white border-b border-gray-200 flex items-center justify-end px-6 shrink-0">
-    <div th:replace="::user-info-area"></div>
+    <div th:replace="~{::user-info-area}"></div>
 </div>
 
-<div th:fragment="user-info-area" class="flex items-center gap-4">
+<div th:fragment="~{::user-info-area}" class="flex items-center gap-4">
 
     <!-- 무료 플랜 뱃지 (ADMIN 제외) -->
     <span th:unless="${headerInfo != null
