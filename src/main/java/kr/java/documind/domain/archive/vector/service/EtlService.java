@@ -1,6 +1,7 @@
 package kr.java.documind.domain.archive.vector.service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -13,11 +14,14 @@ import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingStatusSseM
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.domain.archive.vector.model.event.EmbeddingStatusEvent;
+import kr.java.documind.global.exception.StorageException;
+import kr.java.documind.global.storage.FileStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -32,6 +36,7 @@ public class EtlService {
     private final DocumentTransformer documentTransformer;
     private final EmbeddingModelClient embeddingModelClient;
     private final VectorStoreManager vectorStoreManager;
+    private final FileStore fileStore;
 
     private final ApplicationEventPublisher eventPublisher;
     private final EmbeddingStatusSseManager embeddingStatusSseManager;
@@ -40,9 +45,11 @@ public class EtlService {
         return embeddingStatusSseManager.register(sourceId, currentStatus);
     }
 
-    public void process(UUID projectId, Long sourceId, Path tempFilePath) {
+    public void process(UUID projectId, Long sourceId, String storedKey) {
+        Path tempFilePath = null;
         try {
             changeStatus(sourceId, EmbeddingStatus.PROCESSING);
+            tempFilePath = createTempFile(storedKey);
 
             List<Document> documents = documentContentExtractor.read(tempFilePath);
 
@@ -93,7 +100,28 @@ public class EtlService {
         }
     }
 
+    private Path createTempFile(String storedKey) {
+        Resource resource = fileStore.load(storedKey);
+        String suffix = resolveSuffix(storedKey);
+
+        try (InputStream inputStream = resource.getInputStream()) {
+            Path tempFilePath = Files.createTempFile("documind-etl-", suffix);
+            Files.copy(inputStream, tempFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            return tempFilePath;
+        } catch (IOException e) {
+            throw new StorageException("임시 파일 생성에 실패했습니다.", e);
+        }
+    }
+
+    private String resolveSuffix(String storedKey) {
+        int lastDot = storedKey.lastIndexOf('.');
+        return lastDot >= 0 ? storedKey.substring(lastDot) : ".tmp";
+    }
+
     private void deleteTempFile(Path tempFilePath) {
+        if (tempFilePath == null) {
+            return;
+        }
         try {
             Files.deleteIfExists(tempFilePath);
         } catch (IOException e) {
