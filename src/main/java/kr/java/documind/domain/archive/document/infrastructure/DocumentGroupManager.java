@@ -5,6 +5,7 @@ import java.util.UUID;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupRepository;
 import kr.java.documind.domain.archive.document.model.repository.DocumentGroupSummary;
+import kr.java.documind.domain.archive.document.model.vo.DocumentGroupSummaryResult;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,10 @@ public class DocumentGroupManager {
                 .orElseThrow(() -> new NotFoundException("프로젝트에서 문서 그룹을 찾을 수 없습니다."));
     }
 
-    public Page<DocumentGroupSummary> findGroupSummaries(UUID projectId, Pageable pageable) {
-        return documentGroupRepository.findGroupSummariesByProjectId(projectId, pageable);
+    public Page<DocumentGroupSummaryResult> findGroupSummaries(UUID projectId, Pageable pageable) {
+        return documentGroupRepository
+                .findGroupSummariesByProjectId(projectId, pageable)
+                .map(this::toDocumentGroupSummaryResult);
     }
 
     public List<String> findDistinctGroupNames(UUID projectId) {
@@ -50,5 +53,26 @@ public class DocumentGroupManager {
 
     public void delete(DocumentGroup group) {
         documentGroupRepository.delete(group);
+    }
+
+    private DocumentGroupSummaryResult toDocumentGroupSummaryResult(DocumentGroupSummary summary) {
+        return new DocumentGroupSummaryResult(
+                summary.getGroupId(),
+                summary.getGroupName(),
+                summary.getCategory(),
+                formatVersion(summary.getVersionOrdinal()),
+                summary.getDocumentCount());
+    }
+
+    private String formatVersion(Long ordinal) {
+        if (ordinal == null) {
+            return "v0.0.0";
+        }
+
+        long major = ordinal / 1_000_000;
+        long minor = (ordinal % 1_000_000) / 1_000;
+        long patch = ordinal % 1_000;
+
+        return "v" + major + "." + minor + "." + patch;
     }
 }
