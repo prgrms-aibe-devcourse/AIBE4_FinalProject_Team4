@@ -38,16 +38,16 @@ public class DocumentGroup extends BaseEntity {
     }
 
     public static DocumentGroup create(
-            UUID projectId, String category, String groupName, String choseong) {
-        return new DocumentGroup(projectId, category, groupName, choseong);
+            UUID projectId, String category, String groupName) {
+        return new DocumentGroup(projectId, category, groupName, "초성");
     }
 
     public void updateCategory(String category) {
         this.category = category;
     }
 
-    public void updateGroupName(String groupName, String choseong) {
+    public void updateGroupName(String groupName) {
         this.groupName = groupName;
-        this.choseong = choseong;
+        this.choseong = "초성변경";
     }
 }
