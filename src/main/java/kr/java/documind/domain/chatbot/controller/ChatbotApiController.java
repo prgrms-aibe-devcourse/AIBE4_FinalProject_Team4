@@ -42,9 +42,10 @@ public class ChatbotApiController {
 
     @PostMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chat(
+            @ProjectId UUID projectId,
             @AuthenticationPrincipal CustomUserDetails authMember,
             @RequestBody @Valid ChatRequest request) {
         String conversationId = authMember.getMemberId().toString();
-        return chatbotService.chat(conversationId, request);
+        return chatbotService.chat(conversationId, projectId, request);
     }
 }
