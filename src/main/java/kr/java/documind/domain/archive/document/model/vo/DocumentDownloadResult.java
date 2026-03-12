@@ -1,4 +1,4 @@
-package kr.java.documind.domain.archive.document.model.dto.response;
+package kr.java.documind.domain.archive.document.model.vo;
 
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.global.enums.AllowedFileType;

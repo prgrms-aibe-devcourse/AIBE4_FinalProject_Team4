@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUploadRequest;
-import kr.java.documind.domain.archive.document.model.dto.response.DocumentDownloadResult;
+import kr.java.documind.domain.archive.document.model.vo.DocumentDownloadResult;
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetadataResponse;
 import kr.java.documind.domain.archive.document.service.DocumentMetadataService;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
