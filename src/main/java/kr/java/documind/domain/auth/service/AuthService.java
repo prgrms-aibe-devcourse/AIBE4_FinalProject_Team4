@@ -64,20 +64,21 @@ public class AuthService {
             redisTokenService.deleteRefreshToken(memberId);
 
             log.warn(
-                "[AuthService] 비활성 계정의 토큰 갱신 시도: memberId={} status={}",
-                memberId,
-                member.getAccountStatus());
+                    "[AuthService] 비활성 계정의 토큰 갱신 시도: memberId={} status={}",
+                    memberId,
+                    member.getAccountStatus());
 
             throw new ForbiddenException("계정이 비활성화되었습니다. 다시 로그인하세요.");
         }
     }
 
     private void rotateRefreshToken(UUID memberId, String oldRefreshToken, String newRefreshToken) {
-        boolean rotated = redisTokenService.rotateRefreshToken(
-            memberId,
-            oldRefreshToken,
-            newRefreshToken,
-            jwtProperties.getRefreshExpirationSeconds());
+        boolean rotated =
+                redisTokenService.rotateRefreshToken(
+                        memberId,
+                        oldRefreshToken,
+                        newRefreshToken,
+                        jwtProperties.getRefreshExpirationSeconds());
 
         if (!rotated) {
             log.warn("[AuthService] Refresh Token 교체 실패: memberId={}", memberId);

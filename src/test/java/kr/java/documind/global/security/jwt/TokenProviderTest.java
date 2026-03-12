@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Base64;
 import java.util.UUID;
-
 import kr.java.documind.domain.auth.exception.InvalidTokenException;
 import kr.java.documind.domain.auth.exception.TokenExpiredException;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
@@ -20,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class TokenProviderTest {
 
     private static final String TEST_SECRET =
-        Base64.getEncoder().encodeToString("abcdefghijklmnopqrstuvwxyz123456".getBytes());
+            Base64.getEncoder().encodeToString("abcdefghijklmnopqrstuvwxyz123456".getBytes());
     private static final long ACCESS_TTL_SECONDS = 3600L;
     private static final long REFRESH_TTL_SECONDS = 604800L;
 
@@ -28,26 +27,22 @@ class TokenProviderTest {
 
     @BeforeEach
     void setUp() {
-        JwtProperties props = new JwtProperties(
-            TEST_SECRET,
-            ACCESS_TTL_SECONDS,
-            REFRESH_TTL_SECONDS,
-            "access_token",
-            "refresh_token",
-            false);
+        JwtProperties props =
+                new JwtProperties(
+                        TEST_SECRET,
+                        ACCESS_TTL_SECONDS,
+                        REFRESH_TTL_SECONDS,
+                        "access_token",
+                        "refresh_token",
+                        false);
 
         tokenProvider = new TokenProvider(props);
         tokenProvider.init();
     }
 
     private String createExpiredAccessToken(UUID memberId, GlobalRole role) {
-        JwtProperties expiredProps = new JwtProperties(
-            TEST_SECRET,
-            -1L,
-            -1L,
-            "access_token",
-            "refresh_token",
-            false);
+        JwtProperties expiredProps =
+                new JwtProperties(TEST_SECRET, -1L, -1L, "access_token", "refresh_token", false);
 
         TokenProvider expiredProvider = new TokenProvider(expiredProps);
         expiredProvider.init();
@@ -56,13 +51,8 @@ class TokenProviderTest {
     }
 
     private String createExpiredRefreshToken(UUID memberId, GlobalRole role) {
-        JwtProperties expiredProps = new JwtProperties(
-            TEST_SECRET,
-            -1L,
-            -1L,
-            "access_token",
-            "refresh_token",
-            false);
+        JwtProperties expiredProps =
+                new JwtProperties(TEST_SECRET, -1L, -1L, "access_token", "refresh_token", false);
 
         TokenProvider expiredProvider = new TokenProvider(expiredProps);
         expiredProvider.init();
@@ -85,7 +75,8 @@ class TokenProviderTest {
 
             // Then
             assertThat(token).isNotNull().isNotBlank();
-            assertThatCode(() -> tokenProvider.validateAccessToken(token)).doesNotThrowAnyException();
+            assertThatCode(() -> tokenProvider.validateAccessToken(token))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -118,9 +109,8 @@ class TokenProviderTest {
         @DisplayName("액세스 토큰 생성: access 토큰이면 isAccessToken은 true를 반환")
         void generateAccessToken_access토큰이면_isAccessToken은True를반환한다() {
             // Given
-            String token = tokenProvider.generateAccessToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String token =
+                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When
             boolean result = tokenProvider.isAccessToken(token);
@@ -133,9 +123,8 @@ class TokenProviderTest {
         @DisplayName("액세스 토큰 생성: access 토큰이면 isRefreshToken은 false를 반환")
         void generateAccessToken_access토큰이면_isRefreshToken은False를반환한다() {
             // Given
-            String token = tokenProvider.generateAccessToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String token =
+                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When
             boolean result = tokenProvider.isRefreshToken(token);
@@ -160,7 +149,8 @@ class TokenProviderTest {
 
             // Then
             assertThat(token).isNotNull().isNotBlank();
-            assertThatCode(() -> tokenProvider.validateRefreshToken(token)).doesNotThrowAnyException();
+            assertThatCode(() -> tokenProvider.validateRefreshToken(token))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -181,9 +171,8 @@ class TokenProviderTest {
         @DisplayName("리프레시 토큰 생성: refresh 토큰이면 isAccessToken은 false를 반환")
         void generateRefreshToken_refresh토큰이면_isAccessToken은False를반환한다() {
             // Given
-            String token = tokenProvider.generateRefreshToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String token =
+                    tokenProvider.generateRefreshToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When
             boolean result = tokenProvider.isAccessToken(token);
@@ -196,9 +185,8 @@ class TokenProviderTest {
         @DisplayName("리프레시 토큰 생성: refresh 토큰이면 isRefreshToken은 true를 반환")
         void generateRefreshToken_refresh토큰이면_isRefreshToken은True를반환한다() {
             // Given
-            String token = tokenProvider.generateRefreshToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String token =
+                    tokenProvider.generateRefreshToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When
             boolean result = tokenProvider.isRefreshToken(token);
@@ -216,27 +204,24 @@ class TokenProviderTest {
         @DisplayName("액세스 토큰 검증: 유효한 액세스 토큰이면 예외가 발생하지 않는다")
         void validateAccessToken_유효한액세스토큰이면_예외가발생하지않는다() {
             // Given
-            String token = tokenProvider.generateAccessToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String token =
+                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When & Then
             assertThatCode(() -> tokenProvider.validateAccessToken(token))
-                .doesNotThrowAnyException();
+                    .doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("액세스 토큰 검증: 만료된 액세스 토큰이면 TokenExpiredException 발생")
         void validateAccessToken_만료된액세스토큰이면_TokenExpiredException이발생한다() {
             // Given
-            String expiredToken = createExpiredAccessToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String expiredToken = createExpiredAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When & Then
             assertThatThrownBy(() -> tokenProvider.validateAccessToken(expiredToken))
-                .isInstanceOf(TokenExpiredException.class)
-                .hasMessageContaining("만료");
+                    .isInstanceOf(TokenExpiredException.class)
+                    .hasMessageContaining("만료");
         }
 
         @Test
@@ -247,8 +232,8 @@ class TokenProviderTest {
 
             // When & Then
             assertThatThrownBy(() -> tokenProvider.validateAccessToken(tamperedToken))
-                .isInstanceOf(InvalidTokenException.class)
-                .hasMessageContaining("유효하지 않은 토큰");
+                    .isInstanceOf(InvalidTokenException.class)
+                    .hasMessageContaining("유효하지 않은 토큰");
         }
 
         @Test
@@ -259,22 +244,21 @@ class TokenProviderTest {
 
             // When & Then
             assertThatThrownBy(() -> tokenProvider.validateAccessToken(blankToken))
-                .isInstanceOf(InvalidTokenException.class)
-                .hasMessageContaining("유효하지 않은 토큰");
+                    .isInstanceOf(InvalidTokenException.class)
+                    .hasMessageContaining("유효하지 않은 토큰");
         }
 
         @Test
         @DisplayName("액세스 토큰 검증: refresh 토큰이면 InvalidTokenException 발생")
         void validateAccessToken_refresh토큰이면_InvalidTokenException이발생한다() {
             // Given
-            String refreshToken = tokenProvider.generateRefreshToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String refreshToken =
+                    tokenProvider.generateRefreshToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When & Then
             assertThatThrownBy(() -> tokenProvider.validateAccessToken(refreshToken))
-                .isInstanceOf(InvalidTokenException.class)
-                .hasMessageContaining("유효하지 않은 토큰");
+                    .isInstanceOf(InvalidTokenException.class)
+                    .hasMessageContaining("유효하지 않은 토큰");
         }
     }
 
@@ -286,41 +270,37 @@ class TokenProviderTest {
         @DisplayName("리프레시 토큰 검증: 유효한 리프레시 토큰이면 예외가 발생하지 않는다")
         void validateRefreshToken_유효한리프레시토큰이면_예외가발생하지않는다() {
             // Given
-            String token = tokenProvider.generateRefreshToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String token =
+                    tokenProvider.generateRefreshToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When & Then
             assertThatCode(() -> tokenProvider.validateRefreshToken(token))
-                .doesNotThrowAnyException();
+                    .doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("리프레시 토큰 검증: 만료된 리프레시 토큰이면 TokenExpiredException 발생")
         void validateRefreshToken_만료된리프레시토큰이면_TokenExpiredException이발생한다() {
             // Given
-            String expiredToken = createExpiredRefreshToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String expiredToken = createExpiredRefreshToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When & Then
             assertThatThrownBy(() -> tokenProvider.validateRefreshToken(expiredToken))
-                .isInstanceOf(TokenExpiredException.class)
-                .hasMessageContaining("만료");
+                    .isInstanceOf(TokenExpiredException.class)
+                    .hasMessageContaining("만료");
         }
 
         @Test
         @DisplayName("리프레시 토큰 검증: access 토큰이면 InvalidTokenException 발생")
         void validateRefreshToken_access토큰이면_InvalidTokenException이발생한다() {
             // Given
-            String accessToken = tokenProvider.generateAccessToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String accessToken =
+                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When & Then
             assertThatThrownBy(() -> tokenProvider.validateRefreshToken(accessToken))
-                .isInstanceOf(InvalidTokenException.class)
-                .hasMessageContaining("유효하지 않은 토큰");
+                    .isInstanceOf(InvalidTokenException.class)
+                    .hasMessageContaining("유효하지 않은 토큰");
         }
     }
 
@@ -364,8 +344,8 @@ class TokenProviderTest {
 
             // When & Then
             assertThatThrownBy(() -> tokenProvider.getMemberIdAllowExpired(tamperedToken))
-                .isInstanceOf(InvalidTokenException.class)
-                .hasMessageContaining("유효하지 않은 토큰");
+                    .isInstanceOf(InvalidTokenException.class)
+                    .hasMessageContaining("유효하지 않은 토큰");
         }
     }
 
@@ -377,9 +357,8 @@ class TokenProviderTest {
         @DisplayName("남은 시간 조회: 유효한 토큰이면 양수 remainingMillis를 반환")
         void getRemainingMillis_유효한토큰이면_양수RemainingMillis를반환한다() {
             // Given
-            String token = tokenProvider.generateAccessToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String token =
+                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When
             long remainingMillis = tokenProvider.getRemainingMillis(token);
@@ -392,9 +371,7 @@ class TokenProviderTest {
         @DisplayName("남은 시간 조회: 만료된 토큰이면 음수 remainingMillis를 반환")
         void getRemainingMillis_만료된토큰이면_음수RemainingMillis를반환한다() {
             // Given
-            String expiredToken = createExpiredAccessToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String expiredToken = createExpiredAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When
             long remainingMillis = tokenProvider.getRemainingMillis(expiredToken);
@@ -412,12 +389,10 @@ class TokenProviderTest {
         @DisplayName("토큰 ID 조회: 서로 다른 유효한 토큰이면 서로 다른 jti를 반환")
         void getTokenId_서로다른유효한토큰이면_서로다른Jti를반환한다() {
             // Given
-            String tokenA = tokenProvider.generateAccessToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
-            String tokenB = tokenProvider.generateAccessToken(
-                UUID.randomUUID(),
-                GlobalRole.EMPLOYEE);
+            String tokenA =
+                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
+            String tokenB =
+                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
 
             // When
             String tokenIdA = tokenProvider.getTokenId(tokenA);

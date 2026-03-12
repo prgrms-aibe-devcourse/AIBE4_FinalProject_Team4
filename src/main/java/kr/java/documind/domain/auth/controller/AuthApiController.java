@@ -1,6 +1,5 @@
 package kr.java.documind.domain.auth.controller;
 
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
@@ -29,8 +28,7 @@ public class AuthApiController {
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<Void>> refresh(
-        HttpServletRequest request,
-        HttpServletResponse response) {
+            HttpServletRequest request, HttpServletResponse response) {
 
         String refreshToken = getCookieValue(request, jwtProperties.getRefreshCookieName());
 
@@ -42,9 +40,9 @@ public class AuthApiController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-        @AuthenticationPrincipal CustomUserDetails authMember,
-        HttpServletRequest request,
-        HttpServletResponse response) {
+            @AuthenticationPrincipal CustomUserDetails authMember,
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
         String accessToken = getCookieValue(request, jwtProperties.getAccessCookieName());
         String refreshToken = getCookieValue(request, jwtProperties.getRefreshCookieName());
@@ -64,18 +62,18 @@ public class AuthApiController {
         boolean secure = jwtProperties.isCookieSecure();
 
         cookieUtil.addCookie(
-            response,
-            jwtProperties.getAccessCookieName(),
-            authTokens.accessToken(),
-            jwtProperties.getAccessExpirationSeconds(),
-            secure);
+                response,
+                jwtProperties.getAccessCookieName(),
+                authTokens.accessToken(),
+                jwtProperties.getAccessExpirationSeconds(),
+                secure);
 
         cookieUtil.addCookie(
-            response,
-            jwtProperties.getRefreshCookieName(),
-            authTokens.refreshToken(),
-            jwtProperties.getRefreshExpirationSeconds(),
-            secure);
+                response,
+                jwtProperties.getRefreshCookieName(),
+                authTokens.refreshToken(),
+                jwtProperties.getRefreshExpirationSeconds(),
+                secure);
     }
 
     private void deleteAuthCookies(HttpServletResponse response) {

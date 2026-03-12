@@ -41,18 +41,18 @@ public class TokenProvider {
 
     public String generateAccessToken(UUID memberId, GlobalRole globalRole) {
         return generateToken(
-            memberId,
-            globalRole,
-            TOKEN_TYPE_ACCESS,
-            jwtProperties.getAccessExpirationSeconds());
+                memberId,
+                globalRole,
+                TOKEN_TYPE_ACCESS,
+                jwtProperties.getAccessExpirationSeconds());
     }
 
     public String generateRefreshToken(UUID memberId, GlobalRole globalRole) {
         return generateToken(
-            memberId,
-            globalRole,
-            TOKEN_TYPE_REFRESH,
-            jwtProperties.getRefreshExpirationSeconds());
+                memberId,
+                globalRole,
+                TOKEN_TYPE_REFRESH,
+                jwtProperties.getRefreshExpirationSeconds());
     }
 
     public void validateRefreshToken(String token) {
@@ -154,30 +154,23 @@ public class TokenProvider {
     }
 
     private String generateToken(
-        UUID memberId,
-        GlobalRole globalRole,
-        String tokenType,
-        long expirationSeconds) {
+            UUID memberId, GlobalRole globalRole, String tokenType, long expirationSeconds) {
 
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationSeconds * 1000L);
 
         return Jwts.builder()
-            .id(UUID.randomUUID().toString())
-            .subject(memberId.toString())
-            .claim(CLAIM_ROLE, globalRole.name())
-            .claim(CLAIM_TOKEN_TYPE, tokenType)
-            .issuedAt(now)
-            .expiration(expiry)
-            .signWith(secretKey)
-            .compact();
+                .id(UUID.randomUUID().toString())
+                .subject(memberId.toString())
+                .claim(CLAIM_ROLE, globalRole.name())
+                .claim(CLAIM_TOKEN_TYPE, tokenType)
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(secretKey)
+                .compact();
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parser()
-            .verifyWith(secretKey)
-            .build()
-            .parseSignedClaims(token)
-            .getPayload();
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
     }
 }

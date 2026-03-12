@@ -18,7 +18,8 @@ public class RedisConfig {
     @Bean
     public RedisScript<Long> rotateRefreshTokenScript() {
 
-        String script = """
+        String script =
+                """
                 local current = redis.call('GET', KEYS[1])
                 if current == false then
                     return 0
