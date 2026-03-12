@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/base-layout}">
+<!--
+  ╔═══════════════════════════════════════════════════════════════════════╗
+  ║  service-layout.html  ·  Level 2 메인 서비스 레이아웃                ║
+  ║                                                                       ║
+  ║  구조 (L-Shape):                                                      ║
+  ║  ┌────────────────────────────────────────────────────────────────┐  ║
+  ║  │  Header (fixed, h-16 = 64px, z-50, bg-surface-card)           │  ║
+  ║  ├─────────────────┬──────────────────────────────────────────────┤  ║
+  ║  │  Sidebar        │  <main>                                      │  ║
+  ║  │  fixed          │  pl-[240px]  pt-16                           │  ║
+  ║  │  w-[240px]=240px│  min-h-screen  bg-surface-base               │  ║
+  ║  │  top-0 / h-full │  p-content-p (1.5rem)                        │  ║
+  ║  │  bg-surface-    │                                              │  ║
+  ║  │    sidebar      │  layout:fragment="content" ← 도메인 페이지   │  ║
+  ║  │  z-40           │                                              │  ║
+  ║  └─────────────────┴──────────────────────────────────────────────┘  ║
+  ║                                                                       ║
+  ║  컨트롤러 필수 Model 속성:                                            ║
+  ║    pageTitle          (String)  탭 타이틀                             ║
+  ║    activeMenu         (String)  docs | chat | dashboard | logs |      ║
+  ║                                 issues | patches | alerts | settings  ║
+  ║    activeProject      (Long)    현재 프로젝트 ID (없으면 null)         ║
+  ║    currentProjectName (String)  셀렉터 표시용 프로젝트명              ║
+  ║    currentProjectColor (String) 헥스 코드 (예: #EF4444)               ║
+  ║    projectList        (List)    ProjectSummaryDto 목록                 ║
+  ║    headerInfo         (Dto)     유저 정보                              ║
+  ║                                                                       ║
+  ║  사용법 (도메인 페이지):                                              ║
+  ║    layout:decorate="~{common/layouts/service-layout}"                 ║
+  ║    <div layout:fragment="content"> ... </div>                         ║
+  ╚═══════════════════════════════════════════════════════════════════════╝
+-->
+<body>
+<layout:fragment name="body">
+
+    <!-- ══════════════════════════════════════════════════
+         고정 헤더
+         h-16(64px) / fixed / z-50 / bg-surface-card
+         ══════════════════════════════════════════════════ -->
+    <div th:replace="~{common/fragments/header-auth :: header-auth}"></div>
+
+    <!-- ══════════════════════════════════════════════════
+         고정 메인 사이드바
+         w-[240px] / fixed / z-40 / bg-surface-sidebar
+         파라미터: (activeMenu, activeProject)
+         ══════════════════════════════════════════════════ -->
+    <div th:replace="~{common/fragments/sidebar :: sidebar(${activeMenu}, ${activeProject})}"></div>
+
+    <!--
+      ── 콘텐츠 래퍼 ──────────────────────────────────────────
+      pl-[240px] : 고정 사이드바(240px) 오른쪽으로 밀기
+      pt-16      : 고정 헤더(64px) 아래에서 시작
+      min-h-screen + flex-col : 배경색이 전체 뷰포트를 채움
+      ────────────────────────────────────────────────────── -->
+    <div class="pl-[240px] pt-16 min-h-screen flex flex-col bg-surface-base">
+
+        <!-- 스크롤 가능한 메인 콘텐츠 -->
+        <main class="flex-1 p-content-p overflow-y-auto">
+            <!--
+              도메인 페이지가 채우는 실제 콘텐츠 슬롯
+              사용 예)
+                <div layout:fragment="content">
+                    <h1 class="text-h1 text-gray-900">대시보드</h1>
+                </div>
+            -->
+            <layout:fragment name="content">
+                <!-- fallback: 도메인 페이지에서 반드시 오버라이드 -->
+            </layout:fragment>
+        </main>
+
+        <!-- 푸터 -->
+        <footer class="shrink-0 py-4 px-content-p border-t border-divider">
+            <p class="text-xs text-gray-400 text-center">
+                © 2026 Documind Incs. All rights reserved.
+            </p>
+        </footer>
+
+    </div>
+
+    <!-- 로그아웃 확인 모달 -->
+    <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
+
+    <!-- 로그아웃 모달 JS 바인딩 -->
+    <div th:replace="~{common/fragments/header-auth :: logout-script}"></div>
+
+</layout:fragment>
+</body>
+</html>

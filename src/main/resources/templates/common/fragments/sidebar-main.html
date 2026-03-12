@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  ╔═══════════════════════════════════════════════════════════════════════╗
+  ║  sidebar.html  ·  메인 서비스 사이드바                                ║
+  ║                                                                       ║
+  ║  ※ 디자인 토큰 (tailwind.config.js 기준)                             ║
+  ║     너비   : w-[240px] (spacing.sidebar = 240px)                      ║
+  ║     배경   : bg-surface-sidebar (#F3F4F6)                             ║
+  ║     보더   : border-divider (#E5E7EB)                                 ║
+  ║     활성   : bg-docu-primary text-white (#1D85E1)                     ║
+  ║     비활성 : text-gray-600 hover:bg-white hover:text-gray-900         ║
+  ║                                                                       ║
+  ║  구성:                                                                ║
+  ║    1) 로고 (h-16 = header 높이와 맞춤)                                ║
+  ║    2) 소속 회사 정보 (ADMIN 제외)                                     ║
+  ║    3) 프로젝트 셀렉터 드롭다운                                        ║
+  ║    4) 내비게이션 메뉴 (와이어프레임 기준 8개)                         ║
+  ║       문서 | 챗봇 | 대시보드 | 로그 탐색기 |                          ║
+  ║       이슈 | 패치노트 | 알림 | 설정                                   ║
+  ║    5) 하단 마이페이지 바로가기                                        ║
+  ║                                                                       ║
+  ║  파라미터:                                                            ║
+  ║    activeMenu    (String) docs | chat | dashboard | logs |            ║
+  ║                           issues | patches | alerts | settings        ║
+  ║    activeProject (Long)   현재 선택된 프로젝트 ID (없으면 null)        ║
+  ║                                                                       ║
+  ║  추가 Model 속성 (컨트롤러):                                          ║
+  ║    projectList         List<ProjectSummaryDto>                        ║
+  ║    currentProjectName  String                                         ║
+  ║    currentProjectColor String  헥스 코드 (예: #EF4444)                ║
+  ║                                                                       ║
+  ║  ProjectSummaryDto (record):                                          ║
+  ║    Long   id()                                                        ║
+  ║    String name()                                                      ║
+  ║    String color()  헥스 코드                                          ║
+  ╚═══════════════════════════════════════════════════════════════════════╝
+-->
+<aside th:fragment="sidebar(activeMenu, activeProject)"
+       class="fixed top-0 left-0 h-full w-[240px]
+              bg-surface-sidebar border-r border-divider
+              z-40 flex flex-col overflow-hidden">
+
+    <!-- ══════════════════════════════════════════════
+         1) 로고 영역
+         h-16(64px) — header-auth 와 높이 동일하게 맞춤
+         ══════════════════════════════════════════════ -->
+    <div class="h-16 flex items-center px-4 border-b border-divider shrink-0
+                bg-surface-card">
+        <a href="/member/dashboard" class="flex items-center gap-2.5 select-none">
+            <img src="/images/logo.png" alt="DOCUMIND" class="h-8 w-auto object-contain">
+        </a>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         2) 소속 회사 정보 (ADMIN 제외)
+         ══════════════════════════════════════════════ -->
+    <div th:if="${headerInfo != null
+                  and headerInfo.globalRole() != null
+                  and headerInfo.globalRole().name() != 'ADMIN'}"
+         class="px-4 py-3 border-b border-divider shrink-0">
+
+        <!-- 소속 회사 있음 -->
+        <div th:if="${headerInfo.companyName() != null}"
+             class="flex items-center gap-3">
+
+            <!-- 회사 프로필 이미지 -->
+            <div th:if="${headerInfo.companyProfileUrl() != null}"
+                 class="w-9 h-9 rounded-full overflow-hidden shrink-0 ring-1 ring-divider">
+                <img th:src="${headerInfo.companyProfileUrl()}"
+                     alt="회사 프로필" class="w-full h-full object-cover"/>
+            </div>
+
+            <!-- 회사 이니셜 아바타 -->
+            <div th:unless="${headerInfo.companyProfileUrl() != null}"
+                 class="w-9 h-9 rounded-full bg-sky-500
+                        flex items-center justify-center shrink-0">
+                <span th:text="${#strings.substring(headerInfo.companyName(), 0, 1)}"
+                      class="text-white text-sm font-bold"></span>
+            </div>
+
+            <div class="flex flex-col min-w-0">
+                <span th:text="${headerInfo.companyName()}"
+                      class="text-sm font-semibold text-gray-800 truncate"></span>
+                <span class="text-xs text-docu-secondary">내 회사</span>
+            </div>
+        </div>
+
+        <!-- 소속 회사 없음 -->
+        <div th:unless="${headerInfo.companyName() != null}"
+             class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-gray-300
+                        flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
+                             m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/>
+                </svg>
+            </div>
+            <span class="text-sm text-docu-secondary">소속 없음</span>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         3) 프로젝트 셀렉터
+         ══════════════════════════════════════════════ -->
+    <div class="px-3 py-3 border-b border-divider shrink-0">
+        <div class="relative" id="project-selector-root">
+
+            <!-- 셀렉터 트리거 버튼 -->
+            <button id="project-selector-btn"
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                    class="w-full flex items-center justify-between gap-2
+                           px-3 py-2 rounded-docu-btn border border-divider
+                           bg-surface-card hover:bg-surface-base
+                           active:bg-gray-100 transition-colors text-left
+                           focus:outline-none focus:ring-2
+                           focus:ring-docu-primary focus:ring-offset-1
+                           shadow-docu-sm">
+
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <!-- 현재 프로젝트 컬러 닷 -->
+                    <span id="project-color-dot"
+                          th:style="${currentProjectColor != null}
+                                     ? 'background-color:' + ${currentProjectColor}
+                                     : 'background-color:#94a3b8'"
+                          class="w-2.5 h-2.5 rounded-full shrink-0 flex-none"></span>
+                    <!-- 현재 프로젝트명 -->
+                    <span id="project-name-label"
+                          th:text="${currentProjectName ?: '프로젝트 선택'}"
+                          class="text-sm font-medium text-gray-800 truncate">
+                        프로젝트 선택
+                    </span>
+                </div>
+
+                <!-- 드롭다운 화살표 -->
+                <svg id="project-selector-chevron"
+                     class="w-4 h-4 text-docu-secondary shrink-0
+                            transition-transform duration-200"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+
+            <!-- ── 드롭다운 패널 ── -->
+            <div id="project-dropdown"
+                 role="listbox"
+                 class="hidden absolute top-full left-0 right-0 mt-1
+                        bg-surface-card border border-divider
+                        rounded-docu-card shadow-docu-card z-50 overflow-hidden">
+
+                <!-- 스크롤 래퍼 (최대 5개 분량) -->
+                <div class="max-h-52 overflow-y-auto">
+
+                    <!-- 프로젝트 목록 있음 -->
+                    <div th:if="${projectList != null and not #lists.isEmpty(projectList)}">
+                        <a th:each="proj : ${projectList}"
+                           th:href="@{/projects/{id}/dashboard(id=${proj.id()})}"
+                           role="option"
+                           th:attr="aria-selected=${proj.id() == activeProject}"
+                           th:classappend="${proj.id() == activeProject}
+                                           ? 'bg-docu-primary-light text-docu-primary'
+                                           : 'text-gray-700 hover:bg-surface-base'"
+                           class="flex items-center gap-2.5 px-3 py-2.5
+                                  text-sm transition-colors cursor-pointer">
+
+                            <span th:style="'background-color:' + ${proj.color()}"
+                                  class="w-2.5 h-2.5 rounded-full shrink-0"></span>
+                            <span th:text="${proj.name()}" class="flex-1 truncate"></span>
+
+                            <!-- 현재 선택 체크 -->
+                            <svg th:if="${proj.id() == activeProject}"
+                                 class="w-4 h-4 shrink-0 text-docu-primary"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <!-- 프로젝트 없음 -->
+                    <div th:if="${projectList == null or #lists.isEmpty(projectList)}"
+                         class="px-3 py-5 flex flex-col items-center gap-2 text-center">
+                        <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9
+                                     a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                        <p class="text-xs text-docu-secondary">참여 중인 프로젝트가 없습니다</p>
+                    </div>
+                </div>
+
+                <!-- 새 프로젝트 만들기 -->
+                <div class="border-t border-divider">
+                    <a href="/projects/new"
+                       class="flex items-center gap-2 px-3 py-2.5
+                              text-sm font-medium text-docu-primary
+                              hover:bg-docu-primary-light transition-colors">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 4v16m8-8H4"/>
+                        </svg>
+                        새 프로젝트 만들기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         4) 내비게이션 메뉴
+         와이어프레임 기준: 문서, 챗봇, 대시보드,
+         로그 탐색기, 이슈, 패치노트, 알림, 설정 8개
+         활성: bg-docu-primary text-white
+         비활성: text-gray-600 hover:bg-white
+         ══════════════════════════════════════════════ -->
+    <nav class="flex-1 flex flex-col gap-0.5 px-3 py-3 overflow-y-auto">
+
+        <!-- ── 문서 ── -->
+        <a th:href="${activeProject != null}
+                     ? @{/projects/{id}/docs(id=${activeProject})} : '#'"
+           th:classappend="${activeMenu == 'docs'}
+                            ? 'bg-docu-primary text-white shadow-docu-sm'
+                            : 'text-gray-600 hover:bg-surface-card hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn
+                  text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
+                         a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19
+                         a2 2 0 01-2 2z"/>
+            </svg>
+            문서
+        </a>
+
+        <!-- ── 챗봇 ── -->
+        <a th:href="${activeProject != null}
+                     ? @{/projects/{id}/chat(id=${activeProject})} : '#'"
+           th:classappend="${activeMenu == 'chat'}
+                            ? 'bg-docu-primary text-white shadow-docu-sm'
+                            : 'text-gray-600 hover:bg-surface-card hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn
+                  text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 12h.01M12 12h.01M16 12h.01
+                         M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949
+                         L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12
+                         c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            챗봇
+        </a>
+
+        <!-- ── 대시보드 ── -->
+        <a th:href="${activeProject != null}
+                     ? @{/projects/{id}/dashboard(id=${activeProject})} : '/member/dashboard'"
+           th:classappend="${activeMenu == 'dashboard'}
+                            ? 'bg-docu-primary text-white shadow-docu-sm'
+                            : 'text-gray-600 hover:bg-surface-card hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn
+                  text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
+                         a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2
+                         a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z
+                         M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
+                         a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2
+                         a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+            </svg>
+            대시보드
+        </a>
+
+        <!-- ── 로그 탐색기 ── -->
+        <a th:href="${activeProject != null}
+                     ? @{/projects/{id}/logs(id=${activeProject})} : '#'"
+           th:classappend="${activeMenu == 'logs'}
+                            ? 'bg-docu-primary text-white shadow-docu-sm'
+                            : 'text-gray-600 hover:bg-surface-card hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn
+                  text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            로그 탐색기
+        </a>
+
+        <!-- ── 이슈 ── -->
+        <a th:href="${activeProject != null}
+                     ? @{/projects/{id}/issues(id=${activeProject})} : '#'"
+           th:classappend="${activeMenu == 'issues'}
+                            ? 'bg-docu-primary text-white shadow-docu-sm'
+                            : 'text-gray-600 hover:bg-surface-card hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn
+                  text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0
+                         a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37
+                         a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35
+                         a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37
+                         a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0
+                         a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37
+                         a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35
+                         a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37
+                         .996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            이슈
+        </a>
+
+        <!-- ── 패치노트 ── -->
+        <a th:href="${activeProject != null}
+                     ? @{/projects/{id}/patches(id=${activeProject})} : '#'"
+           th:classappend="${activeMenu == 'patches'}
+                            ? 'bg-docu-primary text-white shadow-docu-sm'
+                            : 'text-gray-600 hover:bg-surface-card hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn
+                  text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7
+                         a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2
+                         M9 5a2 2 0 012-2h2a2 2 0 012 2
+                         m-6 9l2 2 4-4"/>
+            </svg>
+            패치노트
+        </a>
+
+        <!-- ── 알림 ── -->
+        <a th:href="${activeProject != null}
+                     ? @{/projects/{id}/alerts(id=${activeProject})} : '#'"
+           th:classappend="${activeMenu == 'alerts'}
+                            ? 'bg-docu-primary text-white shadow-docu-sm'
+                            : 'text-gray-600 hover:bg-surface-card hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn
+                  text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11
+                         a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341
+                         C7.67 6.165 6 8.388 6 11v3.159
+                         c0 .538-.214 1.055-.595 1.436L4 17h5
+                         m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            알림
+        </a>
+
+        <!-- ── 설정 ── -->
+        <a th:href="${activeProject != null}
+                     ? @{/projects/{id}/settings(id=${activeProject})} : '#'"
+           th:classappend="${activeMenu == 'settings'}
+                            ? 'bg-docu-primary text-white shadow-docu-sm'
+                            : 'text-gray-600 hover:bg-surface-card hover:text-gray-900'"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn
+                  text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4
+                         m-6 8a2 2 0 100-4m0 4a2 2 0 110-4
+                         m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4
+                         a2 2 0 110-4m0 4v2m0-6V4"/>
+            </svg>
+            설정
+        </a>
+
+    </nav>
+
+    <!-- ══════════════════════════════════════════════
+         5) 하단: 마이페이지 바로가기
+         ══════════════════════════════════════════════ -->
+    <div class="px-3 py-3 border-t border-divider shrink-0">
+        <a href="/my/profile"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn
+                  text-sm font-medium text-gray-600
+                  hover:bg-surface-card hover:text-gray-900 transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0z
+                         M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            마이페이지
+        </a>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         프로젝트 셀렉터 드롭다운 JS
+         ══════════════════════════════════════════════ -->
+    <script>
+        (function () {
+            const root     = document.getElementById('project-selector-root');
+            const btn      = document.getElementById('project-selector-btn');
+            const dropdown = document.getElementById('project-dropdown');
+            const chevron  = document.getElementById('project-selector-chevron');
+            if (!btn || !dropdown) return;
+
+            function open() {
+                dropdown.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+                btn.setAttribute('aria-expanded', 'true');
+            }
+            function close() {
+                dropdown.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+                btn.setAttribute('aria-expanded', 'false');
+            }
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.contains('hidden') ? open() : close();
+            });
+
+            /* 외부 클릭 닫기 */
+            document.addEventListener('click', (e) => {
+                if (root && !root.contains(e.target)) close();
+            });
+
+            /* ESC 닫기 */
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') close();
+            });
+        })();
+    </script>
+
+</aside>
+
+</body>
+</html>

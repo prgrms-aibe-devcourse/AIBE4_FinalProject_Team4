@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  ╔═══════════════════════════════════════════════════════════════════╗
+  ║  header-auth.html  ·  로그인 상태 공통 헤더 fragments             ║
+  ║                                                                   ║
+  ║  ※ 디자인 토큰 (tailwind.config.js 기준)                         ║
+  ║     높이   : h-16 (64px = spacing.header)                        ║
+  ║     배경   : bg-surface-card (#FFFFFF)                           ║
+  ║     보더   : border-divider (#E5E7EB)                            ║
+  ║     primary: text-docu-primary / bg-docu-primary (#1D85E1)       ║
+  ║                                                                   ║
+  ║  제공 fragments:                                                  ║
+  ║    header-auth   고정 헤더 (service-layout 전용)                  ║
+  ║    user-bar      인라인 유저 정보 바 (mypage-layout 전용)         ║
+  ║    user-info-area 유저 정보 UI 묶음 (위 두 곳에서 th:replace 재사용) ║
+  ║    logout-modal  로그아웃 확인 모달                               ║
+  ║    logout-script 로그아웃 모달 JS 바인딩                          ║
+  ╚═══════════════════════════════════════════════════════════════════╝
+-->
+
+<!-- ══════════════════════════════════════════════════════════════
+     header-auth : 고정 헤더 (service-layout 전용)
+     fixed / h-16(64px) / z-50 / bg-surface-card / border-divider
+     ══════════════════════════════════════════════════════════════ -->
+<header th:fragment="header-auth"
+        class="fixed top-0 left-0 right-0 z-50 h-16
+               bg-surface-card border-b border-divider
+               flex items-center justify-between px-6">
+
+    <!-- 좌측: 로고 -->
+    <a href="/member/dashboard" class="flex items-center gap-2.5 shrink-0 select-none">
+        <img src="/images/logo.png" alt="DOCUMIND" class="h-8 w-auto object-contain">
+    </a>
+
+    <!-- 우측: 유저 정보 영역 -->
+    <div th:replace="::user-info-area"></div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     user-bar : 인라인 유저 정보 바 (mypage-layout 전용)
+     static 배치 (스크롤과 함께) / h-16 / bg-surface-card
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="user-bar"
+     class="h-16 bg-surface-card border-b border-divider
+            flex items-center justify-end px-6 shrink-0">
+    <div th:replace="::user-info-area"></div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     user-info-area : 유저 정보 UI 묶음
+     header-auth / user-bar 에서 th:replace 로 재사용
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="user-info-area" class="flex items-center gap-4">
+
+    <!-- 무료 플랜 뱃지 (ADMIN 제외) -->
+    <span th:unless="${headerInfo != null
+                        and headerInfo.globalRole() != null
+                        and headerInfo.globalRole().name() == 'ADMIN'}"
+          class="hidden sm:inline-flex items-center px-3 py-1 rounded-full
+                 text-xs font-medium bg-gray-100 text-docu-secondary">
+        무료 플랜
+    </span>
+
+    <!-- 이름 + 역할 레이블 (두 줄) -->
+    <div class="hidden sm:flex flex-col items-end leading-none gap-0.5">
+        <span th:text="${headerInfo?.name() ?: '사용자'}"
+              class="text-sm font-semibold text-gray-900">사용자</span>
+        <span class="text-xs text-docu-secondary">
+            <th:block th:if="${headerInfo != null and headerInfo.globalRole() != null}">
+                <th:block th:if="${headerInfo.globalRole().name() == 'CEO'}">대표</th:block>
+                <th:block th:if="${headerInfo.globalRole().name() == 'ADMIN'}">운영자</th:block>
+                <th:block th:if="${headerInfo.globalRole().name() == 'EMPLOYEE'}">직원</th:block>
+            </th:block>
+        </span>
+    </div>
+
+    <!-- 프로필 이미지 → /my/profile -->
+    <a href="/my/profile" class="shrink-0 hover:opacity-90 transition-opacity">
+        <img th:if="${headerInfo?.profileImageUrl() != null}"
+             th:src="${headerInfo.profileImageUrl()}" alt="프로필"
+             class="w-9 h-9 rounded-full object-cover ring-2 ring-divider"/>
+        <!-- 이미지 없을 때: 이니셜 아바타 (amber) -->
+        <div th:unless="${headerInfo?.profileImageUrl() != null}"
+             class="w-9 h-9 rounded-full bg-amber-400
+                    flex items-center justify-center">
+            <span th:text="${headerInfo?.nickname() != null
+                             ? #strings.substring(headerInfo.nickname(), 0, 1) : 'U'}"
+                  class="text-white text-sm font-bold">U</span>
+        </div>
+    </a>
+
+    <!-- 로그아웃 버튼 -->
+    <button id="logout-btn"
+            type="button"
+            class="flex items-center gap-1.5 text-sm text-docu-secondary
+                   hover:text-gray-700 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6
+                     a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        <span class="hidden sm:inline">로그아웃</span>
+    </button>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     logout-modal : 로그아웃 확인 모달
+     z-[200] / bg-black/40 dim / rounded-docu-modal
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="logout-modal"
+     id="logout-modal"
+     class="hidden fixed inset-0 z-[200]
+            flex items-center justify-center bg-black/40">
+    <div class="bg-surface-card rounded-docu-modal shadow-docu-modal
+                w-80 p-8 flex flex-col items-center gap-5">
+
+        <!-- 아이콘 -->
+        <div class="w-14 h-14 bg-docu-danger-light rounded-full
+                    flex items-center justify-center">
+            <svg class="w-7 h-7 text-docu-danger"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6
+                         a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+        </div>
+
+        <!-- 텍스트 -->
+        <div class="text-center">
+            <p class="text-base font-bold text-gray-900 mb-1">로그아웃</p>
+            <p class="text-sm text-docu-secondary">로그아웃하시겠습니까?</p>
+        </div>
+
+        <!-- 액션 버튼 -->
+        <div class="flex gap-3 w-full">
+            <button id="logout-cancel"
+                    type="button"
+                    class="flex-1 py-2.5 rounded-docu-btn border border-divider
+                           text-sm font-semibold text-gray-700
+                           hover:bg-surface-base transition-colors">
+                취소
+            </button>
+            <button id="logout-confirm"
+                    type="button"
+                    class="flex-1 py-2.5 rounded-docu-btn
+                           bg-docu-danger hover:bg-docu-danger-dark
+                           text-sm font-semibold text-white transition-colors">
+                로그아웃
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     logout-script : 로그아웃 모달 JS 이벤트 바인딩
+     service-layout / mypage-layout 하단에서 th:replace 로 삽입:
+       <div th:replace="~{common/fragments/header-auth :: logout-script}"></div>
+     ══════════════════════════════════════════════════════════════ -->
+<th:block th:fragment="logout-script">
+    <script>
+        (function () {
+            const logoutBtn  = document.getElementById('logout-btn');
+            const modal      = document.getElementById('logout-modal');
+            const cancelBtn  = document.getElementById('logout-cancel');
+            const confirmBtn = document.getElementById('logout-confirm');
+            if (!logoutBtn || !modal) return;
+
+            /* 모달 열기 */
+            logoutBtn.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+            });
+
+            /* 취소 */
+            cancelBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+
+            /* 배경(dim) 클릭 시 닫기 */
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.add('hidden');
+            });
+
+            /* ESC 키로 닫기 */
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') modal.classList.add('hidden');
+            });
+
+            /* 로그아웃 확인 → POST /auth/logout → 로그인 페이지 */
+            confirmBtn.addEventListener('click', async () => {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = '처리 중...';
+                try {
+                    await FetchUtil.post('/auth/logout', {});
+                } catch (_) { /* 세션 만료 처리 위해 오류 무시 */ }
+                finally {
+                    window.location.href = '/auth/login';
+                }
+            });
+        })();
+    </script>
+</th:block>
+
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<!--
+  ╔═══════════════════════════════════════════════════════════════════╗
+  ║  base-layout.html  ·  Level 1 Base Layout                        ║
+  ║                                                                   ║
+  ║  역할: HTML 기본 뼈대, 공통 리소스 로드                           ║
+  ║  상속: 모든 하위 레이아웃/페이지가 layout:decorate 로 참조        ║
+  ║                                                                   ║
+  ║  ※ 디자인 토큰 (tailwind.config.js 기준)                         ║
+  ║     header 높이  : 64px  → h-16 / pt-16 / top-16                 ║
+  ║     sidebar 너비 : 240px → w-[240px] / pl-[240px]                 ║
+  ║     page bg      : bg-surface-base  (#F9FAFB)                    ║
+  ║     card bg      : bg-surface-card  (#FFFFFF)                    ║
+  ║     sidebar bg   : bg-surface-sidebar (#F3F4F6)                  ║
+  ║     primary      : bg-docu-primary  (#1D85E1)                    ║
+  ║                                                                   ║
+  ║  제공 슬롯:                                                       ║
+  ║    layout:fragment="head-extra"  페이지별 추가 <head> 리소스      ║
+  ║    layout:fragment="body"        하위 레이아웃이 채우는 바디       ║
+  ║    layout:fragment="scripts"     페이지별 추가 스크립트            ║
+  ╚═══════════════════════════════════════════════════════════════════╝
+-->
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <!--
+      타이틀 패턴: "페이지명 | Documind"
+      하위 페이지에서 <title>페이지명</title> 선언 시 Layout Dialect 가 자동 합성
+    -->
+    <title layout:title-pattern="$CONTENT_TITLE | $LAYOUT_TITLE">Documind</title>
+
+    <!-- 공통 Head: Tailwind CDN, Pretendard, FetchUtil 등 -->
+    <th:block th:replace="~{common/fragments/head :: head(${pageTitle ?: 'Documind'})}"></th:block>
+
+    <!-- 페이지/레이아웃별 추가 <head> 리소스 (CSS, 폰트, 외부 라이브러리) -->
+    <th:block layout:fragment="head-extra"></th:block>
+</head>
+
+<!--
+  전체 페이지 기본 스타일:
+    bg-surface-base : #F9FAFB  (config: surface.base)
+    font-sans       : Pretendard → Inter → system (config: fontFamily.sans)
+-->
+<body class="bg-surface-base text-gray-900 min-h-screen font-sans antialiased">
+
+<!--
+  상단 슬라이드 토스트 (z-[60])
+  · Flash Attribute ${topToast} 또는 URL ?toast_message=... 자동 감지
+  · 4초 후 자동 슬라이드 업
+-->
+<div th:replace="~{common/fragments/top-toast :: top-toast}"></div>
+
+<!--
+  ─────────────────────────────────────────────────────────────
+  핵심 바디 슬롯
+  · service-layout / mypage-layout 이 이 블록을 채움
+  · 도메인 페이지는 해당 레이아웃의 layout:fragment="content" 사용
+  ─────────────────────────────────────────────────────────────
+-->
+<layout:fragment name="body">
+    <!-- fallback: 하위 레이아웃에서 반드시 오버라이드 -->
+</layout:fragment>
+
+<!-- 실시간 알림 토스트 (우하단 알림 스택) -->
+<div th:replace="~{common/fragments/alarm-toast :: alarm-toast}"></div>
+
+<!-- 페이지별 추가 스크립트 삽입 지점 (<body> 최하단) -->
+<th:block layout:fragment="scripts"></th:block>
+
+</body>
+</html>
