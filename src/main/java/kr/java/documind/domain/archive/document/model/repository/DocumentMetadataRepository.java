@@ -1,5 +1,6 @@
 package kr.java.documind.domain.archive.document.model.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,18 +15,20 @@ public interface DocumentMetadataRepository extends JpaRepository<DocumentMetada
     Optional<DocumentMetadata> findByIdAndDocumentGroupProjectId(Long id, UUID projectId);
 
     List<DocumentMetadata>
-            findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(
-                    DocumentGroup documentGroup);
+    findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(
+        DocumentGroup documentGroup);
 
     long countByDocumentGroup(DocumentGroup documentGroup);
 
+    List<DocumentMetadata> findByIdIn(Collection<Long> ids);
+
     boolean existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-            DocumentGroup documentGroup, int majorVersion, int minorVersion, int patchVersion);
+        DocumentGroup documentGroup, int majorVersion, int minorVersion, int patchVersion);
 
     @Query(
-            "SELECT CASE WHEN COUNT(dm) > 0 THEN true ELSE false END "
-                    + "FROM DocumentMetadata dm "
-                    + "WHERE dm.documentGroup.projectId = :projectId AND dm.hash = :hash")
+        "SELECT CASE WHEN COUNT(dm) > 0 THEN true ELSE false END "
+            + "FROM DocumentMetadata dm "
+            + "WHERE dm.documentGroup.projectId = :projectId AND dm.hash = :hash")
     boolean existsByProjectIdAndHash(
-            @Param("projectId") UUID projectId, @Param("hash") String hash);
+        @Param("projectId") UUID projectId, @Param("hash") String hash);
 }
