@@ -1,4 +1,4 @@
-package kr.java.documind.domain.archive.document.model.event;
+package kr.java.documind.domain.archive.document.event;
 
 import java.nio.file.Path;
 import java.util.UUID;

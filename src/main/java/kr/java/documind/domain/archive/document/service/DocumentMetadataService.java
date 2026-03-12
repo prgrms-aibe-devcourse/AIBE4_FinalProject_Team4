@@ -18,9 +18,9 @@ import kr.java.documind.domain.archive.document.model.dto.response.DocumentDownl
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetadataResponse;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
-import kr.java.documind.domain.archive.document.model.event.DocumentVectorCreateEvent;
-import kr.java.documind.domain.archive.document.model.event.DocumentVectorDeleteEvent;
-import kr.java.documind.domain.archive.document.model.event.DocumentVectorReplaceEvent;
+import kr.java.documind.domain.archive.document.event.DocumentVectorCreateEvent;
+import kr.java.documind.domain.archive.document.event.DocumentVectorDeleteEvent;
+import kr.java.documind.domain.archive.document.event.DocumentVectorReplaceEvent;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.exception.BadRequestException;

@@ -1,8 +1,8 @@
 package kr.java.documind.domain.archive.vector.listener;
 
-import kr.java.documind.domain.archive.document.model.event.DocumentVectorCreateEvent;
-import kr.java.documind.domain.archive.document.model.event.DocumentVectorDeleteEvent;
-import kr.java.documind.domain.archive.document.model.event.DocumentVectorReplaceEvent;
+import kr.java.documind.domain.archive.document.event.DocumentVectorCreateEvent;
+import kr.java.documind.domain.archive.document.event.DocumentVectorDeleteEvent;
+import kr.java.documind.domain.archive.document.event.DocumentVectorReplaceEvent;
 import kr.java.documind.domain.archive.vector.service.EtlService;
 import kr.java.documind.domain.archive.vector.service.VectorStoreService;
 import lombok.RequiredArgsConstructor;

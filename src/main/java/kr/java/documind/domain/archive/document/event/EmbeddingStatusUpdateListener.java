@@ -1,4 +1,4 @@
-package kr.java.documind.domain.archive.document.service;
+package kr.java.documind.domain.archive.document.event;
 
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
 import kr.java.documind.domain.archive.vector.model.event.EmbeddingStatusEvent;
@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class EmbeddingStatusUpdateService {
+public class EmbeddingStatusUpdateListener {
 
     private final DocumentMetadataManager metadataManager;
 
