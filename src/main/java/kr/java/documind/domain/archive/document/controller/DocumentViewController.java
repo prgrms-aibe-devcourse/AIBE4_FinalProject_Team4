@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequiredArgsConstructor
 public class DocumentViewController {
 
-    private final DocumentMetadataService documentService;
+    private final DocumentMetadataService documentMetadataService;
 
     @ProjectPage(ServiceMenu.DOCUMENTS)
     @RequireProjectMember
@@ -33,7 +33,7 @@ public class DocumentViewController {
             @PathVariable Long documentId,
             Model model) {
         DocumentDetailResponse detail =
-                documentService.getDocumentDetail(project.projectId(), documentId);
+                documentMetadataService.getDocumentDetail(project.projectId(), documentId);
 
         model.addAttribute("publicId", project.publicId());
         model.addAttribute("documentId", documentId);
