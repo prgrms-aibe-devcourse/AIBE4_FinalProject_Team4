@@ -128,29 +128,64 @@ document.addEventListener('DOMContentLoaded', () => {
         const decoder = new TextDecoder();
         let buffer = '';
         let answerText = '';
-        let eventType = null;
 
         while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
+            const events = buffer.split(/\r?\n\r?\n/);
+            buffer = events.pop() ?? '';
 
-            for (const line of lines) {
-                if (line.startsWith('event:')) {
-                    eventType = line.slice(6).trim();
-                } else if (line.startsWith('data:') && eventType) {
-                    const data = line.slice(5);
-                    handleSseEvent(eventType, data, contentEl, refsEl, { answerText });
-                    if (eventType === 'token') {
-                        answerText += data;
-                    }
-                    eventType = null;
+            for (const rawEvent of events) {
+                const parsed = parseSseEvent(rawEvent);
+                if (!parsed) {
+                    continue;
+                }
+                handleSseEvent(parsed.event, parsed.data, contentEl, refsEl, { answerText });
+                if (parsed.event === 'token') {
+                    answerText += parsed.data;
                 }
             }
+
+            if (done) {
+                break;
+            }
         }
+
+        if (buffer.trim()) {
+            const parsed = parseSseEvent(buffer);
+            if (parsed) {
+                handleSseEvent(parsed.event, parsed.data, contentEl, refsEl, { answerText });
+            }
+        }
+    }
+
+    function parseSseEvent(rawEvent) {
+        const lines = rawEvent.split(/\r?\n/);
+        let event = null;
+        const dataLines = [];
+
+        for (const line of lines) {
+            if (!line || line.startsWith(':')) {
+                continue;
+            }
+            if (line.startsWith('event:')) {
+                event = line.slice(6).trim();
+                continue;
+            }
+            if (line.startsWith('data:')) {
+                dataLines.push(line.slice(5).trimStart());
+            }
+        }
+
+        if (!event) {
+            return null;
+        }
+
+        return {
+            event,
+            data: dataLines.join('\n'),
+        };
     }
 
     function handleSseEvent(event, data, contentEl, refsEl, state) {

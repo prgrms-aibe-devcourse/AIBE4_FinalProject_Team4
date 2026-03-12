@@ -43,7 +43,7 @@ public class ReferenceExtractor {
 
     private List<ReferenceResponse> buildReferences(List<Document> documents) {
         Set<Long> sourceIds = documents.stream()
-                .map(doc -> parseMetadata(doc, "sourceId", Long::parseLong))
+                .map(doc -> parseMetadata(doc, "source_id", Long::parseLong))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
@@ -52,7 +52,7 @@ public class ReferenceExtractor {
         List<ReferenceResponse> references = new ArrayList<>();
 
         for (Document doc : documents) {
-            Long sourceId = parseMetadata(doc, "sourceId", Long::parseLong);
+            Long sourceId = parseMetadata(doc, "source_id", Long::parseLong);
             if (sourceId == null) {
                 continue;
             }

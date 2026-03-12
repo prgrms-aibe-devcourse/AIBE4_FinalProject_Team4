@@ -136,7 +136,7 @@ public class ChatbotService {
         String ids =
                 sourceIds.stream()
                         .map(String::valueOf)
-                        .collect(Collectors.joining("','", "'", "'"));
+                        .collect(Collectors.joining(", "));
 
         String expression = "source_id in [" + ids + "]";
         log.debug("벡터스토어 필터 표현식: {}", expression);
