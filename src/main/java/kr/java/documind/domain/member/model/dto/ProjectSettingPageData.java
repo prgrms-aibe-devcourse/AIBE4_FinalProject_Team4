@@ -6,7 +6,7 @@ import kr.java.documind.domain.auth.model.enums.ProjectRole;
 
 public record ProjectSettingPageData(
         HeaderInfo headerInfo,
-        ProjectDetail project,
+        ProjectSummary project,
         ProjectRole currentRole,
         boolean isCeo,
         List<ProjectMemberRow> members,

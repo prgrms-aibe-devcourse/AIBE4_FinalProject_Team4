@@ -12,6 +12,9 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     Optional<Project> findByPublicId(String publicId);
 
+    @Query("SELECT p FROM Project p JOIN FETCH p.company WHERE p.publicId = :publicId")
+    Optional<Project> findByPublicIdWithCompany(@Param("publicId") String publicId);
+
     @Query(
             """
             SELECT p.id           AS projectId,

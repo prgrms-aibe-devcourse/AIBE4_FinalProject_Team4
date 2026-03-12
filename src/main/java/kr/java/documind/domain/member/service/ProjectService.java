@@ -15,7 +15,6 @@ import kr.java.documind.domain.member.model.dto.ApiKeyIssueResponse;
 import kr.java.documind.domain.member.model.dto.ProfileImageResponse;
 import kr.java.documind.domain.member.model.dto.ProjectApiKeyInfo;
 import kr.java.documind.domain.member.model.dto.ProjectCreateResponse;
-import kr.java.documind.domain.member.model.dto.ProjectDetail;
 import kr.java.documind.domain.member.model.dto.ProjectMemberRow;
 import kr.java.documind.domain.member.model.dto.ProjectSettingPageData;
 import kr.java.documind.domain.member.model.dto.ProjectSummary;
@@ -143,8 +142,8 @@ public class ProjectService {
                 project.getProfileKey() != null
                         ? fileStore.getAccessUrl(project.getProfileKey())
                         : null;
-        var projectDetail =
-                new ProjectDetail(project.getPublicId(), project.getName(), projectProfileUrl);
+        var projectSummary =
+                new ProjectSummary(project.getPublicId(), project.getName(), projectProfileUrl);
 
         List<ProjectMemberRow> members =
                 projectMemberRepository
@@ -203,7 +202,7 @@ public class ProjectService {
 
         return new ProjectSettingPageData(
                 headerInfo,
-                projectDetail,
+                projectSummary,
                 currentPm.getProjectRole(),
                 currentMember.isCeo(),
                 members,
@@ -244,6 +243,88 @@ public class ProjectService {
     }
 
     @Transactional
+    public void changeProjectRole(
+            String publicId, UUID actorMemberId, UUID targetMemberId, ProjectRole newRole) {
+        Project project =
+                projectRepository
+                        .findByPublicId(publicId)
+                        .orElseThrow(ProjectNotFoundException::new);
+
+        Member targetMember = memberService.getMember(targetMemberId);
+
+        if (targetMember.isCeo()) {
+            throw new ForbiddenException("대표(CEO)의 프로젝트 권한은 변경할 수 없습니다.");
+        }
+
+        ProjectMember targetPm =
+                projectMemberRepository
+                        .findByProjectAndMember(project, targetMember)
+                        .orElseThrow(() -> new NotFoundException("대상이 프로젝트 멤버가 아닙니다."));
+
+        if (targetPm.getStatus() == AccountStatus.DELETED) {
+            throw new NotFoundException("대상이 프로젝트 멤버가 아닙니다.");
+        }
+
+        if (targetPm.isManager() && newRole == ProjectRole.MEMBER) {
+            if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
+                            project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
+                    <= 1) {
+                throw new BadRequestException("프로젝트에는 최소 한 명 이상의 관리자가 필요합니다.");
+            }
+        }
+
+        targetPm.changeRole(newRole);
+        log.info(
+                "[ProjectService] 멤버 권한 변경: actorId={}, targetId={}, projectId={}, newRole={}",
+                actorMemberId,
+                targetMemberId,
+                project.getId(),
+                newRole);
+    }
+
+    @Transactional
+    public void removeProjectMember(String publicId, UUID actorMemberId, UUID targetMemberId) {
+        if (actorMemberId.equals(targetMemberId)) {
+            throw new BadRequestException("자기 자신을 제거할 수 없습니다. '프로젝트 나가기'를 이용해주세요.");
+        }
+
+        Project project =
+                projectRepository
+                        .findByPublicId(publicId)
+                        .orElseThrow(ProjectNotFoundException::new);
+
+        Member targetMember = memberService.getMember(targetMemberId);
+
+        if (targetMember.isCeo()) {
+            throw new ForbiddenException("대표(CEO)는 프로젝트에서 제거할 수 없습니다.");
+        }
+
+        ProjectMember targetPm =
+                projectMemberRepository
+                        .findByProjectAndMember(project, targetMember)
+                        .orElseThrow(() -> new NotFoundException("대상이 프로젝트 멤버가 아닙니다."));
+
+        if (targetPm.getStatus() == AccountStatus.DELETED) {
+            throw new NotFoundException("대상이 프로젝트 멤버가 아닙니다.");
+        }
+
+        if (targetPm.isManager()) {
+            if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
+                            project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
+                    <= 1) {
+                throw new BadRequestException("프로젝트에는 최소 한 명 이상의 관리자가 필요합니다.");
+            }
+        }
+
+        targetPm.softDelete();
+        log.info(
+                "[ProjectService] 멤버 제거: actorId={}, targetId={}, projectId={}",
+                actorMemberId,
+                targetMemberId,
+                project.getId());
+    }
+
+    @Transactional
     public void leaveProject(String publicId, UUID memberId) {
         Project project =
                 projectRepository
@@ -260,6 +341,14 @@ public class ProjectService {
                 projectMemberRepository
                         .findByProjectAndMember(project, member)
                         .orElseThrow(() -> new NotFoundException("프로젝트 멤버를 찾을 수 없습니다."));
+
+        if (pm.isManager()) {
+            if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
+                            project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
+                    <= 1) {
+                throw new BadRequestException("프로젝트에는 최소 한 명 이상의 관리자가 필요합니다. 나갈 수 없습니다.");
+            }
+        }
 
         pm.softDelete();
         log.info("[ProjectService] 프로젝트 나가기: memberId={} publicId={}", memberId, publicId);

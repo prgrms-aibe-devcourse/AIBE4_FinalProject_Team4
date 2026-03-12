@@ -44,7 +44,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_GET_PATHS = {
         "/",
         "/auth/login",
-        "/invite/**",
+        "/invite/**", // /invite/{token} 페이지 접근 허용
         "/error",
         "/css/**",
         "/js/**",
@@ -72,11 +72,15 @@ public class SecurityConfig {
                                         .csrfTokenRequestHandler(
                                                 new CsrfTokenRequestAttributeHandler())
                                         .ignoringRequestMatchers(
-                                                "/oauth2/**", "/login/oauth2/**", "/api/**"))
+                                                "/oauth2/**",
+                                                "/login/oauth2/**",
+                                                "/api/**",
+                                                "/invite/accept"))
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(
                         auth ->
-                                auth
+                                auth.requestMatchers(HttpMethod.POST, "/invite/accept")
+                                        .authenticated()
                                         // ── 공개 페이지 / 정적 리소스 ──────────────────────
                                         .requestMatchers(HttpMethod.GET, PUBLIC_GET_PATHS)
                                         .permitAll()
@@ -86,6 +90,9 @@ public class SecurityConfig {
                                         .permitAll()
                                         .requestMatchers("/actuator/**")
                                         .hasRole("ADMIN")
+                                        // ── OAuth2 관련 경로 ──────────────────────────────
+                                        .requestMatchers("/oauth2/**", "/login/oauth2/**")
+                                        .permitAll()
                                         // ── 어드민 전용 페이지 및 API ───────────────────────
                                         .requestMatchers("/admin/**", "/api/admin/**")
                                         .hasRole("ADMIN")

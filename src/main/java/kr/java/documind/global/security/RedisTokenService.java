@@ -1,16 +1,19 @@
 package kr.java.documind.global.security;
 
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import kr.java.documind.global.security.jwt.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class RedisTokenService {
+
     private static final String REFRESH_PREFIX = "refresh:";
     private static final String BLACKLIST_PREFIX = "blacklist:";
     private static final String OAUTH2_STATE_PREFIX = "oauth2_state:";
@@ -18,6 +21,7 @@ public class RedisTokenService {
 
     private final StringRedisTemplate redisTemplate;
     private final TokenProvider tokenProvider;
+    private final RedisScript<Long> rotateRefreshTokenScript;
 
     @Value("${app.jwt.redis-prefix:jwt:}")
     private String jwtPrefix;
@@ -32,8 +36,21 @@ public class RedisTokenService {
         return redisTemplate.opsForValue().get(refreshKey(memberId));
     }
 
-    public String consumeRefreshToken(UUID memberId) {
-        return redisTemplate.opsForValue().getAndDelete(refreshKey(memberId));
+    public boolean rotateRefreshToken(
+            UUID memberId,
+            String expectedOldRefreshToken,
+            String newRefreshToken,
+            long ttlSeconds) {
+
+        Long result =
+                redisTemplate.execute(
+                        rotateRefreshTokenScript,
+                        Collections.singletonList(refreshKey(memberId)),
+                        expectedOldRefreshToken,
+                        newRefreshToken,
+                        String.valueOf(ttlSeconds));
+
+        return Long.valueOf(1L).equals(result);
     }
 
     public void deleteRefreshToken(UUID memberId) {
@@ -42,16 +59,17 @@ public class RedisTokenService {
 
     public void addToBlacklist(String accessToken, long ttlMillis) {
         if (ttlMillis <= 0) {
-            return; // 이미 만료된 토큰은 블랙리스트 등록 불필요
+            return;
         }
-        long ttlSeconds = Math.max(1L, ttlMillis / 1000);
+
+        long ttlSeconds = Math.max(1L, (ttlMillis + 999L) / 1000L);
         redisTemplate
                 .opsForValue()
                 .set(blacklistKey(accessToken), "1", ttlSeconds, TimeUnit.SECONDS);
     }
 
     public boolean isBlacklisted(String accessToken) {
-        return redisTemplate.hasKey(blacklistKey(accessToken));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey(accessToken)));
     }
 
     public void revokeAllTokensByMember(UUID memberId, long accessTokenTtlSeconds) {

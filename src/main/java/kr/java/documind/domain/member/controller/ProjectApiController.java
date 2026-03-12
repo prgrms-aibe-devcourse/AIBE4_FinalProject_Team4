@@ -3,12 +3,14 @@ package kr.java.documind.domain.member.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.member.model.dto.ApiKeyIssueResponse;
 import kr.java.documind.domain.member.model.dto.ApiKeyStatusUpdateRequest;
 import kr.java.documind.domain.member.model.dto.ProfileImageResponse;
 import kr.java.documind.domain.member.model.dto.ProjectCreateRequest;
 import kr.java.documind.domain.member.model.dto.ProjectCreateResponse;
+import kr.java.documind.domain.member.model.dto.ProjectRoleUpdateRequest;
 import kr.java.documind.domain.member.model.dto.ProjectUpdateRequest;
 import kr.java.documind.domain.member.service.ProjectService;
 import kr.java.documind.global.annotation.CurrentProject;
@@ -23,6 +25,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -72,6 +75,29 @@ public class ProjectApiController {
         ProfileImageResponse response =
                 projectService.uploadProjectProfileImage(ctx.publicId(), ctx.actorMemberId(), file);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "프로젝트 멤버 권한 변경", description = "프로젝트 멤버의 권한을 변경합니다. MANAGER 권한이 필요합니다.")
+    @RequireProjectManager
+    @PatchMapping("/{publicId}/members/{memberId}/role")
+    public ResponseEntity<ApiResponse<Void>> changeProjectMemberRole(
+            @CurrentProject ProjectRequestContext ctx,
+            @PathVariable UUID memberId,
+            @Valid @RequestBody ProjectRoleUpdateRequest request) {
+
+        projectService.changeProjectRole(
+                ctx.publicId(), ctx.actorMemberId(), memberId, request.role());
+        return ResponseEntity.ok(ApiResponse.success("멤버 권한이 변경되었습니다."));
+    }
+
+    @Operation(summary = "프로젝트 멤버 제거", description = "프로젝트에서 특정 멤버를 제거합니다. MANAGER 권한이 필요합니다.")
+    @RequireProjectManager
+    @DeleteMapping("/{publicId}/members/{memberId}")
+    public ResponseEntity<ApiResponse<Void>> removeProjectMember(
+            @CurrentProject ProjectRequestContext ctx, @PathVariable UUID memberId) {
+
+        projectService.removeProjectMember(ctx.publicId(), ctx.actorMemberId(), memberId);
+        return ResponseEntity.ok(ApiResponse.success("멤버를 제거했습니다."));
     }
 
     @Operation(summary = "프로젝트 나가기", description = "현재 사용자를 프로젝트 멤버에서 제거합니다. CEO는 나갈 수 없습니다.")

@@ -359,19 +359,38 @@ async function toggleApiKey(currentStatus) {
 }
 
 
-async function changeRole(memberId, newRole) {
+async function changeRole(selectElement) {
+    const memberId = selectElement.dataset.mid;
+    const newRole = selectElement.value;
+    const isMe = selectElement.dataset.isMe === 'true';
+
+    if (isMe && newRole === 'MEMBER') {
+        const msg = "프로젝트 권한을 '구성원'으로 변경하시겠습니까?\n\n" +
+                    "구성원 권한으로 변경되면 프로젝트 세부사항 변경, API 키 관리,\n" +
+                    "멤버 초대 및 관리 기능을 더 이상 사용할 수 없게 됩니다.";
+        if (!confirm(msg)) {
+            selectElement.value = 'MANAGER'; // 취소 시 원래 값으로 복원
+            return;
+        }
+    }
+
     try {
         const body = await callApi(`/api/projects/${_PS.publicId}/members/${memberId}/role`, {
             method: 'PATCH',
             body: JSON.stringify({ role: newRole }),
         });
-        if (!body.success) {
+        if (body.success) {
+            alert('권한이 변경되었습니다.');
+            if (isMe) {
+                location.reload(); // 자신의 권한이 바뀌었으므로 새로고침
+            }
+        } else {
             alert(body.error?.message ?? '역할 변경에 실패했습니다.');
-            window.location.reload(); // 셀렉트 원복
+            selectElement.value = newRole === 'MANAGER' ? 'MEMBER' : 'MANAGER'; // API 실패 시 원래 값으로 복원
         }
     } catch (err) {
         alert(err.message);
-        window.location.reload();
+        selectElement.value = newRole === 'MANAGER' ? 'MEMBER' : 'MANAGER'; // API 실패 시 원래 값으로 복원
     }
 }
 

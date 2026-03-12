@@ -4,8 +4,6 @@ import java.util.List;
 import kr.java.documind.domain.auth.model.dto.HeaderInfo;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.domain.member.model.dto.ProjectSummary;
-import kr.java.documind.domain.member.service.CompanyService;
-import kr.java.documind.domain.member.service.CompanyService.AdminPageData;
 import kr.java.documind.domain.member.service.MemberService;
 import kr.java.documind.domain.member.service.MemberService.CompanyPageData;
 import kr.java.documind.domain.member.service.MemberService.ProfilePageData;
@@ -24,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class MyPageViewController {
 
     private final MemberService memberService;
-    private final CompanyService companyService;
     private final ProjectService projectService;
 
     @GetMapping("/profile")
@@ -41,7 +38,7 @@ public class MyPageViewController {
     public String company(@AuthenticationPrincipal CustomUserDetails authMember, Model model) {
 
         if (authMember.getGlobalRole() == GlobalRole.ADMIN) {
-            return "redirect:/my/company/admin";
+            return "redirect:/admin/companies";
         }
 
         CompanyPageData pageData = memberService.getCompanyPageData(authMember.getMemberId());
@@ -49,25 +46,6 @@ public class MyPageViewController {
         model.addAttribute("headerInfo", pageData.headerInfo());
         model.addAttribute("company", pageData.companyDetail());
         return "member/company";
-    }
-
-    @GetMapping("/company/admin")
-    public String companyAdmin(@AuthenticationPrincipal CustomUserDetails authMember, Model model) {
-
-        if (authMember.getGlobalRole() != GlobalRole.ADMIN) {
-            return "redirect:/my/company";
-        }
-
-        AdminPageData pageData = companyService.getAdminCompanyPageData(authMember.getMemberId());
-
-        model.addAttribute("headerInfo", pageData.headerInfo());
-        model.addAttribute("pending", pageData.pendingCompanies());
-        model.addAttribute("approved", pageData.approvedCompanies());
-        model.addAttribute("suspended", pageData.suspendedCompanies());
-        model.addAttribute("pendingCount", pageData.pendingCount());
-        model.addAttribute("approvedCount", pageData.approvedCount());
-        model.addAttribute("suspendedCount", pageData.suspendedCount());
-        return "member/company-admin";
     }
 
     @GetMapping("/projects")

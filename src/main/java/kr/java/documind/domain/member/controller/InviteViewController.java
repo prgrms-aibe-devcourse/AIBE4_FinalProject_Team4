@@ -1,6 +1,8 @@
 package kr.java.documind.domain.member.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import kr.java.documind.domain.auth.exception.AlreadyProjectMemberException;
 import kr.java.documind.domain.member.exception.InvalidInviteTokenException;
 import kr.java.documind.domain.member.exception.InviteEmailMismatchException;
@@ -38,14 +40,17 @@ public class InviteViewController {
             Model model) {
 
         if (auth == null) {
+            String redirectUrl = "/invite?token=" + token;
             cookieUtil.addCookie(
                     response,
                     HttpCookieOAuth2AuthorizationRequestRepository.REDIRECT_AFTER_LOGIN_COOKIE,
-                    "/invite?token=" + token,
+                    redirectUrl,
                     600L,
                     jwtProperties.isCookieSecure());
-            log.info("[InviteViewController] 미인증 접근 → 로그인 후 복귀 경로 저장: /invite?token=...");
-            return "redirect:/auth/login";
+            log.info("[InviteViewController] 미인증 접근 → 로그인 후 복귀 경로 저장: {}", redirectUrl);
+
+            String encodedRedirect = URLEncoder.encode(redirectUrl, StandardCharsets.UTF_8);
+            return "redirect:/auth/login?flow=invite&redirect=" + encodedRedirect;
         }
 
         try {
@@ -60,10 +65,15 @@ public class InviteViewController {
 
         } catch (AlreadyProjectMemberException e) {
             return "redirect:/projects/" + e.getProjectPublicId() + "/groups";
-        } catch (InvalidInviteTokenException | InviteEmailMismatchException e) {
+        } catch (InviteEmailMismatchException e) {
+            model.addAttribute(
+                    "errorMessage",
+                    "초대받은 이메일(" + e.getExpectedEmail() + ")과 현재 로그인된 계정의 이메일이 다릅니다.");
+            model.addAttribute("mismatch", true);
+            return "member/invite-error";
+        } catch (InvalidInviteTokenException e) {
             model.addAttribute("errorMessage", e.getMessage());
             return "member/invite-error";
-
         } catch (BusinessException e) {
             // 삭제된 프로젝트 등 기타 BusinessException
             model.addAttribute("errorMessage", e.getMessage());

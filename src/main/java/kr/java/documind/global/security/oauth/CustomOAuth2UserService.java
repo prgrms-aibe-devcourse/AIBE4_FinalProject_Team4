@@ -37,6 +37,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     static final String PENDING_ROLE_COOKIE = "oauth_pending_role";
+    static final String EMAIL_CONFLICT_ERROR = "email_conflict";
+    static final String ALLOW_EMAIL_DUPLICATE_COOKIE = "oauth_allow_email_duplicate";
+    static final String INVITE_FLOW_VALIDATION_ERROR = "invite_flow_role_conflict";
 
     private final MemberService memberService;
     private final CookieUtil cookieUtil;
@@ -70,9 +73,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 oidcUser.getUserInfo());
     }
 
-    static final String EMAIL_CONFLICT_ERROR = "email_conflict";
-    static final String ALLOW_EMAIL_DUPLICATE_COOKIE = "oauth_allow_email_duplicate";
-
     private CustomUserDetails processOAuthLogin(
             String registrationId, Map<String, Object> attributes, OAuth2UserRequest userRequest) {
         OAuth2UserProfile userProfile =
@@ -80,6 +80,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String resolvedEmail = resolveEmail(userProfile, userRequest);
         GlobalRole role = resolveRoleFromCookie();
+
+        if (isInviteFlow() && role == GlobalRole.CEO) {
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error(
+                            INVITE_FLOW_VALIDATION_ERROR,
+                            "초대받은 사용자는 관리자(CEO)로 가입할 수 없습니다. 일반 직원으로 다시 시도해주세요.",
+                            null));
+        }
 
         String name =
                 Optional.ofNullable(userProfile.getName()).filter(n -> !n.isBlank()).orElse("사용자");
@@ -216,6 +224,23 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
     }
 
+    private boolean isInviteFlow() {
+        try {
+            ServletRequestAttributes attrs =
+                    (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+            HttpServletRequest request = attrs.getRequest();
+            return cookieUtil
+                    .getCookieValue(
+                            request,
+                            HttpCookieOAuth2AuthorizationRequestRepository
+                                    .REDIRECT_AFTER_LOGIN_COOKIE)
+                    .map(path -> path.startsWith("/invite"))
+                    .orElse(false);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private String buildEmailPlaceholder(OAuth2UserProfile userProfile) {
         return userProfile.getProvider().name().toLowerCase()
                 + "_"
@@ -238,7 +263,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private static String enc(String value) {
-        if (value == null) return "";
+        if (value == null) {
+            return "";
+        }
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }
