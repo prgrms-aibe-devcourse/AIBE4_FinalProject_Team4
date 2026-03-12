@@ -12,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface DocumentGroupRepository extends JpaRepository<DocumentGroup, Long> {
 
+    Optional<DocumentGroup> findByIdAndProjectId(Long id, UUID projectId);
+
     @Query(
             "SELECT g.id AS groupId, g.groupName AS groupName, g.category AS category, "
                     + "MAX(dm.majorVersion * 1000000 + dm.minorVersion * 1000 + dm.patchVersion) AS versionOrdinal, "
@@ -21,8 +23,6 @@ public interface DocumentGroupRepository extends JpaRepository<DocumentGroup, Lo
                     + "GROUP BY g.id, g.groupName, g.category")
     Page<DocumentGroupSummary> findGroupSummariesByProjectId(
             @Param("projectId") UUID projectId, Pageable pageable);
-
-    Optional<DocumentGroup> findByIdAndProjectId(Long id, UUID projectId);
 
     @Query("SELECT DISTINCT dg.groupName FROM DocumentGroup dg WHERE dg.projectId = :projectId")
     List<String> findDistinctGroupNamesByProjectId(@Param("projectId") UUID projectId);

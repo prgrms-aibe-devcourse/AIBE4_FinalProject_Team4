@@ -31,8 +31,7 @@ public class DocumentMetadataManager {
     }
 
     public List<DocumentMetadata> findVersionsByGroup(DocumentGroup group) {
-        return documentMetadataRepository
-                .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(group);
+        return documentMetadataRepository.findVersionsByGroup(group);
     }
 
     public Map<Long, DocumentMetadata> findMapByIds(Collection<Long> ids) {
@@ -44,20 +43,18 @@ public class DocumentMetadataManager {
         return documentMetadataRepository.findIdsByProjectIdAndGroupName(projectId, groupName);
     }
 
-    public List<Long> findIdsByProjectIdAndCategoryName(UUID projectId, String categoryName) {
-        return documentMetadataRepository.findIdsByProjectIdAndCategoryName(
-                projectId, categoryName);
+    public List<Long> findIdsByProjectIdAndCategory(UUID projectId, String category) {
+        return documentMetadataRepository.findIdsByProjectIdAndCategory(projectId, category);
     }
 
     public boolean existsByProjectIdAndHash(UUID projectId, String hash) {
-        return documentMetadataRepository.existsByProjectIdAndHash(projectId, hash);
+        return documentMetadataRepository.existsByDocumentGroupProjectIdAndHash(projectId, hash);
     }
 
     public boolean existsByGroupAndVersion(
             DocumentGroup group, int majorVersion, int minorVersion, int patchVersion) {
-        return documentMetadataRepository
-                .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                        group, majorVersion, minorVersion, patchVersion);
+        return documentMetadataRepository.existsVersion(
+                group, majorVersion, minorVersion, patchVersion);
     }
 
     public long countByGroup(DocumentGroup group) {

@@ -14,35 +14,43 @@ public interface DocumentMetadataRepository extends JpaRepository<DocumentMetada
 
     Optional<DocumentMetadata> findByIdAndDocumentGroupProjectId(Long id, UUID projectId);
 
-    List<DocumentMetadata>
-    findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(
-        DocumentGroup documentGroup);
-
-    long countByDocumentGroup(DocumentGroup documentGroup);
+    @Query(
+            "SELECT dm FROM DocumentMetadata dm "
+                    + "WHERE dm.documentGroup = :documentGroup "
+                    + "ORDER BY dm.majorVersion DESC, dm.minorVersion DESC, dm.patchVersion DESC")
+    List<DocumentMetadata> findVersionsByGroup(
+            @Param("documentGroup") DocumentGroup documentGroup);
 
     List<DocumentMetadata> findByIdIn(Collection<Long> ids);
 
-    boolean existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-        DocumentGroup documentGroup, int majorVersion, int minorVersion, int patchVersion);
+    long countByDocumentGroup(DocumentGroup documentGroup);
 
     @Query(
-        "SELECT CASE WHEN COUNT(dm) > 0 THEN true ELSE false END "
-            + "FROM DocumentMetadata dm "
-            + "WHERE dm.documentGroup.projectId = :projectId AND dm.hash = :hash")
-    boolean existsByProjectIdAndHash(
-        @Param("projectId") UUID projectId, @Param("hash") String hash);
+            "SELECT CASE WHEN COUNT(dm) > 0 THEN true ELSE false END "
+                    + "FROM DocumentMetadata dm "
+                    + "WHERE dm.documentGroup = :documentGroup "
+                    + "AND dm.majorVersion = :majorVersion "
+                    + "AND dm.minorVersion = :minorVersion "
+                    + "AND dm.patchVersion = :patchVersion")
+    boolean existsVersion(
+            @Param("documentGroup") DocumentGroup documentGroup,
+            @Param("majorVersion") int majorVersion,
+            @Param("minorVersion") int minorVersion,
+            @Param("patchVersion") int patchVersion);
+
+    boolean existsByDocumentGroupProjectIdAndHash(UUID projectId, String hash);
 
     @Query(
-        "SELECT dm.id FROM DocumentMetadata dm "
-            + "WHERE dm.documentGroup.projectId = :projectId "
-            + "AND dm.documentGroup.groupName = :groupName")
+            "SELECT dm.id FROM DocumentMetadata dm "
+                    + "WHERE dm.documentGroup.projectId = :projectId "
+                    + "AND dm.documentGroup.groupName = :groupName")
     List<Long> findIdsByProjectIdAndGroupName(
-        @Param("projectId") UUID projectId, @Param("groupName") String groupName);
+            @Param("projectId") UUID projectId, @Param("groupName") String groupName);
 
     @Query(
-        "SELECT dm.id FROM DocumentMetadata dm "
-            + "WHERE dm.documentGroup.projectId = :projectId "
-            + "AND dm.documentGroup.category = :categoryName")
-    List<Long> findIdsByProjectIdAndCategoryName(
-        @Param("projectId") UUID projectId, @Param("categoryName") String categoryName);
+            "SELECT dm.id FROM DocumentMetadata dm "
+                    + "WHERE dm.documentGroup.projectId = :projectId "
+                    + "AND dm.documentGroup.category = :category")
+    List<Long> findIdsByProjectIdAndCategory(
+            @Param("projectId") UUID projectId, @Param("category") String category);
 }

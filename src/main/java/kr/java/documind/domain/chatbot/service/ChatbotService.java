@@ -148,7 +148,7 @@ public class ChatbotService {
             return documentMetadataManager.findIdsByProjectIdAndGroupName(
                     projectId, request.groupName());
         }
-        return documentMetadataManager.findIdsByProjectIdAndCategoryName(
+        return documentMetadataManager.findIdsByProjectIdAndCategory(
                 projectId, request.categoryName());
     }
 
