@@ -351,4 +351,33 @@ public class ProjectService {
         }
         return sb.toString();
     }
+
+    /**
+     * 프로젝트 멤버 목록 조회 (담당자 선택용)
+     *
+     * @param projectId 프로젝트 ID
+     * @return 프로젝트 활성 멤버 목록
+     */
+    public List<kr.java.documind.domain.member.model.dto.ProjectMemberSimpleResponse>
+            getProjectMembers(UUID projectId) {
+        Project project =
+                projectRepository
+                        .findById(projectId)
+                        .orElseThrow(() -> new ProjectNotFoundException());
+
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
+
+        List<ProjectMember> members =
+                projectMemberRepository.findByProjectAndStatusFetchMember(
+                        project, AccountStatus.ACTIVE);
+
+        return members.stream()
+                .map(
+                        pm ->
+                                kr.java.documind.domain.member.model.dto.ProjectMemberSimpleResponse
+                                        .of(pm.getMember().getId(), pm.getMember().getNickname()))
+                .toList();
+    }
 }

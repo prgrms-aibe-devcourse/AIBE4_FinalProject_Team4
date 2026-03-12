@@ -88,16 +88,30 @@ public class IssueManagementService {
     }
 
     /**
-     * 프로젝트별 이슈 목록 조회
+     * 프로젝트별 이슈 목록 조회 (승인된 이슈만)
+     *
+     * <p>RECOMMENDED, REJECTED 상태는 제외하고 실제 이슈만 조회
      *
      * @param projectId 프로젝트 ID
-     * @param status 필터링할 상태 (null이면 전체 조회)
+     * @param status 필터링할 상태 (null이면 TODO/IN_PROGRESS/RESOLVED 전체)
      * @return 이슈 목록
      */
     public List<Issue> getIssueList(UUID projectId, IssueStatus status) {
-        if (status == null) {
-            return issueRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
+        // 추천 상태를 명시적으로 요청한 경우 예외 처리
+        if (status == IssueStatus.RECOMMENDED || status == IssueStatus.REJECTED) {
+            throw new IllegalArgumentException("추천 관련 상태는 IssueRecommendationService를 사용하세요.");
         }
+
+        if (status == null) {
+            // 전체 조회 시 실제 이슈만 (RECOMMENDED, REJECTED 제외)
+            return issueRepository.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
+                    .filter(
+                            issue ->
+                                    issue.getStatus() != IssueStatus.RECOMMENDED
+                                            && issue.getStatus() != IssueStatus.REJECTED)
+                    .toList();
+        }
+
         return issueRepository.findByProjectIdAndStatusOrderByCreatedAtDesc(projectId, status);
     }
 

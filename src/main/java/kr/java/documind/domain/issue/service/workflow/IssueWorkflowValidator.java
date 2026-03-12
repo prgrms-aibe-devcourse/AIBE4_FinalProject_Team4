@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
  *   <li>IN_PROGRESS → RESOLVED
  *   <li>RESOLVED → IN_PROGRESS (재작업 필요 시)
  * </ul>
+ *
+ * <p>RECOMMENDED, REJECTED 상태는 IssueRecommendationService에서만 처리
  */
 @Component
 public class IssueWorkflowValidator {
@@ -26,6 +28,18 @@ public class IssueWorkflowValidator {
      * @throws BadRequestException 허용되지 않는 전환인 경우
      */
     public void validateStatusTransition(IssueStatus currentStatus, IssueStatus newStatus) {
+        // RECOMMENDED, REJECTED는 일반 상태 변경 API에서 사용 불가
+        if (currentStatus == IssueStatus.RECOMMENDED || currentStatus == IssueStatus.REJECTED) {
+            throw new BadRequestException(
+                    "추천 관련 상태는 IssueRecommendationService를 사용하세요. 현재 상태: "
+                            + currentStatus.getValue());
+        }
+
+        if (newStatus == IssueStatus.RECOMMENDED || newStatus == IssueStatus.REJECTED) {
+            throw new BadRequestException(
+                    "추천 관련 상태로는 직접 변경할 수 없습니다. 대상 상태: " + newStatus.getValue());
+        }
+
         if (currentStatus == newStatus) {
             throw new BadRequestException(
                     "현재 상태와 동일한 상태로는 변경할 수 없습니다: " + currentStatus.getValue());
@@ -36,6 +50,7 @@ public class IssueWorkflowValidator {
                     case TODO -> newStatus == IssueStatus.IN_PROGRESS;
                     case IN_PROGRESS -> newStatus == IssueStatus.RESOLVED;
                     case RESOLVED -> newStatus == IssueStatus.IN_PROGRESS; // 재작업 필요 시
+                    default -> false;
                 };
 
         if (!isValidTransition) {
@@ -54,6 +69,15 @@ public class IssueWorkflowValidator {
      * @return 전환 가능 여부
      */
     public boolean canTransition(IssueStatus currentStatus, IssueStatus newStatus) {
+        // RECOMMENDED, REJECTED는 일반 상태 변경 불가
+        if (currentStatus == IssueStatus.RECOMMENDED || currentStatus == IssueStatus.REJECTED) {
+            return false;
+        }
+
+        if (newStatus == IssueStatus.RECOMMENDED || newStatus == IssueStatus.REJECTED) {
+            return false;
+        }
+
         if (currentStatus == newStatus) {
             return false;
         }
@@ -62,6 +86,7 @@ public class IssueWorkflowValidator {
             case TODO -> newStatus == IssueStatus.IN_PROGRESS;
             case IN_PROGRESS -> newStatus == IssueStatus.RESOLVED;
             case RESOLVED -> newStatus == IssueStatus.IN_PROGRESS;
+            default -> false;
         };
     }
 }

@@ -13,9 +13,7 @@ import kr.java.documind.domain.issue.model.entity.IssueHistory;
 public record IssueHistoryResponse(
         @Schema(description = "이력 ID", example = "1") Long id,
         @Schema(description = "이슈 ID", example = "101") Long issueId,
-        @Schema(
-                        description = "변경자 멤버 ID",
-                        example = "123e4567-e89b-12d3-a456-426614174000")
+        @Schema(description = "변경자 멤버 ID", example = "123e4567-e89b-12d3-a456-426614174000")
                 UUID modifierId,
         @Schema(
                         description = "변경된 필드명",
@@ -24,8 +22,7 @@ public record IssueHistoryResponse(
                 String fieldName,
         @Schema(description = "변경 전 값", example = "TODO") String beforeValue,
         @Schema(description = "변경 후 값", example = "IN_PROGRESS") String afterValue,
-        @Schema(description = "생성 시각", example = "2024-03-11T10:30:00Z")
-                OffsetDateTime createdAt) {
+        @Schema(description = "생성 시각", example = "2024-03-11T10:30:00Z") OffsetDateTime createdAt) {
 
     /**
      * Entity → DTO 변환

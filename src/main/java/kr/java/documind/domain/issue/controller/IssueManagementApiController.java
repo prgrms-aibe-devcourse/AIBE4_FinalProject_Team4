@@ -48,11 +48,13 @@ public class IssueManagementApiController {
     @IssueManagementSwaggerDocs.GetIssueListDocs
     @GetMapping
     public ResponseEntity<ApiResponse<List<IssueListResponse>>> getIssueList(
-            @Parameter(description = "프로젝트 ID", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
+            @Parameter(
+                            description = "프로젝트 ID",
+                            example = "123e4567-e89b-12d3-a456-426614174000",
+                            required = true)
                     @PathVariable
                     java.util.UUID projectId,
-            @Parameter(description = "이슈 상태 (선택)", example = "TODO")
-                    @RequestParam(required = false)
+            @Parameter(description = "이슈 상태 (선택)", example = "TODO") @RequestParam(required = false)
                     IssueStatus status) {
 
         List<Issue> issues = issueManagementService.getIssueList(projectId, status);
@@ -73,11 +75,13 @@ public class IssueManagementApiController {
     @IssueManagementSwaggerDocs.GetIssueDetailDocs
     @GetMapping("/{issueId}")
     public ResponseEntity<ApiResponse<IssueDetailResponse>> getIssueDetail(
-            @Parameter(description = "프로젝트 ID", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
+            @Parameter(
+                            description = "프로젝트 ID",
+                            example = "123e4567-e89b-12d3-a456-426614174000",
+                            required = true)
                     @PathVariable
                     java.util.UUID projectId,
-            @Parameter(description = "이슈 ID", example = "101", required = true)
-                    @PathVariable
+            @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
         Issue issue = issueManagementService.getIssueDetail(issueId);
@@ -100,17 +104,18 @@ public class IssueManagementApiController {
     @IssueManagementSwaggerDocs.AssignIssueDocs
     @PutMapping("/{issueId}/assignee")
     public ResponseEntity<ApiResponse<Void>> assignIssue(
-            @Parameter(description = "프로젝트 ID", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
+            @Parameter(
+                            description = "프로젝트 ID",
+                            example = "123e4567-e89b-12d3-a456-426614174000",
+                            required = true)
                     @PathVariable
                     java.util.UUID projectId,
-            @Parameter(description = "이슈 ID", example = "101", required = true)
-                    @PathVariable
+            @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
             @Valid @RequestBody IssueAssignRequest request,
             @AuthenticationPrincipal CustomUserDetails authMember) {
 
-        issueManagementService.assignIssue(
-                issueId, request.assigneeId(), authMember.getMemberId());
+        issueManagementService.assignIssue(issueId, request.assigneeId(), authMember.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success("담당자가 지정되었습니다."));
     }
@@ -127,16 +132,17 @@ public class IssueManagementApiController {
     @Operation(
             summary = "이슈 상태 변경",
             description =
-                    "이슈 상태를 변경하고 변경 이력을 기록합니다. "
-                            + "RESOLVED 상태로 변경 시 패치노트 반영 여부를 선택할 수 있습니다.")
+                    "이슈 상태를 변경하고 변경 이력을 기록합니다. " + "RESOLVED 상태로 변경 시 패치노트 반영 여부를 선택할 수 있습니다.")
     @IssueManagementSwaggerDocs.UpdateStatusDocs
     @PutMapping("/{issueId}/status")
     public ResponseEntity<ApiResponse<Void>> updateIssueStatus(
-            @Parameter(description = "프로젝트 ID", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
+            @Parameter(
+                            description = "프로젝트 ID",
+                            example = "123e4567-e89b-12d3-a456-426614174000",
+                            required = true)
                     @PathVariable
                     java.util.UUID projectId,
-            @Parameter(description = "이슈 ID", example = "101", required = true)
-                    @PathVariable
+            @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
             @Valid @RequestBody IssueStatusUpdateRequest request,
             @AuthenticationPrincipal CustomUserDetails authMember) {
@@ -161,11 +167,13 @@ public class IssueManagementApiController {
     @IssueManagementSwaggerDocs.GetHistoriesDocs
     @GetMapping("/{issueId}/histories")
     public ResponseEntity<ApiResponse<List<IssueHistoryResponse>>> getIssueHistories(
-            @Parameter(description = "프로젝트 ID", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
+            @Parameter(
+                            description = "프로젝트 ID",
+                            example = "123e4567-e89b-12d3-a456-426614174000",
+                            required = true)
                     @PathVariable
                     java.util.UUID projectId,
-            @Parameter(description = "이슈 ID", example = "101", required = true)
-                    @PathVariable
+            @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
         List<IssueHistory> histories = issueHistoryService.getIssueHistories(issueId);

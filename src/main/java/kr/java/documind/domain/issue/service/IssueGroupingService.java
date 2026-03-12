@@ -137,7 +137,7 @@ public class IssueGroupingService {
                 .projectId(gameLog.getProjectId())
                 .fingerprint(fingerprintResult.getFingerprint())
                 .title(title)
-                .status(IssueStatus.TODO)
+                .status(IssueStatus.RECOMMENDED) // 추천 상태로 생성
                 .errorType(errorType)
                 .stackKey(stackKey)
                 .occurrenceCount(1)

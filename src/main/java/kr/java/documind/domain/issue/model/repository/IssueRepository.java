@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.enums.ErrorType;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -44,4 +45,35 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
      * @return 이슈 목록
      */
     List<Issue> findByProjectIdAndStatusOrderByCreatedAtDesc(UUID projectId, IssueStatus status);
+
+    /**
+     * 프로젝트별 특정 상태의 이슈 개수
+     *
+     * @param projectId 프로젝트 ID
+     * @param status 이슈 상태
+     * @return 이슈 개수
+     */
+    long countByProjectIdAndStatus(UUID projectId, IssueStatus status);
+
+    /**
+     * 프로젝트 내에서 동일한 fingerprint를 가진 이슈 조회 (특정 상태 제외)
+     *
+     * @param projectId 프로젝트 ID
+     * @param fingerprint 이슈 fingerprint
+     * @param excludeStatus 제외할 상태 (RECOMMENDED 등)
+     * @return 일치하는 이슈 (최신순)
+     */
+    Optional<Issue> findFirstByProjectIdAndFingerprintAndStatusNot(
+            UUID projectId, String fingerprint, IssueStatus excludeStatus);
+
+    /**
+     * 프로젝트 내에서 같은 에러 타입의 이슈 목록 조회 (특정 상태 제외)
+     *
+     * @param projectId 프로젝트 ID
+     * @param errorType 에러 타입
+     * @param excludeStatus 제외할 상태 (RECOMMENDED 등)
+     * @return 이슈 목록
+     */
+    List<Issue> findByProjectIdAndErrorTypeAndStatusNot(
+            UUID projectId, ErrorType errorType, IssueStatus excludeStatus);
 }

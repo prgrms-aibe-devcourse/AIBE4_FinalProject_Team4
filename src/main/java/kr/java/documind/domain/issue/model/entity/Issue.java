@@ -184,4 +184,24 @@ public class Issue {
         this.resolutionNote = resolutionNote;
         this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
+
+    /** 이슈 추천 승인 (RECOMMENDED → TODO) */
+    public void approve() {
+        if (this.status != IssueStatus.RECOMMENDED) {
+            throw new IllegalStateException(
+                    "이슈 추천 상태(RECOMMENDED)에서만 승인할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = IssueStatus.TODO;
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    /** 이슈 추천 거부 (RECOMMENDED → REJECTED) */
+    public void reject() {
+        if (this.status != IssueStatus.RECOMMENDED) {
+            throw new IllegalStateException(
+                    "이슈 추천 상태(RECOMMENDED)에서만 거부할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = IssueStatus.REJECTED;
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
 }

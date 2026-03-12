@@ -2,6 +2,7 @@ package kr.java.documind.domain.issue.model.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
@@ -39,16 +40,28 @@ public record IssueDetailResponse(
                 OffsetDateTime lastOccurredAt,
         @Schema(description = "해결 시각", example = "2024-03-11T16:00:00Z") OffsetDateTime resolvedAt,
         @Schema(description = "생성 시각", example = "2024-03-11T10:00:00Z") OffsetDateTime createdAt,
-        @Schema(description = "수정 시각", example = "2024-03-11T15:30:00Z")
-                OffsetDateTime updatedAt) {
+        @Schema(description = "수정 시각", example = "2024-03-11T15:30:00Z") OffsetDateTime updatedAt,
+        @Schema(description = "유사도 분석 결과 목록 (추천 이슈인 경우에만, 최대 4개)", nullable = true)
+                List<SimilarityResult> similarityResults) {
 
     /**
-     * Entity → DTO 변환
+     * Entity → DTO 변환 (유사도 분석 없음)
      *
      * @param issue Issue 엔티티
      * @return IssueDetailResponse
      */
     public static IssueDetailResponse from(Issue issue) {
+        return from(issue, null);
+    }
+
+    /**
+     * Entity → DTO 변환 (유사도 분석 포함)
+     *
+     * @param issue Issue 엔티티
+     * @param similarityResults 유사도 분석 결과 목록
+     * @return IssueDetailResponse
+     */
+    public static IssueDetailResponse from(Issue issue, List<SimilarityResult> similarityResults) {
         return new IssueDetailResponse(
                 issue.getId(),
                 issue.getAssigneeId(),
@@ -69,6 +82,7 @@ public record IssueDetailResponse(
                 issue.getLastOccurredAt(),
                 issue.getResolvedAt(),
                 issue.getCreatedAt(),
-                issue.getUpdatedAt());
+                issue.getUpdatedAt(),
+                similarityResults);
     }
 }
