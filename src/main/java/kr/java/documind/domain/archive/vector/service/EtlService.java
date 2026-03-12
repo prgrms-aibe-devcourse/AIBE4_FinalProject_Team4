@@ -36,7 +36,7 @@ public class EtlService {
     private final ApplicationEventPublisher eventPublisher;
     private final EmbeddingStatusSseManager embeddingStatusSseManager;
 
-    public SseEmitter subscribe(Long sourceId, EmbeddingStatus currentStatus) {
+    public SseEmitter subscribeEmbeddingStatus(Long sourceId, EmbeddingStatus currentStatus) {
         return embeddingStatusSseManager.register(sourceId, currentStatus);
     }
 

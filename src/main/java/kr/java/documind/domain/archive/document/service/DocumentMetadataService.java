@@ -66,6 +66,10 @@ public class DocumentMetadataService {
         return DocumentDetailResponse.of(documentMetadata, group, versions);
     }
 
+    public EmbeddingStatus getEmbeddingStatus(UUID projectId, Long documentId) {
+        return findMetadata(documentId, projectId).getEmbeddingStatus();
+    }
+
     public DocumentDownloadResult downloadDocument(UUID projectId, Long documentId) {
         DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
         Resource resource = fileStore.load(documentMetadata.getStoredKey());
