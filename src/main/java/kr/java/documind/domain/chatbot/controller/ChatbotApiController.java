@@ -45,7 +45,7 @@ public class ChatbotApiController {
             @ProjectId UUID projectId,
             @AuthenticationPrincipal CustomUserDetails authMember,
             @RequestBody @Valid ChatRequest request) {
-        String conversationId = authMember.getMemberId().toString();
+        String conversationId = authMember.getMemberId() + ":" + projectId;
         return chatbotService.chat(conversationId, projectId, request);
     }
 }
