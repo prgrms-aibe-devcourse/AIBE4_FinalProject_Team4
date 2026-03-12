@@ -29,7 +29,7 @@ public class DocumentGroupService {
     }
 
     public List<DocumentMetadataResponse> getDocumentsByGroup(UUID projectId, Long groupId) {
-        DocumentGroup group = findGroup(groupId, projectId);
+        DocumentGroup group = getDocumentGroup(groupId, projectId);
         return documentMetadataManager.findVersionsByGroup(group).stream()
                 .map(DocumentMetadataResponse::from)
                 .toList();
@@ -37,34 +37,39 @@ public class DocumentGroupService {
 
     @Transactional
     public void updateGroupName(UUID projectId, Long groupId, String groupName) {
-        DocumentGroup group = findGroup(groupId, projectId);
+        DocumentGroup group = getDocumentGroup(groupId, projectId);
+        String normalizedGroupName = normalizeText(groupName);
 
-        if (group.getGroupName().equals(groupName)) {
+        if (group.getGroupName().equals(normalizedGroupName)) {
             throw new ConflictException("문서 그룹명이 현재와 동일합니다.");
         }
 
         documentGroupManager.validateGroupNameUniqueness(
-                group.getProjectId(), group.getCategory(), groupName);
+                group.getProjectId(), group.getCategory(), normalizedGroupName);
 
-        // TODO: 초성 유틸 구현 후 빈 문자열을 실제 초성으로 교체
-        group.updateGroupName(groupName, "");
+        group.updateGroupName(normalizedGroupName);
     }
 
     @Transactional
     public void updateCategory(UUID projectId, Long groupId, String category) {
-        DocumentGroup group = findGroup(groupId, projectId);
+        DocumentGroup group = getDocumentGroup(groupId, projectId);
+        String normalizedCategory = normalizeText(category);
 
-        if (group.getCategory().equals(category)) {
+        if (group.getCategory().equals(normalizedCategory)) {
             throw new ConflictException("문서 카테고리가 현재와 동일합니다.");
         }
 
         documentGroupManager.validateGroupNameUniqueness(
-                group.getProjectId(), category, group.getGroupName());
+                group.getProjectId(), normalizedCategory, group.getGroupName());
 
-        group.updateCategory(category);
+        group.updateCategory(normalizedCategory);
     }
 
-    private DocumentGroup findGroup(Long groupId, UUID projectId) {
+    private DocumentGroup getDocumentGroup(Long groupId, UUID projectId) {
         return documentGroupManager.getByIdAndProjectId(groupId, projectId);
+    }
+
+    private String normalizeText(String value) {
+        return value == null ? null : value.trim();
     }
 }
