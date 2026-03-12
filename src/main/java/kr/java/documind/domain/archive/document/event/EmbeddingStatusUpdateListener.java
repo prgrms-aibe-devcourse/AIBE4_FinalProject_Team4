@@ -11,11 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EmbeddingStatusUpdateListener {
 
-    private final DocumentMetadataManager metadataManager;
+    private final DocumentMetadataManager documentMetadataManager;
 
     @EventListener
     @Transactional
     public void handle(EmbeddingStatusEvent event) {
-        metadataManager.updateEmbeddingStatusIfExists(event.sourceId(), event.status());
+        documentMetadataManager.updateEmbeddingStatusIfExists(event.sourceId(), event.status());
     }
 }
