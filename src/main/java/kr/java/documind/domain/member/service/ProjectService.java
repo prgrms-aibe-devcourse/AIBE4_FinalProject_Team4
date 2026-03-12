@@ -261,6 +261,10 @@ public class ProjectService {
                         .findByProjectAndMember(project, targetMember)
                         .orElseThrow(() -> new NotFoundException("대상이 프로젝트 멤버가 아닙니다."));
 
+        if (targetPm.getStatus() == AccountStatus.DELETED) {
+            throw new NotFoundException("대상이 프로젝트 멤버가 아닙니다.");
+        }
+
         if (targetPm.isManager() && newRole == ProjectRole.MEMBER) {
             if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
                             project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
@@ -299,6 +303,10 @@ public class ProjectService {
                 projectMemberRepository
                         .findByProjectAndMember(project, targetMember)
                         .orElseThrow(() -> new NotFoundException("대상이 프로젝트 멤버가 아닙니다."));
+
+        if (targetPm.getStatus() == AccountStatus.DELETED) {
+            throw new NotFoundException("대상이 프로젝트 멤버가 아닙니다.");
+        }
 
         if (targetPm.isManager()) {
             if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(

@@ -69,7 +69,7 @@ public class RedisTokenService {
     }
 
     public boolean isBlacklisted(String accessToken) {
-        return redisTemplate.hasKey(blacklistKey(accessToken));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey(accessToken)));
     }
 
     public void revokeAllTokensByMember(UUID memberId, long accessTokenTtlSeconds) {
@@ -80,7 +80,7 @@ public class RedisTokenService {
     }
 
     public boolean isMemberSuspended(UUID memberId) {
-        return redisTemplate.hasKey(suspendedKey(memberId));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(suspendedKey(memberId)));
     }
 
     public void clearSuspension(UUID memberId) {
