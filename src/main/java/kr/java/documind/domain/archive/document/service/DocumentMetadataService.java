@@ -101,7 +101,7 @@ public class DocumentMetadataService {
             MultipartFile file) {
         validateFile(file);
 
-        DocumentGroup group = documentGroupManager.findByIdAndProjectId(groupId, projectId);
+        DocumentGroup group = documentGroupManager.getByIdAndProjectId(groupId, projectId);
 
         validateVersionUniqueness(group, request);
 

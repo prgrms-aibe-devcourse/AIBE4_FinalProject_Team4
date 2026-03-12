@@ -65,6 +65,6 @@ public class DocumentGroupService {
     }
 
     private DocumentGroup findGroup(Long groupId, UUID projectId) {
-        return documentGroupManager.findByIdAndProjectId(groupId, projectId);
+        return documentGroupManager.getByIdAndProjectId(groupId, projectId);
     }
 }
