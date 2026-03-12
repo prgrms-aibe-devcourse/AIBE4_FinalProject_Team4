@@ -21,14 +21,14 @@ public class DocumentVectorEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleVectorCreate(DocumentVectorCreateEvent event) {
-        etlService.process(event.sourceId(), event.tempFilePath());
+        etlService.process(event.projectId(), event.sourceId(), event.tempFilePath());
     }
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleVectorReplace(DocumentVectorReplaceEvent event) {
         vectorStoreService.deleteBySourceId(event.sourceId());
-        etlService.process(event.sourceId(), event.tempFilePath());
+        etlService.process(event.projectId(), event.sourceId(), event.tempFilePath());
     }
 
     @Async

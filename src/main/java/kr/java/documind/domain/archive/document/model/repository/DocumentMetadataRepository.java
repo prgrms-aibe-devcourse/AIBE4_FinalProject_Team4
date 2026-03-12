@@ -31,4 +31,18 @@ public interface DocumentMetadataRepository extends JpaRepository<DocumentMetada
             + "WHERE dm.documentGroup.projectId = :projectId AND dm.hash = :hash")
     boolean existsByProjectIdAndHash(
         @Param("projectId") UUID projectId, @Param("hash") String hash);
+
+    @Query(
+        "SELECT dm.id FROM DocumentMetadata dm "
+            + "WHERE dm.documentGroup.projectId = :projectId "
+            + "AND dm.documentGroup.groupName = :groupName")
+    List<Long> findIdsByProjectIdAndGroupName(
+        @Param("projectId") UUID projectId, @Param("groupName") String groupName);
+
+    @Query(
+        "SELECT dm.id FROM DocumentMetadata dm "
+            + "WHERE dm.documentGroup.projectId = :projectId "
+            + "AND dm.documentGroup.category = :categoryName")
+    List<Long> findIdsByProjectIdAndCategoryName(
+        @Param("projectId") UUID projectId, @Param("categoryName") String categoryName);
 }

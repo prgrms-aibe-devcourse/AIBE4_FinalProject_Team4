@@ -86,7 +86,7 @@ public class DocumentMetadataService {
                         DocumentGroup.create(
                                 projectId, request.category(), request.groupName(), ""));
 
-        return saveFileAndCreateMetadata(group, file, request);
+        return saveFileAndCreateMetadata(projectId, group, file, request);
     }
 
     @Transactional
@@ -101,7 +101,7 @@ public class DocumentMetadataService {
 
         validateVersionUniqueness(group, request);
 
-        return saveFileAndCreateMetadata(group, file, request);
+        return saveFileAndCreateMetadata(projectId, group, file, request);
     }
 
     @Transactional
@@ -133,7 +133,7 @@ public class DocumentMetadataService {
 
         if (fileChanged) {
             validateHashUniqueness(newHash, documentMetadata.getDocumentGroup().getProjectId());
-            replaceFile(documentMetadata, file, newHash);
+            replaceFile(projectId, documentMetadata, file, newHash);
         }
 
         if (versionChanged) {
@@ -193,7 +193,7 @@ public class DocumentMetadataService {
     }
 
     private DocumentMetadataResponse saveFileAndCreateMetadata(
-            DocumentGroup group, MultipartFile file, VersionFields version) {
+            UUID projectId, DocumentGroup group, MultipartFile file, VersionFields version) {
         String hash = FileUtil.computeSha256(file);
         validateHashUniqueness(hash, group.getProjectId());
 
@@ -226,7 +226,7 @@ public class DocumentMetadataService {
                                 .uploadedAt(LocalDateTime.now())
                                 .build());
 
-        handleEmbeddingAfterSave(documentMetadata, file, extension, false);
+        handleEmbeddingAfterSave(projectId, documentMetadata, file, extension, false);
 
         return DocumentMetadataResponse.from(documentMetadata);
     }
@@ -244,7 +244,7 @@ public class DocumentMetadataService {
     }
 
     private void replaceFile(
-            DocumentMetadata documentMetadata, MultipartFile file, String newHash) {
+            UUID projectId, DocumentMetadata documentMetadata, MultipartFile file, String newHash) {
         FileStoreResult storeResult = fileStore.save(file);
         fileStore.deleteOnRollback(storeResult.storedKey());
 
@@ -258,7 +258,7 @@ public class DocumentMetadataService {
 
         fileStore.deleteOnCommit(oldStoredKey);
 
-        handleEmbeddingAfterSave(documentMetadata, file, extension, true);
+        handleEmbeddingAfterSave(projectId, documentMetadata, file, extension, true);
     }
 
     private boolean isEmbeddable(String extension) {
@@ -266,6 +266,7 @@ public class DocumentMetadataService {
     }
 
     private void handleEmbeddingAfterSave(
+            UUID projectId,
             DocumentMetadata documentMetadata,
             MultipartFile file,
             String extension,
@@ -277,10 +278,12 @@ public class DocumentMetadataService {
 
             if (isReplace) {
                 eventPublisher.publishEvent(
-                        new DocumentVectorReplaceEvent(documentMetadata.getId(), tempFile));
+                        new DocumentVectorReplaceEvent(
+                                projectId, documentMetadata.getId(), tempFile));
             } else {
                 eventPublisher.publishEvent(
-                        new DocumentVectorCreateEvent(documentMetadata.getId(), tempFile));
+                        new DocumentVectorCreateEvent(
+                                projectId, documentMetadata.getId(), tempFile));
             }
         } else {
             documentMetadata.changeEmbeddingStatus(EmbeddingStatus.NONE);

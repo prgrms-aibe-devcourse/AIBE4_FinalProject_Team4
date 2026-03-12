@@ -72,4 +72,12 @@ public class DocumentMetadataManager {
             .findById(sourceId)
             .ifPresent(m -> m.changeEmbeddingStatus(status));
     }
+
+    public List<Long> findIdsByProjectIdAndGroupName(UUID projectId, String groupName) {
+        return documentMetadataRepository.findIdsByProjectIdAndGroupName(projectId, groupName);
+    }
+
+    public List<Long> findIdsByProjectIdAndCategoryName(UUID projectId, String categoryName) {
+        return documentMetadataRepository.findIdsByProjectIdAndCategoryName(projectId, categoryName);
+    }
 }
