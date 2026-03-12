@@ -47,7 +47,7 @@ public class ReferenceExtractor {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        Map<Long, DocumentMetadata> metadataMap = documentMetadataManager.findByIds(sourceIds);
+        Map<Long, DocumentMetadata> metadataMap = documentMetadataManager.findMapByIds(sourceIds);
 
         List<ReferenceResponse> references = new ArrayList<>();
 

@@ -24,20 +24,29 @@ public class DocumentMetadataManager {
     private final DocumentMetadataRepository documentMetadataRepository;
     private final DomainSourceRepository domainSourceRepository;
 
-    public DocumentMetadata findByIdAndProjectId(Long documentId, UUID projectId) {
+    public DocumentMetadata getByIdAndProjectId(Long documentId, UUID projectId) {
         return documentMetadataRepository
-            .findByIdAndDocumentGroupProjectId(documentId, projectId)
-            .orElseThrow(() -> new NotFoundException("프로젝트에서 문서를 찾을 수 없습니다."));
+                .findByIdAndDocumentGroupProjectId(documentId, projectId)
+                .orElseThrow(() -> new NotFoundException("프로젝트에서 문서를 찾을 수 없습니다."));
     }
 
     public List<DocumentMetadata> findVersionsByGroup(DocumentGroup group) {
         return documentMetadataRepository
-            .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(group);
+                .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(group);
     }
 
-    public Map<Long, DocumentMetadata> findByIds(Collection<Long> ids) {
+    public Map<Long, DocumentMetadata> findMapByIds(Collection<Long> ids) {
         return documentMetadataRepository.findByIdIn(ids).stream()
-            .collect(Collectors.toMap(DocumentMetadata::getId, Function.identity()));
+                .collect(Collectors.toMap(DocumentMetadata::getId, Function.identity()));
+    }
+
+    public List<Long> findIdsByProjectIdAndGroupName(UUID projectId, String groupName) {
+        return documentMetadataRepository.findIdsByProjectIdAndGroupName(projectId, groupName);
+    }
+
+    public List<Long> findIdsByProjectIdAndCategoryName(UUID projectId, String categoryName) {
+        return documentMetadataRepository.findIdsByProjectIdAndCategoryName(
+                projectId, categoryName);
     }
 
     public boolean existsByProjectIdAndHash(UUID projectId, String hash) {
@@ -45,10 +54,10 @@ public class DocumentMetadataManager {
     }
 
     public boolean existsByGroupAndVersion(
-        DocumentGroup group, int majorVersion, int minorVersion, int patchVersion) {
+            DocumentGroup group, int majorVersion, int minorVersion, int patchVersion) {
         return documentMetadataRepository
-            .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                group, majorVersion, minorVersion, patchVersion);
+                .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
+                        group, majorVersion, minorVersion, patchVersion);
     }
 
     public long countByGroup(DocumentGroup group) {
@@ -69,15 +78,7 @@ public class DocumentMetadataManager {
 
     public void updateEmbeddingStatusIfExists(Long sourceId, EmbeddingStatus status) {
         documentMetadataRepository
-            .findById(sourceId)
-            .ifPresent(m -> m.changeEmbeddingStatus(status));
-    }
-
-    public List<Long> findIdsByProjectIdAndGroupName(UUID projectId, String groupName) {
-        return documentMetadataRepository.findIdsByProjectIdAndGroupName(projectId, groupName);
-    }
-
-    public List<Long> findIdsByProjectIdAndCategoryName(UUID projectId, String categoryName) {
-        return documentMetadataRepository.findIdsByProjectIdAndCategoryName(projectId, categoryName);
+                .findById(sourceId)
+                .ifPresent(m -> m.changeEmbeddingStatus(status));
     }
 }

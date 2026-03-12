@@ -169,7 +169,7 @@ public class DocumentMetadataService {
     }
 
     private DocumentMetadata findMetadata(Long documentId, UUID projectId) {
-        return documentMetadataManager.findByIdAndProjectId(documentId, projectId);
+        return documentMetadataManager.getByIdAndProjectId(documentId, projectId);
     }
 
     private void validateFile(MultipartFile file) {
