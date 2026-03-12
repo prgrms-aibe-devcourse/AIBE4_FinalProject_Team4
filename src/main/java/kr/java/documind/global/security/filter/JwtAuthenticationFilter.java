@@ -1,6 +1,5 @@
 package kr.java.documind.global.security.filter;
 
-import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -35,51 +34,54 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String token = extractToken(request);
 
-        if (StringUtils.hasText(token)) {
-            try {
-                tokenProvider.validateToken(token);
+        String accessToken = extractToken(request);
 
-                if (tokenProvider.isAccessToken(token)) {
-                    if (redisTokenService.isBlacklisted(token)) {
-                        SecurityContextHolder.clearContext();
-                        log.debug(
-                                "[JWT] Blacklisted JWT — cleared SecurityContext for {}",
-                                request.getRequestURI());
-                    } else {
-                        UUID memberId = tokenProvider.getMemberId(token);
-                        if (redisTokenService.isMemberSuspended(memberId)) {
-                            SecurityContextHolder.clearContext();
-                            log.warn(
-                                    "[JWT] 정지된 계정 요청 차단: memberId={} uri={}",
-                                    memberId,
-                                    request.getRequestURI());
-                        } else {
-                            setAuthentication(request, token);
-                        }
-                    }
-                }
-            } catch (ExpiredJwtException e) {
-                SecurityContextHolder.clearContext();
-                log.debug("[JWT] 만료된 JWT: SecurityContext 초기화 - {}", request.getRequestURI());
-            } catch (UnauthorizedException | IllegalArgumentException e) {
-                SecurityContextHolder.clearContext();
-                log.warn(
-                        "[JWT] 유효하지 않은 JWT: SecurityContext 초기화 - {} ({})",
-                        request.getRequestURI(),
-                        e.getMessage());
-            }
+        if (!StringUtils.hasText(accessToken)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        try {
+            authenticateIfValidAccessToken(request, accessToken);
+        } catch (UnauthorizedException | IllegalArgumentException e) {
+            SecurityContextHolder.clearContext();
+            log.warn(
+                    "[JWT] 유효하지 않은 JWT: SecurityContext 초기화 - {} ({})",
+                    request.getRequestURI(),
+                    e.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private String extractToken(HttpServletRequest request) {
-        String bearer = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
-            return bearer.substring(7);
+    private void authenticateIfValidAccessToken(HttpServletRequest request, String accessToken) {
+        tokenProvider.validateAccessToken(accessToken);
+
+        if (redisTokenService.isBlacklisted(accessToken)) {
+            SecurityContextHolder.clearContext();
+            log.debug(
+                    "[JWT] Blacklisted JWT — cleared SecurityContext for {}",
+                    request.getRequestURI());
+            return;
         }
+
+        UUID memberId = tokenProvider.getMemberId(accessToken);
+        if (redisTokenService.isMemberSuspended(memberId)) {
+            SecurityContextHolder.clearContext();
+            log.warn("[JWT] 정지된 계정 요청 차단: memberId={} uri={}", memberId, request.getRequestURI());
+            return;
+        }
+
+        setAuthentication(request, accessToken, memberId);
+    }
+
+    private String extractToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+
         return extractTokenFromCookie(request);
     }
 
@@ -97,21 +99,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .orElse(null);
     }
 
-    private void setAuthentication(HttpServletRequest request, String token) {
-        try {
-            UUID memberId = tokenProvider.getMemberId(token);
-            GlobalRole globalRole = tokenProvider.getGlobalRole(token);
+    private void setAuthentication(HttpServletRequest request, String accessToken, UUID memberId) {
 
-            CustomUserDetails authMember = new CustomUserDetails(memberId, globalRole);
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            authMember, null, authMember.getAuthorities());
+        GlobalRole globalRole = tokenProvider.getGlobalRole(accessToken);
 
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        } catch (Exception e) {
-            log.warn("[Jwt] JWT 클레임에서 CustomUserDetail 생성 실패: {} ", e.getMessage());
-            SecurityContextHolder.clearContext();
-        }
+        CustomUserDetails authMember = new CustomUserDetails(memberId, globalRole);
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        authMember, null, authMember.getAuthorities());
+
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }

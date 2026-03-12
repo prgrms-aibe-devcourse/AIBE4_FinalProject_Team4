@@ -48,6 +48,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("InvitationService 단위 테스트")
 class InvitationServiceTest {
 
     @InjectMocks private InvitationService invitationService;

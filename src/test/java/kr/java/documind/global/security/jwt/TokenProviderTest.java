@@ -4,22 +4,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.jsonwebtoken.ExpiredJwtException;
 import java.util.Base64;
 import java.util.UUID;
+
+import kr.java.documind.domain.auth.exception.InvalidTokenException;
+import kr.java.documind.domain.auth.exception.TokenExpiredException;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.global.config.JwtProperties;
-import kr.java.documind.global.exception.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+@DisplayName("TokenProvider 단위 테스트")
 class TokenProviderTest {
 
-    // HMAC-SHA256 최소 256bit(32byte) 이상의 테스트용 비밀키
     private static final String TEST_SECRET =
-            Base64.getEncoder().encodeToString("abcdefghijklmnopqrstuvwxyz123456".getBytes());
+        Base64.getEncoder().encodeToString("abcdefghijklmnopqrstuvwxyz123456".getBytes());
     private static final long ACCESS_TTL_SECONDS = 3600L;
     private static final long REFRESH_TTL_SECONDS = 604800L;
 
@@ -27,34 +28,55 @@ class TokenProviderTest {
 
     @BeforeEach
     void setUp() {
-        JwtProperties props =
-                new JwtProperties(
-                        TEST_SECRET,
-                        ACCESS_TTL_SECONDS,
-                        REFRESH_TTL_SECONDS,
-                        "access_token",
-                        "refresh_token",
-                        false);
+        JwtProperties props = new JwtProperties(
+            TEST_SECRET,
+            ACCESS_TTL_SECONDS,
+            REFRESH_TTL_SECONDS,
+            "access_token",
+            "refresh_token",
+            false);
+
         tokenProvider = new TokenProvider(props);
-        tokenProvider.init(); // @PostConstruct 수동 호출
+        tokenProvider.init();
     }
 
-    /** TTL을 음수로 설정하여 만료 시각이 과거인 토큰을 즉시 생성한다. Thread.sleep 없이 만료 토큰을 얻기 위한 헬퍼. */
-    private String buildExpiredAccessToken(UUID memberId, GlobalRole role) {
-        JwtProperties expiredProps =
-                new JwtProperties(TEST_SECRET, -1L, -1L, "access_token", "refresh_token", false);
+    private String createExpiredAccessToken(UUID memberId, GlobalRole role) {
+        JwtProperties expiredProps = new JwtProperties(
+            TEST_SECRET,
+            -1L,
+            -1L,
+            "access_token",
+            "refresh_token",
+            false);
+
         TokenProvider expiredProvider = new TokenProvider(expiredProps);
         expiredProvider.init();
+
         return expiredProvider.generateAccessToken(memberId, role);
     }
 
+    private String createExpiredRefreshToken(UUID memberId, GlobalRole role) {
+        JwtProperties expiredProps = new JwtProperties(
+            TEST_SECRET,
+            -1L,
+            -1L,
+            "access_token",
+            "refresh_token",
+            false);
+
+        TokenProvider expiredProvider = new TokenProvider(expiredProps);
+        expiredProvider.init();
+
+        return expiredProvider.generateRefreshToken(memberId, role);
+    }
+
     @Nested
-    @DisplayName("generateAccessToken()")
-    class GenerateAccessToken {
+    @DisplayName("generateAccessToken() 단위 테스트")
+    class GenerateAccessTokenTest {
 
         @Test
-        @DisplayName("기능: 정상 payload → 유효한 토큰 생성")
-        void generateAccessToken_정상payload_유효한토큰생성() {
+        @DisplayName("액세스 토큰 생성: 정상 payload이면 유효한 액세스 토큰 생성")
+        void generateAccessToken_정상Payload이면_유효한액세스토큰을생성한다() {
             // Given
             UUID memberId = UUID.randomUUID();
 
@@ -63,12 +85,12 @@ class TokenProviderTest {
 
             // Then
             assertThat(token).isNotNull().isNotBlank();
-            assertThatCode(() -> tokenProvider.validateToken(token)).doesNotThrowAnyException();
+            assertThatCode(() -> tokenProvider.validateAccessToken(token)).doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("기능: 생성된 토큰에서 memberId 정확히 추출")
-        void generateAccessToken_생성된토큰에서memberId정확히추출() {
+        @DisplayName("액세스 토큰 생성: 생성된 토큰에서 memberId를 정확히 추출")
+        void generateAccessToken_생성된토큰이면_memberId를정확히추출한다() {
             // Given
             UUID memberId = UUID.randomUUID();
 
@@ -80,8 +102,8 @@ class TokenProviderTest {
         }
 
         @Test
-        @DisplayName("기능: 생성된 토큰에서 GlobalRole 정확히 추출")
-        void generateAccessToken_생성된토큰에서GlobalRole정확히추출() {
+        @DisplayName("액세스 토큰 생성: 생성된 토큰에서 GlobalRole을 정확히 추출")
+        void generateAccessToken_생성된토큰이면_GlobalRole을정확히추출한다() {
             // Given
             UUID memberId = UUID.randomUUID();
 
@@ -93,35 +115,57 @@ class TokenProviderTest {
         }
 
         @Test
-        @DisplayName("기능: access 토큰 타입 확인 → isAccessToken() true 반환")
-        void generateAccessToken_isAccessToken_true반환() {
+        @DisplayName("액세스 토큰 생성: access 토큰이면 isAccessToken은 true를 반환")
+        void generateAccessToken_access토큰이면_isAccessToken은True를반환한다() {
             // Given
-            String token =
-                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
+            String token = tokenProvider.generateAccessToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
 
-            // When & Then
-            assertThat(tokenProvider.isAccessToken(token)).isTrue();
+            // When
+            boolean result = tokenProvider.isAccessToken(token);
+
+            // Then
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("액세스 토큰 생성: access 토큰이면 isRefreshToken은 false를 반환")
+        void generateAccessToken_access토큰이면_isRefreshToken은False를반환한다() {
+            // Given
+            String token = tokenProvider.generateAccessToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
+
+            // When
+            boolean result = tokenProvider.isRefreshToken(token);
+
+            // Then
+            assertThat(result).isFalse();
         }
     }
 
     @Nested
-    @DisplayName("generateRefreshToken()")
-    class GenerateRefreshToken {
+    @DisplayName("generateRefreshToken() 단위 테스트")
+    class GenerateRefreshTokenTest {
 
         @Test
-        @DisplayName("기능: refresh 토큰은 isAccessToken() false 반환")
-        void generateRefreshToken_isAccessToken_false반환() {
+        @DisplayName("리프레시 토큰 생성: 정상 payload이면 유효한 리프레시 토큰 생성")
+        void generateRefreshToken_정상Payload이면_유효한리프레시토큰을생성한다() {
             // Given
-            String token =
-                    tokenProvider.generateRefreshToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
+            UUID memberId = UUID.randomUUID();
 
-            // When & Then
-            assertThat(tokenProvider.isAccessToken(token)).isFalse();
+            // When
+            String token = tokenProvider.generateRefreshToken(memberId, GlobalRole.EMPLOYEE);
+
+            // Then
+            assertThat(token).isNotNull().isNotBlank();
+            assertThatCode(() -> tokenProvider.validateRefreshToken(token)).doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("기능: refresh 토큰에서 memberId와 role 정확히 추출")
-        void generateRefreshToken_memberId와role정확히추출() {
+        @DisplayName("리프레시 토큰 생성: 생성된 토큰에서 memberId와 role을 정확히 추출")
+        void generateRefreshToken_생성된토큰이면_memberId와Role을정확히추출한다() {
             // Given
             UUID memberId = UUID.randomUUID();
 
@@ -132,148 +176,265 @@ class TokenProviderTest {
             assertThat(tokenProvider.getMemberId(token)).isEqualTo(memberId);
             assertThat(tokenProvider.getGlobalRole(token)).isEqualTo(GlobalRole.CEO);
         }
+
+        @Test
+        @DisplayName("리프레시 토큰 생성: refresh 토큰이면 isAccessToken은 false를 반환")
+        void generateRefreshToken_refresh토큰이면_isAccessToken은False를반환한다() {
+            // Given
+            String token = tokenProvider.generateRefreshToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
+
+            // When
+            boolean result = tokenProvider.isAccessToken(token);
+
+            // Then
+            assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("리프레시 토큰 생성: refresh 토큰이면 isRefreshToken은 true를 반환")
+        void generateRefreshToken_refresh토큰이면_isRefreshToken은True를반환한다() {
+            // Given
+            String token = tokenProvider.generateRefreshToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
+
+            // When
+            boolean result = tokenProvider.isRefreshToken(token);
+
+            // Then
+            assertThat(result).isTrue();
+        }
     }
 
     @Nested
-    @DisplayName("validateToken()")
-    class ValidateToken {
+    @DisplayName("validateAccessToken() 단위 테스트")
+    class ValidateAccessTokenTest {
 
         @Test
-        @DisplayName("기능: 유효한 토큰 → 예외 발생 안함")
-        void validateToken_유효한토큰_통과() {
+        @DisplayName("액세스 토큰 검증: 유효한 액세스 토큰이면 예외가 발생하지 않는다")
+        void validateAccessToken_유효한액세스토큰이면_예외가발생하지않는다() {
             // Given
-            String token =
-                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
+            String token = tokenProvider.generateAccessToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
 
             // When & Then
-            assertThatCode(() -> tokenProvider.validateToken(token)).doesNotThrowAnyException();
+            assertThatCode(() -> tokenProvider.validateAccessToken(token))
+                .doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("예외: 만료된 토큰 → ExpiredJwtException 발생")
-        void validateToken_만료된토큰_ExpiredJwtException발생() {
+        @DisplayName("액세스 토큰 검증: 만료된 액세스 토큰이면 TokenExpiredException 발생")
+        void validateAccessToken_만료된액세스토큰이면_TokenExpiredException이발생한다() {
             // Given
-            String expiredToken = buildExpiredAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
+            String expiredToken = createExpiredAccessToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
 
             // When & Then
-            assertThatThrownBy(() -> tokenProvider.validateToken(expiredToken))
-                    .isInstanceOf(ExpiredJwtException.class);
+            assertThatThrownBy(() -> tokenProvider.validateAccessToken(expiredToken))
+                .isInstanceOf(TokenExpiredException.class)
+                .hasMessageContaining("만료");
         }
 
         @Test
-        @DisplayName("예외: 변조된 시그니처 → UnauthorizedException 발생")
-        void validateToken_변조된시그니처_UnauthorizedException발생() {
+        @DisplayName("액세스 토큰 검증: 변조된 토큰이면 InvalidTokenException 발생")
+        void validateAccessToken_변조된토큰이면_InvalidTokenException이발생한다() {
             // Given
             String tamperedToken = "eyJhbGciOiJIUzI1NiJ9.tampered-payload.invalid-signature";
 
             // When & Then
-            assertThatThrownBy(() -> tokenProvider.validateToken(tamperedToken))
-                    .isInstanceOf(UnauthorizedException.class)
-                    .hasMessageContaining("유효하지 않은 토큰");
+            assertThatThrownBy(() -> tokenProvider.validateAccessToken(tamperedToken))
+                .isInstanceOf(InvalidTokenException.class)
+                .hasMessageContaining("유효하지 않은 토큰");
         }
 
         @Test
-        @DisplayName("예외: 빈 문자열 → UnauthorizedException 발생")
-        void validateToken_빈문자열_UnauthorizedException발생() {
+        @DisplayName("액세스 토큰 검증: 빈 문자열이면 InvalidTokenException 발생")
+        void validateAccessToken_빈문자열이면_InvalidTokenException이발생한다() {
+            // Given
+            String blankToken = "";
+
             // When & Then
-            assertThatThrownBy(() -> tokenProvider.validateToken(""))
-                    .isInstanceOf(UnauthorizedException.class)
-                    .hasMessageContaining("유효하지 않은 토큰");
+            assertThatThrownBy(() -> tokenProvider.validateAccessToken(blankToken))
+                .isInstanceOf(InvalidTokenException.class)
+                .hasMessageContaining("유효하지 않은 토큰");
+        }
+
+        @Test
+        @DisplayName("액세스 토큰 검증: refresh 토큰이면 InvalidTokenException 발생")
+        void validateAccessToken_refresh토큰이면_InvalidTokenException이발생한다() {
+            // Given
+            String refreshToken = tokenProvider.generateRefreshToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
+
+            // When & Then
+            assertThatThrownBy(() -> tokenProvider.validateAccessToken(refreshToken))
+                .isInstanceOf(InvalidTokenException.class)
+                .hasMessageContaining("유효하지 않은 토큰");
         }
     }
 
     @Nested
-    @DisplayName("getMemberIdFromExpiredToken()")
-    class GetMemberIdFromExpiredToken {
+    @DisplayName("validateRefreshToken() 단위 테스트")
+    class ValidateRefreshTokenTest {
 
         @Test
-        @DisplayName("기능: 만료된 토큰에서 memberId 정상 추출")
-        void getMemberIdFromExpiredToken_만료된토큰_memberId추출성공() {
+        @DisplayName("리프레시 토큰 검증: 유효한 리프레시 토큰이면 예외가 발생하지 않는다")
+        void validateRefreshToken_유효한리프레시토큰이면_예외가발생하지않는다() {
             // Given
-            UUID memberId = UUID.randomUUID();
-            String expiredToken = buildExpiredAccessToken(memberId, GlobalRole.EMPLOYEE);
+            String token = tokenProvider.generateRefreshToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
 
-            // When
-            UUID extracted = tokenProvider.getMemberIdFromExpiredToken(expiredToken);
-
-            // Then
-            assertThat(extracted).isEqualTo(memberId);
+            // When & Then
+            assertThatCode(() -> tokenProvider.validateRefreshToken(token))
+                .doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("기능: 유효한 토큰에서도 memberId 정상 추출")
-        void getMemberIdFromExpiredToken_유효한토큰_memberId추출성공() {
+        @DisplayName("리프레시 토큰 검증: 만료된 리프레시 토큰이면 TokenExpiredException 발생")
+        void validateRefreshToken_만료된리프레시토큰이면_TokenExpiredException이발생한다() {
+            // Given
+            String expiredToken = createExpiredRefreshToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
+
+            // When & Then
+            assertThatThrownBy(() -> tokenProvider.validateRefreshToken(expiredToken))
+                .isInstanceOf(TokenExpiredException.class)
+                .hasMessageContaining("만료");
+        }
+
+        @Test
+        @DisplayName("리프레시 토큰 검증: access 토큰이면 InvalidTokenException 발생")
+        void validateRefreshToken_access토큰이면_InvalidTokenException이발생한다() {
+            // Given
+            String accessToken = tokenProvider.generateAccessToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
+
+            // When & Then
+            assertThatThrownBy(() -> tokenProvider.validateRefreshToken(accessToken))
+                .isInstanceOf(InvalidTokenException.class)
+                .hasMessageContaining("유효하지 않은 토큰");
+        }
+    }
+
+    @Nested
+    @DisplayName("getMemberIdAllowExpired() 단위 테스트")
+    class GetMemberIdAllowExpiredTest {
+
+        @Test
+        @DisplayName("memberId 추출: 만료된 토큰이면 memberId를 정상 추출")
+        void getMemberIdAllowExpired_만료된토큰이면_memberId를정상추출한다() {
+            // Given
+            UUID memberId = UUID.randomUUID();
+            String expiredToken = createExpiredAccessToken(memberId, GlobalRole.EMPLOYEE);
+
+            // When
+            UUID extractedMemberId = tokenProvider.getMemberIdAllowExpired(expiredToken);
+
+            // Then
+            assertThat(extractedMemberId).isEqualTo(memberId);
+        }
+
+        @Test
+        @DisplayName("memberId 추출: 유효한 토큰이면 memberId를 정상 추출")
+        void getMemberIdAllowExpired_유효한토큰이면_memberId를정상추출한다() {
             // Given
             UUID memberId = UUID.randomUUID();
             String validToken = tokenProvider.generateAccessToken(memberId, GlobalRole.CEO);
 
             // When
-            UUID extracted = tokenProvider.getMemberIdFromExpiredToken(validToken);
+            UUID extractedMemberId = tokenProvider.getMemberIdAllowExpired(validToken);
 
             // Then
-            assertThat(extracted).isEqualTo(memberId);
+            assertThat(extractedMemberId).isEqualTo(memberId);
+        }
+
+        @Test
+        @DisplayName("memberId 추출: 변조된 토큰이면 InvalidTokenException 발생")
+        void getMemberIdAllowExpired_변조된토큰이면_InvalidTokenException이발생한다() {
+            // Given
+            String tamperedToken = "invalid.token.value";
+
+            // When & Then
+            assertThatThrownBy(() -> tokenProvider.getMemberIdAllowExpired(tamperedToken))
+                .isInstanceOf(InvalidTokenException.class)
+                .hasMessageContaining("유효하지 않은 토큰");
         }
     }
 
     @Nested
-    @DisplayName("getRemainingMillis()")
-    class GetRemainingMillis {
+    @DisplayName("getRemainingMillis() 단위 테스트")
+    class GetRemainingMillisTest {
 
         @Test
-        @DisplayName("기능: 유효한 토큰 → 양수 remaining 반환")
-        void getRemainingMillis_유효한토큰_양수반환() {
+        @DisplayName("남은 시간 조회: 유효한 토큰이면 양수 remainingMillis를 반환")
+        void getRemainingMillis_유효한토큰이면_양수RemainingMillis를반환한다() {
             // Given
-            String token =
-                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
+            String token = tokenProvider.generateAccessToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
 
             // When
-            long remaining = tokenProvider.getRemainingMillis(token);
+            long remainingMillis = tokenProvider.getRemainingMillis(token);
 
             // Then
-            assertThat(remaining).isPositive();
+            assertThat(remainingMillis).isPositive();
         }
 
         @Test
-        @DisplayName("기능: 만료된 토큰 → 음수 remaining 반환")
-        void getRemainingMillis_만료된토큰_음수반환() {
+        @DisplayName("남은 시간 조회: 만료된 토큰이면 음수 remainingMillis를 반환")
+        void getRemainingMillis_만료된토큰이면_음수RemainingMillis를반환한다() {
             // Given
-            String expiredToken = buildExpiredAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
+            String expiredToken = createExpiredAccessToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
 
             // When
-            long remaining = tokenProvider.getRemainingMillis(expiredToken);
+            long remainingMillis = tokenProvider.getRemainingMillis(expiredToken);
 
             // Then
-            assertThat(remaining).isNegative();
+            assertThat(remainingMillis).isNegative();
         }
     }
 
     @Nested
-    @DisplayName("getTokenId()")
-    class GetTokenId {
+    @DisplayName("getTokenId() 단위 테스트")
+    class GetTokenIdTest {
 
         @Test
-        @DisplayName("기능: 유효한 토큰에서 고유 jti 추출")
-        void getTokenId_유효한토큰_고유jti추출() {
+        @DisplayName("토큰 ID 조회: 서로 다른 유효한 토큰이면 서로 다른 jti를 반환")
+        void getTokenId_서로다른유효한토큰이면_서로다른Jti를반환한다() {
             // Given
-            String tokenA =
-                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
-            String tokenB =
-                    tokenProvider.generateAccessToken(UUID.randomUUID(), GlobalRole.EMPLOYEE);
+            String tokenA = tokenProvider.generateAccessToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
+            String tokenB = tokenProvider.generateAccessToken(
+                UUID.randomUUID(),
+                GlobalRole.EMPLOYEE);
 
             // When
-            String idA = tokenProvider.getTokenId(tokenA);
-            String idB = tokenProvider.getTokenId(tokenB);
+            String tokenIdA = tokenProvider.getTokenId(tokenA);
+            String tokenIdB = tokenProvider.getTokenId(tokenB);
 
             // Then
-            assertThat(idA).isNotNull().isNotEqualTo(idB);
+            assertThat(tokenIdA).isNotNull().isNotBlank();
+            assertThat(tokenIdB).isNotNull().isNotBlank();
+            assertThat(tokenIdA).isNotEqualTo(tokenIdB);
         }
 
         @Test
-        @DisplayName("기능: 만료된 토큰에서도 jti 추출 가능")
-        void getTokenId_만료된토큰에서도jti추출() {
+        @DisplayName("토큰 ID 조회: 만료된 토큰이어도 jti를 추출할 수 있다")
+        void getTokenId_만료된토큰이어도_jti를추출할수있다() {
             // Given
             UUID memberId = UUID.randomUUID();
-            String expiredToken = buildExpiredAccessToken(memberId, GlobalRole.EMPLOYEE);
+            String expiredToken = createExpiredAccessToken(memberId, GlobalRole.EMPLOYEE);
 
             // When
             String tokenId = tokenProvider.getTokenId(expiredToken);

@@ -28,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("MemberService 단위 테스트")
 class MemberServiceTest {
 
     @InjectMocks private MemberService memberService;

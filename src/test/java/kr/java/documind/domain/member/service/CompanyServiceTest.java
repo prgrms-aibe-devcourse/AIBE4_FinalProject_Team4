@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("CompanyService 단위 테스트")
 class CompanyServiceTest {
 
     @InjectMocks private CompanyService companyService;

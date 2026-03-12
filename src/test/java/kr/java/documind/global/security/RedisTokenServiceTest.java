@@ -1,15 +1,15 @@
 package kr.java.documind.global.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.lenient;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import kr.java.documind.global.security.jwt.TokenProvider;
@@ -23,15 +23,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("RedisTokenService 단위 테스트")
 class RedisTokenServiceTest {
 
     @InjectMocks private RedisTokenService redisTokenService;
 
     @Mock private StringRedisTemplate redisTemplate;
+
     @Mock private TokenProvider tokenProvider;
+
+    @Mock private RedisScript<Long> rotateRefreshTokenScript;
 
     @SuppressWarnings("unchecked")
     @Mock
@@ -41,18 +46,18 @@ class RedisTokenServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Given
         ReflectionTestUtils.setField(redisTokenService, "jwtPrefix", JWT_PREFIX);
-        // opsForValue()는 대부분의 테스트에서 사용되므로 lenient로 설정
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 
     @Nested
-    @DisplayName("saveRefreshToken()")
-    class SaveRefreshToken {
+    @DisplayName("saveRefreshToken() 단위 테스트")
+    class SaveRefreshTokenTest {
 
         @Test
-        @DisplayName("기능: refreshToken을 Redis에 TTL과 함께 저장")
-        void saveRefreshToken_정상호출_TTL포함저장() {
+        @DisplayName("리프레시 토큰 저장: refreshToken을 TTL과 함께 Redis에 저장")
+        void saveRefreshToken_refreshToken을저장하면_TTL과함께Redis에저장한다() {
             // Given
             UUID memberId = UUID.randomUUID();
             String refreshToken = "sample.refresh.token";
@@ -70,12 +75,12 @@ class RedisTokenServiceTest {
     }
 
     @Nested
-    @DisplayName("getRefreshToken()")
-    class GetRefreshToken {
+    @DisplayName("getRefreshToken() 단위 테스트")
+    class GetRefreshTokenTest {
 
         @Test
-        @DisplayName("기능: 저장된 refreshToken 조회 → 정상 반환")
-        void getRefreshToken_저장된토큰_정상반환() {
+        @DisplayName("리프레시 토큰 조회: 저장된 refreshToken이 있으면 정상 반환")
+        void getRefreshToken_저장된RefreshToken이있으면_정상반환한다() {
             // Given
             UUID memberId = UUID.randomUUID();
             String storedToken = "stored.refresh.token";
@@ -90,8 +95,8 @@ class RedisTokenServiceTest {
         }
 
         @Test
-        @DisplayName("기능: TTL 만료된 키 조회 → null 반환")
-        void getRefreshToken_만료된키_null반환() {
+        @DisplayName("리프레시 토큰 조회: TTL이 만료된 키면 null 반환")
+        void getRefreshToken_TTL이만료된키면_null을반환한다() {
             // Given
             UUID memberId = UUID.randomUUID();
             String expectedKey = JWT_PREFIX + "refresh:" + memberId;
@@ -106,46 +111,101 @@ class RedisTokenServiceTest {
     }
 
     @Nested
-    @DisplayName("consumeRefreshToken()")
-    class ConsumeRefreshToken {
+    @DisplayName("rotateRefreshToken() 단위 테스트")
+    class RotateRefreshTokenTest {
 
         @Test
-        @DisplayName("기능: refreshToken 원자적 소비(getAndDelete) → 반환 후 키 삭제")
-        void consumeRefreshToken_정상호출_getAndDelete수행() {
+        @DisplayName("리프레시 토큰 교체: Redis 스크립트 실행 결과가 1이면 true 반환")
+        void rotateRefreshToken_스크립트실행결과가1이면_true를반환한다() {
             // Given
             UUID memberId = UUID.randomUUID();
-            String storedToken = "stored.refresh.token";
+            String oldRefreshToken = "old.refresh.token";
+            String newRefreshToken = "new.refresh.token";
+            long ttlSeconds = 604800L;
             String expectedKey = JWT_PREFIX + "refresh:" + memberId;
-            given(valueOperations.getAndDelete(expectedKey)).willReturn(storedToken);
+
+            given(
+                            redisTemplate.execute(
+                                    rotateRefreshTokenScript,
+                                    Collections.singletonList(expectedKey),
+                                    oldRefreshToken,
+                                    newRefreshToken,
+                                    String.valueOf(ttlSeconds)))
+                    .willReturn(1L);
 
             // When
-            String result = redisTokenService.consumeRefreshToken(memberId);
+            boolean result =
+                    redisTokenService.rotateRefreshToken(
+                            memberId, oldRefreshToken, newRefreshToken, ttlSeconds);
 
             // Then
-            assertThat(result).isEqualTo(storedToken);
-            then(valueOperations).should().getAndDelete(expectedKey);
+            assertThat(result).isTrue();
         }
 
         @Test
-        @DisplayName("예외: Redis 장애 → RuntimeException 전파")
-        void consumeRefreshToken_Redis장애_RuntimeException전파() {
+        @DisplayName("리프레시 토큰 교체: Redis 스크립트 실행 결과가 0이면 false 반환")
+        void rotateRefreshToken_스크립트실행결과가0이면_false를반환한다() {
             // Given
             UUID memberId = UUID.randomUUID();
-            given(valueOperations.getAndDelete(anyString())).willThrow(RuntimeException.class);
+            String oldRefreshToken = "old.refresh.token";
+            String newRefreshToken = "new.refresh.token";
+            long ttlSeconds = 604800L;
+            String expectedKey = JWT_PREFIX + "refresh:" + memberId;
 
-            // When & Then
-            assertThatThrownBy(() -> redisTokenService.consumeRefreshToken(memberId))
-                    .isInstanceOf(RuntimeException.class);
+            given(
+                            redisTemplate.execute(
+                                    rotateRefreshTokenScript,
+                                    Collections.singletonList(expectedKey),
+                                    oldRefreshToken,
+                                    newRefreshToken,
+                                    String.valueOf(ttlSeconds)))
+                    .willReturn(0L);
+
+            // When
+            boolean result =
+                    redisTokenService.rotateRefreshToken(
+                            memberId, oldRefreshToken, newRefreshToken, ttlSeconds);
+
+            // Then
+            assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("리프레시 토큰 교체: Redis 스크립트 실행 결과가 null이면 false 반환")
+        void rotateRefreshToken_스크립트실행결과가Null이면_false를반환한다() {
+            // Given
+            UUID memberId = UUID.randomUUID();
+            String oldRefreshToken = "old.refresh.token";
+            String newRefreshToken = "new.refresh.token";
+            long ttlSeconds = 604800L;
+            String expectedKey = JWT_PREFIX + "refresh:" + memberId;
+
+            given(
+                            redisTemplate.execute(
+                                    rotateRefreshTokenScript,
+                                    Collections.singletonList(expectedKey),
+                                    oldRefreshToken,
+                                    newRefreshToken,
+                                    String.valueOf(ttlSeconds)))
+                    .willReturn(null);
+
+            // When
+            boolean result =
+                    redisTokenService.rotateRefreshToken(
+                            memberId, oldRefreshToken, newRefreshToken, ttlSeconds);
+
+            // Then
+            assertThat(result).isFalse();
         }
     }
 
     @Nested
-    @DisplayName("deleteRefreshToken()")
-    class DeleteRefreshToken {
+    @DisplayName("deleteRefreshToken() 단위 테스트")
+    class DeleteRefreshTokenTest {
 
         @Test
-        @DisplayName("기능: refreshToken 키 삭제")
-        void deleteRefreshToken_정상호출_키삭제수행() {
+        @DisplayName("리프레시 토큰 삭제: refreshToken 키를 삭제")
+        void deleteRefreshToken_refreshToken키를삭제한다() {
             // Given
             UUID memberId = UUID.randomUUID();
             String expectedKey = JWT_PREFIX + "refresh:" + memberId;
@@ -159,17 +219,18 @@ class RedisTokenServiceTest {
     }
 
     @Nested
-    @DisplayName("addToBlacklist()")
-    class AddToBlacklist {
+    @DisplayName("addToBlacklist() 단위 테스트")
+    class AddToBlacklistTest {
 
         @Test
-        @DisplayName("기능: 유효한 TTL → tokenId 기반 키로 블랙리스트 등록")
-        void addToBlacklist_유효한TTL_블랙리스트등록() {
+        @DisplayName("블랙리스트 등록: 유효한 TTL이면 tokenId 기반 키로 등록")
+        void addToBlacklist_유효한TTL이면_tokenId기반키로등록한다() {
             // Given
             String accessToken = "valid.access.token";
-            long ttlMillis = 60_000L; // 60초
+            long ttlMillis = 60_000L;
             String tokenId = "jti-uuid-value";
             String expectedKey = JWT_PREFIX + "blacklist:" + tokenId;
+
             given(tokenProvider.getTokenId(accessToken)).willReturn(tokenId);
 
             // When
@@ -180,13 +241,14 @@ class RedisTokenServiceTest {
         }
 
         @Test
-        @DisplayName("경계값: ttlMillis가 1ms → Math.max(1, 0) = 1초 TTL로 등록")
-        void addToBlacklist_1ms_최소1초TTL로등록() {
+        @DisplayName("블랙리스트 등록: ttlMillis가 1이면 최소 1초 TTL로 등록")
+        void addToBlacklist_ttlMillis가1이면_최소1초TTL로등록한다() {
             // Given
             String accessToken = "almost.expired.token";
             long ttlMillis = 1L;
             String tokenId = "jti-short-ttl";
             String expectedKey = JWT_PREFIX + "blacklist:" + tokenId;
+
             given(tokenProvider.getTokenId(accessToken)).willReturn(tokenId);
 
             // When
@@ -197,8 +259,26 @@ class RedisTokenServiceTest {
         }
 
         @Test
-        @DisplayName("경계값: ttlMillis가 0 → 등록 스킵")
-        void addToBlacklist_0ms_등록스킵() {
+        @DisplayName("블랙리스트 등록: ttlMillis가 1001이면 올림 처리되어 2초 TTL로 등록")
+        void addToBlacklist_ttlMillis가1001이면_올림처리되어2초TTL로등록한다() {
+            // Given
+            String accessToken = "short.ttl.token";
+            long ttlMillis = 1001L;
+            String tokenId = "jti-round-up";
+            String expectedKey = JWT_PREFIX + "blacklist:" + tokenId;
+
+            given(tokenProvider.getTokenId(accessToken)).willReturn(tokenId);
+
+            // When
+            redisTokenService.addToBlacklist(accessToken, ttlMillis);
+
+            // Then
+            then(valueOperations).should().set(expectedKey, "1", 2L, TimeUnit.SECONDS);
+        }
+
+        @Test
+        @DisplayName("블랙리스트 등록: ttlMillis가 0이면 등록을 건너뛴다")
+        void addToBlacklist_ttlMillis가0이면_등록을건너뛴다() {
             // Given
             String accessToken = "already.expired.token";
 
@@ -211,8 +291,8 @@ class RedisTokenServiceTest {
         }
 
         @Test
-        @DisplayName("경계값: ttlMillis가 음수 → 등록 스킵")
-        void addToBlacklist_음수ttl_등록스킵() {
+        @DisplayName("블랙리스트 등록: ttlMillis가 음수이면 등록을 건너뛴다")
+        void addToBlacklist_ttlMillis가음수이면_등록을건너뛴다() {
             // Given
             String accessToken = "expired.access.token";
 
@@ -221,20 +301,22 @@ class RedisTokenServiceTest {
 
             // Then
             then(tokenProvider).should(never()).getTokenId(anyString());
+            then(valueOperations).should(never()).set(anyString(), anyString(), anyLong(), any());
         }
     }
 
     @Nested
-    @DisplayName("isBlacklisted()")
-    class IsBlacklisted {
+    @DisplayName("isBlacklisted() 단위 테스트")
+    class IsBlacklistedTest {
 
         @Test
-        @DisplayName("기능: 블랙리스트에 등록된 토큰 → true 반환")
-        void isBlacklisted_등록된토큰_true반환() {
+        @DisplayName("블랙리스트 조회: 등록된 토큰이면 true 반환")
+        void isBlacklisted_등록된토큰이면_true를반환한다() {
             // Given
             String accessToken = "blacklisted.access.token";
             String tokenId = "blacklisted-jti";
             String expectedKey = JWT_PREFIX + "blacklist:" + tokenId;
+
             given(tokenProvider.getTokenId(accessToken)).willReturn(tokenId);
             given(redisTemplate.hasKey(expectedKey)).willReturn(true);
 
@@ -246,12 +328,13 @@ class RedisTokenServiceTest {
         }
 
         @Test
-        @DisplayName("기능: 블랙리스트에 없는 토큰 → false 반환")
-        void isBlacklisted_미등록토큰_false반환() {
+        @DisplayName("블랙리스트 조회: 등록되지 않은 토큰이면 false 반환")
+        void isBlacklisted_등록되지않은토큰이면_false를반환한다() {
             // Given
             String accessToken = "normal.access.token";
             String tokenId = "normal-jti";
             String expectedKey = JWT_PREFIX + "blacklist:" + tokenId;
+
             given(tokenProvider.getTokenId(accessToken)).willReturn(tokenId);
             given(redisTemplate.hasKey(expectedKey)).willReturn(false);
 
@@ -264,12 +347,12 @@ class RedisTokenServiceTest {
     }
 
     @Nested
-    @DisplayName("revokeAllTokensByMember()")
-    class RevokeAllTokensByMember {
+    @DisplayName("revokeAllTokensByMember() 단위 테스트")
+    class RevokeAllTokensByMemberTest {
 
         @Test
-        @DisplayName("기능: refreshToken 삭제 + suspended 마커 등록으로 즉시 차단")
-        void revokeAllTokensByMember_정상호출_refresh삭제및suspended등록() {
+        @DisplayName("토큰 전체 무효화: refreshToken 삭제 후 suspended 마커를 등록")
+        void revokeAllTokensByMember_refreshToken을삭제한후_suspended마커를등록한다() {
             // Given
             UUID memberId = UUID.randomUUID();
             long accessTokenTtlSeconds = 1800L;
@@ -288,12 +371,12 @@ class RedisTokenServiceTest {
     }
 
     @Nested
-    @DisplayName("isMemberSuspended()")
-    class IsMemberSuspended {
+    @DisplayName("isMemberSuspended() 단위 테스트")
+    class IsMemberSuspendedTest {
 
         @Test
-        @DisplayName("기능: suspended 마커 존재 → true 반환")
-        void isMemberSuspended_마커존재_true반환() {
+        @DisplayName("정지 상태 조회: suspended 마커가 있으면 true 반환")
+        void isMemberSuspended_suspended마커가있으면_true를반환한다() {
             // Given
             UUID memberId = UUID.randomUUID();
             String expectedKey = JWT_PREFIX + "suspended:" + memberId;
@@ -307,8 +390,8 @@ class RedisTokenServiceTest {
         }
 
         @Test
-        @DisplayName("기능: suspended 마커 없음(TTL 만료 포함) → false 반환")
-        void isMemberSuspended_마커없음_false반환() {
+        @DisplayName("정지 상태 조회: suspended 마커가 없으면 false 반환")
+        void isMemberSuspended_suspended마커가없으면_false를반환한다() {
             // Given
             UUID memberId = UUID.randomUUID();
             String expectedKey = JWT_PREFIX + "suspended:" + memberId;
@@ -323,12 +406,12 @@ class RedisTokenServiceTest {
     }
 
     @Nested
-    @DisplayName("clearSuspension()")
-    class ClearSuspension {
+    @DisplayName("clearSuspension() 단위 테스트")
+    class ClearSuspensionTest {
 
         @Test
-        @DisplayName("기능: suspended 마커 삭제")
-        void clearSuspension_정상호출_suspended키삭제() {
+        @DisplayName("정지 상태 해제: suspended 마커 키를 삭제")
+        void clearSuspension_suspended마커키를삭제한다() {
             // Given
             UUID memberId = UUID.randomUUID();
             String expectedKey = JWT_PREFIX + "suspended:" + memberId;

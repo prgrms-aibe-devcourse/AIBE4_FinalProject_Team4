@@ -41,6 +41,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("ProjectService 단위 테스트")
 class ProjectServiceTest {
 
     @InjectMocks private ProjectService projectService;
