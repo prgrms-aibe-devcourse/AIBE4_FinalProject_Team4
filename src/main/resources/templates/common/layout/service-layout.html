@@ -2,7 +2,7 @@
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{common/layouts/base-layout}">
+      layout:decorate="~{common/layout/base-layout}">
 <!--
   ╔═══════════════════════════════════════════════════════════════════════╗
   ║  service-layout.html  ·  Level 2 메인 서비스 레이아웃                ║
@@ -24,32 +24,32 @@
   ║    pageTitle          (String)  탭 타이틀                             ║
   ║    activeMenu         (String)  docs | chat | dashboard | logs |      ║
   ║                                 issues | patches | alerts | settings  ║
-  ║    activeProject      (Long)    현재 프로젝트 ID (없으면 null)         ║
+  ║    activeProject      (String)  현재 프로젝트 publicId (없으면 null)   ║
   ║    currentProjectName (String)  셀렉터 표시용 프로젝트명              ║
   ║    currentProjectColor (String) 헥스 코드 (예: #EF4444)               ║
   ║    projectList        (List)    ProjectSummaryDto 목록                 ║
   ║    headerInfo         (Dto)     유저 정보                              ║
   ║                                                                       ║
   ║  사용법 (도메인 페이지):                                              ║
-  ║    layout:decorate="~{common/layouts/service-layout}"                 ║
+  ║    layout:decorate="~{common/layout/service-layout}"                  ║
   ║    <div layout:fragment="content"> ... </div>                         ║
   ╚═══════════════════════════════════════════════════════════════════════╝
 -->
 <body>
-<layout:fragment name="body">
+<th:block layout:fragment="body">
 
     <!-- ══════════════════════════════════════════════════
          고정 헤더
          h-16(64px) / fixed / z-50 / bg-surface-card
          ══════════════════════════════════════════════════ -->
-    <div th:replace="~{common/fragments/header-auth :: header-auth}"></div>
+    <div th:replace="~{common/fragments/header-auth-2 :: header-auth}"></div>
 
     <!-- ══════════════════════════════════════════════════
          고정 메인 사이드바
          w-[240px] / fixed / z-40 / bg-surface-sidebar
          파라미터: (activeMenu, activeProject)
          ══════════════════════════════════════════════════ -->
-    <div th:replace="~{common/fragments/sidebar :: sidebar(${activeMenu}, ${activeProject})}"></div>
+    <div th:replace="~{common/fragments/sidebar-main :: sidebar(${activeMenu}, ${activeProject})}"></div>
 
     <!--
       ── 콘텐츠 래퍼 ──────────────────────────────────────────
@@ -68,9 +68,9 @@
                     <h1 class="text-h1 text-gray-900">대시보드</h1>
                 </div>
             -->
-            <layout:fragment name="content">
-                <!-- fallback: 도메인 페이지에서 반드시 오버라이드 -->
-            </layout:fragment>
+            <th:block layout:fragment="content">
+                <!-- fallback -->
+            </th:block>
         </main>
 
         <!-- 푸터 -->
@@ -83,11 +83,11 @@
     </div>
 
     <!-- 로그아웃 확인 모달 -->
-    <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
+    <div th:replace="~{common/fragments/header-auth-2 :: logout-modal}"></div>
 
     <!-- 로그아웃 모달 JS 바인딩 -->
-    <div th:replace="~{common/fragments/header-auth :: logout-script}"></div>
+    <div th:replace="~{common/fragments/header-auth-2 :: logout-script}"></div>
 
-</layout:fragment>
+</th:block>
 </body>
 </html>

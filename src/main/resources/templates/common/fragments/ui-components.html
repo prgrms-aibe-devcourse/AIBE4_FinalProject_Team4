@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--
+  ui-components.html  ·  공통 UI 컴포넌트 프래그먼트 라이브러리
+
+  사용 예시:
+    <span th:replace="~{common/fragments/ui-components :: badge('CRITICAL', 'critical')}"></span>
+    <label th:replace="~{common/fragments/ui-components :: toggle('alert-1', true, 'Active')}"></label>
+    <span th:replace="~{common/fragments/ui-components :: spinner('md')}"></span>
+    <div th:replace="~{common/fragments/ui-components :: empty-state('📭', '데이터 없음', '아직 데이터가 없습니다.')}"></div>
+-->
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     BADGE
+     label : 표시할 텍스트
+     type  : critical | high | medium | low
+             new | suggest | change | comment
+             active | paused | firing | pending | selected | plan
+     ══════════════════════════════════════════════════════════════ -->
+<th:block th:fragment="badge(label, type)">
+    <th:block th:switch="${type}">
+        <span th:case="'critical'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-danger-light text-docu-danger border border-docu-danger"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'high'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-primary-light text-docu-primary-dark border border-docu-primary"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'medium'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-warning-light text-docu-warning-dark border border-docu-warning"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'low'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-success-light text-docu-success-dark border border-docu-success"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'new'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-primary-light text-docu-primary border border-docu-primary"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'suggest'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'change'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 border border-orange-300"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'comment'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-300"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'active'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-success-light text-docu-success-dark border border-docu-success"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'paused'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-300"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'firing'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-danger-light text-docu-danger border border-docu-danger"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'pending'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-warning-light text-docu-warning-dark border border-docu-warning"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'selected'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-primary text-white border border-docu-primary-dark"
+              th:text="${label}">Badge</span>
+
+        <span th:case="'plan'"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-base text-docu-secondary border border-docu-secondary"
+              th:text="${label}">Badge</span>
+
+        <span th:case="*"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-300"
+              th:text="${label}">Badge</span>
+    </th:block>
+</th:block>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PAGE TAB
+     label  : 표시 텍스트
+     active : true | false
+     ══════════════════════════════════════════════════════════════ -->
+<button th:fragment="page-tab(label, active)"
+        type="button"
+        th:text="${label}"
+        th:class="${active}
+            ? 'px-4 py-2.5 text-sm font-semibold text-docu-primary border-b-3 border-docu-primary transition-colors'
+            : 'px-4 py-2.5 text-sm text-docu-secondary border-b-3 border-transparent hover:text-docu-ink hover:border-divider transition-colors'">
+    탭
+</button>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TEMPLATE CARD
+     title       : 카드 제목
+     description : 카드 설명
+     feature1~3  : 기능 목록
+     selected    : true | false
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="template-card(title, description, feature1, feature2, feature3, selected)"
+     th:class="${selected}
+        ? 'relative rounded-docu-btn border-2 border-docu-primary bg-docu-primary-light p-4 shadow-docu-card transition-colors'
+        : 'relative rounded-docu-btn border-2 border-divider bg-surface-card p-4 shadow-docu-sm transition-colors hover:border-docu-primary hover:bg-docu-primary-light/30'">
+    <span th:if="${selected}"
+          class="absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-primary text-white">
+        Selected
+    </span>
+
+    <h4 th:text="${title}"
+        th:class="${selected}
+            ? 'text-sm font-semibold text-docu-primary mb-1'
+            : 'text-sm font-semibold text-docu-ink mb-1'">
+        템플릿 제목
+    </h4>
+
+    <p th:text="${description}" class="text-xs text-gray-500 mb-3">
+        템플릿 설명
+    </p>
+
+    <ul class="space-y-1 text-xs text-docu-ink">
+        <li class="flex items-center gap-1.5">
+            <svg th:class="${selected} ? 'w-3 h-3 text-docu-primary' : 'w-3 h-3 text-gray-300'"
+                 fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span th:text="${feature1}">Feature 1</span>
+        </li>
+
+        <li th:if="${feature2 != null}" class="flex items-center gap-1.5">
+            <svg th:class="${selected} ? 'w-3 h-3 text-docu-primary' : 'w-3 h-3 text-gray-300'"
+                 fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span th:text="${feature2}">Feature 2</span>
+        </li>
+
+        <li th:if="${feature3 != null}" class="flex items-center gap-1.5">
+            <svg th:class="${selected} ? 'w-3 h-3 text-docu-primary' : 'w-3 h-3 text-gray-300'"
+                 fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span th:text="${feature3}">Feature 3</span>
+        </li>
+    </ul>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SEVERITY BUTTON
+     label : 표시 텍스트
+     type  : critical | high | medium | low
+     ══════════════════════════════════════════════════════════════ -->
+<th:block th:fragment="severity-button(label, type)">
+    <th:block th:switch="${type}">
+        <button th:case="'critical'" type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 border-docu-danger text-docu-danger bg-surface-card shadow-docu-danger transition-transform hover:-translate-y-0.5">
+            <span class="w-2 h-2 rounded-full bg-docu-danger"></span>
+            <span th:text="${label}">CRITICAL</span>
+        </button>
+
+        <button th:case="'high'" type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 border-docu-primary text-docu-primary-dark bg-surface-card shadow-docu-primary transition-transform hover:-translate-y-0.5">
+            <span class="w-2 h-2 rounded-full bg-docu-primary"></span>
+            <span th:text="${label}">HIGH</span>
+        </button>
+
+        <button th:case="'medium'" type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 border-docu-warning text-docu-warning-dark bg-surface-card shadow-docu-warning transition-transform hover:-translate-y-0.5">
+            <span class="w-2 h-2 rounded-full bg-docu-warning"></span>
+            <span th:text="${label}">MEDIUM</span>
+        </button>
+
+        <button th:case="'low'" type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 border-docu-success text-docu-success-dark bg-surface-card shadow-docu-success transition-transform hover:-translate-y-0.5">
+            <span class="w-2 h-2 rounded-full bg-docu-success"></span>
+            <span th:text="${label}">LOW</span>
+        </button>
+
+        <button th:case="*" type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 border-divider text-gray-600 bg-surface-card shadow-docu-sm transition-transform hover:-translate-y-0.5">
+            <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+            <span th:text="${label}">DEFAULT</span>
+        </button>
+    </th:block>
+</th:block>
+
+<!-- ══════════════════════════════════════════════════════════════
+     ISSUE ROW
+     issueId      : 이슈 ID
+     title        : 제목
+     severityType : critical | high | medium | low
+     severityLabel
+     statusLabel  : 상태명
+     count        : 발생 횟수
+     timestamp    : 최근 발생 시각
+     qualityLabel : LOW | HIGH 등
+     qualityType  : critical | high | medium | low
+     assignee     : 담당자 이니셜
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="issue-row(issueId, title, severityType, severityLabel, statusLabel, count, timestamp, qualityLabel, qualityType, assignee)"
+     class="flex items-center gap-3 px-4 py-3 border-b border-divider hover:bg-surface-base transition-colors cursor-pointer">
+    <div class="flex-1 min-w-0">
+        <p th:text="${issueId}" class="text-[10px] text-gray-400 mb-0.5">ISS-2024-001</p>
+        <p th:text="${title}" class="text-sm font-bold text-docu-ink truncate">Issue title</p>
+    </div>
+
+    <div class="w-24 shrink-0">
+        <span th:replace="~{common/fragments/ui-components :: badge(${severityLabel}, ${severityType})}"></span>
+    </div>
+
+    <div class="w-28 shrink-0">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 border border-divider rounded-docu-btn text-gray-500 bg-surface-base text-xs font-semibold">
+            <span th:text="${statusLabel}">진행 중</span>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </span>
+    </div>
+
+    <div class="w-20 shrink-0">
+        <p class="text-[10px] text-gray-400">발생 횟수</p>
+        <p th:text="${count}" class="text-sm font-bold text-docu-ink">124건</p>
+    </div>
+
+    <div class="w-40 shrink-0">
+        <p class="text-[10px] text-gray-400">최근 발생</p>
+        <p th:text="${timestamp}" class="text-xs font-mono text-docu-ink">2024-05-24 14:22:01</p>
+    </div>
+
+    <div class="w-16 shrink-0">
+        <p class="text-[10px] text-gray-400 mb-0.5">QUALITY</p>
+        <span th:replace="~{common/fragments/ui-components :: badge(${qualityLabel}, ${qualityType})}"></span>
+    </div>
+
+    <div class="w-10 shrink-0">
+        <div class="w-8 h-8 rounded-full overflow-hidden border border-divider bg-docu-primary flex items-center justify-center text-white text-xs font-bold">
+            <span th:text="${assignee}">김</span>
+        </div>
+    </div>
+
+    <div class="w-8 shrink-0">
+        <button type="button" class="text-gray-400 hover:text-docu-ink transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M12 5v.01M12 12v.01M12 19v.01"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TIMELINE ITEM
+     actor   : 작성자
+     time    : 시간
+     message : 내용
+     last    : true | false
+     system  : true | false
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="timeline-item(actor, time, message, last, system)"
+     class="flex gap-3">
+    <div class="flex flex-col items-center shrink-0">
+        <div th:class="${system}
+            ? 'w-2 h-2 border-2 border-divider bg-surface-card mt-0.5'
+            : 'w-2 h-2 border-2 border-docu-primary bg-surface-card mt-0.5'"></div>
+        <div th:if="${!last}" class="w-px flex-1 bg-divider mt-1"></div>
+    </div>
+
+    <div th:class="${!last} ? 'flex-1 pb-2' : 'flex-1'">
+        <div class="flex items-center justify-between mb-0.5">
+            <span th:text="${actor}"
+                  th:class="${system} ? 'text-xs font-semibold text-gray-500' : 'text-xs font-semibold text-docu-ink'">김철수</span>
+            <span th:text="${time}" class="text-[10px] text-gray-400">10분 전</span>
+        </div>
+        <p th:text="${message}" class="text-xs text-gray-500">상태를 변경했습니다.</p>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SCROLL PANEL
+     title : 패널 제목
+     스크롤바 스타일 미리보기용
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="scroll-panel(title)"
+     class="bg-surface-card border border-divider rounded-docu-card shadow-docu-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-divider bg-surface-base">
+        <p th:text="${title}" class="text-sm font-semibold text-docu-ink">스크롤 패널</p>
+    </div>
+    <div class="docu-scroll h-56 overflow-y-auto px-5 py-4 space-y-3">
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 01</p>
+            <p class="text-xs text-gray-500 mt-1">스크롤바 스타일 확인용 더미 콘텐츠입니다.</p>
+        </div>
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 02</p>
+            <p class="text-xs text-gray-500 mt-1">스크롤 영역 내부에서 일관된 스타일을 보여줍니다.</p>
+        </div>
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 03</p>
+            <p class="text-xs text-gray-500 mt-1">스크롤바 thumb / track 스타일이 적용됩니다.</p>
+        </div>
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 04</p>
+            <p class="text-xs text-gray-500 mt-1">긴 리스트, 패널, 드로어, 테이블에 사용할 수 있습니다.</p>
+        </div>
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 05</p>
+            <p class="text-xs text-gray-500 mt-1">디자인 시스템용 공통 스크롤 패널입니다.</p>
+        </div>
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 06</p>
+            <p class="text-xs text-gray-500 mt-1">필요 시 높이만 바꿔서 재사용하세요.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TOGGLE SWITCH
+     id      : input id
+     checked : true | false
+     label   : 우측 라벨 텍스트 (없으면 null)
+     ══════════════════════════════════════════════════════════════ -->
+<label th:fragment="toggle(id, checked, label)"
+       class="inline-flex items-center gap-2.5 cursor-pointer select-none">
+    <div class="relative flex-shrink-0">
+        <input type="checkbox"
+               th:id="${id}"
+               th:checked="${checked}"
+               class="sr-only peer">
+        <div class="w-9 h-5 bg-gray-200 rounded-full transition-colors
+                    peer-checked:bg-docu-success
+                    after:content-[''] after:absolute after:top-0.5 after:left-0.5
+                    after:bg-white after:rounded-full after:w-4 after:h-4
+                    after:transition-all peer-checked:after:translate-x-4"></div>
+    </div>
+    <span th:if="${label != null}" th:text="${label}"
+          class="text-sm text-docu-ink"></span>
+</label>
+
+<!-- ══════════════════════════════════════════════════════════════
+     LOADING SPINNER
+     size : sm | md | lg
+     ══════════════════════════════════════════════════════════════ -->
+<th:block th:fragment="spinner(size)">
+    <th:block th:switch="${size}">
+        <span th:case="'sm'"
+              role="status"
+              aria-label="로딩 중"
+              class="inline-block rounded-full border-2 border-divider border-t-docu-primary animate-spin w-4 h-4"></span>
+
+        <span th:case="'lg'"
+              role="status"
+              aria-label="로딩 중"
+              class="inline-block rounded-full border-4 border-divider border-t-docu-primary animate-spin w-10 h-10"></span>
+
+        <span th:case="*"
+              role="status"
+              aria-label="로딩 중"
+              class="inline-block rounded-full border-2 border-divider border-t-docu-primary animate-spin w-6 h-6"></span>
+    </th:block>
+</th:block>
+
+<!-- ══════════════════════════════════════════════════════════════
+     EMPTY STATE  (아이콘 전용)
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="empty-state(icon, title, description)"
+     class="flex flex-col items-center justify-center py-16 px-8 text-center">
+    <div class="w-16 h-16 rounded-full bg-surface-base border border-divider
+                flex items-center justify-center mb-5">
+        <span th:text="${icon}" class="text-2xl leading-none">📭</span>
+    </div>
+    <h3 th:text="${title}" class="text-h2 text-docu-ink mb-2">타이틀</h3>
+    <p th:text="${description}" class="text-sm text-gray-400 leading-relaxed max-w-xs">
+        설명 텍스트
+    </p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     EMPTY STATE WITH ACTION BUTTON
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="empty-state-action(icon, title, description, btnText)"
+     class="flex flex-col items-center justify-center py-16 px-8 text-center">
+    <div class="w-16 h-16 rounded-full bg-surface-base border border-divider
+                flex items-center justify-center mb-5">
+        <span th:text="${icon}" class="text-2xl leading-none">📭</span>
+    </div>
+    <h3 th:text="${title}" class="text-h2 text-docu-ink mb-2">타이틀</h3>
+    <p th:text="${description}" class="text-sm text-gray-400 leading-relaxed max-w-xs mb-6">
+        설명 텍스트
+    </p>
+    <button th:text="${btnText}"
+            class="px-5 py-2 bg-docu-primary hover:bg-docu-primary-dark text-white
+                   text-sm font-semibold rounded-docu-btn shadow-docu-sm transition-colors">
+        액션
+    </button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     ALERT CARD  (알림 페이지용 이벤트 카드)
+     eventType   : new | suggest | change | comment
+     eventLabel  : "새 이슈" 등 표시 텍스트
+     severity    : critical | high | medium | low
+     severityLabel
+     title       : 이슈 제목
+     description : 이슈 설명
+     time        : "2분 전" 등
+     channelIcon : "#" | "✉"
+     channelText : "#dev-alerts"
+     actionLabel : "이슈로 이동" | "이슈 생성"
+     actionHref  : URL
+     ══════════════════════════════════════════════════════════════ -->
+<div th:fragment="alert-card(eventType, eventLabel, severity, severityLabel, title, description, time, channelIcon, channelText, actionLabel, actionHref)"
+     class="bg-surface-card rounded-docu-card border border-divider shadow-docu-sm
+            p-4 hover:shadow-docu-card transition-shadow">
+    <div class="flex items-start justify-between gap-3 mb-2">
+        <div class="flex items-center gap-2 flex-wrap">
+            <span th:replace="~{common/fragments/ui-components :: badge(${eventLabel}, ${eventType})}"></span>
+            <span th:replace="~{common/fragments/ui-components :: badge(${severityLabel}, ${severity})}"></span>
+            <span class="w-2 h-2 rounded-full bg-docu-danger flex-shrink-0"
+                  th:if="${severity == 'critical' or severity == 'high'}"></span>
+        </div>
+        <span th:text="${time}" class="text-xs text-gray-400 flex-shrink-0 mt-0.5">방금</span>
+    </div>
+    <p th:text="${title}" class="text-sm font-semibold text-docu-ink mb-1 leading-snug">이슈 제목</p>
+    <p th:text="${description}" class="text-xs text-gray-500 mb-3 leading-relaxed line-clamp-2">
+        이슈 설명
+    </p>
+    <div class="flex items-center justify-between">
+        <span class="text-xs text-gray-400 flex items-center gap-1">
+            <span th:text="${channelIcon}" class="font-semibold">📧</span>
+            <span th:text="${channelText}">채널</span>
+        </span>
+        <div class="flex items-center gap-3">
+            <a th:href="${actionHref}" th:text="${actionLabel}"
+               class="text-xs font-semibold text-docu-primary hover:underline">이슈로 이동 &gt;</a>
+            <button type="button" class="text-xs text-gray-400 hover:text-docu-ink transition-colors">무시하기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TOP TOAST  (상단 시스템 알림) - 미리보기용
+     message : 표시할 메시지
+     type    : info | success | warning | danger
+     ══════════════════════════════════════════════════════════════ -->
+<th:block th:fragment="top-toast-preview(message, type)">
+    <div th:switch="${type}">
+        <!-- INFO -->
+        <div th:case="'info'"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-ink text-white border border-docu-ink
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-docu-primary-light text-docu-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M13 16h-1v-4h-1m1-4h.01"/>
+                    <circle cx="12" cy="12" r="9"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">알림 메시지</span>
+        </div>
+
+        <!-- SUCCESS -->
+        <div th:case="'success'"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-success text-white border border-docu-success-dark
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                    <path d="M5 13l4 4L19 7"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">성공 메시지</span>
+        </div>
+
+        <!-- WARNING -->
+        <div th:case="'warning'"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-warning text-docu-ink border border-docu-warning-dark
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/40 text-docu-ink">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M12 9v3m0 4h.01"/>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">경고 메시지</span>
+        </div>
+
+        <!-- DANGER -->
+        <div th:case="'danger'"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-danger text-white border border-docu-danger-dark
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M12 9v3m0 4h.01"/>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">에러 메시지</span>
+        </div>
+
+        <!-- DEFAULT -->
+        <div th:case="*"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-ink text-white border border-docu-ink
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-docu-primary-light text-docu-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M13 16h-1v-4h-1m1-4h.01"/>
+                    <circle cx="12" cy="12" r="9"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">알림 메시지</span>
+        </div>
+    </div>
+</th:block>
+
+<!-- ══════════════════════════════════════════════════════════════
+     ALARM TOAST  (우측 하단 실시간 알림)
+     title       : 알림 제목
+     badgeLabel  : 서브 배지 텍스트
+     message     : 알림 내용
+     actionLabel : 바로가기 버튼 텍스트
+     actionHref  : 바로가기 URL
+     type        : info | success | warning | danger
+     ══════════════════════════════════════════════════════════════ -->
+<th:block th:fragment="alarm-toast-preview(title, badgeLabel, message, actionLabel, actionHref, type)">
+    <div th:switch="${type}">
+        <!-- INFO -->
+        <div th:case="'info'"
+             class="w-full max-w-sm bg-surface-card border border-divider rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-docu-primary-light text-docu-primary
+                            flex items-center justify-center border border-docu-primary/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path d="M13 16h-1v-4h-1m1-4h.01"/>
+                        <circle cx="12" cy="12" r="9"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-docu-primary" th:text="${title}">패치노트</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+                                     bg-docu-primary text-white"
+                              th:text="${badgeLabel}">문서 분석 완료</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        업로드된 문서 분석이 완료되었습니다. 이제 패치노트 생성 시 반영할 수 있습니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-docu-primary hover:underline"
+                       th:text="${actionLabel}">
+                        패치노트 작성하기 >
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUCCESS -->
+        <div th:case="'success'"
+             class="w-full max-w-sm bg-surface-card border border-docu-success rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-docu-success-light text-docu-success
+                            flex items-center justify-center border border-docu-success/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                        <path d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-docu-success" th:text="${title}">패치노트</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+                                     bg-docu-success text-white"
+                              th:text="${badgeLabel}">문서 분석 완료</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        업로드된 문서 분석이 완료되었습니다. 이제 패치노트 생성 시 반영할 수 있습니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-docu-success hover:underline"
+                       th:text="${actionLabel}">
+                        패치노트 작성하기 >
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- WARNING -->
+        <div th:case="'warning'"
+             class="w-full max-w-sm bg-surface-card border border-docu-warning rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-docu-warning-light text-docu-warning-dark
+                            flex items-center justify-center border border-docu-warning/30">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path d="M12 9v3m0 4h.01"/>
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-docu-warning-dark" th:text="${title}">패치노트</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+                                     bg-docu-warning-dark text-white"
+                              th:text="${badgeLabel}">주의 필요</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        업로드된 문서 분석이 완료되었습니다. 이제 패치노트 생성 시 반영할 수 있습니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-docu-warning-dark hover:underline"
+                       th:text="${actionLabel}">
+                        패치노트 작성하기 >
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- DANGER -->
+        <div th:case="'danger'"
+             class="w-full max-w-sm bg-surface-card border border-docu-danger rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-docu-danger-light text-docu-danger
+                            flex items-center justify-center border border-docu-danger/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path d="M12 9v3m0 4h.01"/>
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-docu-danger" th:text="${title}">패치노트</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+                                     bg-docu-danger text-white"
+                              th:text="${badgeLabel}">오류 발생</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        업로드된 문서 분석이 완료되었습니다. 이제 패치노트 생성 시 반영할 수 있습니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-docu-danger hover:underline"
+                       th:text="${actionLabel}">
+                        패치노트 작성하기 >
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEFAULT -->
+        <div th:case="*"
+             class="w-full max-w-sm bg-surface-card border border-divider rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-docu-primary-light text-docu-primary
+                            flex items-center justify-center border border-docu-primary/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path d="M13 16h-1v-4h-1m1-4h.01"/>
+                        <circle cx="12" cy="12" r="9"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-docu-primary" th:text="${title}">패치노트</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+                                     bg-docu-primary text-white"
+                              th:text="${badgeLabel}">알림</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        업로드된 문서 분석이 완료되었습니다. 이제 패치노트 생성 시 반영할 수 있습니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-docu-primary hover:underline"
+                       th:text="${actionLabel}">
+                        바로가기 >
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+</body>
+</html>

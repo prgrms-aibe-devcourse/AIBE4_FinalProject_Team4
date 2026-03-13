@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/base-layout}">
+<!--
+  component-preview.html  ·  UI 컴포넌트 디자인 쇼케이스
+  접근 URL: /preview/components
+-->
+<body>
+<th:block layout:fragment="body">
+
+<!-- ┌─────────────────────────────────────────────────────────────┐
+     │  페이지 헤더 (sticky)                                       │
+     └─────────────────────────────────────────────────────────────┘ -->
+<div class="sticky top-0 z-50 bg-surface-sidebar border-b border-divider px-8 h-14 flex items-center justify-between shadow-docu-sm">
+    <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-400 font-mono">PREVIEW</span>
+        <span class="text-gray-300">/</span>
+        <span class="text-sm font-bold text-docu-ink">UI 컴포넌트 라이브러리</span>
+    </div>
+</div>
+
+<div class="max-w-5xl mx-auto px-8 py-10 space-y-16">
+
+    <!-- ══════════════════════════════════════════════════════
+         섹션 헬퍼 매크로
+         ══════════════════════════════════════════════════════ -->
+
+    <!-- ══════════════════════════════════════════════════════
+         01. COLORS & TYPOGRAPHY
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">01. Colors &amp; Typography</h2>
+        <p class="text-sm text-gray-400 mb-6">디자인 토큰 팔레트 및 타이포그래피 스케일</p>
+
+        <!-- 컬러 팔레트 -->
+        <div class="grid grid-cols-4 gap-3 mb-8">
+            <div>
+                <div class="h-16 rounded-docu-card bg-docu-primary mb-2 border border-divider"></div>
+                <p class="text-xs font-semibold text-docu-ink">docu-primary</p>
+                <p class="text-xs text-gray-400 font-mono">#4A9EE8</p>
+            </div>
+            <div>
+                <div class="h-16 rounded-docu-card bg-docu-danger mb-2 border border-divider"></div>
+                <p class="text-xs font-semibold text-docu-ink">docu-danger</p>
+                <p class="text-xs text-gray-400 font-mono">#E84A4A</p>
+            </div>
+            <div>
+                <div class="h-16 rounded-docu-card bg-docu-warning mb-2 border border-divider"></div>
+                <p class="text-xs font-semibold text-docu-ink">docu-warning</p>
+                <p class="text-xs text-gray-400 font-mono">#E8A020</p>
+            </div>
+            <div>
+                <div class="h-16 rounded-docu-card bg-docu-success mb-2 border border-divider"></div>
+                <p class="text-xs font-semibold text-docu-ink">docu-success</p>
+                <p class="text-xs text-gray-400 font-mono">#3BAA6E</p>
+            </div>
+            <div>
+                <div class="h-16 rounded-docu-card bg-docu-ink mb-2"></div>
+                <p class="text-xs font-semibold text-docu-ink">docu-ink</p>
+                <p class="text-xs text-gray-400 font-mono">#1A1F3A</p>
+            </div>
+            <div>
+                <div class="h-16 rounded-docu-card bg-surface-base mb-2 border border-divider"></div>
+                <p class="text-xs font-semibold text-docu-ink">surface-base</p>
+                <p class="text-xs text-gray-400 font-mono">#F2EFE9</p>
+            </div>
+            <div>
+                <div class="h-16 rounded-docu-card bg-surface-card mb-2 border border-divider"></div>
+                <p class="text-xs font-semibold text-docu-ink">surface-card</p>
+                <p class="text-xs text-gray-400 font-mono">#FAF8F4</p>
+            </div>
+            <div>
+                <div class="h-16 rounded-docu-card bg-divider mb-2 border border-divider"></div>
+                <p class="text-xs font-semibold text-docu-ink">divider</p>
+                <p class="text-xs text-gray-400 font-mono">#D8D4CC</p>
+            </div>
+        </div>
+
+        <!-- 타이포그래피 -->
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 space-y-3">
+            <p class="text-display text-docu-ink">text-display — 대시보드 지표 (30px / 700)</p>
+            <p class="text-h1 text-docu-ink">text-h1 — 페이지 제목 (24px / 700)</p>
+            <p class="text-h2 text-docu-ink">text-h2 — 위젯 제목 (20px / 600)</p>
+            <p class="text-base text-docu-ink">text-base — 본문 (16px / 400)</p>
+            <p class="text-sm text-docu-ink">text-sm — 폼·설명 (14px / 400)</p>
+            <p class="text-xs text-docu-ink">text-xs — 배지·로그·시간 (12px / 500)</p>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         02. BUTTON
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">02. Button</h2>
+        <p class="text-sm text-gray-400 mb-6">variant × size 조합</p>
+
+        <!-- Variants (md) -->
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 space-y-5">
+            <div>
+                <p class="text-xs font-mono text-gray-400 mb-3">variant — md (default)</p>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <button class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   bg-docu-primary hover:bg-docu-primary-dark text-white shadow-docu-sm">
+                        Primary
+                    </button>
+                    <button class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   bg-surface-card border border-divider text-docu-ink hover:border-docu-primary hover:bg-surface-base">
+                        Secondary
+                    </button>
+                    <button class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   text-docu-primary hover:bg-docu-primary-light">
+                        Ghost
+                    </button>
+                    <button class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   bg-docu-danger hover:bg-docu-danger-dark text-white shadow-docu-sm">
+                        Danger
+                    </button>
+                    <button class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   bg-docu-ink hover:opacity-90 text-white shadow-docu-sm">
+                        Ink
+                    </button>
+                    <button disabled
+                            class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold
+                                   rounded-docu-btn bg-gray-200 text-gray-400 cursor-not-allowed">
+                        Disabled
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sizes -->
+            <div class="border-t border-divider pt-5">
+                <p class="text-xs font-mono text-gray-400 mb-3">size — primary variant</p>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <button class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   bg-docu-primary hover:bg-docu-primary-dark text-white shadow-docu-sm">
+                        Small
+                    </button>
+                    <button class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   bg-docu-primary hover:bg-docu-primary-dark text-white shadow-docu-sm">
+                        Medium
+                    </button>
+                    <button class="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   bg-docu-primary hover:bg-docu-primary-dark text-white shadow-docu-sm">
+                        Large
+                    </button>
+                </div>
+            </div>
+
+            <!-- With Icon -->
+            <div class="border-t border-divider pt-5">
+                <p class="text-xs font-mono text-gray-400 mb-3">with icon</p>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <button class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   bg-docu-primary hover:bg-docu-primary-dark text-white shadow-docu-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                             viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+                        새로 만들기
+                    </button>
+                    <button class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                                   rounded-docu-btn transition-colors focus:outline-none
+                                   bg-surface-card border border-divider text-docu-ink hover:border-docu-primary hover:bg-surface-base">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                             viewBox="0 0 24 24"><path d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M16 12l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        내보내기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         03. FORM CONTROLS
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">03. Form Controls</h2>
+        <p class="text-sm text-gray-400 mb-6">input · select · textarea · checkbox · radio</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 grid grid-cols-2 gap-6">
+            <!-- Input 상태 -->
+            <div class="space-y-4">
+                <p class="text-xs font-mono text-gray-400">input states</p>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-docu-ink">기본 (Default)</label>
+                    <input type="text" placeholder="텍스트를 입력하세요"
+                           class="w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-base
+                                  text-sm text-docu-ink placeholder-gray-400
+                                  focus:outline-none focus:border-docu-primary focus:ring-1 focus:ring-docu-primary
+                                  transition-colors">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-docu-ink">에러 (Error)</label>
+                    <input type="text" value="잘못된 값"
+                           class="w-full px-3 py-2 border border-docu-danger rounded-docu-btn bg-surface-base
+                                  text-sm text-docu-ink ring-1 ring-docu-danger focus:outline-none transition-colors">
+                    <p class="text-xs text-docu-danger">유효하지 않은 값입니다.</p>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-docu-ink">비활성화 (Disabled)</label>
+                    <input type="text" value="수정 불가" disabled
+                           class="w-full px-3 py-2 border border-divider rounded-docu-btn bg-gray-100
+                                  text-sm text-gray-400 cursor-not-allowed">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-docu-ink">라벨 + 도움말</label>
+                    <input type="text" placeholder="프로젝트명"
+                           class="w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-base
+                                  text-sm text-docu-ink placeholder-gray-400
+                                  focus:outline-none focus:border-docu-primary focus:ring-1 focus:ring-docu-primary
+                                  transition-colors">
+                    <p class="text-xs text-gray-400">20자 이내로 입력하세요.</p>
+                </div>
+            </div>
+
+            <!-- Select + Textarea + Checkbox + Radio -->
+            <div class="space-y-4">
+                <p class="text-xs font-mono text-gray-400">select · textarea · checkbox · radio</p>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-docu-ink">Select</label>
+                    <select class="w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-base
+                                   text-sm text-docu-ink
+                                   focus:outline-none focus:border-docu-primary focus:ring-1 focus:ring-docu-primary
+                                   transition-colors appearance-none cursor-pointer">
+                        <option>옵션 1</option>
+                        <option>옵션 2</option>
+                        <option>옵션 3</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-docu-ink">Textarea</label>
+                    <textarea rows="3" placeholder="이슈 설명을 입력하세요..."
+                              class="w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-base
+                                     text-sm text-docu-ink placeholder-gray-400 resize-none
+                                     focus:outline-none focus:border-docu-primary focus:ring-1 focus:ring-docu-primary
+                                     transition-colors"></textarea>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-docu-ink">Checkbox</label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked
+                               class="w-4 h-4 rounded border-divider text-docu-primary
+                                      accent-docu-primary cursor-pointer">
+                        <span class="text-sm text-docu-ink">선택됨</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox"
+                               class="w-4 h-4 rounded border-divider text-docu-primary
+                                      accent-docu-primary cursor-pointer">
+                        <span class="text-sm text-docu-ink">미선택</span>
+                    </label>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-docu-ink">Radio</label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="preview-radio" checked
+                               class="w-4 h-4 accent-docu-primary cursor-pointer">
+                        <span class="text-sm text-docu-ink">CRITICAL</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="preview-radio"
+                               class="w-4 h-4 accent-docu-primary cursor-pointer">
+                        <span class="text-sm text-docu-ink">HIGH</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         04. CARD
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">04. Card</h2>
+        <p class="text-sm text-gray-400 mb-6">기본 카드 · 위젯 카드 · 선택 카드</p>
+
+        <div class="grid grid-cols-3 gap-4">
+            <!-- 기본 카드 -->
+            <div class="bg-surface-card rounded-docu-card border border-divider shadow-docu-card p-widget-p">
+                <p class="text-xs font-mono text-gray-400 mb-3">card (default)</p>
+                <h3 class="text-h2 text-docu-ink mb-1">위젯 제목</h3>
+                <p class="text-sm text-gray-500">카드 내 콘텐츠 영역입니다. 대시보드 위젯이나 정보 패널에 사용합니다.</p>
+            </div>
+
+            <!-- 수치 위젯 카드 -->
+            <div class="bg-surface-card rounded-docu-card border border-divider shadow-docu-card p-widget-p">
+                <p class="text-xs font-mono text-gray-400 mb-3">metric card</p>
+                <p class="text-sm text-gray-500 mb-1">총 이슈 수</p>
+                <p class="text-display text-docu-ink leading-none">142</p>
+                <p class="text-xs text-docu-success mt-2 flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5"
+                         viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>
+                    전주 대비 +12%
+                </p>
+            </div>
+
+            <!-- 선택 카드 (선택됨) -->
+            <div class="bg-docu-primary-light rounded-docu-card border-2 border-docu-primary shadow-docu-card p-widget-p relative">
+                <p class="text-xs font-mono text-gray-400 mb-3">selection card (active)</p>
+                <span class="absolute top-3 right-3 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-primary text-white">Selected</span>
+                <h3 class="text-h2 text-docu-ink mb-1">FPS / Action 스타일</h3>
+                <p class="text-xs text-gray-500 mb-3">실시간 반응성과 최적화가 중요한 프로젝트</p>
+                <ul class="space-y-1">
+                    <li class="text-xs text-docu-ink flex items-center gap-1.5">
+                        <svg class="w-3 h-3 text-docu-primary flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                        Frame Time (Area)
+                    </li>
+                    <li class="text-xs text-docu-ink flex items-center gap-1.5">
+                        <svg class="w-3 h-3 text-docu-primary flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                        Latency (Line)
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 선택 카드 (미선택) -->
+            <div class="bg-surface-card rounded-docu-card border-2 border-divider hover:border-docu-primary hover:bg-docu-primary-light/30 p-widget-p cursor-pointer transition-colors">
+                <p class="text-xs font-mono text-gray-400 mb-3">selection card (default)</p>
+                <h3 class="text-h2 text-docu-ink mb-1">RPG / Strategy</h3>
+                <p class="text-xs text-gray-500 mb-3">경제 밸런스와 대규모 트래픽 관리</p>
+                <ul class="space-y-1">
+                    <li class="text-xs text-docu-ink flex items-center gap-1.5">
+                        <svg class="w-3 h-3 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                        Gold Economy (Line)
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 경계선 강조 카드 (CRITICAL) -->
+            <div class="bg-surface-card rounded-docu-card border border-divider border-l-4 border-l-docu-danger shadow-docu-sm p-4">
+                <p class="text-xs font-mono text-gray-400 mb-2">alert card (critical)</p>
+                <p class="text-sm font-semibold text-docu-ink">#AUTH-129: NullReferenceException</p>
+                <p class="text-xs text-gray-500 mt-1">메인 결제 모듈에서 null 참조 오류 발생</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         05. BADGE
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">05. Badge</h2>
+        <p class="text-sm text-gray-400 mb-6">심각도 · 이벤트 타입 · 상태</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 space-y-5">
+            <!-- 심각도 -->
+            <div>
+                <p class="text-xs font-mono text-gray-400 mb-3">severity</p>
+                <div class="flex flex-wrap gap-2">
+                    <span th:replace="~{common/fragments/ui-components :: badge('CRITICAL', 'critical')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('HIGH', 'high')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('MEDIUM', 'medium')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('LOW', 'low')}"></span>
+                </div>
+            </div>
+            <!-- 이벤트 타입 -->
+            <div class="border-t border-divider pt-5">
+                <p class="text-xs font-mono text-gray-400 mb-3">event type</p>
+                <div class="flex flex-wrap gap-2">
+                    <span th:replace="~{common/fragments/ui-components :: badge('새 이슈', 'new')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('이슈 추천', 'suggest')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('상태 변경', 'change')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('댓글', 'comment')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('Selected', 'selected')}"></span>
+                </div>
+            </div>
+            <!-- 상태 -->
+            <div class="border-t border-divider pt-5">
+                <p class="text-xs font-mono text-gray-400 mb-3">status</p>
+                <div class="flex flex-wrap gap-2">
+                    <span th:replace="~{common/fragments/ui-components :: badge('Active', 'active')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('Paused', 'paused')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('● Firing', 'firing')}"></span>
+                    <span th:replace="~{common/fragments/ui-components :: badge('Pending', 'pending')}"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         06. TABLE
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">06. Table</h2>
+        <p class="text-sm text-gray-400 mb-6">알림 규칙 테이블 패턴 (와이어프레임 참고)</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card overflow-hidden shadow-docu-card">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-divider">
+                <h3 class="text-h2 text-docu-ink">로그 알림</h3>
+                <button class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold
+                               rounded-docu-btn bg-docu-primary hover:bg-docu-primary-dark text-white shadow-docu-sm transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+                    새 경보 만들기
+                </button>
+            </div>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-surface-base border-b border-divider">
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Rule Name / Origin</th>
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Condition</th>
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Channel</th>
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b border-divider hover:bg-surface-base transition-colors">
+                        <td class="px-5 py-4">
+                            <p class="font-semibold text-docu-ink">[Android] FPS 저하 감지</p>
+                            <p class="text-xs text-gray-400 mt-0.5">위젯: [Android] 평균 FPS</p>
+                        </td>
+                        <td class="px-5 py-4 text-gray-600 font-mono text-xs">AVG(game.perf.fps) &lt; 30 (최근 5분)</td>
+                        <td class="px-5 py-4">
+                            <span class="text-sm text-docu-ink flex items-center gap-1.5">
+                                <span class="text-docu-secondary font-bold">#</span>
+                                #dev-alerts
+                            </span>
+                        </td>
+                        <td class="px-5 py-4">
+                            <label th:replace="~{common/fragments/ui-components :: toggle('rule-1', true, 'Active')}"></label>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-divider hover:bg-surface-base transition-colors">
+                        <td class="px-5 py-4">
+                            <p class="font-semibold text-docu-ink">결제 서버 Timeout 경보</p>
+                            <p class="text-xs text-gray-400 mt-0.5">로그 기반</p>
+                        </td>
+                        <td class="px-5 py-4 text-gray-600 font-mono text-xs">COUNT(exception.type) &gt; 50 (최근 1분)</td>
+                        <td class="px-5 py-4">
+                            <span class="text-sm text-docu-ink flex items-center gap-1.5">
+                                <span class="text-gray-400">✉</span>
+                                dev@documind.com
+                            </span>
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="flex items-center gap-2">
+                                <label th:replace="~{common/fragments/ui-components :: toggle('rule-2', true, null)}"></label>
+                                <span class="text-xs font-semibold text-docu-danger flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-docu-danger inline-block"></span>
+                                    Firing
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-surface-base transition-colors">
+                        <td class="px-5 py-4">
+                            <p class="font-semibold text-docu-ink">유저 이탈 급증 감지</p>
+                            <p class="text-xs text-gray-400 mt-0.5">로그 기반</p>
+                        </td>
+                        <td class="px-5 py-4 text-gray-400 font-mono text-xs">COUNT(session.end) &gt; 500 (최근 15분)</td>
+                        <td class="px-5 py-4">
+                            <span class="text-sm text-gray-400 flex items-center gap-1.5">
+                                <span class="font-bold">#</span>
+                                #marketing-alerts
+                            </span>
+                        </td>
+                        <td class="px-5 py-4">
+                            <label th:replace="~{common/fragments/ui-components :: toggle('rule-3', false, 'Paused')}"></label>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <!-- 페이지네이션 -->
+            <div class="flex items-center justify-end gap-1 px-5 py-3 border-t border-divider">
+                <span class="text-xs text-gray-400 mr-2">1 / 3</span>
+                <button class="w-7 h-7 flex items-center justify-center rounded-docu-btn text-sm text-gray-400 hover:bg-surface-base transition-colors">‹</button>
+                <button class="w-7 h-7 flex items-center justify-center rounded-docu-btn text-xs font-semibold bg-docu-primary text-white">1</button>
+                <button class="w-7 h-7 flex items-center justify-center rounded-docu-btn text-xs text-docu-ink hover:bg-surface-base transition-colors">2</button>
+                <button class="w-7 h-7 flex items-center justify-center rounded-docu-btn text-xs text-docu-ink hover:bg-surface-base transition-colors">3</button>
+                <button class="w-7 h-7 flex items-center justify-center rounded-docu-btn text-sm text-gray-400 hover:bg-surface-base transition-colors">›</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         07. TABS
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">07. Tabs</h2>
+        <p class="text-sm text-gray-400 mb-6">underline 탭 · pill 탭</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card overflow-hidden shadow-docu-card">
+            <!-- Underline 탭 (알림 페이지 스타일) -->
+            <div class="border-b border-divider px-5">
+                <nav class="flex -mb-px">
+                    <button class="px-5 py-3.5 text-sm font-semibold text-docu-primary
+                                   border-b-2 border-docu-primary transition-colors">
+                        알림 규칙
+                    </button>
+                    <button class="px-5 py-3.5 text-sm text-gray-500 hover:text-docu-ink
+                                   border-b-2 border-transparent hover:border-divider transition-colors">
+                        발생 이력
+                    </button>
+                </nav>
+            </div>
+            <div class="p-5 text-sm text-gray-500">
+                탭 콘텐츠 영역 — 선택된 탭에 따라 내용이 달라집니다.
+            </div>
+
+            <!-- Pill 탭 (필터용) -->
+            <div class="border-t border-divider px-5 py-4">
+                <p class="text-xs font-mono text-gray-400 mb-3">pill tabs (필터)</p>
+                <div class="flex gap-2">
+                    <button class="px-4 py-1.5 text-xs font-semibold rounded-full
+                                   bg-docu-ink text-white transition-colors">전체</button>
+                    <button class="px-4 py-1.5 text-xs font-semibold rounded-full
+                                   bg-surface-base text-docu-ink hover:bg-divider border border-divider transition-colors">읽지 않음</button>
+                    <button class="px-4 py-1.5 text-xs font-semibold rounded-full
+                                   bg-surface-base text-docu-ink hover:bg-divider border border-divider transition-colors">중요도별</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         08. MODAL
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">08. Modal</h2>
+        <p class="text-sm text-gray-400 mb-6">오버레이 다이얼로그 — 뷰 만들기 패턴 (와이어프레임 1번 참고)</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6">
+            <button id="openModalBtn"
+                    onclick="document.getElementById('previewModal').classList.remove('hidden')"
+                    class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                           rounded-docu-btn bg-docu-primary hover:bg-docu-primary-dark text-white
+                           shadow-docu-sm transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+                대시보드 뷰 만들기
+            </button>
+            <p class="text-xs text-gray-400 mt-3">버튼 클릭 시 모달 오픈</p>
+        </div>
+
+        <!-- 모달 오버레이 -->
+        <div id="previewModal"
+             class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+             onclick="if(event.target===this) this.classList.add('hidden')">
+            <div class="absolute inset-0 bg-docu-ink/50 backdrop-blur-sm"></div>
+            <div class="relative bg-surface-card rounded-docu-modal shadow-docu-modal w-full max-w-2xl">
+                <!-- 모달 헤더 -->
+                <div class="flex items-start justify-between px-6 py-5 border-b border-divider">
+                    <div>
+                        <h2 class="text-h2 text-docu-ink">대시보드 시작하기 (새 뷰 만들기)</h2>
+                        <p class="text-sm text-gray-400 mt-0.5">목적에 맞는 템플릿을 선택하거나 빈 캔버스에서 직접 구성해보세요.</p>
+                    </div>
+                    <button onclick="document.getElementById('previewModal').classList.add('hidden')"
+                            class="text-gray-400 hover:text-docu-ink transition-colors ml-4 flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <!-- 모달 탭 -->
+                <div class="border-b border-divider px-6">
+                    <nav class="flex -mb-px">
+                        <button class="px-4 py-3 text-sm font-semibold text-docu-primary border-b-2 border-docu-primary">
+                            추천 템플릿
+                        </button>
+                        <button class="px-4 py-3 text-sm text-gray-500 hover:text-docu-ink border-b-2 border-transparent">
+                            빈 캔버스 (Blank)
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- 모달 바디 -->
+                <div class="px-6 py-5 space-y-5">
+                    <!-- 템플릿 카드 그리드 -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="rounded-docu-card border-2 border-docu-primary bg-docu-primary-light p-4 relative cursor-pointer">
+                            <span class="absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-primary text-white">Selected</span>
+                            <h4 class="text-sm font-semibold text-docu-primary mb-1">FPS / Action 스타일</h4>
+                            <p class="text-xs text-gray-500 mb-3">실시간 반응성과 최적화가 중요한 프로젝트에 적합합니다.</p>
+                            <ul class="space-y-1 text-xs text-docu-ink">
+                                <li class="flex items-center gap-1.5">
+                                    <svg class="w-3 h-3 text-docu-primary" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                                    Frame Time (Area)
+                                </li>
+                                <li class="flex items-center gap-1.5">
+                                    <svg class="w-3 h-3 text-docu-primary" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                                    Latency (Line)
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="rounded-docu-card border-2 border-divider hover:border-docu-primary p-4 cursor-pointer transition-colors">
+                            <h4 class="text-sm font-semibold text-docu-ink mb-1">RPG / Strategy</h4>
+                            <p class="text-xs text-gray-500 mb-3">경제 밸런스와 대규모 트래픽 관리가 필요한 프로젝트에 적합합니다.</p>
+                            <ul class="space-y-1 text-xs text-docu-ink">
+                                <li class="flex items-center gap-1.5">
+                                    <svg class="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                                    Gold Economy (Line)
+                                </li>
+                                <li class="flex items-center gap-1.5">
+                                    <svg class="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                                    CCU (Big Num)
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="rounded-docu-card border-2 border-divider hover:border-docu-primary p-4 cursor-pointer transition-colors">
+                            <h4 class="text-sm font-semibold text-docu-ink mb-1">Casual / Puzzle</h4>
+                            <p class="text-xs text-gray-500 mb-3">스테이지 진행도와 유저 피드백 추적이 중요한 프로젝트에 적합합니다.</p>
+                            <ul class="space-y-1 text-xs text-docu-ink">
+                                <li class="flex items-center gap-1.5">
+                                    <svg class="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                                    Stage Funnel (Bar)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 뷰 이름 입력 -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-docu-ink">생성할 뷰 이름</label>
+                        <input type="text" value="FPS / Action 스타일 템플릿"
+                               class="w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-base
+                                      text-sm text-docu-ink focus:outline-none focus:border-docu-primary
+                                      focus:ring-1 focus:ring-docu-primary transition-colors">
+                    </div>
+                </div>
+
+                <!-- 모달 푸터 -->
+                <div class="flex justify-end gap-3 px-6 py-4 border-t border-divider">
+                    <button onclick="document.getElementById('previewModal').classList.add('hidden')"
+                            class="px-5 py-2 text-sm font-semibold rounded-docu-btn border border-divider
+                                   text-docu-ink hover:border-docu-primary hover:bg-surface-base transition-colors">
+                        취소
+                    </button>
+                    <button class="px-5 py-2 text-sm font-semibold rounded-docu-btn
+                                   bg-docu-primary hover:bg-docu-primary-dark text-white shadow-docu-sm transition-colors">
+                        뷰 생성 및 시작
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         09. PAGINATION
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">09. Pagination</h2>
+        <p class="text-sm text-gray-400 mb-6">페이지 네비게이션</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 space-y-6">
+            <!-- 기본 -->
+            <div>
+                <p class="text-xs font-mono text-gray-400 mb-3">기본 (3페이지 활성)</p>
+                <nav class="flex items-center gap-1">
+                    <button class="w-8 h-8 flex items-center justify-center rounded-docu-btn text-gray-400 hover:bg-surface-base transition-colors" aria-label="이전">‹</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded-docu-btn text-xs text-docu-ink hover:bg-surface-base transition-colors">1</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded-docu-btn text-xs text-docu-ink hover:bg-surface-base transition-colors">2</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded-docu-btn text-xs font-semibold bg-docu-primary text-white">3</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded-docu-btn text-xs text-docu-ink hover:bg-surface-base transition-colors">4</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded-docu-btn text-xs text-docu-ink hover:bg-surface-base transition-colors">5</button>
+                    <span class="w-8 h-8 flex items-center justify-center text-xs text-gray-400">…</span>
+                    <button class="w-8 h-8 flex items-center justify-center rounded-docu-btn text-xs text-docu-ink hover:bg-surface-base transition-colors">12</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded-docu-btn text-gray-400 hover:bg-surface-base transition-colors" aria-label="다음">›</button>
+                </nav>
+            </div>
+
+            <!-- 단순형 -->
+            <div class="border-t border-divider pt-5">
+                <p class="text-xs font-mono text-gray-400 mb-3">단순형 (이전/다음)</p>
+                <div class="flex items-center gap-3">
+                    <button class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold
+                                   rounded-docu-btn border border-divider text-docu-ink hover:border-docu-primary hover:bg-surface-base transition-colors">
+                        ‹ 이전
+                    </button>
+                    <span class="text-xs text-gray-400">3 / 12 페이지</span>
+                    <button class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold
+                                   rounded-docu-btn bg-docu-primary hover:bg-docu-primary-dark text-white shadow-docu-sm transition-colors">
+                        다음 ›
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         10. EMPTY STATE
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">10. Empty State</h2>
+        <p class="text-sm text-gray-400 mb-6">데이터 없음 · 검색 결과 없음</p>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-surface-card border border-divider rounded-docu-card overflow-hidden shadow-docu-card">
+                <p class="text-xs font-mono text-gray-400 px-5 pt-4 pb-2 border-b border-divider">기본 empty-state</p>
+                <div th:replace="~{common/fragments/ui-components :: empty-state('📭', '알림이 없습니다', '새로운 알림이 발생하면 여기에 표시됩니다.')}"></div>
+            </div>
+            <div class="bg-surface-card border border-divider rounded-docu-card overflow-hidden shadow-docu-card">
+                <p class="text-xs font-mono text-gray-400 px-5 pt-4 pb-2 border-b border-divider">empty-state + 액션 버튼</p>
+                <div th:replace="~{common/fragments/ui-components :: empty-state-action('🚀', '프로젝트가 없습니다', '첫 번째 프로젝트를 만들어 팀과 협업을 시작하세요.', '+ 새 프로젝트')}"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         11. LOADING SPINNER
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">11. Loading Spinner</h2>
+        <p class="text-sm text-gray-400 mb-6">로딩 인디케이터 — sm / md / lg</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6">
+            <div class="flex items-center gap-8">
+                <div class="flex flex-col items-center gap-2">
+                    <span th:replace="~{common/fragments/ui-components :: spinner('sm')}"></span>
+                    <p class="text-xs text-gray-400">sm (16px)</p>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                    <span th:replace="~{common/fragments/ui-components :: spinner('md')}"></span>
+                    <p class="text-xs text-gray-400">md (24px)</p>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                    <span th:replace="~{common/fragments/ui-components :: spinner('lg')}"></span>
+                    <p class="text-xs text-gray-400">lg (40px)</p>
+                </div>
+                <!-- 버튼 내 스피너 -->
+                <div class="flex flex-col items-center gap-2">
+                    <button disabled class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                                           rounded-docu-btn bg-docu-primary text-white opacity-70 cursor-not-allowed">
+                        <span th:replace="~{common/fragments/ui-components :: spinner('sm')}"></span>
+                        처리 중...
+                    </button>
+                    <p class="text-xs text-gray-400">버튼 내 스피너</p>
+                </div>
+                <!-- 전체 영역 로딩 -->
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-32 h-20 bg-surface-base rounded-docu-card border border-divider
+                                flex flex-col items-center justify-center gap-2">
+                        <span th:replace="~{common/fragments/ui-components :: spinner('md')}"></span>
+                        <p class="text-xs text-gray-400">로딩 중...</p>
+                    </div>
+                    <p class="text-xs text-gray-400">영역 로딩</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         12. TOGGLE SWITCH
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">12. Toggle Switch</h2>
+        <p class="text-sm text-gray-400 mb-6">on/off 상태 토글</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 flex flex-wrap gap-8">
+            <div class="flex flex-col gap-1">
+                <label th:replace="~{common/fragments/ui-components :: toggle('t1', true, '활성화됨')}"></label>
+                <p class="text-xs text-gray-400">checked=true</p>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label th:replace="~{common/fragments/ui-components :: toggle('t2', false, '비활성화됨')}"></label>
+                <p class="text-xs text-gray-400">checked=false</p>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label th:replace="~{common/fragments/ui-components :: toggle('t3', true, null)}"></label>
+                <p class="text-xs text-gray-400">라벨 없음</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         13. ALERT CARD  (와이어프레임 3번 — 발생 이력)
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">13. Alert Card</h2>
+        <p class="text-sm text-gray-400 mb-6">발생 이력 이벤트 카드 패턴 (와이어프레임 3번 참고)</p>
+
+        <div class="space-y-3 max-w-2xl">
+            <div th:replace="~{common/fragments/ui-components :: alert-card(
+                'new', '새 이슈',
+                'low', 'LOW',
+                '이슈 제목',
+                '이슈 내용 설명',
+                'Today 14:22:05',
+                '✉', 'Email 발송 완료 (dev@documind.com)',
+                '이슈로 이동', '#'
+            )}"></div>
+
+            <div th:replace="~{common/fragments/ui-components :: alert-card(
+                'suggest', '이슈 추천',
+                'critical', 'CRITICAL',
+                '이슈 제목(임시)',
+                '이슈 추천 내용 (임시 혹은 비우기)',
+                'Today 10:15:30',
+                '#', 'Slack 알림 전송 완료 (#dev-alerts)',
+                '이슈 생성', '#'
+            )}"></div>
+
+            <div th:replace="~{common/fragments/ui-components :: alert-card(
+                'change', '상태 변경',
+                'medium', 'MEDIUM',
+                'User Session Expiry Issue',
+                '상태 변경: 할 일 → 진행 중',
+                'Today 09:42:10',
+                '#', 'Slack 알림 전송 완료 (#dev-alerts)',
+                '이슈로 이동', '#'
+            )}"></div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+     14. PAGE TAB
+     ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">14. Page Tab</h2>
+        <p class="text-sm text-gray-400 mb-6">페이지 내부 탭 패턴</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card overflow-hidden shadow-docu-card">
+            <div class="border-b border-divider px-5">
+                <nav class="flex -mb-px">
+                    <div th:replace="~{common/fragments/ui-components :: page-tab('추천 템플릿', true)}"></div>
+                    <div th:replace="~{common/fragments/ui-components :: page-tab('빈 캔버스 (Blank)', false)}"></div>
+                    <div th:replace="~{common/fragments/ui-components :: page-tab('불러오기', false)}"></div>
+                </nav>
+            </div>
+            <div class="p-5 text-sm text-gray-500">
+                현재 선택된 탭에 따라 하위 콘텐츠가 바뀌는 패턴입니다.
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         15. TEMPLATE CARD
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">15. Template Card</h2>
+        <p class="text-sm text-gray-400 mb-6">추천 템플릿 선택 카드</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 shadow-docu-card">
+            <div class="grid grid-cols-3 gap-4">
+                <div th:replace="~{common/fragments/ui-components :: template-card(
+                    'FPS / Action 스타일',
+                    '실시간 반응성과 최적화가 중요한 프로젝트에 적합합니다.',
+                    'Frame Time (Area)',
+                    'Latency (Line)',
+                    'Map Heatmap',
+                    true
+                )}"></div>
+
+                <div th:replace="~{common/fragments/ui-components :: template-card(
+                    'RPG / Strategy',
+                    '경제 밸런스와 대규모 트래픽 관리가 필요한 프로젝트에 적합합니다.',
+                    'Gold Economy (Line)',
+                    'CCU (Big Num)',
+                    null,
+                    false
+                )}"></div>
+
+                <div th:replace="~{common/fragments/ui-components :: template-card(
+                    'Casual / Puzzle',
+                    '스테이지 진행도와 유저 피드백 추적이 중요한 프로젝트에 적합합니다.',
+                    'Stage Funnel (Bar)',
+                    'Clear Rate (Pie)',
+                    null,
+                    false
+                )}"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         16. SEVERITY BUTTON
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">16. Severity Button</h2>
+        <p class="text-sm text-gray-400 mb-6">심각도 선택 버튼</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 shadow-docu-card">
+            <div class="grid grid-cols-2 gap-3 max-w-md">
+                <div th:replace="~{common/fragments/ui-components :: severity-button('CRITICAL', 'critical')}"></div>
+                <div th:replace="~{common/fragments/ui-components :: severity-button('HIGH', 'high')}"></div>
+                <div th:replace="~{common/fragments/ui-components :: severity-button('MEDIUM', 'medium')}"></div>
+                <div th:replace="~{common/fragments/ui-components :: severity-button('LOW', 'low')}"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         17. ISSUE ROW
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">17. Issue Row</h2>
+        <p class="text-sm text-gray-400 mb-6">이슈 목록 테이블 행 패턴</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card overflow-hidden shadow-docu-card">
+            <div class="bg-surface-base border-b border-divider px-4 py-3 flex items-center gap-3 text-gray-500">
+                <div class="flex-1 min-w-0"><span class="text-xs font-semibold uppercase tracking-wider">Issue</span></div>
+                <div class="w-24 shrink-0"><span class="text-xs font-semibold uppercase tracking-wider">Severity</span></div>
+                <div class="w-28 shrink-0"><span class="text-xs font-semibold uppercase tracking-wider">Status</span></div>
+                <div class="w-20 shrink-0"><span class="text-xs font-semibold uppercase tracking-wider">Count</span></div>
+                <div class="w-40 shrink-0"><span class="text-xs font-semibold uppercase tracking-wider">Timestamp</span></div>
+                <div class="w-16 shrink-0"><span class="text-xs font-semibold uppercase tracking-wider">Quality</span></div>
+                <div class="w-10 shrink-0"></div>
+                <div class="w-8 shrink-0"></div>
+            </div>
+
+            <div th:replace="~{common/fragments/ui-components :: issue-row(
+                'ISS-2024-001',
+                'SQL Query Timeout Exception',
+                'critical',
+                'CRITICAL',
+                '진행 중',
+                '124건',
+                '2024-05-24 14:22:01',
+                'LOW',
+                'critical',
+                '김'
+            )}"></div>
+
+            <div th:replace="~{common/fragments/ui-components :: issue-row(
+                'ISS-2024-005',
+                'API Latency Spike (>500ms)',
+                'high',
+                'HIGH',
+                '완료',
+                '42건',
+                '2024-05-24 11:10:55',
+                'HIGH',
+                'low',
+                '박'
+            )}"></div>
+
+            <div th:replace="~{common/fragments/ui-components :: issue-row(
+                'ISS-2024-012',
+                'Broken Image Link on Dashboard',
+                'low',
+                'LOW',
+                '대기 중',
+                '256건',
+                '2024-05-23 18:20:44',
+                'HIGH',
+                'low',
+                '정'
+            )}"></div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         18. TIMELINE
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">18. Timeline</h2>
+        <p class="text-sm text-gray-400 mb-6">변경 이력 / 활동 타임라인</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 shadow-docu-card max-w-2xl">
+            <div class="space-y-3">
+                <div th:replace="~{common/fragments/ui-components :: timeline-item(
+                    '김철수',
+                    '10분 전',
+                    '상태를 [진행 중]으로 변경함',
+                    false,
+                    false
+                )}"></div>
+
+                <div th:replace="~{common/fragments/ui-components :: timeline-item(
+                    '이영희',
+                    '2시간 전',
+                    '@김철수 메모리 누수 지점이 의심됩니다.',
+                    false,
+                    false
+                )}"></div>
+
+                <div th:replace="~{common/fragments/ui-components :: timeline-item(
+                    '시스템',
+                    '3시간 전',
+                    '담당자를 김철수로 변경함',
+                    true,
+                    true
+                )}"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         19. SCROLL PANEL
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">19. Scroll Panel</h2>
+        <p class="text-sm text-gray-400 mb-6">공통 스크롤바 스타일 미리보기</p>
+
+        <div class="max-w-2xl">
+            <div th:replace="~{common/fragments/ui-components :: scroll-panel('로그 / 활동 패널')}"></div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+     20. SYSTEM TOP TOAST
+     ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">20. System Top Toast</h2>
+        <p class="text-sm text-gray-400 mb-6">상단 배너형 시스템 알림 토스트</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6 space-y-4">
+            <div>
+                <p class="text-xs font-mono text-gray-400 mb-3">info</p>
+                <div class="flex justify-center">
+                    <div th:replace="~{common/fragments/ui-components :: top-toast-preview(
+                        '관리자(CEO) 계정으로 로그인되었습니다.',
+                        'info'
+                    )}"></div>
+                </div>
+            </div>
+
+            <div class="border-t border-divider pt-4">
+                <p class="text-xs font-mono text-gray-400 mb-3">success</p>
+                <div class="flex justify-center">
+                    <div th:replace="~{common/fragments/ui-components :: top-toast-preview(
+                        '프로젝트가 성공적으로 생성되었습니다.',
+                        'success'
+                    )}"></div>
+                </div>
+            </div>
+
+            <div class="border-t border-divider pt-4">
+                <p class="text-xs font-mono text-gray-400 mb-3">warning</p>
+                <div class="flex justify-center">
+                    <div th:replace="~{common/fragments/ui-components :: top-toast-preview(
+                        '선택하신 역할과 다른 계정으로 로그인되었습니다.',
+                        'warning'
+                    )}"></div>
+                </div>
+            </div>
+
+            <div class="border-t border-divider pt-4">
+                <p class="text-xs font-mono text-gray-400 mb-3">danger</p>
+                <div class="flex justify-center">
+                    <div th:replace="~{common/fragments/ui-components :: top-toast-preview(
+                        '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+                        'danger'
+                    )}"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         21. REALTIME ALARM TOAST
+         ══════════════════════════════════════════════════════ -->
+    <section>
+        <h2 class="text-h1 text-docu-ink mb-1">21. Realtime Alarm Toast</h2>
+        <p class="text-sm text-gray-400 mb-6">우측 하단 실시간 알림 토스트</p>
+
+        <div class="bg-surface-card border border-divider rounded-docu-card p-6">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-xs font-mono text-gray-400 mb-3">info</p>
+                    <div th:replace="~{common/fragments/ui-components :: alarm-toast-preview(
+            '패치노트',
+            '문서 분석 완료',
+            '업로드된 문서 분석이 완료되었습니다. 이제 패치노트 생성 시 반영할 수 있습니다.',
+            '패치노트 작성하기 >',
+            '#',
+            'info'
+        )}"></div>
+                </div>
+
+                <div>
+                    <p class="text-xs font-mono text-gray-400 mb-3">success</p>
+                    <div th:replace="~{common/fragments/ui-components :: alarm-toast-preview(
+            '문서',
+            '업로드 완료',
+            '새 문서가 정상적으로 업로드되었습니다. 문서함에서 바로 확인할 수 있습니다.',
+            '문서함으로 이동하기 >',
+            '#',
+            'success'
+        )}"></div>
+                </div>
+
+                <div>
+                    <p class="text-xs font-mono text-gray-400 mb-3">warning</p>
+                    <div th:replace="~{common/fragments/ui-components :: alarm-toast-preview(
+            '로그 탐색기',
+            '수집 지연',
+            '일부 로그의 수집이 지연되고 있습니다. 잠시 후 다시 확인해주세요.',
+            '로그 탐색기 보기 >',
+            '#',
+            'warning'
+        )}"></div>
+                </div>
+
+                <div>
+                    <p class="text-xs font-mono text-gray-400 mb-3">danger</p>
+                    <div th:replace="~{common/fragments/ui-components :: alarm-toast-preview(
+            '이슈',
+            '오류 발생',
+            '이슈 추천 처리 중 오류가 발생했습니다. 재시도 후에도 계속되면 관리자에게 문의해주세요.',
+            '이슈 페이지로 이동하기 >',
+            '#',
+            'danger'
+        )}"></div>
+                </div>
+            </div>
+    </section>
+
+    <!-- 하단 여백 -->
+    <div class="h-16"></div>
+
+</div>
+
+</th:block>
+</body>
+</html>

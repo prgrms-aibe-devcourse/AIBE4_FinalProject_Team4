@@ -2,7 +2,7 @@
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{common/layouts/base-layout}">
+      layout:decorate="~{common/layout/base-layout}">
 <!--
   ╔═══════════════════════════════════════════════════════════════════════╗
   ║  mypage-layout.html  ·  Level 2 마이페이지 전용 레이아웃             ║
@@ -29,19 +29,19 @@
   ║    headerInfo  (Dto)    유저/회사 정보                                 ║
   ║                                                                       ║
   ║  사용법 (마이페이지 도메인):                                          ║
-  ║    layout:decorate="~{common/layouts/mypage-layout}"                  ║
+  ║    layout:decorate="~{common/layout/mypage-layout}"                   ║
   ║    <div layout:fragment="content"> ... </div>                         ║
   ╚═══════════════════════════════════════════════════════════════════════╝
 -->
 <body>
-<layout:fragment name="body">
+<th:block layout:fragment="body">
 
     <!-- ══════════════════════════════════════════════════
          마이페이지 전용 고정 사이드바
          w-[240px] / fixed / z-40 / bg-surface-sidebar
          파라미터: (activeMenu)
          ══════════════════════════════════════════════════ -->
-    <div th:replace="~{common/fragments/sidebar-mypage :: sidebar-mypage(${activeMenu})}"></div>
+    <div th:replace="~{common/fragments/sidebar-mypage-2 :: sidebar-mypage(${activeMenu})}"></div>
 
     <!--
       ── 사이드바 오른쪽 전체 영역 ────────────────────────────
@@ -55,7 +55,7 @@
           · 이름/역할/프로필/로그아웃 포함
           · sticky top-0 으로 바꾸면 스티키 헤더로 전환 가능
         -->
-        <div th:replace="~{common/fragments/header-auth :: user-bar}"></div>
+        <div th:replace="~{common/fragments/header-auth-2 :: user-bar}"></div>
 
         <!-- 스크롤 가능한 메인 콘텐츠 -->
         <main class="flex-1 p-content-p overflow-y-auto">
@@ -66,9 +66,9 @@
                     <h1 class="text-h1">내 프로필</h1>
                 </div>
             -->
-            <layout:fragment name="content">
+            <th:block layout:fragment="content">
                 <!-- fallback: 도메인 페이지에서 반드시 오버라이드 -->
-            </layout:fragment>
+            </th:block>
         </main>
 
         <!-- 푸터 -->
@@ -81,11 +81,11 @@
     </div>
 
     <!-- 로그아웃 확인 모달 -->
-    <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
+    <div th:replace="~{common/fragments/header-auth-2 :: logout-modal}"></div>
 
     <!-- 로그아웃 모달 JS 바인딩 -->
-    <div th:replace="~{common/fragments/header-auth :: logout-script}"></div>
+    <div th:replace="~{common/fragments/header-auth-2 :: logout-script}"></div>
 
-</layout:fragment>
+</th:block>
 </body>
 </html>
