@@ -249,20 +249,22 @@ function renderSingleSimilarity(similarityResult, index, total) {
                         <details class="mt-3 pt-3 border-t ${borderClass}">
                             <summary class="cursor-pointer text-xs font-medium hover:underline">상세 점수 보기</summary>
                             <div class="mt-2 space-y-1 text-xs opacity-80">
+                                ${details.fingerprintScore !== null ? `
                                 <div class="flex justify-between">
                                     <span>Fingerprint 일치:</span>
                                     <span class="font-medium">${details.fingerprintScore.toFixed(0)}%</span>
                                 </div>
+                                ` : ''}
                                 <div class="flex justify-between">
                                     <span>에러 타입 일치:</span>
                                     <span class="font-medium">${details.errorTypeScore.toFixed(0)}%</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span>스택 트레이스 유사도:</span>
+                                    <span>스택 트레이스 유사도 (60%):</span>
                                     <span class="font-medium">${details.stackScore.toFixed(0)}%</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span>메시지 유사도:</span>
+                                    <span>메시지 유사도 (20%):</span>
                                     <span class="font-medium">${details.messageScore.toFixed(0)}%</span>
                                 </div>
                             </div>
@@ -493,37 +495,58 @@ function renderIssueList(issues) {
 
     emptyState.classList.add('hidden');
 
-    container.innerHTML = issues.map(issue => `
-        <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors items-center cursor-pointer"
+    // 정렬: 최신순 (날짜가 같으면 심각도 순)
+    const severityOrder = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+    const sortedIssues = [...issues].sort((a, b) => {
+        // 1. 최근 발생 시각 내림차순 (최신순)
+        const dateA = new Date(a.lastOccurredAt);
+        const dateB = new Date(b.lastOccurredAt);
+        if (dateB - dateA !== 0) {
+            return dateB - dateA;
+        }
+        // 2. 날짜가 같으면 심각도 순 (CRITICAL > HIGH > MEDIUM > LOW)
+        return (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
+    });
+
+    container.innerHTML = sortedIssues.map(issue => {
+        const borderColor = getSeverityBorderColor(issue.severity);
+        return `
+        <div class="mx-4 my-3 p-4 bg-white border-l-4 ${borderColor} rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
              onclick="openIssueDetail(${issue.id})">
-            <div class="col-span-4">
-                <p class="text-sm font-medium text-gray-900 truncate">${issue.title}</p>
-                <p class="text-xs text-gray-400 mt-1">ID: ${issue.id}</p>
-            </div>
-            <div class="col-span-1 text-center">
-                ${getStatusBadge(issue.status)}
-            </div>
-            <div class="col-span-2 text-center">
-                ${getSeverityBadge(issue.severity, issue.severityScore)}
-            </div>
-            <div class="col-span-1 text-center">
-                <span class="text-sm font-medium text-gray-700">${issue.occurrenceCount}</span>
-            </div>
-            <div class="col-span-2 text-center">
-                <p class="text-xs text-gray-600">${formatDateTime(issue.lastOccurredAt)}</p>
-            </div>
-            <div class="col-span-2 text-center flex items-center justify-center gap-2">
-                <button onclick="event.stopPropagation(); openAssignModal(${issue.id})"
-                        class="px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                    담당자
-                </button>
-                <button onclick="event.stopPropagation(); openStatusModal(${issue.id}, '${issue.status}')"
-                        class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                    상태변경
-                </button>
+            <div class="grid grid-cols-12 gap-4 items-center">
+                <div class="col-span-4">
+                    <p class="text-sm font-semibold text-gray-900 mb-1">${issue.title}</p>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <span>ID: ${issue.id}</span>
+                        <span>•</span>
+                        <span>${issue.errorType || 'UNKNOWN'}</span>
+                    </div>
+                </div>
+                <div class="col-span-1 text-center">
+                    ${getStatusBadge(issue.status)}
+                </div>
+                <div class="col-span-2 text-center">
+                    ${getSeverityBadge(issue.severity, issue.severityScore)}
+                </div>
+                <div class="col-span-1 text-center">
+                    <span class="text-sm font-medium text-gray-700">${issue.occurrenceCount}회</span>
+                </div>
+                <div class="col-span-1 text-center">
+                    <p class="text-xs text-gray-600">${formatDateTime(issue.lastOccurredAt)}</p>
+                </div>
+                <div class="col-span-3 text-center flex items-center justify-center gap-2">
+                    <button onclick="event.stopPropagation(); openIssueDetail(${issue.id})"
+                            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+                        상세보기
+                    </button>
+                    <button onclick="event.stopPropagation(); openStatusModal(${issue.id}, '${issue.status}')"
+                            class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors">
+                        상태변경
+                    </button>
+                </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

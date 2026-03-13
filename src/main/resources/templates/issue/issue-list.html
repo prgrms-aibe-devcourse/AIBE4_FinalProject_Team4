@@ -74,21 +74,25 @@
     <!-- 기존 이슈 목록 영역 -->
     <div id="issuesSection" class="hidden bg-white rounded-xl border border-gray-200 overflow-hidden">
         <!-- 테이블 헤더 -->
-        <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-sm font-medium text-gray-500">
-            <div class="col-span-4">이슈 제목</div>
+        <div class="grid grid-cols-12 gap-4 px-8 py-3 bg-gray-50 border-b border-gray-200 text-sm font-medium text-gray-500">
+            <div class="col-span-4">이슈 정보</div>
             <div class="col-span-1 text-center">상태</div>
             <div class="col-span-2 text-center">심각도</div>
-            <div class="col-span-1 text-center">발생횟수</div>
-            <div class="col-span-2 text-center">최근 발생</div>
-            <div class="col-span-2 text-center">작업</div>
+            <div class="col-span-1 text-center">발생 횟수</div>
+            <div class="col-span-1 text-center">최근 발생</div>
+            <div class="col-span-3 text-center">작업</div>
         </div>
 
         <!-- 이슈 목록 (JS에서 렌더링) -->
-        <div id="issueList"></div>
+        <div id="issueList" class="bg-gray-50 py-2"></div>
 
         <!-- 데이터 없음 -->
-        <div id="emptyIssues" class="hidden py-16 text-center text-gray-400 text-sm">
-            등록된 이슈가 없습니다.
+        <div id="emptyIssues" class="hidden py-16 text-center text-gray-400 text-sm bg-white">
+            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <p class="font-medium text-gray-900 mb-1">등록된 이슈가 없습니다</p>
+            <p class="text-xs">추천 이슈를 승인하면 이곳에 표시됩니다.</p>
         </div>
     </div>
 

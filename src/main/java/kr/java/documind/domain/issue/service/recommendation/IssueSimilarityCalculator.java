@@ -10,20 +10,22 @@ import org.springframework.stereotype.Component;
 /**
  * 이슈 유사도 계산기 (복합 접근 방식)
  *
- * <p>가중치: - Fingerprint: 40% (동일 여부) - Error Type: 20% (동일 여부) - Stack Trace: 30% (Jaccard
- * Similarity) - Message: 10% (Levenshtein Similarity)
+ * <p>가중치: - Stack Trace: 60% (Jaccard Similarity) - Error Type: 20% (동일 여부) - Message: 20%
+ * (Levenshtein Similarity)
+ *
+ * <p>참고: Fingerprint 비교는 IssueRecommendationService에서 사전 필터링되므로 이 계산기에 들어오는 이슈들은 모두
+ * Fingerprint가 다름이 보장됨
  */
 @Component
 @Slf4j
 public class IssueSimilarityCalculator {
 
-    private static final double FINGERPRINT_WEIGHT = 0.4;
     private static final double ERROR_TYPE_WEIGHT = 0.2;
-    private static final double STACK_WEIGHT = 0.3;
-    private static final double MESSAGE_WEIGHT = 0.1;
+    private static final double STACK_WEIGHT = 0.6;
+    private static final double MESSAGE_WEIGHT = 0.2;
 
-    private static final double HIGHLY_SIMILAR_THRESHOLD = 80.0;
-    private static final double SIMILAR_THRESHOLD = 50.0;
+    private static final double HIGHLY_SIMILAR_THRESHOLD = 70.0;
+    private static final double SIMILAR_THRESHOLD = 40.0;
 
     /**
      * 두 이슈 간의 종합 유사도를 계산합니다.
@@ -40,34 +42,23 @@ public class IssueSimilarityCalculator {
         log.debug("Issue1 stackKey: {}", issue1.getStackKey());
         log.debug("Issue2 stackKey: {}", issue2.getStackKey());
 
-        // 1. Fingerprint 비교 (40%)
-        double fingerprintScore = calculateFingerprintScore(issue1, issue2);
-
-        // 완전 일치 시 즉시 반환
-        if (fingerprintScore == 100.0) {
-            return SimilarityResult.exactMatch(issue2.getId(), issue2.getTitle());
-        }
-
-        // 2. Error Type 비교 (20%)
+        // 1. Error Type 비교 (20%)
         double errorTypeScore = calculateErrorTypeScore(issue1, issue2);
 
-        // 3. Stack Trace Jaccard Similarity (30%)
+        // 2. Stack Trace Jaccard Similarity (60%)
         double stackScore = calculateStackSimilarity(issue1.getStackKey(), issue2.getStackKey());
 
-        // 4. Message Levenshtein Similarity (10%)
-        double messageScore =
-                calculateLevenshteinSimilarity(issue1.getTitle(), issue2.getTitle());
+        // 3. Message Levenshtein Similarity (20%)
+        double messageScore = calculateLevenshteinSimilarity(issue1.getTitle(), issue2.getTitle());
 
         // 종합 점수 계산
         double totalSimilarity =
-                fingerprintScore * FINGERPRINT_WEIGHT
-                        + errorTypeScore * ERROR_TYPE_WEIGHT
+                errorTypeScore * ERROR_TYPE_WEIGHT
                         + stackScore * STACK_WEIGHT
                         + messageScore * MESSAGE_WEIGHT;
 
         log.debug(
-                "Similarity scores - fingerprint: {}, errorType: {}, stack: {}, message: {}, total: {}",
-                fingerprintScore,
+                "Similarity scores - errorType: {}, stack: {}, message: {}, total: {}",
                 errorTypeScore,
                 stackScore,
                 messageScore,
@@ -75,7 +66,7 @@ public class IssueSimilarityCalculator {
 
         SimilarityResult.SimilarityDetails details =
                 SimilarityResult.SimilarityDetails.builder()
-                        .fingerprintScore(fingerprintScore)
+                        .fingerprintScore(null)
                         .errorTypeScore(errorTypeScore)
                         .stackScore(stackScore)
                         .messageScore(messageScore)
@@ -91,14 +82,6 @@ public class IssueSimilarityCalculator {
         }
 
         return SimilarityResult.noMatch();
-    }
-
-    /** Fingerprint 완전 일치 여부 (100 or 0) */
-    private double calculateFingerprintScore(Issue issue1, Issue issue2) {
-        if (issue1.getFingerprint() == null || issue2.getFingerprint() == null) {
-            return 0.0;
-        }
-        return issue1.getFingerprint().equals(issue2.getFingerprint()) ? 100.0 : 0.0;
     }
 
     /** Error Type 일치 여부 (100 or 0) */
