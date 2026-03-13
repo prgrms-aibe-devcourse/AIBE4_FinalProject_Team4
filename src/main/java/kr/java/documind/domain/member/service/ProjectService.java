@@ -8,6 +8,7 @@ import kr.java.documind.domain.auth.exception.DeletedProjectException;
 import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
 import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.domain.auth.model.entity.ProjectApiKey;
+import kr.java.documind.domain.auth.model.enums.ApiKeyType;
 import kr.java.documind.domain.auth.model.enums.ProjectRole;
 import kr.java.documind.domain.auth.model.repository.ProjectApiKeyRepository;
 import kr.java.documind.domain.auth.model.repository.ProjectRepository;
@@ -22,7 +23,6 @@ import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.entity.ProjectMember;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.enums.ApiKeyStatus;
-import kr.java.documind.domain.auth.model.enums.ApiKeyType;
 import kr.java.documind.domain.member.model.enums.CompanyStatus;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
 import kr.java.documind.global.exception.BadRequestException;
@@ -220,7 +220,7 @@ public class ProjectService {
 
         if (keyOpt.isPresent()) {
             ProjectApiKey key = keyOpt.get();
-            String masked = key.getKeyPrefix() + "..." + key.getKeyLast4();
+            String masked = HmacApiKeyUtil.maskApiKey(key.getKeyPrefix(), key.getKeyLast4());
             return new ProjectApiKeyInfo.KeyMetadata(
                     true, key.getKeyType(), masked, key.getApiKeyStatus());
         } else {

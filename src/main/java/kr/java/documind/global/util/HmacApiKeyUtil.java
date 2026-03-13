@@ -58,13 +58,17 @@ public final class HmacApiKeyUtil {
         return plainKey.substring(Math.max(0, len - LAST4_LEN));
     }
 
+    public static String maskApiKey(String prefix, String last4) {
+        return prefix.substring(0, Math.min(12, prefix.length())) + "****" + last4;
+    }
+
     public static String maskApiKey(String plainKey) {
         if (plainKey == null || plainKey.length() <= 8) {
             return "****";
         }
         String prefix = extractPrefix(plainKey);
         String last4 = extractLast4(plainKey);
-        return prefix.substring(0, Math.min(12, prefix.length())) + "****" + last4;
+        return maskApiKey(prefix, last4);
     }
 
     private static String toHex(byte[] bytes) {
