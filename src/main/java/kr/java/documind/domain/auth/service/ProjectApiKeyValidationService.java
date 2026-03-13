@@ -37,6 +37,11 @@ public class ProjectApiKeyValidationService {
             return null;
         }
 
+        if (requiredType == null) {
+            log.warn("API Key 타입이 지정되지 않았습니다.");
+            return null;
+        }
+
         String requestHashedKey = HmacApiKeyUtil.computeHmac(rawApiKey, hmacSecret);
 
         // 해시값과 함께 키 타입으로 조회
