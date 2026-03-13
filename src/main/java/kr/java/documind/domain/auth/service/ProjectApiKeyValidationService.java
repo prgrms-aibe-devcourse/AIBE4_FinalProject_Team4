@@ -59,6 +59,11 @@ public class ProjectApiKeyValidationService {
 
         ProjectApiKey apiKey = apiKeyOptional.get();
 
+        if (!apiKey.getProject().isActive()) {
+            log.warn("삭제된 프로젝트에 대한 API Key 접근 차단: keyId={}", apiKey.getId());
+            return null;
+        }
+
         // 키 타입 일치 여부 재확인 (로직 강화)
         if (apiKey.getKeyType() != requiredType) {
             log.error(

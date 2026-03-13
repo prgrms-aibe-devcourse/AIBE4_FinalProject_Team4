@@ -394,6 +394,10 @@ public class ProjectService {
                         .findByPublicId(publicId)
                         .orElseThrow(ProjectNotFoundException::new);
 
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
+
         // INGEST, QUERY 타입에 대해 각각 기존 키 폐기 및 신규 키 생성
         ApiKeyIssueResponse.IssuedKey issuedIngestKey =
                 createNewApiKeyForType(project, ApiKeyType.INGEST);
@@ -413,6 +417,10 @@ public class ProjectService {
                 projectRepository
                         .findByPublicId(publicId)
                         .orElseThrow(ProjectNotFoundException::new);
+
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
 
         ApiKeyIssueResponse.IssuedKey newIssuedKey = createNewApiKeyForType(project, keyType);
 
@@ -463,6 +471,10 @@ public class ProjectService {
                 projectRepository
                         .findByPublicId(publicId)
                         .orElseThrow(ProjectNotFoundException::new);
+
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
 
         // 특정 타입의 키만 찾아서 상태 변경
         ProjectApiKey key =

@@ -36,6 +36,9 @@ class ProjectApiKeyValidationServiceTest {
     void setUp() {
         ReflectionTestUtils.setField(validationService, "hmacSecret", hmacSecret);
         lenient().when(testProject.getId()).thenReturn(projectId);
+
+        // 정상 흐름 테스트들을 위해 기본적으로 프로젝트를 활성 상태(true)로 설정
+        lenient().when(testProject.isActive()).thenReturn(true);
     }
 
     @Test
@@ -209,6 +212,33 @@ class ProjectApiKeyValidationServiceTest {
         UUID resultProjectId = validationService.getProjectIdByApiKey(rawApiKey, ApiKeyType.INGEST);
 
         // Then: 서비스 레이어의 방어 로직(if (apiKey.getKeyType() != requiredType))에 의해 차단됨
+        assertThat(resultProjectId).isNull();
+    }
+
+    @Test
+    @DisplayName("API Key 검증 실패: 삭제된(Soft Delete) 프로젝트에 대한 접근 → null 반환")
+    void getProjectIdByApiKey_DeletedProject_ReturnsNull() {
+        // Given
+        String generatedRawApiKey = HmacApiKeyUtil.generatePlainKey("dmi_");
+        String extractedPrefix = HmacApiKeyUtil.extractPrefix(generatedRawApiKey);
+        String last4 = HmacApiKeyUtil.extractLast4(generatedRawApiKey);
+        String hashedApiKey = HmacApiKeyUtil.computeHmac(generatedRawApiKey, hmacSecret);
+
+        ProjectApiKey apiKey =
+                ProjectApiKey.create(
+                        testProject, hashedApiKey, extractedPrefix, last4, ApiKeyType.INGEST);
+
+        // 해당 테스트에 한해 프로젝트가 비활성화(삭제)된 상태라고 가정하여 Mocking 덮어쓰기
+        when(testProject.isActive()).thenReturn(false);
+
+        when(projectApiKeyRepository.findByApiKeyHashAndKeyType(hashedApiKey, ApiKeyType.INGEST))
+                .thenReturn(Optional.of(apiKey));
+
+        // When
+        UUID resultProjectId =
+                validationService.getProjectIdByApiKey(generatedRawApiKey, ApiKeyType.INGEST);
+
+        // Then: 프로젝트가 삭제되었으므로 키가 유효하더라도 null을 반환해야 함
         assertThat(resultProjectId).isNull();
     }
 }
