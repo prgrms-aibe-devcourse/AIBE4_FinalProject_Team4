@@ -17,8 +17,7 @@ import kr.java.documind.domain.issue.model.enums.IssueType;
  */
 public record IssueDetailResponse(
         @Schema(description = "이슈 ID", example = "101") Long id,
-        @Schema(description = "담당자 ID", example = "123e4567-e89b-12d3-a456-426614174000")
-                UUID assigneeId,
+        @Schema(description = "담당자 정보") AssigneeInfo assignee,
         @Schema(description = "프로젝트 ID", example = "123e4567-e89b-12d3-a456-426614174001")
                 UUID projectId,
         @Schema(description = "이슈 제목", example = "NullPointerException in GameController")
@@ -45,13 +44,13 @@ public record IssueDetailResponse(
                 List<SimilarityResult> similarityResults) {
 
     /**
-     * Entity → DTO 변환 (유사도 분석 없음)
+     * Entity → DTO 변환 (담당자 정보 없음, 유사도 분석 없음)
      *
      * @param issue Issue 엔티티
      * @return IssueDetailResponse
      */
     public static IssueDetailResponse from(Issue issue) {
-        return from(issue, null);
+        return from(issue, null, null);
     }
 
     /**
@@ -62,9 +61,22 @@ public record IssueDetailResponse(
      * @return IssueDetailResponse
      */
     public static IssueDetailResponse from(Issue issue, List<SimilarityResult> similarityResults) {
+        return from(issue, null, similarityResults);
+    }
+
+    /**
+     * Entity → DTO 변환 (담당자 정보 + 유사도 분석 포함)
+     *
+     * @param issue Issue 엔티티
+     * @param assignee 담당자 정보
+     * @param similarityResults 유사도 분석 결과 목록
+     * @return IssueDetailResponse
+     */
+    public static IssueDetailResponse from(
+            Issue issue, AssigneeInfo assignee, List<SimilarityResult> similarityResults) {
         return new IssueDetailResponse(
                 issue.getId(),
-                issue.getAssigneeId(),
+                assignee,
                 issue.getProjectId(),
                 issue.getTitle(),
                 issue.getDescription(),

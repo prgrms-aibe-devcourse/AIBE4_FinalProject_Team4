@@ -38,7 +38,7 @@ public class Issue {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "assignee_id", nullable = false)
+    @Column(name = "assignee_id")
     private UUID assigneeId;
 
     @Column(name = "project_id", nullable = false)
@@ -144,7 +144,7 @@ public class Issue {
     }
 
     /**
-     * 담당자 지정
+     * 담당자 할당
      *
      * @param assigneeId 담당자 ID
      */

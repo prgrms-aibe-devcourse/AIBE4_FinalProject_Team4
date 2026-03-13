@@ -23,8 +23,7 @@ public record IssueListResponse(
         @Schema(description = "상태", example = "TODO") IssueStatus status,
         @Schema(description = "심각도", example = "HIGH") IssueSeverity severity,
         @Schema(description = "심각도 점수", example = "85") Integer severityScore,
-        @Schema(description = "담당자 ID", example = "123e4567-e89b-12d3-a456-426614174000")
-                UUID assigneeId,
+        @Schema(description = "담당자 ID") UUID assigneeId,
         @Schema(description = "발생 횟수", example = "42") Integer occurrenceCount,
         @Schema(description = "최초 발생 시각", example = "2024-03-11T10:00:00Z")
                 OffsetDateTime firstOccurredAt,

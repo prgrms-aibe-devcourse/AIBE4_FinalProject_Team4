@@ -6,6 +6,7 @@ import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -76,4 +77,18 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
      */
     List<Issue> findByProjectIdAndErrorTypeAndStatusNot(
             UUID projectId, ErrorType errorType, IssueStatus excludeStatus);
+
+    /**
+     * 프로젝트 내에서 같은 에러 타입의 최근 이슈 목록 조회 (특정 상태 제외, Top N)
+     *
+     * <p>성능 최적화: 유사도 계산 시 최근 N개만 비교하여 O(N) 복잡도 제한
+     *
+     * @param projectId 프로젝트 ID
+     * @param errorType 에러 타입
+     * @param excludeStatus 제외할 상태 (RECOMMENDED 등)
+     * @param pageable 페이지 설정 (Top N)
+     * @return 최근 이슈 목록 (최신순)
+     */
+    List<Issue> findByProjectIdAndErrorTypeAndStatusNotOrderByLastOccurredAtDesc(
+            UUID projectId, ErrorType errorType, IssueStatus excludeStatus, Pageable pageable);
 }

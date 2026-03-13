@@ -19,4 +19,16 @@ public class IssueViewController {
         model.addAttribute("projectId", projectId);
         return "issue/issue-list";
     }
+
+    @GetMapping("/projects/{publicId}/issues/{issueId}/analysis")
+    public String issueAnalysisPage(
+            @ProjectId UUID projectId,
+            @PathVariable String publicId,
+            @PathVariable Long issueId,
+            Model model) {
+        model.addAttribute("publicId", publicId);
+        model.addAttribute("projectId", projectId);
+        model.addAttribute("issueId", issueId);
+        return "issue/issue-analysis";
+    }
 }

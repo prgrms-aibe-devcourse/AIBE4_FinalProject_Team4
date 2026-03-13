@@ -7,21 +7,28 @@ import jakarta.validation.Valid;
 import java.util.List;
 import kr.java.documind.domain.issue.model.dto.request.IssueAssignRequest;
 import kr.java.documind.domain.issue.model.dto.request.IssueStatusUpdateRequest;
+import kr.java.documind.domain.issue.model.dto.response.AssigneeInfo;
+import kr.java.documind.domain.issue.model.dto.response.DistributionDataResponse;
 import kr.java.documind.domain.issue.model.dto.response.IssueDetailResponse;
 import kr.java.documind.domain.issue.model.dto.response.IssueHistoryResponse;
 import kr.java.documind.domain.issue.model.dto.response.IssueListResponse;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.entity.IssueHistory;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
+import kr.java.documind.domain.issue.service.DistributionAnalysisService;
 import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
 import kr.java.documind.domain.issue.service.workflow.IssueManagementService;
+import kr.java.documind.domain.member.model.entity.Member;
+import kr.java.documind.domain.member.model.repository.MemberRepository;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +43,8 @@ public class IssueManagementApiController {
 
     private final IssueManagementService issueManagementService;
     private final IssueHistoryService issueHistoryService;
+    private final DistributionAnalysisService distributionAnalysisService;
+    private final MemberRepository memberRepository;
 
     /**
      * 프로젝트별 이슈 목록 조회
@@ -86,7 +95,17 @@ public class IssueManagementApiController {
 
         Issue issue = issueManagementService.getIssueDetail(issueId);
 
-        IssueDetailResponse response = IssueDetailResponse.from(issue);
+        // 담당자 정보 조회
+        AssigneeInfo assignee = null;
+        if (issue.getAssigneeId() != null) {
+            assignee =
+                    memberRepository
+                            .findById(issue.getAssigneeId())
+                            .map(AssigneeInfo::from)
+                            .orElse(null);
+        }
+
+        IssueDetailResponse response = IssueDetailResponse.from(issue, assignee, null);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -182,5 +201,32 @@ public class IssueManagementApiController {
                 histories.stream().map(IssueHistoryResponse::from).toList();
 
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 이슈 분포 분석 데이터 조회
+     *
+     * @param projectId 프로젝트 ID
+     * @param issueId 이슈 ID
+     * @return 분포 분석 데이터 (OS, 버전, 디바이스)
+     */
+    @Operation(
+            summary = "이슈 분포 분석 조회",
+            description = "이슈의 OS, 앱 버전, 디바이스별 발생 분포를 분석합니다.")
+    @GetMapping("/{issueId}/distribution")
+    public ResponseEntity<ApiResponse<DistributionDataResponse>> getDistributionAnalysis(
+            @Parameter(
+                            description = "프로젝트 ID",
+                            example = "123e4567-e89b-12d3-a456-426614174000",
+                            required = true)
+                    @PathVariable
+                    java.util.UUID projectId,
+            @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
+                    Long issueId) {
+
+        DistributionDataResponse distribution =
+                distributionAnalysisService.getDistributionData(issueId);
+
+        return ResponseEntity.ok(ApiResponse.success(distribution));
     }
 }

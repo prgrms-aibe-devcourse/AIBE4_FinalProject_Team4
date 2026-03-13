@@ -38,13 +38,13 @@ public class IssueManagementService {
     public void assignIssue(Long issueId, UUID assigneeId, UUID modifierId) {
         Issue issue = getIssueOrThrow(issueId);
 
-        UUID beforeAssignee = issue.getAssigneeId();
+        UUID beforeAssigneeId = issue.getAssigneeId();
 
-        // 담당자 변경
+        // 담당자 할당
         issue.assignTo(assigneeId);
 
         // 이력 저장
-        historyService.saveAssigneeChange(issueId, modifierId, beforeAssignee, assigneeId);
+        historyService.saveAssigneeChange(issueId, modifierId, beforeAssigneeId, assigneeId);
     }
 
     /**

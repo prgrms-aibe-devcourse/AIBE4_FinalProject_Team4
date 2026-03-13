@@ -7,6 +7,7 @@ let currentProjectId = null;
 let currentPublicId = null;
 let currentMainTab = 'recommendations'; // 'recommendations' or 'issues'
 let currentRecommendationId = null;
+let currentDetailIssueId = null; // 상세 모달에서 보고 있는 이슈 ID
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 초기화
@@ -404,8 +405,7 @@ async function approveFromDetail() {
     try {
         const body = await callApi(`/api/projects/${currentProjectId}/issue-recommendations/${currentRecommendationId}/approve`, {
             method: 'POST',
-            // TODO: 백엔드에서 assigneeId를 받아서 업데이트하도록 수정 필요
-            // 현재는 기존 assigneeId 사용
+            body: JSON.stringify({ assigneeId: selectedAssigneeId })
         });
 
         if (body.success) {
@@ -576,6 +576,8 @@ function filterByStatus(status) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function openIssueDetail(issueId) {
+    currentDetailIssueId = issueId; // 현재 보고 있는 이슈 ID 저장
+
     try {
         const body = await callApi(`/api/projects/${currentProjectId}/issues/${issueId}`, {
             method: 'GET'
@@ -592,76 +594,58 @@ async function openIssueDetail(issueId) {
     }
 }
 
+function openDetailedAnalysis() {
+    if (!currentDetailIssueId) {
+        showError('이슈 ID를 찾을 수 없습니다.');
+        return;
+    }
+
+    // 상세 분석 페이지로 이동
+    window.location.href = `/projects/${currentPublicId}/issues/${currentDetailIssueId}/analysis`;
+}
+
 function renderIssueDetail(issue) {
-    const container = document.getElementById('issueDetailContent');
-    container.innerHTML = `
-        <div class="space-y-4">
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">제목</label>
-                <p class="text-sm text-gray-900">${issue.title}</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">상태</label>
-                    ${getStatusBadge(issue.status)}
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">심각도</label>
-                    ${getSeverityBadge(issue.severity, issue.severityScore)}
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">설명</label>
-                <p class="text-sm text-gray-700">${issue.description || '설명 없음'}</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">이슈 유형</label>
-                    <p class="text-sm text-gray-700">${issue.issueType}</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">에러 타입</label>
-                    <p class="text-sm text-gray-700">${issue.errorType}</p>
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">스택 키</label>
-                <p class="text-xs font-mono text-gray-600 bg-gray-50 p-2 rounded">${issue.stackKey || 'N/A'}</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">발생 횟수</label>
-                    <p class="text-sm text-gray-900 font-medium">${issue.occurrenceCount}회</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">우선순위</label>
-                    <p class="text-sm text-gray-700">${issue.priority || 'N/A'}</p>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">최초 발생</label>
-                    <p class="text-xs text-gray-600">${formatDateTime(issue.firstOccurredAt)}</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">최근 발생</label>
-                    <p class="text-xs text-gray-600">${formatDateTime(issue.lastOccurredAt)}</p>
-                </div>
-            </div>
-            ${issue.resolvedAt ? `
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">해결 시각</label>
-                <p class="text-xs text-gray-600">${formatDateTime(issue.resolvedAt)}</p>
-            </div>
-            ` : ''}
-            ${issue.resolutionNote ? `
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">해결 노트</label>
-                <p class="text-sm text-gray-700">${issue.resolutionNote}</p>
-            </div>
-            ` : ''}
-        </div>
+    // 헤더 정보
+    document.getElementById('quickIssueId').textContent = issue.id;
+    document.getElementById('quickIssueTitle').textContent = issue.title;
+
+    // 상태 배지 (상태 변경 모달에서 사용하기 위해 data 속성 추가)
+    const statusBadgeEl = document.getElementById('quickStatusBadge');
+    statusBadgeEl.innerHTML = getStatusBadge(issue.status);
+    statusBadgeEl.dataset.status = issue.status;
+
+    // 심각도
+    const severityColors = {
+        CRITICAL: 'text-red-600',
+        HIGH: 'text-orange-600',
+        MEDIUM: 'text-yellow-600',
+        LOW: 'text-gray-600'
+    };
+    const severityColor = severityColors[issue.severity] || severityColors.LOW;
+    document.getElementById('quickSeverity').innerHTML = `
+        <span class="${severityColor}">${issue.severity}</span>
+        <div class="text-xs text-gray-500 mt-1">${issue.severityScore}점</div>
     `;
+
+    // 발생 횟수
+    document.getElementById('quickOccurrenceCount').textContent = `${issue.occurrenceCount}회`;
+
+    // 영향 받은 플레이어 (임시: 발생 횟수의 70% 추정)
+    const affectedUsers = Math.floor(issue.occurrenceCount * 0.7);
+    document.getElementById('quickAffectedUsers').textContent = `${affectedUsers}명`;
+
+    // 스택트레이스 미리보기 (첫 3줄만)
+    const stackPreview = document.querySelector('#quickStackPreview pre');
+    if (issue.stackKey) {
+        const lines = issue.stackKey.split('\n').slice(0, 3);
+        stackPreview.textContent = lines.join('\n') + '\n... (상세 분석에서 전체 보기)';
+    } else {
+        stackPreview.textContent = '스택트레이스 정보가 없습니다.';
+    }
+
+    // 발생 시각
+    document.getElementById('quickFirstOccurred').textContent = formatDateTime(issue.firstOccurredAt);
+    document.getElementById('quickLastOccurred').textContent = formatDateTime(issue.lastOccurredAt);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -813,6 +797,9 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
     if (modalId === 'recommendationDetailModal') {
         currentRecommendationId = null;
+    }
+    if (modalId === 'issueDetailModal') {
+        currentDetailIssueId = null;
     }
     if (modalId === 'rejectConfirmModal') {
         document.getElementById('rejectRecommendationId').value = '';

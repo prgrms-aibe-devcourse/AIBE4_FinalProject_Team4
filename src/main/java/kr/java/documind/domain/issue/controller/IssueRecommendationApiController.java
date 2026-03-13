@@ -4,11 +4,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import kr.java.documind.domain.issue.model.dto.request.ApproveRecommendationRequest;
+import kr.java.documind.domain.issue.model.dto.response.AssigneeInfo;
 import kr.java.documind.domain.issue.model.dto.response.IssueDetailResponse;
 import kr.java.documind.domain.issue.model.dto.response.IssueListResponse;
 import kr.java.documind.domain.issue.model.dto.response.SimilarityResult;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.service.recommendation.IssueRecommendationService;
+import kr.java.documind.domain.member.model.repository.MemberRepository;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class IssueRecommendationApiController {
 
     private final IssueRecommendationService recommendationService;
+    private final MemberRepository memberRepository;
 
     /**
      * 추천 이슈 목록 조회
@@ -75,12 +80,22 @@ public class IssueRecommendationApiController {
 
         Issue recommendation = recommendationService.getRecommendationDetail(issueId);
 
+        // 담당자 정보 조회
+        AssigneeInfo assignee = null;
+        if (recommendation.getAssigneeId() != null) {
+            assignee =
+                    memberRepository
+                            .findById(recommendation.getAssigneeId())
+                            .map(AssigneeInfo::from)
+                            .orElse(null);
+        }
+
         // 유사도 분석 수행 (최대 4개)
         List<SimilarityResult> similarityResults =
                 recommendationService.analyzeSimilarity(recommendation);
 
         IssueDetailResponse response =
-                IssueDetailResponse.from(recommendation, similarityResults);
+                IssueDetailResponse.from(recommendation, assignee, similarityResults);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -90,6 +105,7 @@ public class IssueRecommendationApiController {
      *
      * @param projectId 프로젝트 ID
      * @param issueId 이슈 ID
+     * @param request 승인 요청 (담당자 ID)
      * @param authMember 현재 로그인한 사용자
      * @return 성공 메시지
      */
@@ -105,9 +121,11 @@ public class IssueRecommendationApiController {
                     java.util.UUID projectId,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
+            @RequestBody ApproveRecommendationRequest request,
             @AuthenticationPrincipal CustomUserDetails authMember) {
 
-        recommendationService.approveRecommendation(issueId, authMember.getMemberId());
+        recommendationService.approveRecommendation(
+                issueId, request.assigneeId(), authMember.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success("추천 이슈가 승인되어 이슈로 생성되었습니다."));
     }

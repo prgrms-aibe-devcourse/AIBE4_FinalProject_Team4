@@ -133,7 +133,7 @@ public class IssueGroupingService {
         String stackKey = extractStackKeyFromArchive(gameLog.getArchive());
 
         return Issue.builder()
-                .assigneeId(UUID.randomUUID()) // TODO: 실제 담당자 배정 로직 필요
+                // assigneeIds는 빈 Set으로 시작 (추천 이슈 승인 시 담당자 할당)
                 .projectId(gameLog.getProjectId())
                 .fingerprint(fingerprintResult.getFingerprint())
                 .title(title)

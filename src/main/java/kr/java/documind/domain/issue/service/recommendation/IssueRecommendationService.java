@@ -11,6 +11,7 @@ import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,9 @@ public class IssueRecommendationService {
 
     private final IssueRepository issueRepository;
     private final IssueSimilarityCalculator similarityCalculator;
+
+    /** 유사도 계산 시 비교할 최대 후보 이슈 수 (성능 최적화) */
+    private static final int MAX_CANDIDATES_FOR_SIMILARITY = 100;
 
     /**
      * 추천 이슈 목록 조회
@@ -64,17 +68,24 @@ public class IssueRecommendationService {
      * 추천 이슈 승인 → 실제 이슈로 생성
      *
      * @param issueId 이슈 ID
+     * @param assigneeId 담당자 ID (프로젝트 멤버)
      * @param modifierId 승인한 사용자 ID
      */
     @Transactional
-    public void approveRecommendation(Long issueId, UUID modifierId) {
+    public void approveRecommendation(Long issueId, UUID assigneeId, UUID modifierId) {
         Issue issue = getRecommendationDetail(issueId);
+
+        // 담당자 할당
+        if (assigneeId != null) {
+            issue.assignTo(assigneeId);
+        }
 
         issue.approve(); // RECOMMENDED → TODO
 
         log.info(
-                "Issue recommendation approved. issueId={}, modifierId={}, fingerprint={}",
+                "Issue recommendation approved. issueId={}, assigneeId={}, modifierId={}, fingerprint={}",
                 issueId,
+                assigneeId,
                 modifierId,
                 issue.getFingerprint());
     }
@@ -111,8 +122,10 @@ public class IssueRecommendationService {
     /**
      * 추천 이슈와 기존 이슈 간의 유사도 분석
      *
-     * <p>복합 접근 방식: - Fingerprint 완전 일치 확인 (40% 가중치) - Error Type 일치 확인 (20% 가중치) - Stack Trace
-     * Jaccard 유사도 (30% 가중치) - Message Levenshtein 유사도 (10% 가중치)
+     * <p>복합 접근 방식: - Fingerprint 완전 일치 확인 - Error Type 일치 확인 (20% 가중치) - Stack Trace Jaccard
+     * 유사도 (60% 가중치) - Message Levenshtein 유사도 (20% 가중치)
+     *
+     * <p>성능 최적화: 같은 ErrorType의 최근 100개 이슈만 비교하여 O(N) 복잡도 제한
      *
      * @param recommendedIssue 추천 이슈
      * @return 유사도 분석 결과 (최대 4개)
@@ -134,10 +147,14 @@ public class IssueRecommendationService {
             return List.of(SimilarityResult.exactMatch(matched.getId(), matched.getTitle()));
         }
 
-        // 2. 같은 에러 타입의 기존 이슈 후보군 조회 (RECOMMENDED 제외)
+        // 2. 같은 에러 타입의 최근 N개 이슈 조회 (RECOMMENDED 제외, 성능 최적화)
         List<Issue> candidates =
-                issueRepository.findByProjectIdAndErrorTypeAndStatusNot(
-                        projectId, recommendedIssue.getErrorType(), IssueStatus.RECOMMENDED);
+                issueRepository
+                        .findByProjectIdAndErrorTypeAndStatusNotOrderByLastOccurredAtDesc(
+                                projectId,
+                                recommendedIssue.getErrorType(),
+                                IssueStatus.RECOMMENDED,
+                                PageRequest.of(0, MAX_CANDIDATES_FOR_SIMILARITY));
 
         if (candidates.isEmpty()) {
             log.info(
@@ -145,6 +162,12 @@ public class IssueRecommendationService {
                     recommendedIssue.getId());
             return List.of(SimilarityResult.noMatch());
         }
+
+        log.debug(
+                "Comparing recommendedIssue={} with {} recent candidates (errorType={})",
+                recommendedIssue.getId(),
+                candidates.size(),
+                recommendedIssue.getErrorType());
 
         // 3. 각 후보와의 유사도 계산 후 상위 4개 선택
         List<SimilarityResult> topMatches =
