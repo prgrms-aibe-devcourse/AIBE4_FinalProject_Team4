@@ -8,6 +8,7 @@ let currentPublicId = null;
 let currentTimeRange = '7d';
 let trendChart = null;
 let currentAssignee = null;
+let projectMembers = []; // 프로젝트 멤버 캐시
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 초기화
@@ -27,12 +28,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadIssueDetail() {
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}`, {
-            method: 'GET'
-        });
+        // 이슈 상세 정보와 프로젝트 멤버 목록을 병렬로 로드
+        const [issueBody, membersBody] = await Promise.all([
+            callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}`, {
+                method: 'GET'
+            }),
+            callApi(`/api/projects/${currentPublicId}/members`, {
+                method: 'GET'
+            })
+        ]);
 
-        if (body.success) {
-            renderIssueDetail(body.data);
+        if (issueBody.success) {
+            // 프로젝트 멤버 캐시 저장
+            if (membersBody.success) {
+                projectMembers = membersBody.data;
+            }
+
+            renderIssueDetail(issueBody.data);
         } else {
             showError('이슈 정보를 불러올 수 없습니다.');
         }
@@ -41,7 +53,7 @@ async function loadIssueDetail() {
     }
 }
 
-function renderIssueDetail(issue) {
+async function renderIssueDetail(issue) {
     // 헤더 정보
     document.getElementById('issueTitle').textContent = issue.title;
     document.getElementById('statusBadge').innerHTML = getStatusBadge(issue.status);
@@ -61,7 +73,7 @@ function renderIssueDetail(issue) {
     renderOccurrenceTrend(issue);
 
     // 분포 분석 차트
-    renderDistributionAnalysis(issue);
+    await renderDistributionAnalysis(issue);
 
     // 로그 상세
     renderLogDetails(issue);
@@ -73,7 +85,7 @@ function renderIssueDetail(issue) {
     renderRelatedIssues(issue);
 
     // 변경 이력
-    renderTimeline(issue);
+    await renderTimeline(issue);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -420,40 +432,108 @@ function renderRelatedIssues(issue) {
 // 변경 이력
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function renderTimeline(issue) {
+async function renderTimeline(issue) {
     const container = document.getElementById('timeline');
 
-    // 임시 타임라인 데이터 (Phase 3에서 실제 이력 API 연동)
-    const events = [
-        {
-            time: issue.createdAt,
-            user: 'System',
-            action: '이슈 생성됨'
-        }
-    ];
-
-    if (issue.updatedAt && issue.updatedAt !== issue.createdAt) {
-        events.push({
-            time: issue.updatedAt,
-            user: 'Unknown',
-            action: '이슈 업데이트됨'
+    try {
+        // 이력 API 호출
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/histories`, {
+            method: 'GET'
         });
-    }
 
-    container.innerHTML = events.map(event => `
-        <div class="flex gap-3">
-            <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
-            </div>
-            <div class="flex-1">
-                <p class="text-sm font-medium text-gray-900">${event.user}</p>
-                <p class="text-xs text-gray-600">${event.action}</p>
-                <p class="text-xs text-gray-400 mt-1">${formatTimeAgo(event.time)}</p>
-            </div>
-        </div>
-    `).join('');
+        if (!body.success) {
+            container.innerHTML = '<p class="text-sm text-gray-400">변경 이력을 불러올 수 없습니다.</p>';
+            return;
+        }
+
+        const histories = body.data;
+
+        // 이슈 생성 이벤트 추가
+        const events = [
+            {
+                time: issue.createdAt,
+                user: 'System',
+                action: '이슈 생성됨',
+                icon: 'plus'
+            }
+        ];
+
+        // 변경 이력을 이벤트로 변환
+        histories.forEach(history => {
+            const member = projectMembers.find(m => m.memberId === history.modifierId);
+            const userName = member ? member.nickname : '알 수 없음';
+
+            let action = '';
+            let icon = 'edit';
+
+            switch (history.fieldName) {
+                case 'STATUS':
+                    action = `상태를 "${history.beforeValue || '없음'}"에서 "${history.afterValue}"(으)로 변경`;
+                    icon = 'status';
+                    break;
+                case 'ASSIGNEE':
+                    const beforeMember = projectMembers.find(m => m.memberId === history.beforeValue);
+                    const afterMember = projectMembers.find(m => m.memberId === history.afterValue);
+                    const beforeName = beforeMember ? beforeMember.nickname : '미할당';
+                    const afterName = afterMember ? afterMember.nickname : '미할당';
+                    action = `담당자를 "${beforeName}"에서 "${afterName}"(으)로 변경`;
+                    icon = 'user';
+                    break;
+                case 'PRIORITY':
+                    action = `우선순위를 "${history.beforeValue || '없음'}"에서 "${history.afterValue}"(으)로 변경`;
+                    icon = 'priority';
+                    break;
+                default:
+                    action = `${history.fieldName}을(를) 변경`;
+                    icon = 'edit';
+            }
+
+            events.push({
+                time: history.createdAt,
+                user: userName,
+                action: action,
+                icon: icon
+            });
+        });
+
+        // 최신 순 정렬
+        events.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+        // 렌더링
+        if (events.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-400">변경 이력이 없습니다.</p>';
+            return;
+        }
+
+        container.innerHTML = events.map(event => {
+            const iconSvg = getTimelineIcon(event.icon);
+            return `
+                <div class="flex gap-3 mb-4">
+                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                        ${iconSvg}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">${event.user}</p>
+                        <p class="text-xs text-gray-600">${event.action}</p>
+                        <p class="text-xs text-gray-400 mt-1">${formatTimeAgo(event.time)}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-red-500">변경 이력 로드 중 오류 발생: ${err.message}</p>`;
+    }
+}
+
+function getTimelineIcon(iconType) {
+    const icons = {
+        plus: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>',
+        status: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        user: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>',
+        priority: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/></svg>',
+        edit: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
+    };
+    return icons[iconType] || icons.edit;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
