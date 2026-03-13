@@ -4,5 +4,3 @@
 
 ALTER TABLE project_api_key
     ADD COLUMN key_type VARCHAR(20) NOT NULL DEFAULT 'INGEST';
-
-CREATE INDEX idx_project_api_key_type ON project_api_key (key_type);
