@@ -70,7 +70,7 @@ public class InvitationService {
                         project, request.targetEmail(), InvitationStatus.PENDING)
                 .forEach(Invitation::revoke);
 
-        String rawToken = HmacApiKeyUtil.generatePlainKey();
+        String rawToken = HmacApiKeyUtil.generatePlainKey("inv_");
         String tokenHash = HmacApiKeyUtil.computeHmac(rawToken, hmacSecret);
 
         LocalDateTime now = LocalDateTime.now();
