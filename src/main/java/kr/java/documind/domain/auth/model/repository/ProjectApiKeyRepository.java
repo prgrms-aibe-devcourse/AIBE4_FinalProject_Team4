@@ -17,7 +17,11 @@ public interface ProjectApiKeyRepository extends JpaRepository<ProjectApiKey, Lo
 
     List<ProjectApiKey> findAllByProjectAndApiKeyStatusNot(Project project, ApiKeyStatus status);
 
-    Optional<ProjectApiKey> findByApiKeyHashAndKeyType(String apiKeyHash, ApiKeyType keyType);
+    @Query(
+            "SELECT pak FROM ProjectApiKey pak JOIN FETCH pak.project "
+                    + "WHERE pak.apiKeyHash = :apiKeyHash AND pak.keyType = :keyType")
+    Optional<ProjectApiKey> findByApiKeyHashAndKeyTypeWithProject(
+            @Param("apiKeyHash") String apiKeyHash, @Param("keyType") ApiKeyType keyType);
 
     // 프로젝트의 특정 키(INGEST, QUERY)를 폐기 상태로 변경
     @Modifying(clearAutomatically = true)

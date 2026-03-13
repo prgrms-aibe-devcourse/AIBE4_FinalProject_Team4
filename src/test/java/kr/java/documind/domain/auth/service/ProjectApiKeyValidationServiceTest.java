@@ -56,7 +56,8 @@ class ProjectApiKeyValidationServiceTest {
                         testProject, hashedApiKey, extractedPrefix, last4, ApiKeyType.INGEST);
 
         // 해시 및 타입(INGEST)으로 검색 시 Mocking
-        when(projectApiKeyRepository.findByApiKeyHashAndKeyType(hashedApiKey, ApiKeyType.INGEST))
+        when(projectApiKeyRepository.findByApiKeyHashAndKeyTypeWithProject(
+                        hashedApiKey, ApiKeyType.INGEST))
                 .thenReturn(Optional.of(apiKey));
 
         // When: 생성된 수집용 API Key와 INGEST 타입으로 검증 시도
@@ -89,7 +90,8 @@ class ProjectApiKeyValidationServiceTest {
         String hashedApiKey = HmacApiKeyUtil.computeHmac(rawApiKey, hmacSecret);
 
         // DB에 해당 해시와 타입 조합이 없을 때
-        when(projectApiKeyRepository.findByApiKeyHashAndKeyType(hashedApiKey, ApiKeyType.QUERY))
+        when(projectApiKeyRepository.findByApiKeyHashAndKeyTypeWithProject(
+                        hashedApiKey, ApiKeyType.QUERY))
                 .thenReturn(Optional.empty());
 
         // When
@@ -109,7 +111,7 @@ class ProjectApiKeyValidationServiceTest {
         String tamperedHashedApiKey = HmacApiKeyUtil.computeHmac(tamperedRawApiKey, hmacSecret);
 
         // 변조된 해시값은 DB에 없음
-        when(projectApiKeyRepository.findByApiKeyHashAndKeyType(
+        when(projectApiKeyRepository.findByApiKeyHashAndKeyTypeWithProject(
                         tamperedHashedApiKey, ApiKeyType.INGEST))
                 .thenReturn(Optional.empty());
 
@@ -135,7 +137,8 @@ class ProjectApiKeyValidationServiceTest {
                         testProject, hashedApiKey, extractedPrefix, last4, ApiKeyType.INGEST);
         apiKey.suspend(); // 상태 변경
 
-        when(projectApiKeyRepository.findByApiKeyHashAndKeyType(hashedApiKey, ApiKeyType.INGEST))
+        when(projectApiKeyRepository.findByApiKeyHashAndKeyTypeWithProject(
+                        hashedApiKey, ApiKeyType.INGEST))
                 .thenReturn(Optional.of(apiKey));
 
         // When
@@ -160,7 +163,8 @@ class ProjectApiKeyValidationServiceTest {
                         testProject, hashedApiKey, extractedPrefix, last4, ApiKeyType.QUERY);
         apiKey.revoke(); // 상태 변경
 
-        when(projectApiKeyRepository.findByApiKeyHashAndKeyType(hashedApiKey, ApiKeyType.QUERY))
+        when(projectApiKeyRepository.findByApiKeyHashAndKeyTypeWithProject(
+                        hashedApiKey, ApiKeyType.QUERY))
                 .thenReturn(Optional.of(apiKey));
 
         // When
@@ -179,7 +183,8 @@ class ProjectApiKeyValidationServiceTest {
         String hashedApiKey = HmacApiKeyUtil.computeHmac(queryRawApiKey, hmacSecret);
 
         // INGEST를 요구하지만 DB에는 해당 해시의 INGEST 키가 존재하지 않으므로 empty 반환 (1차 방어)
-        when(projectApiKeyRepository.findByApiKeyHashAndKeyType(hashedApiKey, ApiKeyType.INGEST))
+        when(projectApiKeyRepository.findByApiKeyHashAndKeyTypeWithProject(
+                        hashedApiKey, ApiKeyType.INGEST))
                 .thenReturn(Optional.empty());
 
         // When: 수집(INGEST) 권한이 필요한 엔드포인트에서 조회용 키를 사용
@@ -205,7 +210,8 @@ class ProjectApiKeyValidationServiceTest {
                         testProject, hashedApiKey, extractedPrefix, last4, ApiKeyType.QUERY);
 
         // Mocking: INGEST로 찾았는데 QUERY 엔티티가 반환됨 (비정상 상황)
-        when(projectApiKeyRepository.findByApiKeyHashAndKeyType(hashedApiKey, ApiKeyType.INGEST))
+        when(projectApiKeyRepository.findByApiKeyHashAndKeyTypeWithProject(
+                        hashedApiKey, ApiKeyType.INGEST))
                 .thenReturn(Optional.of(queryApiKey));
 
         // When
@@ -231,7 +237,8 @@ class ProjectApiKeyValidationServiceTest {
         // 해당 테스트에 한해 프로젝트가 비활성화(삭제)된 상태라고 가정하여 Mocking 덮어쓰기
         when(testProject.isActive()).thenReturn(false);
 
-        when(projectApiKeyRepository.findByApiKeyHashAndKeyType(hashedApiKey, ApiKeyType.INGEST))
+        when(projectApiKeyRepository.findByApiKeyHashAndKeyTypeWithProject(
+                        hashedApiKey, ApiKeyType.INGEST))
                 .thenReturn(Optional.of(apiKey));
 
         // When

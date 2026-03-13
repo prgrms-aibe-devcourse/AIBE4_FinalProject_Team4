@@ -46,7 +46,8 @@ public class ProjectApiKeyValidationService {
 
         // 해시값과 함께 키 타입으로 조회
         Optional<ProjectApiKey> apiKeyOptional =
-                projectApiKeyRepository.findByApiKeyHashAndKeyType(requestHashedKey, requiredType);
+                projectApiKeyRepository.findByApiKeyHashAndKeyTypeWithProject(
+                        requestHashedKey, requiredType);
 
         if (apiKeyOptional.isEmpty()) {
             // 타입이 맞지 않거나, 키 자체가 존재하지 않는 경우
