@@ -5,49 +5,42 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description"
+          th:content="${pageDescription ?: 'Documind는 프로젝트 문서, 이슈, 패치노트, 알림을 통합 관리하는 협업 플랫폼입니다.'}"/>
+    <meta name="theme-color" content="#4A9EE8"/>
 
-    <!--
-      타이틀 패턴: "페이지명 | Documind"
-      하위 페이지에서 <title>페이지명</title> 선언 시 Layout Dialect 가 자동 합성
-    -->
-    <title layout:title-pattern="$CONTENT_TITLE | $LAYOUT_TITLE">Documind</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png"/>
+    <link rel="apple-touch-icon" href="/images/favicon.png"/>
 
-    <!-- 공통 Head: Tailwind CDN, Pretendard, FetchUtil 등 -->
-    <th:block th:replace="~{common/fragments/head_new :: head(${pageTitle ?: 'Documind'})}"></th:block>
+    <title th:text="${pageTitle != null ? pageTitle + ' | Documind' : 'Documind'}">Documind</title>
 
-    <!-- 페이지/레이아웃별 추가 <head> 리소스 (CSS, 폰트, 외부 라이브러리) -->
+    <!-- 공통 Head 리소스 -->
+    <th:block th:replace="~{common/fragments/head :: head-resources}"></th:block>
+
+    <!-- 페이지/레이아웃별 추가 <head> 리소스 -->
     <th:block layout:fragment="head-extra"></th:block>
 </head>
 
-<!--
-  전체 페이지 기본 스타일:
-    bg-surface-base : #F9FAFB  (config: surface.base)
-    font-sans       : Pretendard → Inter → system (config: fontFamily.sans)
--->
 <body class="bg-surface-base text-docu-ink min-h-screen font-sans antialiased">
 
-<!--
-  상단 슬라이드 토스트 (z-[60])
-  · Flash Attribute ${topToast} 또는 URL ?toast_message=... 자동 감지
-  · 4초 후 자동 슬라이드 업
--->
+<a href="#main-content"
+   class="sr-only-focusable fixed top-3 left-3 z-[300] px-4 py-2 bg-docu-primary text-white rounded-docu-btn shadow-docu-sm
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-offset-2">
+    본문으로 건너뛰기
+</a>
+
+<!-- 상단 슬라이드 토스트 -->
 <div th:replace="~{common/fragments/top-toast :: top-toast}"></div>
 
-<!--
-  ─────────────────────────────────────────────────────────────
-  핵심 바디 슬롯
-  · service-layout / mypage-layout 이 이 블록을 채움
-  · 도메인 페이지는 해당 레이아웃의 layout:fragment="content" 사용
-  ─────────────────────────────────────────────────────────────
--->
+<!-- 핵심 바디 슬롯 -->
 <th:block layout:fragment="body">
     <!-- fallback -->
 </th:block>
 
-<!-- 실시간 알림 토스트 (우하단 알림 스택) -->
+<!-- 실시간 알림 토스트 -->
 <div th:replace="~{common/fragments/alarm-toast :: alarm-toast}"></div>
 
-<!-- 페이지별 추가 스크립트 삽입 지점 (<body> 최하단) -->
+<!-- 페이지별 추가 스크립트 -->
 <th:block layout:fragment="scripts"></th:block>
 
 </body>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<footer th:fragment="app-footer"
+        class="shrink-0 py-4 px-content-p border-t border-divider">
+    <p class="text-xs text-gray-400 text-center">
+        © 2026 Documind Inc. All rights reserved.
+    </p>
+</footer>
+
+<th:block th:fragment="layout-overlays">
+    <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
+    <script src="/js/member/Auth.js"></script>
+</th:block>
+
+</body>
+</html>

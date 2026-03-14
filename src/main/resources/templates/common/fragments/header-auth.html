@@ -3,63 +3,87 @@
 <body>
 
 <header th:fragment="header-auth"
-        class="fixed top-0 left-0 right-0 z-50 h-14 bg-white border-b border-gray-200
-               flex items-center justify-between px-6">
-
-    <a href="/member/dashboard" class="flex items-center gap-2.5 shrink-0 select-none">
-        <img src="/images/logo.png" alt="DOCUMIND" class="h-8 w-auto object-contain">
+        class="fixed top-0 left-0 right-0 z-50 h-header bg-surface-card border-b border-divider
+               flex items-center justify-between px-4 sm:px-6"
+        role="banner">
+    <a href="/member/dashboard"
+       class="flex items-center gap-2.5 shrink-0 select-none
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-offset-2 rounded-docu-btn"
+       aria-label="Documind 대시보드로 이동">
+        <img src="/images/logo.png" alt="Documind 로고" class="h-8 w-auto object-contain">
     </a>
 
     <div th:replace="~{::user-info-area}"></div>
 </header>
 
 <div th:fragment="user-bar"
-     class="h-14 bg-white border-b border-gray-200 flex items-center justify-end px-6 shrink-0">
+     th:with="hasLogo=${showLogoInBar != null and showLogoInBar}"
+     th:classappend="${hasLogo} ? 'justify-between' : 'justify-end'"
+     class="h-header bg-surface-card border-b border-divider
+            flex items-center px-4 sm:px-6 shrink-0"
+     role="region"
+     aria-label="사용자 정보 바">
+    <a th:if="${hasLogo}"
+       href="/member/dashboard"
+       class="flex items-center gap-2.5 shrink-0 select-none
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-offset-2 rounded-docu-btn"
+       aria-label="Documind 대시보드로 이동">
+        <img src="/images/logo.png" alt="Documind 로고" class="h-8 w-auto object-contain">
+    </a>
     <div th:replace="~{::user-info-area}"></div>
 </div>
 
-<div th:fragment="user-info-area" class="flex items-center gap-4">
+<div th:fragment="user-info-area" class="flex items-center gap-2 sm:gap-4">
 
-    <!-- 무료 플랜 뱃지 (ADMIN 제외) -->
-    <span th:unless="${headerInfo != null
-                        and headerInfo.globalRole() != null
-                        and headerInfo.globalRole().name() == 'ADMIN'}"
-          class="hidden sm:inline-flex items-center px-3 py-1 rounded-full
-                 text-xs font-medium bg-gray-100 text-gray-500">
+    <span th:if="${userViewContext.headerInfo != null and userViewContext.headerInfo.showFreePlanBadge()}"
+          class="hidden md:inline-flex items-center px-3 py-1 rounded-docu-btn
+                 text-xs font-bold uppercase tracking-wide
+                 bg-docu-warning-light text-docu-warning-dark"
+          aria-label="현재 무료 플랜 사용 중">
         무료 플랜
     </span>
 
-    <!-- 이름 + 역할 레이블 (두 줄) -->
-    <div class="hidden sm:flex flex-col items-end leading-none gap-0.5">
-        <span th:text="${headerInfo?.name() ?: '사용자'}"
-              class="text-sm font-semibold text-gray-900">사용자</span>
-        <span class="text-xs text-gray-400">
-            <th:block th:if="${headerInfo != null and headerInfo.globalRole() != null}">
-                <th:block th:if="${headerInfo.globalRole().name() == 'CEO'}">대표</th:block>
-                <th:block th:if="${headerInfo.globalRole().name() == 'ADMIN'}">운영자</th:block>
-                <th:block th:if="${headerInfo.globalRole().name() == 'EMPLOYEE'}">직원</th:block>
-            </th:block>
+    <div class="hidden sm:flex flex-col items-end leading-none gap-1">
+        <span th:text="${userViewContext.headerInfo?.name() ?: '사용자'}"
+              class="text-sm font-bold text-docu-ink">사용자</span>
+        <span th:text="${userViewContext.headerInfo?.roleLabel() ?: '사용자'}"
+              class="text-xs font-bold uppercase tracking-wide text-docu-secondary"
+              aria-label="현재 사용자 역할">
+            사용자
         </span>
     </div>
 
-    <!-- 프로필 이미지 (클릭 → /my/profile) -->
-    <a href="/my/profile" class="shrink-0 hover:opacity-90 transition-opacity">
-        <img th:if="${headerInfo?.profileImageUrl() != null}"
-             th:src="${headerInfo.profileImageUrl()}" alt="프로필"
-             class="w-9 h-9 rounded-full object-cover ring-2 ring-gray-200"/>
-        <div th:unless="${headerInfo?.profileImageUrl() != null}"
-             class="w-9 h-9 rounded-full bg-amber-400 flex items-center justify-center">
-            <span th:text="${headerInfo?.nickname() != null
-                             ? #strings.substring(headerInfo.nickname(),0,1) : 'U'}"
+    <a href="/my/profile"
+       class="shrink-0 rounded-docu-btn transition-transform
+              active:translate-x-[2px] active:translate-y-[2px]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-offset-2"
+       th:aria-label="${userViewContext.headerInfo?.name() != null ? userViewContext.headerInfo.name() + ' 프로필 페이지로 이동' : '프로필 페이지로 이동'}"
+       title="프로필">
+        <img th:if="${userViewContext.headerInfo?.profileImageUrl() != null}"
+             th:src="${userViewContext.headerInfo.profileImageUrl()}"
+             th:alt="${userViewContext.headerInfo?.name() != null ? userViewContext.headerInfo.name() + ' 프로필 이미지' : '프로필 이미지'}"
+             class="w-9 h-9 object-cover border-2 border-divider shadow-docu-sm bg-surface-base rounded-full"/>
+        <div th:unless="${userViewContext.headerInfo?.profileImageUrl() != null}"
+             class="w-9 h-9 bg-docu-primary border-2 border-divider shadow-docu-sm flex items-center justify-center rounded-full"
+             th:aria-label="${userViewContext.headerInfo?.name() != null ? userViewContext.headerInfo.name() + ' 프로필 이미지 없음' : '기본 프로필 이미지'}">
+            <span th:text="${userViewContext.headerInfo?.profileFallbackLetter() ?: 'U'}"
                   class="text-white text-sm font-bold">U</span>
         </div>
     </a>
 
-    <!-- 로그아웃 버튼 -->
-    <button id="logout-btn"
-            class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+    <button type="button"
+            data-logout-open
+            aria-haspopup="dialog"
+            aria-controls="logout-modal"
+            aria-label="로그아웃"
+            class="inline-flex items-center gap-1.5 px-3 py-2
+                   border-2 border-docu-ink bg-surface-base text-sm font-bold text-docu-ink
+                   shadow-docu-sm transition-transform
+                   hover:bg-white
+                   active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-offset-2 rounded-docu-btn">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2"
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6
                      a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
         </svg>
@@ -67,38 +91,54 @@
     </button>
 </div>
 
-<div th:fragment="logout-modal"
-     id="logout-modal"
-     class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
-    <div class="bg-white rounded-2xl shadow-2xl w-80 p-8 flex flex-col items-center gap-5">
+<!-- ── 로그아웃 확인 모달 ── -->
+<th:block th:fragment="logout-modal">
+    <div id="logout-modal"
+         class="hidden fixed inset-0 z-[200] flex items-center justify-center"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="logout-modal-title">
 
-        <div class="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center">
-            <svg class="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6
-                         a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
-        </div>
+        <!-- 배경 오버레이 -->
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
 
-        <div class="text-center">
-            <p class="text-base font-bold text-gray-900 mb-1">로그아웃</p>
-            <p class="text-sm text-gray-500">로그아웃하시겠습니까?</p>
-        </div>
+        <!-- 다이얼로그 -->
+        <div class="relative z-10 w-full max-w-sm mx-4 bg-surface-card rounded-docu-card
+                    shadow-docu-card border border-divider p-6">
 
-        <div class="flex gap-3 w-full">
-            <button id="logout-cancel"
-                    class="flex-1 py-2.5 rounded-xl border border-gray-200
-                           text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-                취소
-            </button>
-            <button id="logout-confirm"
-                    class="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600
-                           text-sm font-semibold text-white transition-colors">
-                로그아웃
-            </button>
+            <!-- 아이콘 + 메시지 -->
+            <div class="flex flex-col items-center text-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-docu-card bg-docu-warning-light flex items-center justify-center">
+                    <svg class="w-6 h-6 text-docu-warning-dark" fill="none" stroke="currentColor"
+                         viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6
+                                 a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 id="logout-modal-title" class="text-base font-bold text-docu-ink mb-1">로그아웃</h2>
+                    <p class="text-sm text-docu-secondary">정말 로그아웃하시겠습니까?</p>
+                </div>
+            </div>
+
+            <!-- 버튼 -->
+            <div class="flex gap-2">
+                <button id="logout-cancel"
+                        type="button"
+                        class="flex-1 btn-secondary">
+                    취소
+                </button>
+                <button id="logout-confirm"
+                        type="button"
+                        class="flex-1 btn-primary">
+                    로그아웃
+                </button>
+            </div>
+
         </div>
     </div>
-</div>
+</th:block>
 
 </body>
 </html>

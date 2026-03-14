@@ -1,51 +1,53 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ko">
-<head th:replace="~{common/fragments/head :: head('초대 오류')}"></head>
-<body class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/base-layout}">
+<head>
+    <title>초대 오류</title>
+</head>
+<body>
+<div layout:fragment="body" class="min-h-screen bg-surface-base px-4 py-10 sm:px-6">
+    <div class="mx-auto flex min-h-[calc(100vh-5rem)] max-w-lg items-center justify-center">
+        <section class="card-modal w-full p-7 sm:p-8 text-center">
+            <div class="mb-6">
+                <img src="/images/logo.png" alt="DOCUMIND" class="mx-auto h-12 w-auto object-contain">
+            </div>
 
-  <div class="w-full max-w-md bg-white rounded-2xl shadow-md overflow-hidden">
+            <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-docu-danger bg-docu-danger-light text-docu-danger"
+                 aria-hidden="true">
+                <span class="text-3xl">🔗</span>
+            </div>
 
-    <!-- Header -->
-    <div class="bg-gray-900 px-8 py-6 text-center">
-      <span class="text-white text-xl font-bold tracking-tight">📄 DocuMind</span>
+            <div class="space-y-3">
+                <span class="badge-status-firing">초대 오류</span>
+                <h1 class="text-h1 text-docu-danger">초대 링크를 사용할 수 없습니다</h1>
+            </div>
+
+            <p class="mt-4 text-sm leading-6 text-docu-secondary" th:text="${errorMessage}">
+                초대 링크가 만료되었거나 유효하지 않습니다.<br>
+                운영자에게 재초대를 요청해 주세요.
+            </p>
+
+            <div class="mt-6 flex flex-col gap-3">
+                <a href="/member/dashboard" class="btn-primary w-full">
+                    대시보드로 이동
+                </a>
+                <button type="button" onclick="handleLogout()" class="btn-secondary w-full">
+                    다른 계정으로 로그인
+                </button>
+            </div>
+        </section>
     </div>
 
-    <!-- Body -->
-    <div class="px-8 py-8 text-center">
-
-      <div class="text-5xl mb-4">🔗</div>
-      <h1 class="text-xl font-bold text-gray-900 mb-3">초대 링크를 사용할 수 없습니다</h1>
-
-      <p class="text-sm text-gray-600 leading-relaxed mb-6"
-         th:text="${errorMessage}">
-        초대 링크가 만료되었거나 유효하지 않습니다. 운영자에게 재초대를 요청해 주세요.
-      </p>
-
-      <div class="space-y-2">
-        <a href="/member/dashboard"
-           class="block py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold
-                  rounded-xl transition-colors text-sm">
-          대시보드로 이동
-        </a>
-          <button type="button"
-                  onclick="handleLogout()"
-                  class="block w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors text-sm">
-              다른 계정으로 로그인
-          </button>
-      </div>
-
-    </div>
-  </div>
-  <script>
-      async function handleLogout() {
-          try {
-              await callApi('/api/auth/logout', {
-                  method: 'POST'
-              });
-          } finally {
-              window.location.href = '/auth/login';
-          }
-      }
-  </script>
+    <script>
+        async function handleLogout() {
+            try {
+                await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+            } catch (e) { /* ignore — redirect anyway */ }
+            window.location.href = '/auth/login';
+        }
+    </script>
+</div>
 </body>
 </html>

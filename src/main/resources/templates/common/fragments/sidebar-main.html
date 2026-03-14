@@ -2,221 +2,315 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<aside th:fragment="sidebar(activeMenu, activeProject)"
-       class="fixed top-0 left-0 h-full w-[240px] bg-surface-sidebar border-r border-divider
-              z-40 flex flex-col overflow-hidden">
+<th:block th:fragment="sidebar(activeMenu, activeProject)">
 
-    <!-- 로고 -->
-    <div class="h-16 flex items-center px-4 bg-surface-sidebar shrink-0">
-        <a href="/member/dashboard" class="flex items-center gap-2 select-none">
-            <img src="/images/logo.png" alt="DOCUMIND" class="h-8 w-auto object-contain">
-        </a>
-    </div>
+    <!-- Desktop Sidebar -->
+    <aside class="hidden lg:flex fixed top-0 left-0 h-full w-sidebar bg-surface-sidebar border-r border-divider
+                  z-40 flex-col overflow-hidden"
+           aria-label="주요 서비스 사이드바">
 
-    <!-- 소속 회사 정보 -->
-    <div th:if="${headerInfo != null and headerInfo.globalRole() != null
-                  and headerInfo.globalRole().name() != 'ADMIN'}"
-         class="px-4 py-3 shrink-0">
+        <!-- 로고 -->
+        <div class="h-header flex items-center px-4 bg-surface-sidebar shrink-0">
+            <a href="/member/dashboard"
+               class="flex items-center gap-2 select-none rounded-docu-btn focus-ring"
+               aria-label="Documind 대시보드로 이동">
+                <img src="/images/logo.png" alt="Documind 로고" class="h-8 w-auto object-contain">
+            </a>
+        </div>
 
-        <div th:if="${headerInfo.companyName() != null}"
-             class="flex items-center gap-3">
-            <div th:if="${headerInfo.companyProfileUrl() != null}"
-                 class="w-9 h-9 rounded-full overflow-hidden shrink-0">
-                <img th:src="${headerInfo.companyProfileUrl()}"
-                     alt="회사 프로필"
-                     class="w-full h-full object-cover"/>
+        <!-- 소속 회사 정보 -->
+        <div th:if="${headerInfo != null and headerInfo.globalRole() != null
+                      and headerInfo.globalRole().name() != 'ADMIN'}"
+             class="px-4 py-3 border-b border-divider shrink-0">
+
+            <div th:if="${headerInfo.companyName() != null}" class="flex items-center gap-3">
+                <div th:if="${headerInfo.companyProfileUrl() != null}"
+                     class="w-9 h-9 rounded-full overflow-hidden shrink-0">
+                    <img th:src="${headerInfo.companyProfileUrl()}"
+                         th:alt="${headerInfo.companyName() + ' 회사 프로필 이미지'}"
+                         class="w-full h-full object-cover"/>
+                </div>
+
+                <div th:unless="${headerInfo.companyProfileUrl() != null}"
+                     class="w-9 h-9 rounded-full bg-docu-primary flex items-center justify-center shrink-0"
+                     th:aria-label="${headerInfo.companyName() + ' 회사 기본 이미지'}">
+                    <span th:text="${#strings.substring(headerInfo.companyName(), 0, 1)}"
+                          class="text-white text-sm font-bold"></span>
+                </div>
+
+                <div class="flex flex-col min-w-0">
+                    <span th:text="${headerInfo.companyName()}"
+                          class="text-sm font-semibold text-docu-ink truncate"></span>
+                    <span class="text-xs text-docu-secondary">내 회사</span>
+                </div>
             </div>
 
-            <div th:unless="${headerInfo.companyProfileUrl() != null}"
-                 class="w-9 h-9 rounded-full bg-docu-primary flex items-center justify-center shrink-0">
-                <span th:text="${#strings.substring(headerInfo.companyName(),0,1)}"
-                      class="text-white text-sm font-bold"></span>
-            </div>
-
-            <div class="flex flex-col min-w-0">
-                <span th:text="${headerInfo.companyName()}"
-                      class="text-sm font-semibold text-docu-ink truncate"></span>
-                <span class="text-xs text-docu-secondary">내 회사</span>
+            <div th:unless="${headerInfo.companyName() != null}" class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-surface-point flex items-center justify-center shrink-0 border border-divider"
+                     aria-hidden="true">
+                    <svg class="w-4 h-4 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
+                                 m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/>
+                    </svg>
+                </div>
+                <span class="text-sm text-docu-secondary">소속 없음</span>
             </div>
         </div>
 
-        <div th:unless="${headerInfo.companyName() != null}"
-             class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-surface-base flex items-center justify-center shrink-0 border border-divider">
-                <svg class="w-4 h-4 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
-                             m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/>
+        <!-- 프로젝트 셀렉터 -->
+        <div class="px-3 py-3 border-b border-divider shrink-0">
+            <div class="relative">
+                <button id="project-selector-btn"
+                        type="button"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-controls="project-dropdown"
+                        class="w-full flex items-center justify-between gap-2
+                               px-3 py-2.5 rounded-docu-btn border border-divider
+                               bg-surface-card hover:bg-white transition-colors text-left shadow-docu-sm focus-ring">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-docu-btn bg-docu-primary-light flex items-center justify-center
+                                    overflow-hidden shrink-0 border border-divider">
+                            <img th:if="${currentProjectSummary != null and currentProjectSummary.profileUrl() != null}"
+                                 th:src="${currentProjectSummary.profileUrl()}"
+                                 alt="프로젝트 로고"
+                                 class="w-full h-full object-cover"/>
+                            <svg th:unless="${currentProjectSummary != null and currentProjectSummary.profileUrl() != null}"
+                                 class="w-4 h-4 text-docu-primary" fill="none" stroke="currentColor"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0
+                                         01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2
+                                         a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0
+                                         01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2
+                                         a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-docu-ink truncate"
+                              th:text="${currentProjectName ?: '프로젝트 선택'}">프로젝트 선택</span>
+                    </div>
+                    <svg id="project-selector-chevron"
+                         class="w-4 h-4 text-docu-secondary shrink-0 transition-transform duration-200"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <div id="project-dropdown"
+                     role="listbox"
+                     aria-label="프로젝트 목록"
+                     class="hidden absolute top-full left-0 right-0 mt-1 bg-white
+                            border border-divider rounded-docu-btn shadow-docu-card z-50 overflow-hidden
+                            max-h-56 overflow-y-auto docu-scroll">
+                    <div th:if="${projectList != null and not #lists.isEmpty(projectList)}">
+                        <a th:each="proj : ${projectList}"
+                           th:href="@{/projects/{id}/groups(id=${proj.publicId()})}"
+                           th:attr="role='option',
+                                    aria-selected=${proj.publicId() == activeProject},
+                                    tabindex='0'"
+                           th:classappend="${proj.publicId() == activeProject}
+                                           ? 'bg-docu-primary text-white'
+                                           : 'text-docu-ink hover:bg-surface-base'"
+                           class="flex items-center gap-3 px-3 py-2.5 text-sm transition-colors focus-ring-inset">
+                            <div class="w-7 h-7 rounded-docu-btn bg-docu-primary-light flex items-center
+                                        justify-center overflow-hidden shrink-0">
+                                <img th:if="${proj.profileUrl() != null}"
+                                     th:src="${proj.profileUrl()}" alt=""
+                                     class="w-full h-full object-cover"/>
+                                <svg th:unless="${proj.profileUrl() != null}"
+                                     class="w-3.5 h-3.5 text-docu-primary" fill="none"
+                                     stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="1.5"
+                                          d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
+                                             a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2
+                                             a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"/>
+                                </svg>
+                            </div>
+                            <span th:text="${proj.name()}" class="truncate"></span>
+                            <svg th:if="${proj.publicId() == activeProject}"
+                                 class="w-4 h-4 ml-auto shrink-0"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div th:if="${projectList == null or #lists.isEmpty(projectList)}"
+                         class="px-3 py-4 text-center text-sm text-docu-secondary">
+                        참여 중인 프로젝트가 없습니다
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 내비게이션 -->
+        <nav class="flex-1 flex flex-col gap-1 p-3 overflow-y-auto docu-scroll" aria-label="서비스 메뉴">
+
+            <!-- 문서 -->
+            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/groups' : '#'}"
+               th:classappend="${activeMenu == 'documents'} ? 'sidebar-link-active' : (${activeProject == null} ? 'text-gray-300 pointer-events-none cursor-not-allowed' : 'sidebar-link-idle')"
+               class="sidebar-link"
+               th:attr="aria-current=${activeMenu == 'documents' ? 'page' : null},
+                        aria-disabled=${activeProject == null ? 'true' : null}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
+                             a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-            </div>
-            <span class="text-sm text-docu-secondary">소속 없음</span>
-        </div>
-    </div>
+                문서
+            </a>
 
-    <!-- 프로젝트 셀렉터 -->
-    <div class="px-3 py-3 shrink-0">
-        <div class="relative">
-            <button id="project-selector-btn"
-                    class="w-full flex items-center justify-between gap-2
-                           px-3 py-2.5 rounded-docu-btn border border-divider
-                           bg-surface-card hover:bg-white transition-colors text-left shadow-docu-sm">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <span id="project-color-dot"
-                          class="w-2.5 h-2.5 rounded-full shrink-0 bg-docu-primary"></span>
-                    <span id="project-name-label"
-                          th:text="${currentProjectName ?: '프로젝트 선택'}"
-                          class="text-sm font-medium text-docu-ink truncate">프로젝트 선택</span>
-                </div>
-                <svg class="w-4 h-4 text-docu-secondary shrink-0 transition-transform duration-200"
-                     id="project-selector-chevron"
-                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M19 9l-7 7-7-7"/>
+            <!-- 챗봇 -->
+            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/chatbot' : '#'}"
+               th:classappend="${activeMenu == 'chatbot'} ? 'sidebar-link-active' : (${activeProject == null} ? 'text-gray-300 pointer-events-none cursor-not-allowed' : 'sidebar-link-idle')"
+               class="sidebar-link"
+               th:attr="aria-current=${activeMenu == 'chatbot' ? 'page' : null},
+                        aria-disabled=${activeProject == null ? 'true' : null}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14
+                             a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                 </svg>
-            </button>
+                챗봇
+            </a>
 
-            <div id="project-dropdown"
-                 class="hidden absolute top-full left-0 right-0 mt-1 bg-white
-                        border border-divider rounded-docu-btn shadow-docu-card z-50 overflow-hidden
-                        max-h-56 overflow-y-auto">
+            <!-- 대시보드 (항상 활성화) -->
+            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/dashboard' : '/member/dashboard'}"
+               th:classappend="${activeMenu == 'dashboard'} ? 'sidebar-link-active' : 'sidebar-link-idle'"
+               class="sidebar-link"
+               th:attr="aria-current=${activeMenu == 'dashboard' ? 'page' : null}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z
+                             M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z
+                             M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z
+                             M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+                대시보드
+            </a>
 
-                <div th:if="${projectList != null and not #lists.isEmpty(projectList)}">
-                    <a th:each="proj : ${projectList}"
-                       th:href="@{/projects/{id}/dashboard(id=${proj.publicId()})}"
-                       th:classappend="${proj.publicId() == activeProject} ?
-                                       'bg-docu-primary text-white' :
-                                       'text-docu-ink hover:bg-surface-base'"
-                       class="flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors">
-                        <span th:classappend="${proj.publicId() == activeProject} ? 'bg-white opacity-80' : 'bg-docu-primary'"
-                              class="w-2.5 h-2.5 rounded-full shrink-0"></span>
-                        <span th:text="${proj.name()}" class="truncate"></span>
-                        <svg th:if="${proj.publicId() == activeProject}"
-                             class="w-4 h-4 ml-auto shrink-0"
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M5 13l4 4L19 7"/>
-                        </svg>
-                    </a>
-                </div>
+            <!-- 로그 탐색기 -->
+            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/logs' : '#'}"
+               th:classappend="${activeMenu == 'logs'} ? 'sidebar-link-active' : (${activeProject == null} ? 'text-gray-300 pointer-events-none cursor-not-allowed' : 'sidebar-link-idle')"
+               class="sidebar-link"
+               th:attr="aria-current=${activeMenu == 'logs' ? 'page' : null},
+                        aria-disabled=${activeProject == null ? 'true' : null}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+                             M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2
+                             m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+                로그 탐색기
+            </a>
 
-                <div th:if="${projectList == null or #lists.isEmpty(projectList)}"
-                     class="px-3 py-4 text-center text-sm text-docu-secondary">
-                    참여 중인 프로젝트가 없습니다
-                </div>
+            <!-- 이슈 -->
+            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/issues' : '#'}"
+               th:classappend="${activeMenu == 'issues'} ? 'sidebar-link-active' : (${activeProject == null} ? 'text-gray-300 pointer-events-none cursor-not-allowed' : 'sidebar-link-idle')"
+               class="sidebar-link"
+               th:attr="aria-current=${activeMenu == 'issues' ? 'page' : null},
+                        aria-disabled=${activeProject == null ? 'true' : null}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                이슈
+            </a>
 
-                <div class="border-t border-divider">
-                    <a href="/projects/new"
-                       class="flex items-center gap-2 px-3 py-2.5 text-sm text-docu-primary
-                              hover:bg-surface-base transition-colors font-medium">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M12 4v16m8-8H4"/>
-                        </svg>
-                        새 프로젝트 만들기
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+            <!-- 패치노트 -->
+            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/patch-notes' : '#'}"
+               th:classappend="${activeMenu == 'patch-notes'} ? 'sidebar-link-active' : (${activeProject == null} ? 'text-gray-300 pointer-events-none cursor-not-allowed' : 'sidebar-link-idle')"
+               class="sidebar-link"
+               th:attr="aria-current=${activeMenu == 'patch-notes' ? 'page' : null},
+                        aria-disabled=${activeProject == null ? 'true' : null}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5
+                             m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                패치노트
+            </a>
 
-    <!-- 내비게이션 -->
-    <nav class="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
+            <!-- 알림 -->
+            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/alerts' : '#'}"
+               th:classappend="${activeMenu == 'alerts'} ? 'sidebar-link-active' : (${activeProject == null} ? 'text-gray-300 pointer-events-none cursor-not-allowed' : 'sidebar-link-idle')"
+               class="sidebar-link"
+               th:attr="aria-current=${activeMenu == 'alerts' ? 'page' : null},
+                        aria-disabled=${activeProject == null ? 'true' : null}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5
+                             a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436
+                             L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                알림
+            </a>
 
-        <a th:href="${activeProject != null} ? @{/projects/{id}/documents(id=${activeProject})} : '#'"
-           th:classappend="${activeMenu == 'documents'} ?
-                           'bg-docu-primary text-white shadow-docu-sm' :
-                           'text-docu-secondary hover:bg-surface-base hover:text-docu-ink'"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium transition-colors">
-            <span>문서</span>
-        </a>
-
-        <a th:href="${activeProject != null} ? @{/projects/{id}/chatbot(id=${activeProject})} : '#'"
-           th:classappend="${activeMenu == 'chatbot'} ?
-                           'bg-docu-primary text-white shadow-docu-sm' :
-                           'text-docu-secondary hover:bg-surface-base hover:text-docu-ink'"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium transition-colors">
-            <span>챗봇</span>
-        </a>
-
-        <a th:href="${activeProject != null} ? @{/projects/{id}/dashboard(id=${activeProject})} : '/member/dashboard'"
-           th:classappend="${activeMenu == 'dashboard'} ?
-                           'bg-docu-primary text-white shadow-docu-sm' :
-                           'text-docu-secondary hover:bg-surface-base hover:text-docu-ink'"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium transition-colors">
-            <span>대시보드</span>
-        </a>
-
-        <a th:href="${activeProject != null} ? @{/projects/{id}/logs(id=${activeProject})} : '#'"
-           th:classappend="${activeMenu == 'logs'} ?
-                           'bg-docu-primary text-white shadow-docu-sm' :
-                           'text-docu-secondary hover:bg-surface-base hover:text-docu-ink'"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium transition-colors">
-            <span>로그 탐색기</span>
-        </a>
-
-        <a th:href="${activeProject != null} ? @{/projects/{id}/issues(id=${activeProject})} : '#'"
-           th:classappend="${activeMenu == 'issues'} ?
-                           'bg-docu-primary text-white shadow-docu-sm' :
-                           'text-docu-secondary hover:bg-surface-base hover:text-docu-ink'"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium transition-colors">
-            <span>이슈</span>
-        </a>
-
-        <a th:href="${activeProject != null} ? @{/projects/{id}/patch-notes(id=${activeProject})} : '#'"
-           th:classappend="${activeMenu == 'patch-notes'} ?
-                           'bg-docu-primary text-white shadow-docu-sm' :
-                           'text-docu-secondary hover:bg-surface-base hover:text-docu-ink'"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium transition-colors">
-            <span>패치노트</span>
-        </a>
-
-        <a th:href="${activeProject != null} ? @{/projects/{id}/alerts(id=${activeProject})} : '#'"
-           th:classappend="${activeMenu == 'alerts'} ?
-                           'bg-docu-primary text-white shadow-docu-sm' :
-                           'text-docu-secondary hover:bg-surface-base hover:text-docu-ink'"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium transition-colors">
-            <span>알림</span>
-        </a>
-
-        <a th:href="${activeProject != null} ? @{/projects/{id}/settings(id=${activeProject})} : '#'"
-           th:classappend="${activeMenu == 'settings'} ?
-                           'bg-docu-primary text-white shadow-docu-sm' :
-                           'text-docu-secondary hover:bg-surface-base hover:text-docu-ink'"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium transition-colors">
-            <span>설정</span>
-        </a>
-    </nav>
-
-    <div class="p-3 shrink-0">
-        <a href="/my/profile"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium
-                  text-docu-secondary hover:bg-surface-base hover:text-docu-ink transition-colors">
-            <span>마이페이지</span>
-        </a>
-    </div>
+            <!-- 설정 -->
+            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/settings' : '#'}"
+               th:classappend="${activeMenu == 'settings'} ? 'sidebar-link-active' : (${activeProject == null} ? 'text-gray-300 pointer-events-none cursor-not-allowed' : 'sidebar-link-idle')"
+               class="sidebar-link"
+               th:attr="aria-current=${activeMenu == 'settings' ? 'page' : null},
+                        aria-disabled=${activeProject == null ? 'true' : null}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066
+                             c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35
+                             a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066
+                             c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37
+                             a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573
+                             c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                설정
+            </a>
+        </nav>
+    </aside>
 
     <script>
         (function () {
             const btn = document.getElementById('project-selector-btn');
             const dropdown = document.getElementById('project-dropdown');
             const chevron = document.getElementById('project-selector-chevron');
-            if (!btn || !dropdown) return;
+            if (!btn || !dropdown || !chevron) return;
+
+            function openDropdown() {
+                dropdown.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+                btn.setAttribute('aria-expanded', 'true');
+            }
+
+            function closeDropdown() {
+                dropdown.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+                btn.setAttribute('aria-expanded', 'false');
+            }
 
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
-                const isOpen = !dropdown.classList.contains('hidden');
-                dropdown.classList.toggle('hidden', isOpen);
-                chevron.classList.toggle('rotate-180', !isOpen);
+                const isOpen = btn.getAttribute('aria-expanded') === 'true';
+                if (isOpen) closeDropdown();
+                else openDropdown();
             });
 
-            document.addEventListener('click', function () {
-                dropdown.classList.add('hidden');
-                chevron.classList.remove('rotate-180');
+            document.addEventListener('click', function (e) {
+                if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeDropdown();
             });
         })();
     </script>
 
-</aside>
+</th:block>
 
 </body>
 </html>
