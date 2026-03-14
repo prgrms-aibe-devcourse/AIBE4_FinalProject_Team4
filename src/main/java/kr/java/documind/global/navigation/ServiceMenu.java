@@ -20,5 +20,4 @@ public enum ServiceMenu {
         this.key = key;
         this.label = label;
     }
-
 }

@@ -47,12 +47,7 @@ public class CompanyService {
         List<AdminCompanyCard> approved = buildAdminCards(CompanyStatus.APPROVED);
         List<AdminCompanyCard> suspended = buildAdminCards(CompanyStatus.SUSPENDED);
         return new AdminPageData(
-                pending,
-                approved,
-                suspended,
-                pending.size(),
-                approved.size(),
-                suspended.size());
+                pending, approved, suspended, pending.size(), approved.size(), suspended.size());
     }
 
     @Transactional

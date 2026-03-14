@@ -11,11 +11,11 @@ import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.method.HandlerMethod;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerMapping;
 
 @ControllerAdvice(annotations = Controller.class)
@@ -54,9 +54,10 @@ public class ServiceLayoutModelAdvice {
         }
 
         if (currentMenu != null && !model.containsAttribute("pageTitle")) {
-            String pageTitle = currentProjectName != null
-                ? currentMenu.getLabel() + " - " + currentProjectName
-                : currentMenu.getLabel();
+            String pageTitle =
+                    currentProjectName != null
+                            ? currentMenu.getLabel() + " - " + currentProjectName
+                            : currentMenu.getLabel();
             model.addAttribute("pageTitle", pageTitle);
         }
 
@@ -65,8 +66,7 @@ public class ServiceLayoutModelAdvice {
         }
 
         @SuppressWarnings("unchecked")
-        List<ProjectSummary> projectList =
-            (List<ProjectSummary>) model.asMap().get("projectList");
+        List<ProjectSummary> projectList = (List<ProjectSummary>) model.asMap().get("projectList");
         if (projectList == null) {
             projectList = projectService.getProjectSelectorList(authMember.getMemberId());
             model.addAttribute("projectList", projectList);
@@ -74,12 +74,13 @@ public class ServiceLayoutModelAdvice {
 
         if (!model.containsAttribute("currentProjectSummary")) {
             List<ProjectSummary> list = projectList;
-            ProjectSummary currentProjectSummary = activeProject != null
-                ? list.stream()
-                    .filter(p -> p.publicId().equals(activeProject))
-                    .findFirst()
-                    .orElse(null)
-                : null;
+            ProjectSummary currentProjectSummary =
+                    activeProject != null
+                            ? list.stream()
+                                    .filter(p -> p.publicId().equals(activeProject))
+                                    .findFirst()
+                                    .orElse(null)
+                            : null;
             model.addAttribute("currentProjectSummary", currentProjectSummary);
         }
     }
