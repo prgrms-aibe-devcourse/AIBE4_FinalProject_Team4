@@ -22,6 +22,9 @@ public class HeaderModelAdvice {
             @AuthenticationPrincipal CustomUserDetails authMember,
             HttpServletRequest request,
             Model model) {
+        if (request.getServletPath().startsWith("/api/")) {
+            return;
+        }
         if (authMember == null || model.containsAttribute("userViewContext")) {
             return;
         }

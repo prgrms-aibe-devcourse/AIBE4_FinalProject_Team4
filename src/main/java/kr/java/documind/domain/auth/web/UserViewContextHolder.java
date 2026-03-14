@@ -4,10 +4,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import kr.java.documind.domain.auth.model.dto.UserViewContext;
 
-public final class UserViewContextHoler {
+public final class UserViewContextHolder {
     private static final String ATTR_KEY = UserViewContext.class.getName();
 
-    private UserViewContextHoler() {}
+    private UserViewContextHolder() {}
 
     public static void set(HttpServletRequest request, UserViewContext ctx) {
         request.setAttribute(ATTR_KEY, ctx);

@@ -31,6 +31,9 @@ public class ServiceLayoutModelAdvice {
             HttpServletRequest request,
             Model model) {
 
+        if (request.getServletPath().startsWith("/api/")) {
+            return;
+        }
         if (authMember == null) {
             return;
         }
