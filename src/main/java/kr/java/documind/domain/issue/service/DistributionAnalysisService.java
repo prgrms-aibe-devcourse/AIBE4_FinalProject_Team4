@@ -76,7 +76,7 @@ public class DistributionAnalysisService {
      */
     private List<DistributionItem> analyzeOsDistribution(List<GameLog> logs) {
         return analyzeDistribution(
-                logs, log -> extractFromResource(log, "os.type", "os.name"), "기타 OS");
+                logs, log -> extractFromResource(log, "os", "os.type", "os.name"), "기타 OS");
     }
 
     /**
@@ -87,7 +87,9 @@ public class DistributionAnalysisService {
      */
     private List<DistributionItem> analyzeVersionDistribution(List<GameLog> logs) {
         return analyzeDistribution(
-                logs, log -> extractFromResource(log, "service.version", "app.version"), "기타 버전");
+                logs,
+                log -> extractFromResource(log, "app.version", "service.version", "version"),
+                "기타 버전");
     }
 
     /**
@@ -101,7 +103,11 @@ public class DistributionAnalysisService {
                 logs,
                 log ->
                         extractFromResource(
-                                log, "device.model", "device.name", "device.manufacturer"),
+                                log,
+                                "device",
+                                "device.model",
+                                "device.name",
+                                "device.manufacturer"),
                 "기타 디바이스");
     }
 

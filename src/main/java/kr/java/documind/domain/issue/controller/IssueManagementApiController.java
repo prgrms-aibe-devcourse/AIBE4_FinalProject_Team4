@@ -20,6 +20,7 @@ import kr.java.documind.domain.issue.model.entity.IssueHistory;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.service.AffectedPlayersService;
 import kr.java.documind.domain.issue.service.DistributionAnalysisService;
+import kr.java.documind.domain.issue.service.IssueContextService;
 import kr.java.documind.domain.issue.service.OccurrenceTrendService;
 import kr.java.documind.domain.issue.service.RootCauseAnalysisService;
 import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
@@ -53,6 +54,7 @@ public class IssueManagementApiController {
     private final AffectedPlayersService affectedPlayersService;
     private final OccurrenceTrendService occurrenceTrendService;
     private final RootCauseAnalysisService rootCauseAnalysisService;
+    private final IssueContextService issueContextService;
     private final MemberRepository memberRepository;
 
     /**
@@ -319,5 +321,34 @@ public class IssueManagementApiController {
         RootCauseAnalysisResponse analysis = rootCauseAnalysisService.analyze(issueId);
 
         return ResponseEntity.ok(ApiResponse.success(analysis));
+    }
+
+    /**
+     * 이슈 발생 맥락 정보 조회
+     *
+     * @param projectId 프로젝트 ID
+     * @param issueId 이슈 ID
+     * @return 맥락 정보 (환경, 게임 상태)
+     */
+    @Operation(summary = "이슈 발생 맥락 정보 조회", description = "이슈가 발생한 환경과 게임 상태 정보를 분석하여 제공합니다.")
+    @GetMapping("/{issueId}/context")
+    public ResponseEntity<
+                    ApiResponse<
+                            kr.java.documind.domain.issue.model.dto.response.IssueContextResponse>>
+            getIssueContext(
+                    @Parameter(
+                                    description = "프로젝트 ID",
+                                    example = "123e4567-e89b-12d3-a456-426614174000",
+                                    required = true)
+                            @PathVariable
+                            java.util.UUID projectId,
+                    @Parameter(description = "이슈 ID", example = "101", required = true)
+                            @PathVariable
+                            Long issueId) {
+
+        kr.java.documind.domain.issue.model.dto.response.IssueContextResponse context =
+                issueContextService.getIssueContext(issueId);
+
+        return ResponseEntity.ok(ApiResponse.success(context));
     }
 }

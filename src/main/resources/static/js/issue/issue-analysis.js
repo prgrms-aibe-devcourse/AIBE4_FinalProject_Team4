@@ -102,6 +102,9 @@ async function renderIssueDetail(issue) {
     // 분포 분석 차트
     await renderDistributionAnalysis(issue);
 
+    // 발생 맥락
+    await renderIssueContext(issue);
+
     // 근본 원인 분석
     await renderRootCauseAnalysis(issue);
 
@@ -504,6 +507,127 @@ async function renderRootCauseAnalysis(issue) {
         `;
     } catch (err) {
         container.innerHTML = `<p class="text-sm text-red-500">근본 원인 분석 중 오류 발생: ${err.message}</p>`;
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 발생 맥락
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function renderIssueContext(issue) {
+    const container = document.getElementById('issueContext');
+
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/context`, {
+            method: 'GET'
+        });
+
+        if (!body.success || !body.data) {
+            container.innerHTML = '<p class="text-sm text-gray-400">맥락 정보를 불러올 수 없습니다.</p>';
+            return;
+        }
+
+        const ctx = body.data;
+        const { mostFrequentEnvironment, gameStateExample, commonAttributes } = ctx;
+
+        container.innerHTML = `
+            <div class="space-y-6">
+                <!-- 가장 빈번한 환경 -->
+                ${mostFrequentEnvironment ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">💻 가장 빈번한 환경</h3>
+                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">OS:</span>
+                                <span class="ml-2 font-medium text-gray-900">${mostFrequentEnvironment.os}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">디바이스:</span>
+                                <span class="ml-2 font-medium text-gray-900">${mostFrequentEnvironment.device}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">앱 버전:</span>
+                                <span class="ml-2 font-medium text-gray-900">${mostFrequentEnvironment.appVersion}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">발생 비율:</span>
+                                <span class="ml-2 font-medium text-indigo-600">${mostFrequentEnvironment.percentage}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- 게임 상태 예시 -->
+                ${gameStateExample && (gameStateExample.playerLevel || gameStateExample.currentStage || gameStateExample.currency) ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🎮 게임 상태 예시</h3>
+                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            ${gameStateExample.playerLevel ? `
+                            <div>
+                                <span class="text-gray-600">플레이어 레벨:</span>
+                                <span class="ml-2 font-medium text-gray-900">${gameStateExample.playerLevel}</span>
+                            </div>
+                            ` : ''}
+                            ${gameStateExample.currentStage ? `
+                            <div>
+                                <span class="text-gray-600">현재 스테이지:</span>
+                                <span class="ml-2 font-medium text-gray-900">${gameStateExample.currentStage}</span>
+                            </div>
+                            ` : ''}
+                            ${gameStateExample.currency ? `
+                            <div>
+                                <span class="text-gray-600">보유 재화:</span>
+                                <span class="ml-2 font-medium text-gray-900">${gameStateExample.currency}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ${gameStateExample.additionalState && Object.keys(gameStateExample.additionalState).length > 0 ? `
+                        <div class="mt-3 pt-3 border-t border-green-300">
+                            <p class="text-xs font-semibold text-gray-600 mb-2">기타 상태:</p>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                ${Object.entries(gameStateExample.additionalState).slice(0, 6).map(([key, value]) => `
+                                    <div class="text-gray-700">
+                                        <span class="text-gray-500">${key}:</span>
+                                        <span class="ml-1">${JSON.stringify(value)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- 공통 속성 -->
+                ${commonAttributes && Object.keys(commonAttributes).length > 0 ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🔗 공통 속성 (반복 패턴)</h3>
+                    <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            ${Object.entries(commonAttributes).map(([key, value]) => `
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-600">▪</span>
+                                    <div class="flex-1">
+                                        <span class="font-medium text-gray-700">${key}:</span>
+                                        <span class="ml-1 text-gray-600">${value}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
+                ${!mostFrequentEnvironment && !gameStateExample && (!commonAttributes || Object.keys(commonAttributes).length === 0) ? `
+                <p class="text-sm text-gray-400 text-center py-4">맥락 정보가 없습니다.</p>
+                ` : ''}
+            </div>
+        `;
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-red-500">맥락 정보를 불러오는 중 오류 발생: ${err.message}</p>`;
     }
 }
 
