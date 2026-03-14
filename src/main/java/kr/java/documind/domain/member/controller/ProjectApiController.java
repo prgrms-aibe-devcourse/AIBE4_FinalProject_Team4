@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.member.model.dto.ApiKeyIssueResponse;
+import kr.java.documind.domain.member.model.dto.ApiKeyReissueRequest;
 import kr.java.documind.domain.member.model.dto.ApiKeyStatusUpdateRequest;
 import kr.java.documind.domain.member.model.dto.ProfileImageResponse;
 import kr.java.documind.domain.member.model.dto.ProjectCreateRequest;
@@ -122,14 +123,13 @@ public class ProjectApiController {
     }
 
     @Operation(
-            summary = "API 키 발급/재발급",
+            summary = "전체 API 키 재발급",
             description =
-                    "프로젝트 API 키를 신규 발급하거나 재발급합니다. "
-                            + "기존 ACTIVE/SUSPENDED 키는 즉시 REVOKE 처리됩니다. "
-                            + "평문 키는 응답에서 1회만 반환됩니다. MANAGER 권한이 필요합니다.")
+                    "프로젝트의 모든 API 키(INGEST, QUERY)를 새로 발급합니다."
+                            + "기존에 사용 중인 모든 키는 즉시 폐기되어 서비스가 중단될 수 있으므로 주의가 필요합니다.")
     @RequireProjectManager
     @PostMapping("/{publicId}/api-keys")
-    public ResponseEntity<ApiResponse<ApiKeyIssueResponse>> issueApiKey(
+    public ResponseEntity<ApiResponse<ApiKeyIssueResponse>> issueApiKeys(
             @CurrentProject ProjectRequestContext ctx) {
 
         ApiKeyIssueResponse response =
@@ -138,15 +138,36 @@ public class ProjectApiController {
     }
 
     @Operation(
+            summary = "API 키 재발급",
+            description =
+                    "특정 타입(INGEST 또는 QUERY)의 API 키를 재발급합니다. "
+                            + "해당 타입의 기존 ACTIVE/SUSPENDED 키는 즉시 폐기(REVOKE) 처리됩니다. "
+                            + "평문 키는 이 응답에서만 반환됩니다. MANAGER 권한이 필요합니다.")
+    @RequireProjectManager
+    @PostMapping("/{publicId}/api-keys/reissue")
+    public ResponseEntity<ApiResponse<ApiKeyIssueResponse>> reissueApiKey(
+            @CurrentProject ProjectRequestContext ctx,
+            @Valid @RequestBody ApiKeyReissueRequest request) {
+
+        ApiKeyIssueResponse response =
+                projectService.reissueApiKey(
+                        ctx.publicId(), ctx.actorMemberId(), request.keyType());
+        return ResponseEntity.ok(
+                ApiResponse.success(request.keyType() + " API 키가 재발급되었습니다.", response));
+    }
+
+    @Operation(
             summary = "API 키 상태 변경",
-            description = "API 키를 ACTIVE ↔ SUSPENDED 간 전환합니다. MANAGER 권한이 필요합니다.")
+            description =
+                    "특정 타입(INGEST 또는 QUERY)의 API 키를 ACTIVE ↔ SUSPENDED 간 전환합니다. MANAGER 권한이 필요합니다.")
     @RequireProjectManager
     @PatchMapping("/{publicId}/api-keys/status")
     public ResponseEntity<ApiResponse<Void>> toggleApiKeyStatus(
             @CurrentProject ProjectRequestContext ctx,
             @Valid @RequestBody ApiKeyStatusUpdateRequest request) {
 
-        projectService.toggleApiKeyStatus(ctx.publicId(), ctx.actorMemberId(), request.status());
-        return ResponseEntity.ok(ApiResponse.success("API 키 상태가 변경되었습니다."));
+        projectService.toggleApiKeyStatus(
+                ctx.publicId(), ctx.actorMemberId(), request.keyType(), request.status());
+        return ResponseEntity.ok(ApiResponse.success(request.keyType() + " API 키 상태가 변경되었습니다."));
     }
 }

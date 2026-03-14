@@ -3,10 +3,11 @@ package kr.java.documind.domain.member.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import java.util.UUID;
 import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
 import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.domain.auth.model.entity.ProjectApiKey;
+import kr.java.documind.domain.auth.model.enums.ApiKeyType;
 import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 import kr.java.documind.domain.auth.model.enums.ProjectRole;
 import kr.java.documind.domain.auth.model.repository.ProjectApiKeyRepository;
@@ -267,29 +269,24 @@ class ProjectServiceTest {
         }
     }
 
-    // ── issueApiKey() ────────────────────────────────────────────────────────
+    // ── issueApiKey() (전체 재발급) ──────────────────────────────────────────
 
     @Nested
-    @DisplayName("issueApiKey()")
+    @DisplayName("issueApiKey() - 전체 재발급")
     class IssueApiKey {
 
         @Test
-        @DisplayName("기능: 기존 키 없음 → 새 API Key 생성 및 평문 키 반환")
-        void issueApiKey_기존키없음_새키생성() {
+        @DisplayName("기능: 전체 API Key 발급 (INGEST, QUERY) -> 각 타입별 기존 키 벌크 폐기 후 새 키 2개 생성")
+        void issueApiKey_전체발급_성공() {
             // Given
             String publicId = "proj123";
             UUID memberId = UUID.randomUUID();
             Member member =
                     createMemberWithApprovedCompany(
                             kr.java.documind.domain.auth.model.enums.GlobalRole.CEO);
-            Company company = member.getCompany();
-            Project project = Project.create(publicId, company, "TestProject", null);
+            Project project = Project.create(publicId, member.getCompany(), "TestProject", null);
 
             given(projectRepository.findByPublicId(publicId)).willReturn(Optional.of(project));
-            given(
-                            projectApiKeyRepository.findAllByProjectAndApiKeyStatusNot(
-                                    project, ApiKeyStatus.REVOKED))
-                    .willReturn(List.of());
             given(projectApiKeyRepository.save(any(ProjectApiKey.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
@@ -297,39 +294,106 @@ class ProjectServiceTest {
             ApiKeyIssueResponse result = projectService.issueApiKey(publicId, memberId);
 
             // Then
-            assertThat(result.plainKey()).isNotNull().startsWith("dm_");
-            assertThat(result.maskedKey()).isNotNull();
-            then(projectApiKeyRepository).should().save(any(ProjectApiKey.class));
+            // 1. INGEST 키 검증 (dmi_ 접두사)
+            assertThat(result.ingestApiKey()).isNotNull();
+            assertThat(result.ingestApiKey().plainKey()).startsWith("dmi_");
+            assertThat(result.ingestApiKey().maskedKey()).isNotNull();
+
+            // 2. QUERY 키 검증 (dmq_ 접두사)
+            assertThat(result.queryApiKey()).isNotNull();
+            assertThat(result.queryApiKey().plainKey()).startsWith("dmq_");
+            assertThat(result.queryApiKey().maskedKey()).isNotNull();
+
+            // 3. 벌크 폐기 로직(revokeAll)이 각 타입에 맞게 정확히 호출되었는지 검증
+            List<ApiKeyStatus> targetStatuses =
+                    List.of(ApiKeyStatus.ACTIVE, ApiKeyStatus.SUSPENDED);
+            then(projectApiKeyRepository)
+                    .should()
+                    .revokeAllByProjectAndKeyType(
+                            project, ApiKeyType.INGEST, ApiKeyStatus.REVOKED, targetStatuses);
+            then(projectApiKeyRepository)
+                    .should()
+                    .revokeAllByProjectAndKeyType(
+                            project, ApiKeyType.QUERY, ApiKeyStatus.REVOKED, targetStatuses);
         }
+    }
+
+    // ── reissueApiKey() (특정 타입 재발급) ───────────────────────────────────
+
+    @Nested
+    @DisplayName("reissueApiKey() - 특정 타입 개별 재발급")
+    class ReissueApiKey {
 
         @Test
-        @DisplayName("기능: 기존 ACTIVE 키 존재 → 기존 키 REVOKE 후 새 키 생성")
-        void issueApiKey_기존키존재_REVOKE후새키생성() {
+        @DisplayName("기능: 수집(INGEST) API Key 재발급 -> INGEST 키만 새로 생성되고, QUERY 키는 null 반환")
+        void reissueApiKey_수집키만_성공() {
             // Given
             String publicId = "proj123";
             UUID memberId = UUID.randomUUID();
             Member member =
                     createMemberWithApprovedCompany(
                             kr.java.documind.domain.auth.model.enums.GlobalRole.CEO);
-            Company company = member.getCompany();
-            Project project = Project.create(publicId, company, "TestProject", null);
-
-            ProjectApiKey existingKey = mock(ProjectApiKey.class);
+            Project project = Project.create(publicId, member.getCompany(), "TestProject", null);
 
             given(projectRepository.findByPublicId(publicId)).willReturn(Optional.of(project));
-            given(
-                            projectApiKeyRepository.findAllByProjectAndApiKeyStatusNot(
-                                    project, ApiKeyStatus.REVOKED))
-                    .willReturn(List.of(existingKey));
             given(projectApiKeyRepository.save(any(ProjectApiKey.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
             // When
-            projectService.issueApiKey(publicId, memberId);
+            ApiKeyIssueResponse result =
+                    projectService.reissueApiKey(publicId, memberId, ApiKeyType.INGEST);
 
             // Then
-            then(existingKey).should().revoke();
-            then(projectApiKeyRepository).should().save(any(ProjectApiKey.class));
+            // 1. INGEST 키는 생성되어야 함
+            assertThat(result.ingestApiKey()).isNotNull();
+            assertThat(result.ingestApiKey().plainKey()).startsWith("dmi_");
+
+            // 2. QUERY 키는 재발급 요청이 아니므로 null 반환
+            assertThat(result.queryApiKey()).isNull();
+
+            // 3. INGEST 타입에 대해서만 벌크 폐기 로직이 호출되어야 함
+            then(projectApiKeyRepository)
+                    .should()
+                    .revokeAllByProjectAndKeyType(
+                            eq(project), eq(ApiKeyType.INGEST), eq(ApiKeyStatus.REVOKED), any());
+
+            // 4. QUERY 타입의 키는 건드리지 않아야 함
+            then(projectApiKeyRepository)
+                    .should(never())
+                    .revokeAllByProjectAndKeyType(eq(project), eq(ApiKeyType.QUERY), any(), any());
+        }
+
+        @Test
+        @DisplayName("기능: 조회(QUERY) API Key 재발급 -> QUERY 키만 새로 생성되고, INGEST 키는 null 반환")
+        void reissueApiKey_조회키만_성공() {
+            // Given
+            String publicId = "proj123";
+            UUID memberId = UUID.randomUUID();
+            Member member =
+                    createMemberWithApprovedCompany(
+                            kr.java.documind.domain.auth.model.enums.GlobalRole.CEO);
+            Project project = Project.create(publicId, member.getCompany(), "TestProject", null);
+
+            given(projectRepository.findByPublicId(publicId)).willReturn(Optional.of(project));
+            given(projectApiKeyRepository.save(any(ProjectApiKey.class)))
+                    .willAnswer(inv -> inv.getArgument(0));
+
+            // When
+            ApiKeyIssueResponse result =
+                    projectService.reissueApiKey(publicId, memberId, ApiKeyType.QUERY);
+
+            // Then
+            assertThat(result.queryApiKey()).isNotNull();
+            assertThat(result.queryApiKey().plainKey()).startsWith("dmq_");
+            assertThat(result.ingestApiKey()).isNull(); // 수집 키는 건드리지 않음
+
+            then(projectApiKeyRepository)
+                    .should()
+                    .revokeAllByProjectAndKeyType(
+                            eq(project), eq(ApiKeyType.QUERY), eq(ApiKeyStatus.REVOKED), any());
+            then(projectApiKeyRepository)
+                    .should(never())
+                    .revokeAllByProjectAndKeyType(eq(project), eq(ApiKeyType.INGEST), any(), any());
         }
     }
 }

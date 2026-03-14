@@ -8,6 +8,7 @@ import kr.java.documind.domain.auth.exception.DeletedProjectException;
 import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
 import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.domain.auth.model.entity.ProjectApiKey;
+import kr.java.documind.domain.auth.model.enums.ApiKeyType;
 import kr.java.documind.domain.auth.model.enums.ProjectRole;
 import kr.java.documind.domain.auth.model.repository.ProjectApiKeyRepository;
 import kr.java.documind.domain.auth.model.repository.ProjectRepository;
@@ -56,6 +57,7 @@ public class ProjectService {
     @Value("${app.api-key.hmac-secret}")
     private String hmacSecret;
 
+    @Transactional
     public ProjectCreateResponse createProject(UUID memberId, String name) {
         Member member = memberService.getMemberWithCompany(memberId);
 
@@ -186,18 +188,7 @@ public class ProjectService {
 
         ProjectApiKeyInfo apiKeyInfo = null;
         if (currentPm.isManager()) {
-            Optional<ProjectApiKey> keyOpt =
-                    projectApiKeyRepository
-                            .findFirstByProjectAndApiKeyStatusNotOrderByCreatedAtDesc(
-                                    project, ApiKeyStatus.REVOKED);
-            if (keyOpt.isPresent()) {
-                ProjectApiKey key = keyOpt.get();
-                String masked =
-                        HmacApiKeyUtil.maskApiKey(key.getKeyPrefix() + "..." + key.getKeyLast4());
-                apiKeyInfo = new ProjectApiKeyInfo(true, masked, key.getApiKeyStatus());
-            } else {
-                apiKeyInfo = new ProjectApiKeyInfo(false, null, null);
-            }
+            apiKeyInfo = getProjectApiKeysForSetting(project);
         }
 
         return new ProjectSettingPageData(
@@ -208,6 +199,33 @@ public class ProjectService {
                 members,
                 myProjects,
                 apiKeyInfo);
+    }
+
+    private ProjectApiKeyInfo getProjectApiKeysForSetting(Project project) {
+        ProjectApiKeyInfo.KeyMetadata ingestKey =
+                findCurrentKeyMetadata(project, ApiKeyType.INGEST);
+        ProjectApiKeyInfo.KeyMetadata queryKey = findCurrentKeyMetadata(project, ApiKeyType.QUERY);
+
+        return new ProjectApiKeyInfo(ingestKey, queryKey);
+    }
+
+    private ProjectApiKeyInfo.KeyMetadata findCurrentKeyMetadata(
+            Project project, ApiKeyType keyType) {
+        Optional<ProjectApiKey> keyOpt =
+                projectApiKeyRepository
+                        .findFirstByProjectAndKeyTypeAndApiKeyStatusInOrderByCreatedAtDesc(
+                                project,
+                                keyType,
+                                List.of(ApiKeyStatus.ACTIVE, ApiKeyStatus.SUSPENDED));
+
+        if (keyOpt.isPresent()) {
+            ProjectApiKey key = keyOpt.get();
+            String masked = HmacApiKeyUtil.maskApiKey(key.getKeyPrefix(), key.getKeyLast4());
+            return new ProjectApiKeyInfo.KeyMetadata(
+                    true, key.getKeyType(), masked, key.getApiKeyStatus());
+        } else {
+            return new ProjectApiKeyInfo.KeyMetadata(false, keyType, null, null);
+        }
     }
 
     public List<ProjectSummary> getDashboardProjects(UUID memberId) {
@@ -376,27 +394,75 @@ public class ProjectService {
                         .findByPublicId(publicId)
                         .orElseThrow(ProjectNotFoundException::new);
 
-        // 기존 ACTIVE/SUSPENDED 키 일괄 REVOKE (회전)
-        projectApiKeyRepository
-                .findAllByProjectAndApiKeyStatusNot(project, ApiKeyStatus.REVOKED)
-                .forEach(ProjectApiKey::revoke);
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
 
-        // 새 키 생성
-        String plainKey = HmacApiKeyUtil.generatePlainKey();
+        // INGEST, QUERY 타입에 대해 각각 기존 키 폐기 및 신규 키 생성
+        ApiKeyIssueResponse.IssuedKey issuedIngestKey =
+                createNewApiKeyForType(project, ApiKeyType.INGEST);
+        ApiKeyIssueResponse.IssuedKey issuedQueryKey =
+                createNewApiKeyForType(project, ApiKeyType.QUERY);
+
+        log.info(
+                "[ProjectService] 전체 API Key 재발급 (INGEST & QUERY): memberId={} publicId={}",
+                memberId,
+                publicId);
+        return new ApiKeyIssueResponse(issuedIngestKey, issuedQueryKey);
+    }
+
+    @Transactional
+    public ApiKeyIssueResponse reissueApiKey(String publicId, UUID memberId, ApiKeyType keyType) {
+        Project project =
+                projectRepository
+                        .findByPublicId(publicId)
+                        .orElseThrow(ProjectNotFoundException::new);
+
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
+
+        ApiKeyIssueResponse.IssuedKey newIssuedKey = createNewApiKeyForType(project, keyType);
+
+        // 응답 구조에 맞게 반환. 재발급하지 않은 키 타입은 null로 채움
+        ApiKeyIssueResponse.IssuedKey ingestKey =
+                (keyType == ApiKeyType.INGEST) ? newIssuedKey : null;
+        ApiKeyIssueResponse.IssuedKey queryKey =
+                (keyType == ApiKeyType.QUERY) ? newIssuedKey : null;
+
+        log.info(
+                "[ProjectService] API Key 재발급 ({}): memberId={} publicId={}",
+                keyType,
+                memberId,
+                publicId);
+        return new ApiKeyIssueResponse(ingestKey, queryKey);
+    }
+
+    private ApiKeyIssueResponse.IssuedKey createNewApiKeyForType(
+            Project project, ApiKeyType keyType) {
+        projectApiKeyRepository.revokeAllByProjectAndKeyType(
+                project,
+                keyType,
+                ApiKeyStatus.REVOKED,
+                List.of(ApiKeyStatus.ACTIVE, ApiKeyStatus.SUSPENDED));
+
+        String plainKey = HmacApiKeyUtil.generatePlainKey(keyType.getPrefix());
         String hmacHash = HmacApiKeyUtil.computeHmac(plainKey, hmacSecret);
         String keyPrefix = HmacApiKeyUtil.extractPrefix(plainKey);
         String keyLast4 = HmacApiKeyUtil.extractLast4(plainKey);
 
-        projectApiKeyRepository.save(ProjectApiKey.create(project, hmacHash, keyPrefix, keyLast4));
+        ProjectApiKey newApiKey =
+                ProjectApiKey.create(project, hmacHash, keyPrefix, keyLast4, keyType);
+        projectApiKeyRepository.save(newApiKey);
 
-        String masked = HmacApiKeyUtil.maskApiKey(plainKey);
+        String maskedKey = HmacApiKeyUtil.maskApiKey(plainKey);
 
-        log.info("[ProjectService] API Key 발급: memberId={} publicId={}", memberId, publicId);
-        return new ApiKeyIssueResponse(plainKey, masked);
+        return new ApiKeyIssueResponse.IssuedKey(keyType, plainKey, maskedKey);
     }
 
     @Transactional
-    public void toggleApiKeyStatus(String publicId, UUID memberId, ApiKeyStatus newStatus) {
+    public void toggleApiKeyStatus(
+            String publicId, UUID memberId, ApiKeyType keyType, ApiKeyStatus newStatus) {
         if (newStatus != ApiKeyStatus.ACTIVE && newStatus != ApiKeyStatus.SUSPENDED) {
             throw new BadRequestException("ACTIVE 또는 SUSPENDED 상태만 설정할 수 있습니다.");
         }
@@ -406,11 +472,19 @@ public class ProjectService {
                         .findByPublicId(publicId)
                         .orElseThrow(ProjectNotFoundException::new);
 
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
+
+        // 특정 타입의 키만 찾아서 상태 변경
         ProjectApiKey key =
                 projectApiKeyRepository
-                        .findFirstByProjectAndApiKeyStatusNotOrderByCreatedAtDesc(
-                                project, ApiKeyStatus.REVOKED)
-                        .orElseThrow(() -> new NotFoundException("활성화된 API 키가 없습니다."));
+                        .findFirstByProjectAndKeyTypeAndApiKeyStatusInOrderByCreatedAtDesc(
+                                project,
+                                keyType,
+                                List.of(ApiKeyStatus.ACTIVE, ApiKeyStatus.SUSPENDED))
+                        .orElseThrow(
+                                () -> new NotFoundException(keyType + " 타입의 활성화된 API 키가 없습니다."));
 
         if (newStatus == ApiKeyStatus.ACTIVE) {
             key.activate();
@@ -419,9 +493,10 @@ public class ProjectService {
         }
 
         log.info(
-                "[ProjectService] API Key 상태 변경: memberId={} publicId={} status={}",
+                "[ProjectService] API Key 상태 변경: memberId={} publicId={} keyType={} status={}",
                 memberId,
                 publicId,
+                keyType,
                 newStatus);
     }
 

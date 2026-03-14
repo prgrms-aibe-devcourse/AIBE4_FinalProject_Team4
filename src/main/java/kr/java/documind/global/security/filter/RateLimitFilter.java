@@ -12,7 +12,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import kr.java.documind.domain.member.service.ProjectApiKeyValidationService;
+import kr.java.documind.domain.auth.model.enums.ApiKeyType;
+import kr.java.documind.domain.auth.service.ProjectApiKeyValidationService;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.TooManyRequestsException;
 import kr.java.documind.global.exception.UnauthorizedException;
@@ -62,7 +63,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throw new BadRequestException(HEADER_API_KEY + " 헤더가 누락되었습니다.");
         }
 
-        UUID projectId = apiKeyValidationService.getProjectIdByApiKey(apiKey);
+        // TODO: 로그 조회 API에 대한 Rate limit 구현
+        UUID projectId = apiKeyValidationService.getProjectIdByApiKey(apiKey, ApiKeyType.INGEST);
         if (projectId == null) {
             throw new UnauthorizedException("유효하지 않거나 정지된 API Key입니다.");
         }
