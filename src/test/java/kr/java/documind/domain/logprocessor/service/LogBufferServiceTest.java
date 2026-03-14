@@ -225,10 +225,7 @@ class LogBufferServiceTest {
     void addAllFromDtos_Success() throws Exception {
         // Given
         List<LogEvent> dtos =
-                List.of(
-                        createLogEvent("log-4"),
-                        createLogEvent("log-5"),
-                        createLogEvent("log-6"));
+                List.of(createLogEvent("log-4"), createLogEvent("log-5"), createLogEvent("log-6"));
 
         when(logMapper.toEntity(any(LogEvent.class)))
                 .thenAnswer(

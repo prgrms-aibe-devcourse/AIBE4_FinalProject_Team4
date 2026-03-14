@@ -91,4 +91,16 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
      */
     List<Issue> findByProjectIdAndErrorTypeAndStatusNotOrderByLastOccurredAtDesc(
             UUID projectId, ErrorType errorType, IssueStatus excludeStatus, Pageable pageable);
+
+    /**
+     * 프로젝트 내에서 같은 에러 타입의 해결된 이슈 목록 조회 (해결 노트가 있는 것만)
+     *
+     * @param projectId 프로젝트 ID
+     * @param errorType 에러 타입
+     * @param status 이슈 상태
+     * @param pageable 페이지 설정
+     * @return 해결된 이슈 목록
+     */
+    List<Issue> findByProjectIdAndErrorTypeAndStatusAndResolutionNoteNotNull(
+            UUID projectId, ErrorType errorType, IssueStatus status, Pageable pageable);
 }

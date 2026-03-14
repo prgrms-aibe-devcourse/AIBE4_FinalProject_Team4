@@ -75,8 +75,7 @@ public record SimilarityResult(
 
     private static String buildSimilarReason(Double similarity, SimilarityDetails details) {
         StringBuilder reason = new StringBuilder();
-        reason.append(
-                String.format("기존 이슈와 %.1f%% 유사합니다. ", similarity));
+        reason.append(String.format("기존 이슈와 %.1f%% 유사합니다. ", similarity));
 
         if (details.errorTypeScore() == 100.0) {
             reason.append("동일한 에러 타입이며, ");

@@ -122,8 +122,8 @@ public class IssueRecommendationService {
     /**
      * 추천 이슈와 기존 이슈 간의 유사도 분석
      *
-     * <p>복합 접근 방식: - Fingerprint 완전 일치 확인 - Error Type 일치 확인 (20% 가중치) - Stack Trace Jaccard
-     * 유사도 (60% 가중치) - Message Levenshtein 유사도 (20% 가중치)
+     * <p>복합 접근 방식: - Fingerprint 완전 일치 확인 - Error Type 일치 확인 (20% 가중치) - Stack Trace Jaccard 유사도
+     * (60% 가중치) - Message Levenshtein 유사도 (20% 가중치)
      *
      * <p>성능 최적화: 같은 ErrorType의 최근 100개 이슈만 비교하여 O(N) 복잡도 제한
      *
@@ -149,17 +149,14 @@ public class IssueRecommendationService {
 
         // 2. 같은 에러 타입의 최근 N개 이슈 조회 (RECOMMENDED 제외, 성능 최적화)
         List<Issue> candidates =
-                issueRepository
-                        .findByProjectIdAndErrorTypeAndStatusNotOrderByLastOccurredAtDesc(
-                                projectId,
-                                recommendedIssue.getErrorType(),
-                                IssueStatus.RECOMMENDED,
-                                PageRequest.of(0, MAX_CANDIDATES_FOR_SIMILARITY));
+                issueRepository.findByProjectIdAndErrorTypeAndStatusNotOrderByLastOccurredAtDesc(
+                        projectId,
+                        recommendedIssue.getErrorType(),
+                        IssueStatus.RECOMMENDED,
+                        PageRequest.of(0, MAX_CANDIDATES_FOR_SIMILARITY));
 
         if (candidates.isEmpty()) {
-            log.info(
-                    "No similar issues found for recommendedIssue={}",
-                    recommendedIssue.getId());
+            log.info("No similar issues found for recommendedIssue={}", recommendedIssue.getId());
             return List.of(SimilarityResult.noMatch());
         }
 
@@ -172,7 +169,9 @@ public class IssueRecommendationService {
         // 3. 각 후보와의 유사도 계산 후 상위 4개 선택
         List<SimilarityResult> topMatches =
                 candidates.stream()
-                        .map(candidate -> similarityCalculator.calculate(recommendedIssue, candidate))
+                        .map(
+                                candidate ->
+                                        similarityCalculator.calculate(recommendedIssue, candidate))
                         .filter(result -> !"NO_MATCH".equals(result.matchType()))
                         .sorted(Comparator.comparing(SimilarityResult::similarity).reversed())
                         .limit(4)
@@ -181,9 +180,7 @@ public class IssueRecommendationService {
         if (!topMatches.isEmpty()) {
             log.info(
                     "Found {} similar issues for recommendedIssue={}. Top similarity: {}%",
-                    topMatches.size(),
-                    recommendedIssue.getId(),
-                    topMatches.get(0).similarity());
+                    topMatches.size(), recommendedIssue.getId(), topMatches.get(0).similarity());
             return topMatches;
         }
 

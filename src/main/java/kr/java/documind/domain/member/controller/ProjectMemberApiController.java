@@ -23,9 +23,7 @@ public class ProjectMemberApiController {
 
     private final ProjectService projectService;
 
-    @Operation(
-            summary = "프로젝트 멤버 목록 조회",
-            description = "담당자 선택을 위한 프로젝트 활성 멤버 목록을 조회합니다.")
+    @Operation(summary = "프로젝트 멤버 목록 조회", description = "담당자 선택을 위한 프로젝트 활성 멤버 목록을 조회합니다.")
     @RequireProjectMember
     @GetMapping
     public ResponseEntity<ApiResponse<List<ProjectMemberSimpleResponse>>> getProjectMembers(

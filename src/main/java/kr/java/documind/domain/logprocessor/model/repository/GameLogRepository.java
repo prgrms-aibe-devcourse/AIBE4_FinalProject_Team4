@@ -11,9 +11,10 @@ import org.springframework.data.repository.query.Param;
 /**
  * GameLog Repository
  *
- * <p>분포 분석을 위한 조회 메서드 제공
+ * <p>분포 분석 및 영향받은 플레이어 조회 메서드 제공
  */
-public interface GameLogRepository extends JpaRepository<GameLog, GameLogId> {
+public interface GameLogRepository
+        extends JpaRepository<GameLog, GameLogId>, GameLogRepositoryCustom {
 
     /**
      * 특정 fingerprint의 최근 로그 조회 (분포 분석용)

@@ -16,15 +16,42 @@ let currentDetailIssueId = null; // 상세 모달에서 보고 있는 이슈 ID
 document.addEventListener('DOMContentLoaded', () => {
     currentPublicId = document.getElementById('publicId').value;
     currentProjectId = document.getElementById('projectId').value;
-    loadRecommendationList(); // 기본 탭이 추천 이슈
+
+    // URL 파라미터에서 탭 정보 복원
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+
+    if (tabParam === 'issues') {
+        switchMainTab('issues', false); // false = URL 업데이트 안 함 (이미 URL에 있음)
+    } else {
+        switchMainTab('recommendations', false);
+    }
+
+    // 브라우저 뒤로/앞으로 버튼 감지
+    window.addEventListener('popstate', (event) => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        switchMainTab(tabParam === 'issues' ? 'issues' : 'recommendations', false);
+    });
 });
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 메인 탭 전환
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function switchMainTab(tab) {
+function switchMainTab(tab, updateUrl = true) {
     currentMainTab = tab;
+
+    // URL 업데이트 (새로고침 시 탭 상태 유지)
+    if (updateUrl) {
+        const url = new URL(window.location);
+        if (tab === 'issues') {
+            url.searchParams.set('tab', 'issues');
+        } else {
+            url.searchParams.delete('tab'); // 기본 탭은 파라미터 제거
+        }
+        window.history.replaceState({}, '', url);
+    }
 
     // 탭 버튼 스타일 변경
     const recommendationsTab = document.getElementById('recommendationsTab');

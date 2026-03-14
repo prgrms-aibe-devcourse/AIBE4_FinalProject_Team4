@@ -1,6 +1,5 @@
 package kr.java.documind.domain.issue.service;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -65,7 +64,8 @@ public class DistributionAnalysisService {
         List<DistributionItem> versionDistribution = analyzeVersionDistribution(sampleLogs);
         List<DistributionItem> deviceDistribution = analyzeDeviceDistribution(sampleLogs);
 
-        return new DistributionDataResponse(osDistribution, versionDistribution, deviceDistribution);
+        return new DistributionDataResponse(
+                osDistribution, versionDistribution, deviceDistribution);
     }
 
     /**
@@ -76,9 +76,7 @@ public class DistributionAnalysisService {
      */
     private List<DistributionItem> analyzeOsDistribution(List<GameLog> logs) {
         return analyzeDistribution(
-                logs,
-                log -> extractFromResource(log, "os.type", "os.name"),
-                "기타 OS");
+                logs, log -> extractFromResource(log, "os.type", "os.name"), "기타 OS");
     }
 
     /**
@@ -89,9 +87,7 @@ public class DistributionAnalysisService {
      */
     private List<DistributionItem> analyzeVersionDistribution(List<GameLog> logs) {
         return analyzeDistribution(
-                logs,
-                log -> extractFromResource(log, "service.version", "app.version"),
-                "기타 버전");
+                logs, log -> extractFromResource(log, "service.version", "app.version"), "기타 버전");
     }
 
     /**
@@ -146,9 +142,7 @@ public class DistributionAnalysisService {
                         .map(
                                 entry ->
                                         DistributionItem.of(
-                                                entry.getKey(),
-                                                entry.getValue().intValue(),
-                                                total))
+                                                entry.getKey(), entry.getValue().intValue(), total))
                         .collect(Collectors.toList());
 
         // "기타" 추가 (있으면)

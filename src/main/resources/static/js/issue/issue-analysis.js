@@ -19,8 +19,35 @@ document.addEventListener('DOMContentLoaded', () => {
     currentProjectId = document.getElementById('projectId').value;
     currentIssueId = document.getElementById('issueId').value;
 
+    // Breadcrumb 링크 업데이트 (Referrer에서 탭 정보 추출)
+    updateBreadcrumbLink();
+
     loadIssueDetail();
 });
+
+/**
+ * Breadcrumb 링크에 이전 페이지의 탭 상태 추가
+ */
+function updateBreadcrumbLink() {
+    // Referrer URL에서 tab 파라미터 추출
+    if (document.referrer) {
+        try {
+            const referrerUrl = new URL(document.referrer);
+            const tabParam = referrerUrl.searchParams.get('tab');
+
+            if (tabParam === 'issues') {
+                const breadcrumbLink = document.getElementById('breadcrumbBackLink');
+                if (breadcrumbLink) {
+                    const href = breadcrumbLink.getAttribute('href');
+                    breadcrumbLink.setAttribute('href', href + '?tab=issues');
+                }
+            }
+        } catch (e) {
+            // Referrer URL 파싱 실패 시 무시
+            console.debug('[updateBreadcrumbLink] Referrer URL 파싱 실패:', e);
+        }
+    }
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 이슈 상세 조회
@@ -75,8 +102,14 @@ async function renderIssueDetail(issue) {
     // 분포 분석 차트
     await renderDistributionAnalysis(issue);
 
+    // 근본 원인 분석
+    await renderRootCauseAnalysis(issue);
+
     // 로그 상세
     renderLogDetails(issue);
+
+    // 영향받은 플레이어
+    await renderAffectedPlayers(issue);
 
     // 메타 정보
     renderMetaInfo(issue);
@@ -161,63 +194,76 @@ function renderGroupingInfo(issue) {
 // 발생 추이 차트
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function renderOccurrenceTrend(issue) {
-    // 임시 데이터 생성 (Phase 3에서 실제 API 연동)
-    const labels = [];
-    const data = [];
-    const now = new Date();
+async function renderOccurrenceTrend(issue) {
+    try {
+        // 실제 API에서 데이터 가져오기
+        const body = await callApi(
+            `/api/projects/${currentProjectId}/issues/${currentIssueId}/trend?days=${getDaysFromRange(currentTimeRange)}`,
+            { method: 'GET' }
+        );
 
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        labels.push(date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }));
-        data.push(Math.floor(Math.random() * issue.occurrenceCount / 7) + 1);
-    }
+        if (!body.success) {
+            console.error('발생 추이 데이터를 불러올 수 없습니다.');
+            return;
+        }
 
-    const ctx = document.getElementById('trendChart').getContext('2d');
+        const trendData = body.data;
 
-    if (trendChart) {
-        trendChart.destroy();
-    }
+        // 라벨과 데이터 추출
+        const labels = trendData.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+        });
 
-    trendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '발생 횟수',
-                data: data,
-                borderColor: 'rgb(99, 102, 241)',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false
-                }
+        const data = trendData.map(item => item.count);
+
+        const ctx = document.getElementById('trendChart').getContext('2d');
+
+        if (trendChart) {
+            trendChart.destroy();
+        }
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '발생 횟수',
+                    data: data,
+                    borderColor: 'rgb(99, 102, 241)',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (err) {
+        console.error('발생 추이 차트 로드 중 오류:', err);
+    }
 }
 
-function setTimeRange(range) {
+async function setTimeRange(range) {
     currentTimeRange = range;
 
     // 버튼 스타일 업데이트
@@ -232,7 +278,26 @@ function setTimeRange(range) {
     });
 
     // 차트 재렌더링 (실제 API에서 새 데이터 가져오기)
-    // TODO: Phase 3에서 구현
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}`, {
+            method: 'GET'
+        });
+
+        if (body.success) {
+            await renderOccurrenceTrend(body.data);
+        }
+    } catch (err) {
+        console.error('차트 업데이트 중 오류:', err);
+    }
+}
+
+function getDaysFromRange(range) {
+    const rangeMap = {
+        '7d': 7,
+        '14d': 14,
+        '30d': 30
+    };
+    return rangeMap[range] || 7;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -331,6 +396,118 @@ async function renderDistributionAnalysis(issue) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 근본 원인 분석
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function renderRootCauseAnalysis(issue) {
+    const container = document.getElementById('rootCauseAnalysis');
+
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/root-cause`, {
+            method: 'GET'
+        });
+
+        if (!body.success || !body.data) {
+            container.innerHTML = '<p class="text-sm text-gray-400">근본 원인 분석 데이터를 불러올 수 없습니다.</p>';
+            return;
+        }
+
+        const rca = body.data;
+
+        // 패턴 아이콘 매핑
+        const patternIcons = {
+            'TIME': '⏰',
+            'DAY': '📅',
+            'USER': '👤',
+            'ENVIRONMENT': '💻'
+        };
+
+        container.innerHTML = `
+            <div class="space-y-6">
+                <!-- 에러 타입 -->
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl">⚠️</span>
+                        <div>
+                            <h3 class="text-sm font-semibold text-red-900">${rca.errorType}</h3>
+                            <p class="text-xs text-red-700">${rca.errorDescription}</p>
+                        </div>
+                    </div>
+                    ${rca.hotspot !== 'N/A' ? `
+                        <div class="mt-2 flex items-center gap-2 text-xs text-red-800">
+                            <span class="font-mono bg-red-100 px-2 py-1 rounded">${rca.hotspot}</span>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- 발견된 패턴 -->
+                ${rca.patterns && rca.patterns.length > 0 ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">📊 발생 패턴</h3>
+                    <div class="space-y-2">
+                        ${rca.patterns.map(pattern => `
+                            <div class="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <span class="text-lg">${patternIcons[pattern.type] || '📌'}</span>
+                                <p class="text-sm text-blue-900 flex-1">${pattern.description}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- 가능한 원인 -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🔍 가능한 원인</h3>
+                    <ul class="space-y-2">
+                        ${rca.possibleCauses.map((cause, index) => `
+                            <li class="flex items-start gap-2 text-sm text-gray-700">
+                                <span class="flex-shrink-0 w-5 h-5 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xs font-medium">
+                                    ${index + 1}
+                                </span>
+                                <span class="flex-1">${cause}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+
+                <!-- 권장 해결책 -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">💡 권장 해결책</h3>
+                    <ul class="space-y-2">
+                        ${rca.solutions.map((solution, index) => `
+                            <li class="flex items-start gap-2 text-sm text-gray-700">
+                                <span class="flex-shrink-0 w-5 h-5 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-medium">
+                                    ${index + 1}
+                                </span>
+                                <span class="flex-1 font-mono text-xs bg-gray-50 p-2 rounded">${solution}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+
+                <!-- 유사 해결 사례 -->
+                ${rca.similarResolution ? `
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h3 class="text-sm font-semibold text-green-900 mb-2">✅ 유사 해결 사례</h3>
+                    <div class="text-sm text-green-800">
+                        <p class="font-medium">
+                            <a href="/projects/${currentPublicId}/issues/${rca.similarResolution.issueId}/analysis"
+                               class="text-green-700 hover:text-green-900 underline">
+                                #${rca.similarResolution.issueId} ${rca.similarResolution.issueTitle}
+                            </a>
+                        </p>
+                        <p class="mt-1 text-xs">"${rca.similarResolution.resolutionNote}"</p>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-red-500">근본 원인 분석 중 오류 발생: ${err.message}</p>`;
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 로그 상세
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -361,6 +538,102 @@ function renderLogDetails(issue) {
             </div>
         </div>
     `;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 영향받은 플레이어
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+let currentPage = 0;
+const pageSize = 10;
+
+async function renderAffectedPlayers(issue) {
+    await loadAffectedPlayers(currentPage);
+}
+
+async function loadAffectedPlayers(page) {
+    const container = document.getElementById('affectedPlayers');
+
+    try {
+        const body = await callApi(
+            `/api/projects/${currentProjectId}/issues/${currentIssueId}/affected-players?page=${page}&size=${pageSize}`,
+            { method: 'GET' }
+        );
+
+        if (!body.success) {
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">플레이어 데이터를 불러올 수 없습니다.</p>';
+            return;
+        }
+
+        const data = body.data;
+        const players = data.content;
+
+        if (players.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">영향받은 플레이어가 없습니다.</p>';
+            return;
+        }
+
+        // 테이블 렌더링
+        container.innerHTML = `
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200 text-gray-500 text-xs">
+                            <th class="text-left py-3 px-4 font-medium">플레이어 ID</th>
+                            <th class="text-center py-3 px-4 font-medium">발생 횟수</th>
+                            <th class="text-center py-3 px-4 font-medium">최초 발생</th>
+                            <th class="text-center py-3 px-4 font-medium">최근 발생</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${players.map(player => `
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4">
+                                    <span class="font-mono text-gray-900">${player.userId}</span>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="inline-block px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
+                                        ${player.occurrenceCount}회
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-center text-gray-600 text-xs">
+                                    ${formatDateTime(player.firstOccurredAt)}
+                                </td>
+                                <td class="py-3 px-4 text-center text-gray-600 text-xs">
+                                    ${formatTimeAgo(player.lastOccurredAt)}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 페이지네이션 -->
+            ${data.totalPages > 1 ? `
+                <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                    <p class="text-xs text-gray-500">
+                        총 ${data.totalElements}명의 플레이어 (${data.number + 1} / ${data.totalPages} 페이지)
+                    </p>
+                    <div class="flex gap-2">
+                        <button onclick="loadAffectedPlayers(${page - 1})"
+                                ${!data.first ? '' : 'disabled'}
+                                class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            이전
+                        </button>
+                        <button onclick="loadAffectedPlayers(${page + 1})"
+                                ${!data.last ? '' : 'disabled'}
+                                class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            다음
+                        </button>
+                    </div>
+                </div>
+            ` : ''}
+        `;
+
+        currentPage = page;
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-red-500 text-center py-8">플레이어 데이터 로드 중 오류 발생: ${err.message}</p>`;
+    }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

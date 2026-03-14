@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
  * <p>가중치: - Stack Trace: 60% (Jaccard Similarity) - Error Type: 20% (동일 여부) - Message: 20%
  * (Levenshtein Similarity)
  *
- * <p>참고: Fingerprint 비교는 IssueRecommendationService에서 사전 필터링되므로 이 계산기에 들어오는 이슈들은 모두
- * Fingerprint가 다름이 보장됨
+ * <p>참고: Fingerprint 비교는 IssueRecommendationService에서 사전 필터링되므로 이 계산기에 들어오는 이슈들은 모두 Fingerprint가
+ * 다름이 보장됨
  */
 @Component
 @Slf4j
