@@ -8,6 +8,7 @@ import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -118,6 +119,15 @@ public class GlobalApiExceptionHandler {
                         ? ErrorResponse.withDetails(e.getMessage(), e.getDetails())
                         : ErrorResponse.of(e.getMessage());
         return ResponseEntity.status(e.getStatus()).body(ApiResponse.error(errorResponse));
+    }
+
+    /** 동시 요청으로 인한 DB unique constraint 위반 (check-then-act 사이 race condition) */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
+            DataIntegrityViolationException e, HttpServletRequest request) {
+        log.warn("DataIntegrityViolationException [{}]: {}", request.getRequestURI(), e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(ErrorResponse.of("이미 존재하는 데이터입니다.")));
     }
 
     /** 그 외 모든 예외 (500) */
