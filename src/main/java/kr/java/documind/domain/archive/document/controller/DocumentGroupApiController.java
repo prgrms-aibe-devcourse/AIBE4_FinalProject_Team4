@@ -39,45 +39,45 @@ public class DocumentGroupApiController {
 
     @GetMapping
     public ApiResponse<List<DocumentGroupResponse>> getDocumentGroups(
-        @ProjectId UUID projectId, @PageableDefault(sort = "groupName") Pageable pageable) {
+            @ProjectId UUID projectId, @PageableDefault(sort = "groupName") Pageable pageable) {
         Page<DocumentGroupResponse> groups =
-            documentGroupService.getDocumentGroups(projectId, pageable);
+                documentGroupService.getDocumentGroups(projectId, pageable);
         return PageResponses.of(groups);
     }
 
     @GetMapping("/{groupId}/documents")
     public ApiResponse<List<DocumentMetadataResponse>> getDocumentsByGroup(
-        @ProjectId UUID projectId, @PathVariable Long groupId) {
+            @ProjectId UUID projectId, @PathVariable Long groupId) {
         List<DocumentMetadataResponse> documents =
-            documentGroupService.getDocumentsByGroup(projectId, groupId);
+                documentGroupService.getDocumentsByGroup(projectId, groupId);
         return ApiResponse.success(documents);
     }
 
     @PostMapping("/{groupId}/documents")
-    public ResponseEntity<ApiResponse<DocumentMetadataResponse>> uploadNewVersionDocument(
-        @ProjectId UUID projectId,
-        @PathVariable Long groupId,
-        @RequestPart("request") @Valid NewVersionDocumentUploadRequest request,
-        @RequestPart("file") MultipartFile file) {
+    public ResponseEntity<ApiResponse<DocumentMetadataResponse>> uploadDocumentToGroup(
+            @ProjectId UUID projectId,
+            @PathVariable Long groupId,
+            @RequestPart("request") @Valid NewVersionDocumentUploadRequest request,
+            @RequestPart("file") MultipartFile file) {
         DocumentMetadataResponse response =
-            documentMetadataService.uploadNewVersionDocument(projectId, groupId, request, file);
+                documentMetadataService.uploadDocumentToGroup(projectId, groupId, request, file);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
     @PatchMapping("/{groupId}/groupName")
     public ApiResponse<Void> updateGroupName(
-        @ProjectId UUID projectId,
-        @PathVariable Long groupId,
-        @RequestBody @Valid GroupNameUpdateRequest request) {
+            @ProjectId UUID projectId,
+            @PathVariable Long groupId,
+            @RequestBody @Valid GroupNameUpdateRequest request) {
         documentGroupService.updateGroupName(projectId, groupId, request.groupName());
         return ApiResponse.success();
     }
 
     @PatchMapping("/{groupId}/category")
     public ApiResponse<Void> updateCategory(
-        @ProjectId UUID projectId,
-        @PathVariable Long groupId,
-        @RequestBody @Valid CategoryUpdateRequest request) {
+            @ProjectId UUID projectId,
+            @PathVariable Long groupId,
+            @RequestBody @Valid CategoryUpdateRequest request) {
         documentGroupService.updateCategory(projectId, groupId, request.category());
         return ApiResponse.success();
     }
