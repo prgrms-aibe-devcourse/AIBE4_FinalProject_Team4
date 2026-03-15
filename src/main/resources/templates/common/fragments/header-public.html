@@ -1,21 +1,29 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- 비로그인 공개 헤더 -->
-<header th:fragment="header-public" class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
-        <!-- 로고 -->
-        <a href="/static" class="flex items-center gap-2">
-            <img src="/images/logo.png" alt="Documind" class="h-8 w-auto object-contain">
-        </a>
+<!-- ══════════════════════════════════════════════════════════════
+     header-public : 비로그인 공개 헤더
+     fixed / h-16 / z-50 / bg-surface-sidebar / border-divider
+     ══════════════════════════════════════════════════════════════ -->
+<header th:fragment="header-public"
+        class="fixed top-0 left-0 right-0 z-50 h-16
+               bg-surface-sidebar border-b border-divider
+               flex items-center justify-between px-8">
 
-        <!-- 시작하기 버튼 -->
-        <a href="/auth/login"
-           class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
-            시작하기
-        </a>
-    </div>
+    <!-- 로고 -->
+    <a href="/" class="flex items-center gap-2 select-none">
+        <img src="/images/logo.png" alt="Documind" class="h-8 w-auto object-contain">
+    </a>
+
+    <!-- 우측: 로그인 버튼 -->
+    <a href="/auth/login"
+       class="px-5 py-2 bg-docu-primary hover:bg-docu-primary-dark text-white
+              text-sm font-semibold rounded-docu-btn shadow-docu-sm transition-colors">
+        시작하기
+    </a>
+
 </header>
+
 </body>
 </html>

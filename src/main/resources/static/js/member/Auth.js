@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const logoutBtn     = document.getElementById('logout-btn');
+    const logoutBtn     = document.querySelector('[data-logout-open]');
     const logoutModal   = document.getElementById('logout-modal');
     const logoutConfirm = document.getElementById('logout-confirm');
     const logoutCancel  = document.getElementById('logout-cancel');

@@ -25,9 +25,10 @@ public class AdminViewController {
             return "redirect:/my/company";
         }
 
-        AdminPageData pageData = companyService.getAdminCompanyPageData(authMember.getMemberId());
+        AdminPageData pageData = companyService.getAdminCompanyPageData();
 
-        model.addAttribute("headerInfo", pageData.headerInfo());
+        model.addAttribute("activeMenu", "company");
+        model.addAttribute("showSidebar", true);
         model.addAttribute("pending", pageData.pendingCompanies());
         model.addAttribute("approved", pageData.approvedCompanies());
         model.addAttribute("suspended", pageData.suspendedCompanies());

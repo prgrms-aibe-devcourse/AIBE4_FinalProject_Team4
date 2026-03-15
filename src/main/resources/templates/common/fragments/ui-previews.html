@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  미리보기 전용 fragment 모음
+  - 실제 서비스 fragment와 분리
+-->
+
+<div th:fragment="scroll-panel(title)"
+     class="bg-surface-card border border-divider rounded-docu-card shadow-docu-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-divider bg-surface-base">
+        <p th:text="${title}" class="text-sm font-semibold text-docu-ink">스크롤 패널</p>
+    </div>
+    <div class="docu-scroll h-56 overflow-y-auto px-5 py-4 space-y-3">
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 01</p>
+            <p class="text-xs text-gray-500 mt-1">스크롤바 스타일 확인용 더미 콘텐츠입니다.</p>
+        </div>
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 02</p>
+            <p class="text-xs text-gray-500 mt-1">스크롤 영역 내부에서 일관된 스타일을 보여줍니다.</p>
+        </div>
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 03</p>
+            <p class="text-xs text-gray-500 mt-1">스크롤바 thumb / track 스타일이 적용됩니다.</p>
+        </div>
+        <div class="p-3 rounded-docu-btn border border-divider bg-surface-base">
+            <p class="text-sm font-semibold text-docu-ink">로그 항목 04</p>
+            <p class="text-xs text-gray-500 mt-1">긴 리스트, 패널, 드로어, 테이블에 사용할 수 있습니다.</p>
+        </div>
+    </div>
+</div>
+
+<th:block th:fragment="top-toast-preview(message, type)">
+    <div th:switch="${type}">
+        <div th:case="'info'"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-ink text-white border border-docu-ink
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-docu-primary-light text-docu-primary"
+                  aria-hidden="true">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M13 16h-1v-4h-1m1-4h.01"/>
+                    <circle cx="12" cy="12" r="9"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">알림 메시지</span>
+        </div>
+
+        <div th:case="'success'"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-success text-white border border-docu-success-dark
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-white"
+                  aria-hidden="true">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                    <path d="M5 13l4 4L19 7"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">성공 메시지</span>
+        </div>
+
+        <div th:case="'warning'"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-warning text-docu-ink border border-docu-warning-dark
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/40 text-docu-ink"
+                  aria-hidden="true">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M12 9v3m0 4h.01"/>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">경고 메시지</span>
+        </div>
+
+        <div th:case="'danger'"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-danger text-white border border-docu-danger-dark
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-white"
+                  aria-hidden="true">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M12 9v3m0 4h.01"/>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">에러 메시지</span>
+        </div>
+
+        <div th:case="*"
+             class="inline-flex items-center gap-3 min-w-[320px] max-w-[640px]
+                    px-5 py-3 rounded-full
+                    bg-docu-ink text-white border border-docu-ink
+                    shadow-docu-card">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-docu-primary-light text-docu-primary"
+                  aria-hidden="true">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M13 16h-1v-4h-1m1-4h.01"/>
+                    <circle cx="12" cy="12" r="9"/>
+                </svg>
+            </span>
+            <span class="text-sm font-semibold flex-1" th:text="${message}">알림 메시지</span>
+        </div>
+    </div>
+</th:block>
+
+<th:block th:fragment="alarm-toast-preview(title, badgeLabel, message, actionLabel, actionHref, type)">
+    <div th:switch="${type}">
+        <!-- RAG / 문서 -->
+        <div th:case="'rag'"
+             class="w-full max-w-sm bg-surface-card border border-docu-primary rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-docu-primary-light text-docu-primary
+                            flex items-center justify-center border border-docu-primary/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6M9 17h6"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-docu-primary" th:text="${title}">문서</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-primary text-white"
+                              th:text="${badgeLabel}">RAG 인덱싱 완료</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        업로드된 문서 분석이 완료되었습니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-docu-primary hover:underline"
+                       th:text="${actionLabel}">
+                        문서 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patchnote / 패치노트 -->
+        <div th:case="'patchnote'"
+             class="w-full max-w-sm bg-surface-card border border-docu-success rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-docu-success-light text-docu-success
+                            flex items-center justify-center border border-docu-success/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-docu-success" th:text="${title}">패치노트</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-success text-white"
+                              th:text="${badgeLabel}">새 패치노트</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        패치노트 초안이 생성되었습니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-docu-success hover:underline"
+                       th:text="${actionLabel}">
+                        패치노트 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log / 로그 탐색기 -->
+        <div th:case="'log'"
+             class="w-full max-w-sm bg-surface-card border border-docu-warning rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-docu-warning-light text-docu-warning-dark
+                            flex items-center justify-center border border-docu-warning/30">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h4"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6h10"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 12h7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 12h3"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 18h2"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h8"/>
+                        <circle cx="8" cy="6" r="1"/>
+                        <circle cx="14" cy="12" r="1"/>
+                        <circle cx="9" cy="18" r="1"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-docu-warning-dark" th:text="${title}">로그 탐색기</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-warning-dark text-white"
+                              th:text="${badgeLabel}">로그 분석</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        새 로그 패턴이 탐지되었습니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-docu-warning-dark hover:underline"
+                       th:text="${actionLabel}">
+                        로그 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Issue / 이슈 -->
+        <div th:case="'issue'"
+             class="w-full max-w-sm bg-surface-card border border-docu-danger rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-docu-danger-light text-docu-danger
+                            flex items-center justify-center border border-docu-danger/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16h.01"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-docu-danger" th:text="${title}">이슈</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-danger text-white"
+                              th:text="${badgeLabel}">새 이슈</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        CRITICAL 이슈가 생성되었습니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-docu-danger hover:underline"
+                       th:text="${actionLabel}">
+                        이슈 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEFAULT -->
+        <div th:case="*"
+             class="w-full max-w-sm bg-surface-card border border-divider rounded-docu-card
+                    shadow-docu-card p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 text-gray-500
+                            flex items-center justify-center border border-gray-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-gray-600" th:text="${title}">알림</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-400 text-white"
+                              th:text="${badgeLabel}">알림</span>
+                    </div>
+
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2"
+                       th:text="${message}">
+                        알림 메시지입니다.
+                    </p>
+
+                    <a th:href="${actionHref}"
+                       class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-gray-500 hover:underline"
+                       th:text="${actionLabel}">
+                        바로가기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+</body>
+</html>

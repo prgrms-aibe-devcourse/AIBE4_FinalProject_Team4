@@ -44,11 +44,13 @@ public class SecurityConfig {
     private static final String[] PUBLIC_GET_PATHS = {
         "/",
         "/auth/login",
+        "/preview/**",
         "/invite/**", // /invite/{token} 페이지 접근 허용
         "/error",
         "/css/**",
         "/js/**",
         "/images/**",
+        "/fonts/**",
         "/favicon.ico",
     };
 

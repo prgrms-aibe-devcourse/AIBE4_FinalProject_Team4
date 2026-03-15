@@ -33,6 +33,8 @@ import kr.java.documind.global.util.HmacApiKeyUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -57,7 +59,7 @@ public class ProjectService {
     @Value("${app.api-key.hmac-secret}")
     private String hmacSecret;
 
-    @Transactional
+    @CacheEvict(cacheNames = "projectSelector", key = "#memberId")
     public ProjectCreateResponse createProject(UUID memberId, String name) {
         Member member = memberService.getMemberWithCompany(memberId);
 
@@ -94,6 +96,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "projectSelector", allEntries = true)
     public ProfileImageResponse uploadProjectProfileImage(
             String publicId, UUID memberId, MultipartFile file) {
 
@@ -138,13 +141,11 @@ public class ProjectService {
                         .findByProjectAndMember(project, currentMember)
                         .orElseThrow(() -> new NotFoundException("프로젝트 멤버 정보를 찾을 수 없습니다."));
 
-        var headerInfo = memberService.getHeaderInfo(currentMember);
-
         String projectProfileUrl =
                 project.getProfileKey() != null
                         ? fileStore.getAccessUrl(project.getProfileKey())
                         : null;
-        var projectSummary =
+        ProjectSummary projectSummary =
                 new ProjectSummary(project.getPublicId(), project.getName(), projectProfileUrl);
 
         List<ProjectMemberRow> members =
@@ -170,34 +171,16 @@ public class ProjectService {
                                 })
                         .toList();
 
-        List<ProjectSummary> myProjects =
-                projectMemberRepository
-                        .findByMemberAndStatusFetchProject(currentMember, AccountStatus.ACTIVE)
-                        .stream()
-                        .filter(pm -> pm.getProject().isActive())
-                        .map(
-                                pm -> {
-                                    Project p = pm.getProject();
-                                    String pUrl =
-                                            p.getProfileKey() != null
-                                                    ? fileStore.getAccessUrl(p.getProfileKey())
-                                                    : null;
-                                    return new ProjectSummary(p.getPublicId(), p.getName(), pUrl);
-                                })
-                        .toList();
-
         ProjectApiKeyInfo apiKeyInfo = null;
         if (currentPm.isManager()) {
             apiKeyInfo = getProjectApiKeysForSetting(project);
         }
 
         return new ProjectSettingPageData(
-                headerInfo,
                 projectSummary,
                 currentPm.getProjectRole(),
                 currentMember.isCeo(),
                 members,
-                myProjects,
                 apiKeyInfo);
     }
 
@@ -228,7 +211,8 @@ public class ProjectService {
         }
     }
 
-    public List<ProjectSummary> getDashboardProjects(UUID memberId) {
+    @Cacheable(cacheNames = "projectSelector", key = "#memberId")
+    public List<ProjectSummary> getProjectSelectorList(UUID memberId) {
         return projectMemberRepository
                 .findByMemberIdAndStatusFetchProject(memberId, AccountStatus.ACTIVE)
                 .stream()
@@ -246,6 +230,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "projectSelector", allEntries = true)
     public void updateProjectName(String publicId, UUID memberId, String name) {
         Project project =
                 projectRepository
@@ -343,6 +328,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "projectSelector", key = "#memberId")
     public void leaveProject(String publicId, UUID memberId) {
         Project project =
                 projectRepository
@@ -373,6 +359,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "projectSelector", allEntries = true)
     public void deleteProject(String publicId, UUID memberId) {
         Project project =
                 projectRepository
