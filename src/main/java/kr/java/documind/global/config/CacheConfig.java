@@ -1,20 +1,22 @@
 package kr.java.documind.global.config;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.time.Duration;
+import kr.java.documind.domain.member.model.dto.ProjectSummary;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.RedisSerializer;
+import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.time.Duration;
+import java.util.List;
 
 @Configuration
 @EnableCaching
@@ -25,26 +27,32 @@ public class CacheConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
-        BasicPolymorphicTypeValidator ptv =
-                BasicPolymorphicTypeValidator.builder()
-                        .allowIfBaseType(java.util.List.class)
-                        .allowIfBaseType(java.util.Map.class)
-                        .allowIfSubType("kr.java.documind.") // 도메인 DTO 패키지 허용
-                        .allowIfSubType("java.time.") // 시간 관련 클래스 허용
-                        .allowIfSubType("java.lang.") // String 등 기본 클래스 허용
-                        .build();
+        JavaType projectSummaryListType =
+                objectMapper
+                        .getTypeFactory()
+                        .constructCollectionType(List.class, ProjectSummary.class);
+        
+        RedisSerializer<Object> projectSummarySerializer =
+                new RedisSerializer<Object>() {
+                    @Override
+                    public byte[] serialize(Object t) throws SerializationException {
+                        try {
+                            return objectMapper.writeValueAsBytes(t);
+                        } catch (Exception e) {
+                            throw new SerializationException("Redis 직렬화 에러", e);
+                        }
+                    }
 
-        objectMapper.activateDefaultTyping(
-                BasicPolymorphicTypeValidator.builder().allowIfSubType("kr.java.documind").allowIfSubType("java.util").build(),
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY);
-
-        objectMapper.setTypeFactory(
-                TypeFactory.defaultInstance()
-                        .withClassLoader(Thread.currentThread().getContextClassLoader()));
-
-        GenericJackson2JsonRedisSerializer serializer =
-                new GenericJackson2JsonRedisSerializer(objectMapper);
+                    @Override
+                    public Object deserialize(byte[] bytes) throws SerializationException {
+                        if (bytes == null || bytes.length == 0) return null;
+                        try {
+                            return objectMapper.readValue(bytes, projectSummaryListType);
+                        } catch (Exception e) {
+                            throw new SerializationException("Redis 역직렬화 에러", e);
+                        }
+                    }
+                };
 
         RedisCacheConfiguration projectSelectorConfig =
                 RedisCacheConfiguration.defaultCacheConfig()
@@ -54,7 +62,7 @@ public class CacheConfig {
                                         new StringRedisSerializer()))
                         .serializeValuesWith(
                                 RedisSerializationContext.SerializationPair.fromSerializer(
-                                        serializer));
+                                        projectSummarySerializer));
 
         return RedisCacheManager.builder(connectionFactory)
                 .withCacheConfiguration("projectSelector", projectSelectorConfig)
