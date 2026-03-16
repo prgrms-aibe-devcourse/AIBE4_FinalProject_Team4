@@ -12,7 +12,6 @@ import javax.crypto.spec.SecretKeySpec;
 public final class HmacApiKeyUtil {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
-    private static final String KEY_PREFIX = "dm_";
 
     /** 랜덤 바이트 수: 256비트 */
     private static final int RAW_BYTES = 32;
@@ -27,10 +26,10 @@ public final class HmacApiKeyUtil {
 
     private HmacApiKeyUtil() {}
 
-    public static String generatePlainKey() {
+    public static String generatePlainKey(String prefix) {
         byte[] bytes = new byte[RAW_BYTES];
         SECURE_RANDOM.nextBytes(bytes);
-        return KEY_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return prefix + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     public static String computeHmac(String plainKey, String hmacSecret) {
@@ -59,13 +58,17 @@ public final class HmacApiKeyUtil {
         return plainKey.substring(Math.max(0, len - LAST4_LEN));
     }
 
+    public static String maskApiKey(String prefix, String last4) {
+        return prefix.substring(0, Math.min(12, prefix.length())) + "****" + last4;
+    }
+
     public static String maskApiKey(String plainKey) {
         if (plainKey == null || plainKey.length() <= 8) {
             return "****";
         }
         String prefix = extractPrefix(plainKey);
         String last4 = extractLast4(plainKey);
-        return prefix.substring(0, Math.min(12, prefix.length())) + "****" + last4;
+        return maskApiKey(prefix, last4);
     }
 
     private static String toHex(byte[] bytes) {

@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import kr.java.documind.domain.auth.model.enums.ApiKeyType;
 import kr.java.documind.domain.member.model.enums.ApiKeyStatus;
 import kr.java.documind.global.entity.BaseEntity;
 import lombok.AccessLevel;
@@ -29,6 +30,10 @@ public class ProjectApiKey extends BaseEntity {
     private String apiKeyHash;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "key_type", nullable = false, length = 20)
+    private ApiKeyType keyType;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "api_key_status", nullable = false, length = 20)
     private ApiKeyStatus apiKeyStatus;
 
@@ -42,12 +47,17 @@ public class ProjectApiKey extends BaseEntity {
     private LocalDateTime revokedAt;
 
     public static ProjectApiKey create(
-            Project project, String apiKeyHash, String keyPrefix, String keyLast4) {
+            Project project,
+            String apiKeyHash,
+            String keyPrefix,
+            String keyLast4,
+            ApiKeyType keyType) {
         ProjectApiKey apiKey = new ProjectApiKey();
         apiKey.project = project;
         apiKey.apiKeyHash = apiKeyHash;
         apiKey.keyPrefix = keyPrefix;
         apiKey.keyLast4 = keyLast4;
+        apiKey.keyType = keyType;
         apiKey.apiKeyStatus = ApiKeyStatus.ACTIVE;
         return apiKey;
     }

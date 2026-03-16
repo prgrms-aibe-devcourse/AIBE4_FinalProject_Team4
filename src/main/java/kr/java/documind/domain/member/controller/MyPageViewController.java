@@ -1,15 +1,12 @@
 package kr.java.documind.domain.member.controller;
 
-import java.util.List;
-import kr.java.documind.domain.auth.model.dto.HeaderInfo;
+import jakarta.servlet.http.HttpServletRequest;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
-import kr.java.documind.domain.member.model.dto.ProjectSummary;
-import kr.java.documind.domain.member.service.CompanyService;
-import kr.java.documind.domain.member.service.CompanyService.AdminPageData;
+import kr.java.documind.domain.auth.service.CurrentUserViewContextService;
+import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.service.MemberService;
 import kr.java.documind.domain.member.service.MemberService.CompanyPageData;
 import kr.java.documind.domain.member.service.MemberService.ProfilePageData;
-import kr.java.documind.domain.member.service.ProjectService;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,62 +21,52 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class MyPageViewController {
 
     private final MemberService memberService;
-    private final CompanyService companyService;
-    private final ProjectService projectService;
+    private final CurrentUserViewContextService currentUserViewContextService;
 
     @GetMapping("/profile")
-    public String profile(@AuthenticationPrincipal CustomUserDetails authMember, Model model) {
+    public String profile(
+            @AuthenticationPrincipal CustomUserDetails authMember,
+            HttpServletRequest request,
+            Model model) {
 
-        ProfilePageData pageData = memberService.getProfilePageData(authMember.getMemberId());
+        Member member =
+                currentUserViewContextService.getCurrentMember(authMember.getMemberId(), request);
+        ProfilePageData pageData = memberService.getProfilePageData(member);
 
-        model.addAttribute("headerInfo", pageData.headerInfo());
         model.addAttribute("profile", pageData.profileDetail());
+        model.addAttribute("activeMenu", "profile");
+        model.addAttribute("showSidebar", true);
         return "member/my-profile";
     }
 
     @GetMapping("/company")
-    public String company(@AuthenticationPrincipal CustomUserDetails authMember, Model model) {
+    public String company(
+            @AuthenticationPrincipal CustomUserDetails authMember,
+            HttpServletRequest request,
+            Model model) {
 
         if (authMember.getGlobalRole() == GlobalRole.ADMIN) {
-            return "redirect:/my/company/admin";
+            return "redirect:/admin/companies";
         }
 
-        CompanyPageData pageData = memberService.getCompanyPageData(authMember.getMemberId());
+        if (authMember.getGlobalRole() == GlobalRole.EMPLOYEE) {
+            return "redirect:/my/profile";
+        }
 
-        model.addAttribute("headerInfo", pageData.headerInfo());
+        Member member =
+                currentUserViewContextService.getCurrentMember(authMember.getMemberId(), request);
+        CompanyPageData pageData = memberService.getCompanyPageData(member);
+
         model.addAttribute("company", pageData.companyDetail());
+        model.addAttribute("activeMenu", "company");
+        model.addAttribute("showSidebar", true);
         return "member/company";
     }
 
-    @GetMapping("/company/admin")
-    public String companyAdmin(@AuthenticationPrincipal CustomUserDetails authMember, Model model) {
-
-        if (authMember.getGlobalRole() != GlobalRole.ADMIN) {
-            return "redirect:/my/company";
-        }
-
-        AdminPageData pageData = companyService.getAdminCompanyPageData(authMember.getMemberId());
-
-        model.addAttribute("headerInfo", pageData.headerInfo());
-        model.addAttribute("pending", pageData.pendingCompanies());
-        model.addAttribute("approved", pageData.approvedCompanies());
-        model.addAttribute("suspended", pageData.suspendedCompanies());
-        model.addAttribute("pendingCount", pageData.pendingCount());
-        model.addAttribute("approvedCount", pageData.approvedCount());
-        model.addAttribute("suspendedCount", pageData.suspendedCount());
-        return "member/company-admin";
-    }
-
     @GetMapping("/projects")
-    public String projects(@AuthenticationPrincipal CustomUserDetails authMember, Model model) {
-
-        HeaderInfo headerInfo = memberService.getHeaderInfo(authMember.getMemberId());
-        List<ProjectSummary> projects =
-                projectService.getDashboardProjects(authMember.getMemberId());
-
-        model.addAttribute("headerInfo", headerInfo);
-        model.addAttribute("projects", projects);
+    public String projects(Model model) {
         model.addAttribute("showSidebar", true);
+        model.addAttribute("activeMenu", "projects");
         return "member/dashboard";
     }
 }

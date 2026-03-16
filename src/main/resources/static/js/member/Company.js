@@ -11,16 +11,12 @@ function previewCompanyIcon(input) {
         if (preview) {
             preview.src = e.target.result;
         } else if (fallback) {
-            const wrapper = document.createElement('div');
-            wrapper.id = 'company-icon-wrapper';
-            wrapper.className = 'w-20 h-20 rounded-full overflow-hidden ring-2 ring-gray-200 group-hover:ring-blue-300 transition-all';
             const img = document.createElement('img');
             img.id = 'company-icon-preview';
             img.src = e.target.result;
             img.className = 'w-full h-full object-cover';
             img.alt = '회사 아이콘';
-            wrapper.appendChild(img);
-            fallback.replaceWith(wrapper);
+            fallback.replaceWith(img);
         }
     };
     reader.readAsDataURL(pendingCompanyIconFile);
@@ -149,36 +145,30 @@ function resetCompanyForm() {
     pendingCompanyIconFile = null;
     const originalSrc = document.getElementById('company-icon-original-src')?.value || '';
     const preview = document.getElementById('company-icon-preview');
-    const wrapper = document.getElementById('company-icon-wrapper');
 
     if (originalSrc) {
-        // 원본 이미지 있음 → src 복원 (preview 이미 있으면 src 만 교체)
+        // 원본 이미지 있음 → src 복원
         if (preview) {
             preview.src = originalSrc;
         } else {
             const fallback = document.getElementById('company-icon-fallback');
             if (fallback) {
-                const newWrapper = document.createElement('div');
-                newWrapper.className = 'w-20 h-20 rounded-full overflow-hidden ring-2 ring-gray-200 group-hover:ring-blue-300 transition-all';
                 const img = document.createElement('img');
                 img.id = 'company-icon-preview';
                 img.src = originalSrc;
                 img.className = 'w-full h-full object-cover';
                 img.alt = '회사 아이콘';
-                newWrapper.appendChild(img);
-                fallback.replaceWith(newWrapper);
+                fallback.replaceWith(img);
             }
         }
     } else {
-        // 원본 이미지 없음 → 미리보기(wrapper 포함)를 fallback div 로 되돌림
-        const companyInitial = (nameInput?.defaultValue?.charAt(0) || '+').toUpperCase();
-        const fallbackDiv = document.createElement('div');
-        fallbackDiv.id = 'company-icon-fallback';
-        fallbackDiv.className = 'w-20 h-20 rounded-full bg-sky-400 flex items-center justify-center ring-2 ring-gray-200 group-hover:ring-blue-300 transition-all';
-        fallbackDiv.innerHTML = `<span class="text-2xl font-bold text-white">${companyInitial}</span>`;
-        if (wrapper) {
-            wrapper.replaceWith(fallbackDiv);
-        } else if (preview) {
+        // 원본 이미지 없음 → 미리보기를 fallback div 로 되돌림
+        if (preview) {
+            const companyInitial = (nameInput?.defaultValue?.charAt(0) || '+').toUpperCase();
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.id = 'company-icon-fallback';
+            fallbackDiv.className = 'w-full h-full flex items-center justify-center bg-docu-primary text-white text-2xl font-bold';
+            fallbackDiv.innerHTML = `<span>${companyInitial}</span>`;
             preview.replaceWith(fallbackDiv);
         }
     }

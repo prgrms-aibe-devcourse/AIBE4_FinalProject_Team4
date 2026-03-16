@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="sidebar(data)">
+
+    <aside class="hidden lg:flex fixed top-0 left-0 h-full w-sidebar bg-surface-sidebar border-r border-divider
+                  z-40 flex-col overflow-hidden"
+           aria-label="프로젝트 설정 사이드바">
+
+        <!-- 로고 -->
+        <div class="h-header flex items-center px-4 bg-surface-sidebar shrink-0">
+            <a href="/member/dashboard"
+               class="flex items-center gap-2 select-none rounded-docu-btn focus-ring"
+               aria-label="Documind 대시보드로 이동">
+                <img src="/images/logo.png" alt="Documind 로고" class="h-8 w-auto object-contain">
+            </a>
+        </div>
+
+        <!-- 뒤로가기 -->
+        <div class="px-4 py-3 border-b border-divider shrink-0">
+            <a th:href="@{/projects/{id}/groups(id=${data.project().publicId()})}"
+               class="flex items-center gap-2 text-sm font-semibold text-docu-secondary hover:text-docu-ink transition-colors rounded-docu-btn focus-ring">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 19l-7-7 7-7"/>
+                </svg>
+                프로젝트 돌아가기
+            </a>
+        </div>
+
+        <!-- 소속 회사 정보 -->
+        <div th:if="${headerInfo != null and headerInfo.globalRole() != null
+                      and headerInfo.globalRole().name() != 'ADMIN'}"
+             class="px-4 py-3 border-b border-divider shrink-0">
+
+            <div th:if="${headerInfo.companyName() != null}" class="flex items-center gap-3">
+                <div th:if="${headerInfo.companyProfileUrl() != null}"
+                     class="w-9 h-9 rounded-full overflow-hidden shrink-0">
+                    <img th:src="${headerInfo.companyProfileUrl()}"
+                         th:alt="${headerInfo.companyName() + ' 회사 프로필 이미지'}"
+                         class="w-full h-full object-cover"/>
+                </div>
+
+                <div th:unless="${headerInfo.companyProfileUrl() != null}"
+                     class="w-9 h-9 rounded-full bg-docu-primary flex items-center justify-center shrink-0">
+                    <span th:text="${#strings.substring(headerInfo.companyName(), 0, 1)}"
+                          class="text-white text-sm font-bold"></span>
+                </div>
+
+                <div class="flex flex-col min-w-0">
+                    <span th:text="${headerInfo.companyName()}"
+                          class="text-sm font-semibold text-docu-ink truncate"></span>
+                    <span class="text-xs text-docu-secondary">내 회사</span>
+                </div>
+            </div>
+
+            <div th:unless="${headerInfo.companyName() != null}" class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-surface-point flex items-center justify-center shrink-0 border border-divider"
+                     aria-hidden="true">
+                    <svg class="w-4 h-4 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
+                                 m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/>
+                    </svg>
+                </div>
+                <span class="text-sm text-docu-secondary">소속 없음</span>
+            </div>
+        </div>
+
+        <!-- 프로젝트 드롭다운 -->
+        <div class="px-3 py-3 border-b border-divider shrink-0">
+            <div class="relative">
+                <button id="project-selector-btn"
+                        type="button"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-controls="project-dropdown"
+                        class="w-full flex items-center justify-between gap-2
+                               px-3 py-2.5 rounded-docu-btn border border-divider
+                               bg-surface-card hover:bg-white transition-colors text-left shadow-docu-sm focus-ring">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-docu-btn bg-docu-primary-light flex items-center justify-center
+                                    overflow-hidden shrink-0 border border-divider">
+                            <img th:if="${data.project().profileUrl() != null}"
+                                 th:src="${data.project().profileUrl()}"
+                                 alt="프로젝트 로고"
+                                 class="w-full h-full object-cover"/>
+                            <svg th:unless="${data.project().profileUrl() != null}"
+                                 class="w-4 h-4 text-docu-primary" fill="none" stroke="currentColor"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0
+                                         01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2
+                                         a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0
+                                         01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2
+                                         a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-docu-ink truncate"
+                              th:text="${data.project().name()}">프로젝트명</span>
+                    </div>
+                    <svg id="project-selector-chevron"
+                         class="w-4 h-4 text-docu-secondary shrink-0 transition-transform duration-200"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <div id="project-dropdown"
+                     role="listbox"
+                     aria-label="프로젝트 목록"
+                     class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-divider
+                            rounded-docu-btn shadow-docu-card z-50 overflow-hidden max-h-56 overflow-y-auto docu-scroll">
+                    <div th:if="${projectList != null and not #lists.isEmpty(projectList)}">
+                        <a th:each="proj : ${projectList}"
+                           th:href="@{/projects/{id}/settings(id=${proj.publicId()})}"
+                           th:classappend="${proj.publicId() == data.project().publicId()}
+                                           ? 'bg-docu-primary text-white'
+                                           : 'text-docu-ink hover:bg-surface-base'"
+                           class="flex items-center gap-3 px-3 py-2.5 text-sm transition-colors focus-ring-inset">
+                            <div class="w-7 h-7 rounded-docu-btn bg-docu-primary-light flex items-center
+                                        justify-center overflow-hidden shrink-0">
+                                <img th:if="${proj.profileUrl() != null}"
+                                     th:src="${proj.profileUrl()}" alt=""
+                                     class="w-full h-full object-cover"/>
+                                <svg th:unless="${proj.profileUrl() != null}"
+                                     class="w-3.5 h-3.5 text-docu-primary" fill="none"
+                                     stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="1.5"
+                                          d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
+                                             a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2
+                                             a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"/>
+                                </svg>
+                            </div>
+                            <span th:text="${proj.name()}" class="truncate"></span>
+                            <svg th:if="${proj.publicId() == data.project().publicId()}"
+                                 class="w-4 h-4 ml-auto shrink-0"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div th:if="${projectList == null or #lists.isEmpty(projectList)}"
+                         class="px-3 py-4 text-center text-sm text-docu-secondary">
+                        참여 중인 프로젝트가 없습니다
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 설정 섹션 내비게이션 -->
+        <nav class="flex-1 flex flex-col gap-1 p-3 overflow-y-auto docu-scroll" aria-label="프로젝트 설정 메뉴">
+
+            <button type="button"
+                    class="setting-nav-link sidebar-link sidebar-link-idle w-full text-left"
+                    data-target="section-details">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
+                             a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                세부사항
+            </button>
+
+            <button th:if="${data.isManager()}"
+                    type="button"
+                    class="setting-nav-link sidebar-link sidebar-link-idle w-full text-left"
+                    data-target="section-apikey">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2
+                             H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964
+                             A6 6 0 1121 9z"/>
+                </svg>
+                API Key
+            </button>
+
+            <button type="button"
+                    class="setting-nav-link sidebar-link sidebar-link-idle w-full text-left"
+                    data-target="section-access">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1
+                             a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                액세스
+            </button>
+
+            <button type="button"
+                    class="setting-nav-link sidebar-link sidebar-link-idle w-full text-left"
+                    data-target="section-danger">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667
+                             1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0
+                             L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                위험 구역
+            </button>
+        </nav>
+    </aside>
+
+    <script>
+        (function () {
+            // ── 프로젝트 드롭다운 (사이드바 내부 요소 → 즉시 실행 가능) ──
+            const selectorBtn = document.getElementById('project-selector-btn');
+            const dropdown = document.getElementById('project-dropdown');
+            const chevron = document.getElementById('project-selector-chevron');
+
+            if (selectorBtn && dropdown && chevron) {
+                function openDropdown() {
+                    dropdown.classList.remove('hidden');
+                    chevron.classList.add('rotate-180');
+                    selectorBtn.setAttribute('aria-expanded', 'true');
+                }
+
+                function closeDropdown() {
+                    dropdown.classList.add('hidden');
+                    chevron.classList.remove('rotate-180');
+                    selectorBtn.setAttribute('aria-expanded', 'false');
+                }
+
+                selectorBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const isOpen = selectorBtn.getAttribute('aria-expanded') === 'true';
+                    if (isOpen) closeDropdown();
+                    else openDropdown();
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!dropdown.contains(e.target) && !selectorBtn.contains(e.target)) {
+                        closeDropdown();
+                    }
+                });
+
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') closeDropdown();
+                });
+            }
+
+            // navLinks는 사이드바 내부에 있으므로 즉시 조회 가능
+            var navLinks = Array.from(document.querySelectorAll('.setting-nav-link'));
+
+            function setActiveLink(activeId) {
+                navLinks.forEach(function (link) {
+                    var isActive = link.dataset.target === activeId;
+                    link.classList.toggle('sidebar-link-active', isActive);
+                    link.classList.toggle('sidebar-link-idle', !isActive);
+                    if (isActive) {
+                        link.setAttribute('aria-current', 'page');
+                    } else {
+                        link.removeAttribute('aria-current');
+                    }
+                });
+            }
+
+            // ── 클릭 + 스파이: 섹션은 DOMContentLoaded 후에 참조해야 함 ──
+            // section-apikey 는 isManager 조건부 렌더링이라 DOM에 없을 수 있음
+            document.addEventListener('DOMContentLoaded', function () {
+                var HEADER_H = 64; // tailwind spacing.header = 64px
+
+                // DOM에 실제 존재하는 섹션만 수집
+                var validPairs = navLinks
+                    .map(function (link) {
+                        return { link: link, section: document.getElementById(link.dataset.target) };
+                    })
+                    .filter(function (pair) { return pair.section !== null; });
+
+                if (validPairs.length === 0) return;
+
+                var sections = validPairs.map(function (p) { return p.section; });
+
+                // 초기 활성화: 첫 번째 섹션 (세부사항)
+                setActiveLink(sections[0].id);
+
+                // ── 클릭 핸들러 ──
+                // 첫 번째(세부사항): 최상단으로 / 마지막(위험구역): 최하단으로 / 중간: 헤더 보정 스크롤
+                validPairs.forEach(function (pair, idx) {
+                    pair.link.addEventListener('click', function () {
+                        if (idx === 0) {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else if (idx === sections.length - 1) {
+                            window.scrollTo({
+                                top: document.documentElement.scrollHeight,
+                                behavior: 'smooth'
+                            });
+                        } else {
+                            var top = pair.section.offsetTop - HEADER_H - 8;
+                            window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+                        }
+                    });
+                });
+
+                // ── 스크롤 스파이: offsetTop 기반 ──
+                // triggerLine(= scrollY + HEADER_H + 16) 이하에 있는 가장 마지막 섹션을 활성화
+                function updateScrollSpy() {
+                    var scrollY   = window.scrollY;
+                    var maxScroll = Math.max(0,
+                        document.documentElement.scrollHeight - window.innerHeight);
+
+                    // 최하단: 마지막 섹션 활성화
+                    if (maxScroll > 0 && scrollY + 5 >= maxScroll) {
+                        setActiveLink(sections[sections.length - 1].id);
+                        return;
+                    }
+
+                    var triggerY = scrollY + HEADER_H + 16;
+                    var active   = sections[0]; // 기본값: 첫 번째 섹션
+                    for (var i = sections.length - 1; i >= 0; i--) {
+                        if (sections[i].offsetTop <= triggerY) {
+                            active = sections[i];
+                            break;
+                        }
+                    }
+                    setActiveLink(active.id);
+                }
+
+                updateScrollSpy();
+                window.addEventListener('scroll', updateScrollSpy, { passive: true });
+            });
+        })();
+    </script>
+
+</th:block>
+
+</body>
+</html>

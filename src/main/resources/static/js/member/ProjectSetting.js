@@ -14,7 +14,7 @@ function showCreatedBanner() {
     const msg = sessionStorage.getItem('projectCreatedMessage');
     if (!msg) return;
     sessionStorage.removeItem('projectCreatedMessage');
-    showTopToast(msg);
+    showTopToast(msg, 'success');
 }
 
 function initProjectDropdown() {
@@ -162,8 +162,8 @@ function _showDetailsMsg(message, type = 'info') {
     const el = document.getElementById('details-success-message');
     if (!el) return;
     el.textContent = message;
-    el.classList.remove('hidden', 'text-green-600', 'text-gray-500');
-    el.classList.add(type === 'success' ? 'text-green-600' : 'text-gray-500');
+    el.classList.remove('hidden', 'text-docu-success-dark', 'text-docu-secondary');
+    el.classList.add(type === 'success' ? 'text-docu-success-dark' : 'text-docu-secondary');
     el.classList.remove('hidden');
     setTimeout(() => el.classList.add('hidden'), 3000);
 }
@@ -293,8 +293,8 @@ function copyApiKey() {
     if (!display) return;
 
     navigator.clipboard.writeText(display.textContent.trim())
-        .then(() => showTopToast('클립보드에 복사되었습니다.'))
-        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.'));
+        .then(() => showTopToast('클립보드에 복사되었습니다.', 'success'))
+        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.', 'danger'));
 }
 
 async function reissueApiKey() {
@@ -332,8 +332,8 @@ function copyPlainApiKey() {
     const display = document.getElementById('plain-api-key-display');
     if (!display) return;
     navigator.clipboard.writeText(display.textContent.trim())
-        .then(() => showTopToast('클립보드에 복사되었습니다.'))
-        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.'));
+        .then(() => showTopToast('클립보드에 복사되었습니다.', 'success'))
+        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.', 'danger'));
 }
 
 async function toggleApiKey(currentStatus) {
@@ -359,19 +359,38 @@ async function toggleApiKey(currentStatus) {
 }
 
 
-async function changeRole(memberId, newRole) {
+async function changeRole(selectElement) {
+    const memberId = selectElement.dataset.mid;
+    const newRole = selectElement.value;
+    const isMe = selectElement.dataset.isMe === 'true';
+
+    if (isMe && newRole === 'MEMBER') {
+        const msg = "프로젝트 권한을 '구성원'으로 변경하시겠습니까?\n\n" +
+                    "구성원 권한으로 변경되면 프로젝트 세부사항 변경, API 키 관리,\n" +
+                    "멤버 초대 및 관리 기능을 더 이상 사용할 수 없게 됩니다.";
+        if (!confirm(msg)) {
+            selectElement.value = 'MANAGER'; // 취소 시 원래 값으로 복원
+            return;
+        }
+    }
+
     try {
         const body = await callApi(`/api/projects/${_PS.publicId}/members/${memberId}/role`, {
             method: 'PATCH',
             body: JSON.stringify({ role: newRole }),
         });
-        if (!body.success) {
+        if (body.success) {
+            alert('권한이 변경되었습니다.');
+            if (isMe) {
+                location.reload(); // 자신의 권한이 바뀌었으므로 새로고침
+            }
+        } else {
             alert(body.error?.message ?? '역할 변경에 실패했습니다.');
-            window.location.reload(); // 셀렉트 원복
+            selectElement.value = newRole === 'MANAGER' ? 'MEMBER' : 'MANAGER'; // API 실패 시 원래 값으로 복원
         }
     } catch (err) {
         alert(err.message);
-        window.location.reload();
+        selectElement.value = newRole === 'MANAGER' ? 'MEMBER' : 'MANAGER'; // API 실패 시 원래 값으로 복원
     }
 }
 
@@ -441,7 +460,7 @@ async function sendInvite() {
         });
         if (body.success) {
             closeInviteModal();
-            showTopToast('초대를 발송했습니다. 메일은 비동기로 처리됩니다.');
+            showTopToast('초대를 발송했습니다. 메일은 비동기로 처리됩니다.', 'success');
         } else {
             setError(body.error?.message ?? '초대 전송에 실패했습니다.');
         }

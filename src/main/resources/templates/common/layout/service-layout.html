@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/base-layout}">
+<body>
+<th:block layout:fragment="body">
+
+    <!-- 고정 헤더 -->
+    <div th:replace="~{common/fragments/header-auth :: header-auth}"></div>
+
+    <!-- 메인 사이드바 -->
+    <div th:replace="~{common/fragments/sidebar-main :: sidebar(${activeMenu}, ${activeProject})}"></div>
+
+    <!-- 콘텐츠 래퍼 -->
+    <div class="pt-header lg:pl-sidebar min-h-screen flex flex-col bg-surface-base pb-16 lg:pb-0">
+
+        <main id="main-content"
+              class="flex-1 p-4 sm:p-content-p overflow-y-auto"
+              role="main"
+              tabindex="-1">
+            <th:block layout:fragment="content">
+                <!-- fallback -->
+            </th:block>
+        </main>
+
+        <div th:replace="~{common/layout/layout-common :: app-footer}"></div>
+    </div>
+
+    <th:block th:replace="~{common/layout/layout-common :: layout-overlays}"></th:block>
+
+</th:block>
+</body>
+</html>

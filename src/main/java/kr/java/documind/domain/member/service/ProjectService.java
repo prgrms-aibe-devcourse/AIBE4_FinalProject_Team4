@@ -8,6 +8,7 @@ import kr.java.documind.domain.auth.exception.DeletedProjectException;
 import kr.java.documind.domain.auth.exception.ProjectNotFoundException;
 import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.domain.auth.model.entity.ProjectApiKey;
+import kr.java.documind.domain.auth.model.enums.ApiKeyType;
 import kr.java.documind.domain.auth.model.enums.ProjectRole;
 import kr.java.documind.domain.auth.model.repository.ProjectApiKeyRepository;
 import kr.java.documind.domain.auth.model.repository.ProjectRepository;
@@ -15,7 +16,6 @@ import kr.java.documind.domain.member.model.dto.ApiKeyIssueResponse;
 import kr.java.documind.domain.member.model.dto.ProfileImageResponse;
 import kr.java.documind.domain.member.model.dto.ProjectApiKeyInfo;
 import kr.java.documind.domain.member.model.dto.ProjectCreateResponse;
-import kr.java.documind.domain.member.model.dto.ProjectDetail;
 import kr.java.documind.domain.member.model.dto.ProjectMemberRow;
 import kr.java.documind.domain.member.model.dto.ProjectSettingPageData;
 import kr.java.documind.domain.member.model.dto.ProjectSummary;
@@ -33,6 +33,8 @@ import kr.java.documind.global.util.HmacApiKeyUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -57,6 +59,7 @@ public class ProjectService {
     @Value("${app.api-key.hmac-secret}")
     private String hmacSecret;
 
+    @CacheEvict(cacheNames = "projectSelector", key = "#memberId")
     public ProjectCreateResponse createProject(UUID memberId, String name) {
         Member member = memberService.getMemberWithCompany(memberId);
 
@@ -93,6 +96,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "projectSelector", allEntries = true)
     public ProfileImageResponse uploadProjectProfileImage(
             String publicId, UUID memberId, MultipartFile file) {
 
@@ -137,14 +141,12 @@ public class ProjectService {
                         .findByProjectAndMember(project, currentMember)
                         .orElseThrow(() -> new NotFoundException("프로젝트 멤버 정보를 찾을 수 없습니다."));
 
-        var headerInfo = memberService.getHeaderInfo(currentMember);
-
         String projectProfileUrl =
                 project.getProfileKey() != null
                         ? fileStore.getAccessUrl(project.getProfileKey())
                         : null;
-        var projectDetail =
-                new ProjectDetail(project.getPublicId(), project.getName(), projectProfileUrl);
+        ProjectSummary projectSummary =
+                new ProjectSummary(project.getPublicId(), project.getName(), projectProfileUrl);
 
         List<ProjectMemberRow> members =
                 projectMemberRepository
@@ -169,49 +171,48 @@ public class ProjectService {
                                 })
                         .toList();
 
-        List<ProjectSummary> myProjects =
-                projectMemberRepository
-                        .findByMemberAndStatusFetchProject(currentMember, AccountStatus.ACTIVE)
-                        .stream()
-                        .filter(pm -> pm.getProject().isActive())
-                        .map(
-                                pm -> {
-                                    Project p = pm.getProject();
-                                    String pUrl =
-                                            p.getProfileKey() != null
-                                                    ? fileStore.getAccessUrl(p.getProfileKey())
-                                                    : null;
-                                    return new ProjectSummary(p.getPublicId(), p.getName(), pUrl);
-                                })
-                        .toList();
-
         ProjectApiKeyInfo apiKeyInfo = null;
         if (currentPm.isManager()) {
-            Optional<ProjectApiKey> keyOpt =
-                    projectApiKeyRepository
-                            .findFirstByProjectAndApiKeyStatusNotOrderByCreatedAtDesc(
-                                    project, ApiKeyStatus.REVOKED);
-            if (keyOpt.isPresent()) {
-                ProjectApiKey key = keyOpt.get();
-                String masked =
-                        HmacApiKeyUtil.maskApiKey(key.getKeyPrefix() + "..." + key.getKeyLast4());
-                apiKeyInfo = new ProjectApiKeyInfo(true, masked, key.getApiKeyStatus());
-            } else {
-                apiKeyInfo = new ProjectApiKeyInfo(false, null, null);
-            }
+            apiKeyInfo = getProjectApiKeysForSetting(project);
         }
 
         return new ProjectSettingPageData(
-                headerInfo,
-                projectDetail,
+                projectSummary,
                 currentPm.getProjectRole(),
                 currentMember.isCeo(),
                 members,
-                myProjects,
                 apiKeyInfo);
     }
 
-    public List<ProjectSummary> getDashboardProjects(UUID memberId) {
+    private ProjectApiKeyInfo getProjectApiKeysForSetting(Project project) {
+        ProjectApiKeyInfo.KeyMetadata ingestKey =
+                findCurrentKeyMetadata(project, ApiKeyType.INGEST);
+        ProjectApiKeyInfo.KeyMetadata queryKey = findCurrentKeyMetadata(project, ApiKeyType.QUERY);
+
+        return new ProjectApiKeyInfo(ingestKey, queryKey);
+    }
+
+    private ProjectApiKeyInfo.KeyMetadata findCurrentKeyMetadata(
+            Project project, ApiKeyType keyType) {
+        Optional<ProjectApiKey> keyOpt =
+                projectApiKeyRepository
+                        .findFirstByProjectAndKeyTypeAndApiKeyStatusInOrderByCreatedAtDesc(
+                                project,
+                                keyType,
+                                List.of(ApiKeyStatus.ACTIVE, ApiKeyStatus.SUSPENDED));
+
+        if (keyOpt.isPresent()) {
+            ProjectApiKey key = keyOpt.get();
+            String masked = HmacApiKeyUtil.maskApiKey(key.getKeyPrefix(), key.getKeyLast4());
+            return new ProjectApiKeyInfo.KeyMetadata(
+                    true, key.getKeyType(), masked, key.getApiKeyStatus());
+        } else {
+            return new ProjectApiKeyInfo.KeyMetadata(false, keyType, null, null);
+        }
+    }
+
+    @Cacheable(cacheNames = "projectSelector", key = "#memberId")
+    public List<ProjectSummary> getProjectSelectorList(UUID memberId) {
         return projectMemberRepository
                 .findByMemberIdAndStatusFetchProject(memberId, AccountStatus.ACTIVE)
                 .stream()
@@ -229,6 +230,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "projectSelector", allEntries = true)
     public void updateProjectName(String publicId, UUID memberId, String name) {
         Project project =
                 projectRepository
@@ -244,6 +246,89 @@ public class ProjectService {
     }
 
     @Transactional
+    public void changeProjectRole(
+            String publicId, UUID actorMemberId, UUID targetMemberId, ProjectRole newRole) {
+        Project project =
+                projectRepository
+                        .findByPublicId(publicId)
+                        .orElseThrow(ProjectNotFoundException::new);
+
+        Member targetMember = memberService.getMember(targetMemberId);
+
+        if (targetMember.isCeo()) {
+            throw new ForbiddenException("대표(CEO)의 프로젝트 권한은 변경할 수 없습니다.");
+        }
+
+        ProjectMember targetPm =
+                projectMemberRepository
+                        .findByProjectAndMember(project, targetMember)
+                        .orElseThrow(() -> new NotFoundException("대상이 프로젝트 멤버가 아닙니다."));
+
+        if (targetPm.getStatus() == AccountStatus.DELETED) {
+            throw new NotFoundException("대상이 프로젝트 멤버가 아닙니다.");
+        }
+
+        if (targetPm.isManager() && newRole == ProjectRole.MEMBER) {
+            if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
+                            project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
+                    <= 1) {
+                throw new BadRequestException("프로젝트에는 최소 한 명 이상의 관리자가 필요합니다.");
+            }
+        }
+
+        targetPm.changeRole(newRole);
+        log.info(
+                "[ProjectService] 멤버 권한 변경: actorId={}, targetId={}, projectId={}, newRole={}",
+                actorMemberId,
+                targetMemberId,
+                project.getId(),
+                newRole);
+    }
+
+    @Transactional
+    public void removeProjectMember(String publicId, UUID actorMemberId, UUID targetMemberId) {
+        if (actorMemberId.equals(targetMemberId)) {
+            throw new BadRequestException("자기 자신을 제거할 수 없습니다. '프로젝트 나가기'를 이용해주세요.");
+        }
+
+        Project project =
+                projectRepository
+                        .findByPublicId(publicId)
+                        .orElseThrow(ProjectNotFoundException::new);
+
+        Member targetMember = memberService.getMember(targetMemberId);
+
+        if (targetMember.isCeo()) {
+            throw new ForbiddenException("대표(CEO)는 프로젝트에서 제거할 수 없습니다.");
+        }
+
+        ProjectMember targetPm =
+                projectMemberRepository
+                        .findByProjectAndMember(project, targetMember)
+                        .orElseThrow(() -> new NotFoundException("대상이 프로젝트 멤버가 아닙니다."));
+
+        if (targetPm.getStatus() == AccountStatus.DELETED) {
+            throw new NotFoundException("대상이 프로젝트 멤버가 아닙니다.");
+        }
+
+        if (targetPm.isManager()) {
+            if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
+                            project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
+                    <= 1) {
+                throw new BadRequestException("프로젝트에는 최소 한 명 이상의 관리자가 필요합니다.");
+            }
+        }
+
+        targetPm.softDelete();
+        log.info(
+                "[ProjectService] 멤버 제거: actorId={}, targetId={}, projectId={}",
+                actorMemberId,
+                targetMemberId,
+                project.getId());
+    }
+
+    @Transactional
+    @CacheEvict(cacheNames = "projectSelector", key = "#memberId")
     public void leaveProject(String publicId, UUID memberId) {
         Project project =
                 projectRepository
@@ -261,11 +346,20 @@ public class ProjectService {
                         .findByProjectAndMember(project, member)
                         .orElseThrow(() -> new NotFoundException("프로젝트 멤버를 찾을 수 없습니다."));
 
+        if (pm.isManager()) {
+            if (projectMemberRepository.countByProjectAndProjectRoleAndStatus(
+                            project, ProjectRole.MANAGER, AccountStatus.ACTIVE)
+                    <= 1) {
+                throw new BadRequestException("프로젝트에는 최소 한 명 이상의 관리자가 필요합니다. 나갈 수 없습니다.");
+            }
+        }
+
         pm.softDelete();
         log.info("[ProjectService] 프로젝트 나가기: memberId={} publicId={}", memberId, publicId);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "projectSelector", allEntries = true)
     public void deleteProject(String publicId, UUID memberId) {
         Project project =
                 projectRepository
@@ -287,27 +381,75 @@ public class ProjectService {
                         .findByPublicId(publicId)
                         .orElseThrow(ProjectNotFoundException::new);
 
-        // 기존 ACTIVE/SUSPENDED 키 일괄 REVOKE (회전)
-        projectApiKeyRepository
-                .findAllByProjectAndApiKeyStatusNot(project, ApiKeyStatus.REVOKED)
-                .forEach(ProjectApiKey::revoke);
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
 
-        // 새 키 생성
-        String plainKey = HmacApiKeyUtil.generatePlainKey();
+        // INGEST, QUERY 타입에 대해 각각 기존 키 폐기 및 신규 키 생성
+        ApiKeyIssueResponse.IssuedKey issuedIngestKey =
+                createNewApiKeyForType(project, ApiKeyType.INGEST);
+        ApiKeyIssueResponse.IssuedKey issuedQueryKey =
+                createNewApiKeyForType(project, ApiKeyType.QUERY);
+
+        log.info(
+                "[ProjectService] 전체 API Key 재발급 (INGEST & QUERY): memberId={} publicId={}",
+                memberId,
+                publicId);
+        return new ApiKeyIssueResponse(issuedIngestKey, issuedQueryKey);
+    }
+
+    @Transactional
+    public ApiKeyIssueResponse reissueApiKey(String publicId, UUID memberId, ApiKeyType keyType) {
+        Project project =
+                projectRepository
+                        .findByPublicId(publicId)
+                        .orElseThrow(ProjectNotFoundException::new);
+
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
+
+        ApiKeyIssueResponse.IssuedKey newIssuedKey = createNewApiKeyForType(project, keyType);
+
+        // 응답 구조에 맞게 반환. 재발급하지 않은 키 타입은 null로 채움
+        ApiKeyIssueResponse.IssuedKey ingestKey =
+                (keyType == ApiKeyType.INGEST) ? newIssuedKey : null;
+        ApiKeyIssueResponse.IssuedKey queryKey =
+                (keyType == ApiKeyType.QUERY) ? newIssuedKey : null;
+
+        log.info(
+                "[ProjectService] API Key 재발급 ({}): memberId={} publicId={}",
+                keyType,
+                memberId,
+                publicId);
+        return new ApiKeyIssueResponse(ingestKey, queryKey);
+    }
+
+    private ApiKeyIssueResponse.IssuedKey createNewApiKeyForType(
+            Project project, ApiKeyType keyType) {
+        projectApiKeyRepository.revokeAllByProjectAndKeyType(
+                project,
+                keyType,
+                ApiKeyStatus.REVOKED,
+                List.of(ApiKeyStatus.ACTIVE, ApiKeyStatus.SUSPENDED));
+
+        String plainKey = HmacApiKeyUtil.generatePlainKey(keyType.getPrefix());
         String hmacHash = HmacApiKeyUtil.computeHmac(plainKey, hmacSecret);
         String keyPrefix = HmacApiKeyUtil.extractPrefix(plainKey);
         String keyLast4 = HmacApiKeyUtil.extractLast4(plainKey);
 
-        projectApiKeyRepository.save(ProjectApiKey.create(project, hmacHash, keyPrefix, keyLast4));
+        ProjectApiKey newApiKey =
+                ProjectApiKey.create(project, hmacHash, keyPrefix, keyLast4, keyType);
+        projectApiKeyRepository.save(newApiKey);
 
-        String masked = HmacApiKeyUtil.maskApiKey(plainKey);
+        String maskedKey = HmacApiKeyUtil.maskApiKey(plainKey);
 
-        log.info("[ProjectService] API Key 발급: memberId={} publicId={}", memberId, publicId);
-        return new ApiKeyIssueResponse(plainKey, masked);
+        return new ApiKeyIssueResponse.IssuedKey(keyType, plainKey, maskedKey);
     }
 
     @Transactional
-    public void toggleApiKeyStatus(String publicId, UUID memberId, ApiKeyStatus newStatus) {
+    public void toggleApiKeyStatus(
+            String publicId, UUID memberId, ApiKeyType keyType, ApiKeyStatus newStatus) {
         if (newStatus != ApiKeyStatus.ACTIVE && newStatus != ApiKeyStatus.SUSPENDED) {
             throw new BadRequestException("ACTIVE 또는 SUSPENDED 상태만 설정할 수 있습니다.");
         }
@@ -317,11 +459,19 @@ public class ProjectService {
                         .findByPublicId(publicId)
                         .orElseThrow(ProjectNotFoundException::new);
 
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
+
+        // 특정 타입의 키만 찾아서 상태 변경
         ProjectApiKey key =
                 projectApiKeyRepository
-                        .findFirstByProjectAndApiKeyStatusNotOrderByCreatedAtDesc(
-                                project, ApiKeyStatus.REVOKED)
-                        .orElseThrow(() -> new NotFoundException("활성화된 API 키가 없습니다."));
+                        .findFirstByProjectAndKeyTypeAndApiKeyStatusInOrderByCreatedAtDesc(
+                                project,
+                                keyType,
+                                List.of(ApiKeyStatus.ACTIVE, ApiKeyStatus.SUSPENDED))
+                        .orElseThrow(
+                                () -> new NotFoundException(keyType + " 타입의 활성화된 API 키가 없습니다."));
 
         if (newStatus == ApiKeyStatus.ACTIVE) {
             key.activate();
@@ -330,9 +480,10 @@ public class ProjectService {
         }
 
         log.info(
-                "[ProjectService] API Key 상태 변경: memberId={} publicId={} status={}",
+                "[ProjectService] API Key 상태 변경: memberId={} publicId={} keyType={} status={}",
                 memberId,
                 publicId,
+                keyType,
                 newStatus);
     }
 
