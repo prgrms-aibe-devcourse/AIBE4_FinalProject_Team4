@@ -73,4 +73,8 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
             """)
     List<ProjectMember> findByProject_IdAndProjectRole(
             @Param("projectId") UUID projectId, @Param("projectRole") ProjectRole projectRole);
+
+    /** 프로젝트의 특정 역할 및 상태에 해당하는 멤버 수 조회 */
+    long countByProjectAndProjectRoleAndStatus(
+            Project project, ProjectRole projectRole, AccountStatus status);
 }
