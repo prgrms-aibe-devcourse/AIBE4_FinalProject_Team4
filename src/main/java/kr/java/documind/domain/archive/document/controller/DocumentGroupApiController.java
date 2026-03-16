@@ -11,6 +11,7 @@ import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetad
 import kr.java.documind.domain.archive.document.service.DocumentGroupService;
 import kr.java.documind.domain.archive.document.service.DocumentMetadataService;
 import kr.java.documind.global.annotation.ProjectId;
+import kr.java.documind.global.annotation.RequireProjectMember;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.response.PageResponses;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/projects/{publicId}/groups")
 @RequiredArgsConstructor
+@RequireProjectMember
 public class DocumentGroupApiController {
 
     private final DocumentGroupService documentGroupService;

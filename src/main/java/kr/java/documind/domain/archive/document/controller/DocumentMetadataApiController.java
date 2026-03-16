@@ -11,6 +11,7 @@ import kr.java.documind.domain.archive.document.service.DocumentMetadataService;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.domain.archive.vector.service.EtlService;
 import kr.java.documind.global.annotation.ProjectId;
+import kr.java.documind.global.annotation.RequireProjectMember;
 import kr.java.documind.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -33,6 +34,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 @RequestMapping("/api/projects/{publicId}/documents")
 @RequiredArgsConstructor
+@RequireProjectMember
 public class DocumentMetadataApiController {
 
     private final DocumentMetadataService documentMetadataService;
