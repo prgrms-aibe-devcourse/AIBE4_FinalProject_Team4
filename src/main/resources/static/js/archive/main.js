@@ -335,7 +335,22 @@ async function confirmDelete() {
 
 // ==================== 그룹/문서 로딩 ====================
 
+function getExpandedGroupIds() {
+    return [...document.querySelectorAll('[id^="docs-"]:not(.hidden)')]
+        .map(el => el.id.replace('docs-', ''));
+}
+
+async function restoreExpandedGroups(groupIds) {
+    for (const groupId of groupIds) {
+        const docsContainer = document.getElementById(`docs-${groupId}`);
+        if (docsContainer) {
+            await toggleDocuments(groupId);
+        }
+    }
+}
+
 async function loadGroups(page) {
+    const expandedIds = getExpandedGroupIds();
     try {
         const result = await callApi(
             `/api/projects/${projectId}/groups?page=${page}&size=${pageSize}`
@@ -343,6 +358,7 @@ async function loadGroups(page) {
         if (result.success) {
             renderGroups(result.data);
             renderPagination(result.meta);
+            await restoreExpandedGroups(expandedIds);
         }
     } catch (e) {
         console.error('그룹 목록 조회 실패', e);
@@ -367,7 +383,8 @@ function renderGroups(groups) {
                 <div class="col-span-5 flex items-center gap-2">
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <!-- 그룹명 표시 모드 -->
-                    <span id="groupName-display-${group.groupId}" class="font-semibold text-gray-800">${escapeHtml(group.groupName)}</span>
+                    <span id="groupName-display-${group.groupId}" class="font-semibold text-gray-800 cursor-pointer hover:text-indigo-600"
+                          data-action="toggleDocuments" data-group-id="${group.groupId}">${escapeHtml(group.groupName)}</span>
                     <button data-action="startEditGroupName" data-group-id="${group.groupId}" data-group-name="${escapeAttr(group.groupName)}" class="text-yellow-500 hover:text-yellow-600" title="그룹명 수정">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     </button>

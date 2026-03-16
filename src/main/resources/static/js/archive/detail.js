@@ -14,22 +14,6 @@ const currentDoc = {
 document.addEventListener('DOMContentLoaded', () => {
     setupDropZone('editDropZone', 'editFile');
 
-    // 확장자별 미리보기 분기
-    const ext = currentDoc.extension.toLowerCase();
-    const imageExtensions = ['png', 'jpg', 'jpeg'];
-
-    if (ext === 'pdf') {
-        // PDF → iframe (기본 표시)
-    } else if (imageExtensions.includes(ext)) {
-        // 이미지 → img 태그 (영역에 맞게 비율 조절)
-        document.getElementById('pdfPreview').classList.add('hidden');
-        document.getElementById('imagePreview').classList.remove('hidden');
-    } else {
-        // 그 외 → 폴백
-        document.getElementById('pdfPreview').classList.add('hidden');
-        document.getElementById('previewFallback').classList.remove('hidden');
-    }
-
     // 임베딩 진행중이면 SSE 구독
     const embeddingStatus = document.getElementById('docEmbeddingStatus').value;
     if (embeddingStatus === 'PENDING' || embeddingStatus === 'PROCESSING') {

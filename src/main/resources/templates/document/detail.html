@@ -35,20 +35,22 @@
             <!-- 좌측: 문서 미리보기 -->
             <div class="flex-1">
                 <!-- PDF 미리보기 -->
-                <iframe id="pdfPreview"
+                <iframe th:if="${document.extension == 'pdf'}"
                         th:src="@{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
                         class="w-full rounded-docu-card border border-divider min-h-[600px] bg-surface-card"
                         style="height: calc(100vh - 200px);">
                 </iframe>
                 <!-- 이미지 미리보기 -->
-                <div id="imagePreview" class="hidden rounded-docu-card border border-divider flex items-center justify-center bg-surface-card"
+                <div th:if="${document.extension == 'jpg' or document.extension == 'jpeg' or document.extension == 'png'}"
+                     class="rounded-docu-card border border-divider flex items-center justify-center bg-surface-card"
                      style="height: calc(100vh - 200px);">
                     <img th:src="@{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
                          th:alt="${document.documentName}"
                          class="max-w-full max-h-full object-contain rounded-docu-card">
                 </div>
                 <!-- 미리보기 불가 시 폴백 -->
-                <div id="previewFallback" class="hidden rounded-docu-card border-2 border-dashed border-divider min-h-[600px] flex flex-col items-center justify-center text-docu-secondary bg-surface-card">
+                <div th:unless="${document.extension == 'pdf' or document.extension == 'jpg' or document.extension == 'jpeg' or document.extension == 'png'}"
+                     class="rounded-docu-card border-2 border-dashed border-divider min-h-[600px] flex flex-col items-center justify-center text-docu-secondary bg-surface-card">
                     <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <p class="text-docu-ink font-medium mb-1"
                        th:text="${document.documentName + '.' + document.extension}"></p>
