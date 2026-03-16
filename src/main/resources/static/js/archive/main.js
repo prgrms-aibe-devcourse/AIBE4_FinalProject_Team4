@@ -133,7 +133,9 @@ async function submitUpload() {
         });
         if (result.success) {
             const uploadedDocId = result.data.documentId;
-            subscribeEmbeddingStatus(uploadedDocId);
+            if (result.data.embeddingStatus !== 'NONE') {
+                subscribeEmbeddingStatus(uploadedDocId);
+            }
             await completeLoading(btn);
             closeModal('uploadModal');
             loadGroups(currentPage);
@@ -217,7 +219,9 @@ async function submitNewVersion() {
         });
         if (result.success) {
             const uploadedDocId = result.data.documentId;
-            subscribeEmbeddingStatus(uploadedDocId);
+            if (result.data.embeddingStatus !== 'NONE') {
+                subscribeEmbeddingStatus(uploadedDocId);
+            }
             await completeLoading(btn);
             closeModal('newVersionModal');
             loadGroups(currentPage);
