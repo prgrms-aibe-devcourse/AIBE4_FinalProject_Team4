@@ -35,6 +35,11 @@ public class CacheConfig {
                 new RedisSerializer<Object>() {
                     @Override
                     public byte[] serialize(Object t) throws SerializationException {
+                        if (t != null && !(t instanceof List)) {
+                            throw new SerializationException(
+                                    "projectSummarySerializer expects List<ProjectSummary>, got: "
+                                            + t.getClass());
+                        }
                         try {
                             return objectMapper.writeValueAsBytes(t);
                         } catch (Exception e) {
