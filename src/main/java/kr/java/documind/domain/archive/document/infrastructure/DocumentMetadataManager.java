@@ -1,7 +1,11 @@
 package kr.java.documind.domain.archive.document.infrastructure;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
@@ -20,26 +24,37 @@ public class DocumentMetadataManager {
     private final DocumentMetadataRepository documentMetadataRepository;
     private final DomainSourceRepository domainSourceRepository;
 
-    public DocumentMetadata findByIdAndProjectId(Long documentId, UUID projectId) {
+    public DocumentMetadata getByIdAndProjectId(Long documentId, UUID projectId) {
         return documentMetadataRepository
-                .findByIdAndDocumentGroup_Project_Id(documentId, projectId)
+                .findByIdAndDocumentGroupProjectId(documentId, projectId)
                 .orElseThrow(() -> new NotFoundException("프로젝트에서 문서를 찾을 수 없습니다."));
     }
 
     public List<DocumentMetadata> findVersionsByGroup(DocumentGroup group) {
-        return documentMetadataRepository
-                .findByDocumentGroupOrderByMajorVersionDescMinorVersionDescPatchVersionDesc(group);
+        return documentMetadataRepository.findVersionsByGroup(group);
+    }
+
+    public Map<Long, DocumentMetadata> findMapByIds(Collection<Long> ids) {
+        return documentMetadataRepository.findByIdIn(ids).stream()
+                .collect(Collectors.toMap(DocumentMetadata::getId, Function.identity()));
+    }
+
+    public List<Long> findIdsByProjectIdAndGroupName(UUID projectId, String groupName) {
+        return documentMetadataRepository.findIdsByProjectIdAndGroupName(projectId, groupName);
+    }
+
+    public List<Long> findIdsByProjectIdAndCategory(UUID projectId, String category) {
+        return documentMetadataRepository.findIdsByProjectIdAndCategory(projectId, category);
     }
 
     public boolean existsByProjectIdAndHash(UUID projectId, String hash) {
-        return documentMetadataRepository.existsByProjectIdAndHash(projectId, hash);
+        return documentMetadataRepository.existsByDocumentGroupProjectIdAndHash(projectId, hash);
     }
 
     public boolean existsByGroupAndVersion(
             DocumentGroup group, int majorVersion, int minorVersion, int patchVersion) {
-        return documentMetadataRepository
-                .existsByDocumentGroupAndMajorVersionAndMinorVersionAndPatchVersion(
-                        group, majorVersion, minorVersion, patchVersion);
+        return documentMetadataRepository.existsVersion(
+                group, majorVersion, minorVersion, patchVersion);
     }
 
     public long countByGroup(DocumentGroup group) {

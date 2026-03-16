@@ -1,0 +1,40 @@
+package kr.java.documind.domain.chatbot.service;
+
+import java.util.List;
+import java.util.UUID;
+import kr.java.documind.domain.archive.document.infrastructure.DocumentGroupManager;
+import kr.java.documind.domain.chatbot.model.dto.response.ChatModelInfoResponse;
+import kr.java.documind.domain.chatbot.properties.SupportedChatModels;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ChatbotMetaService {
+
+    private final SupportedChatModels supportedChatModels;
+    private final DocumentGroupManager documentGroupManager;
+
+    public List<ChatModelInfoResponse> getChatModels() {
+        String defaultModel = supportedChatModels.defaultModel();
+        return supportedChatModels.models().stream()
+                .map(
+                        model ->
+                                new ChatModelInfoResponse(
+                                        (model.provider().name()),
+                                        model.alias(),
+                                        model.displayName(),
+                                        model.alias().equals(defaultModel)))
+                .toList();
+    }
+
+    public List<String> getGroupNames(UUID projectId) {
+        return documentGroupManager.findDistinctGroupNames(projectId);
+    }
+
+    public List<String> getCategoryNames(UUID projectId) {
+        return documentGroupManager.findDistinctCategories(projectId);
+    }
+}

@@ -1,5 +1,6 @@
 package kr.java.documind.domain.archive.document.model.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
@@ -11,18 +12,24 @@ import org.springframework.data.repository.query.Param;
 
 public interface DocumentGroupRepository extends JpaRepository<DocumentGroup, Long> {
 
+    Optional<DocumentGroup> findByIdAndProjectId(Long id, UUID projectId);
+
     @Query(
             "SELECT g.id AS groupId, g.groupName AS groupName, g.category AS category, "
                     + "MAX(dm.majorVersion * 1000000 + dm.minorVersion * 1000 + dm.patchVersion) AS versionOrdinal, "
                     + "COUNT(dm) AS documentCount "
                     + "FROM DocumentGroup g JOIN DocumentMetadata dm ON dm.documentGroup = g "
-                    + "WHERE g.project.id = :projectId "
+                    + "WHERE g.projectId = :projectId "
                     + "GROUP BY g.id, g.groupName, g.category")
     Page<DocumentGroupSummary> findGroupSummariesByProjectId(
             @Param("projectId") UUID projectId, Pageable pageable);
 
-    Optional<DocumentGroup> findByIdAndProject_Id(Long id, UUID projectId);
+    @Query("SELECT DISTINCT dg.groupName FROM DocumentGroup dg WHERE dg.projectId = :projectId")
+    List<String> findDistinctGroupNamesByProjectId(@Param("projectId") UUID projectId);
 
-    boolean existsByProject_IdAndCategoryAndGroupName(
+    @Query("SELECT DISTINCT dg.category FROM DocumentGroup dg WHERE dg.projectId = :projectId")
+    List<String> findDistinctCategoriesByProjectId(@Param("projectId") UUID projectId);
+
+    boolean existsByProjectIdAndCategoryAndGroupName(
             UUID projectId, String category, String groupName);
 }

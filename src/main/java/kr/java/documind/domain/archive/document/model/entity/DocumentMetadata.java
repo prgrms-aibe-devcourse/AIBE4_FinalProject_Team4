@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.global.entity.DomainSource;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -97,7 +96,6 @@ public class DocumentMetadata {
 
     @LastModifiedDate private LocalDateTime updatedAt;
 
-    @Builder
     private DocumentMetadata(
             DomainSource domainSource,
             DocumentGroup documentGroup,
@@ -129,6 +127,37 @@ public class DocumentMetadata {
         this.uploadedAt = uploadedAt;
     }
 
+    public static DocumentMetadata create(
+            DomainSource domainSource,
+            DocumentGroup documentGroup,
+            String documentName,
+            String extension,
+            int majorVersion,
+            int minorVersion,
+            int patchVersion,
+            String hash,
+            long size,
+            String storedKey,
+            boolean isProcessed,
+            EmbeddingStatus embeddingStatus,
+            LocalDateTime uploadedAt) {
+        return new DocumentMetadata(
+                domainSource,
+                documentGroup,
+                documentName,
+                "초성",
+                extension,
+                majorVersion,
+                minorVersion,
+                patchVersion,
+                hash,
+                size,
+                storedKey,
+                isProcessed,
+                embeddingStatus,
+                uploadedAt);
+    }
+
     public String getVersionString() {
         return "v" + majorVersion + "." + minorVersion + "." + patchVersion;
     }
@@ -140,14 +169,9 @@ public class DocumentMetadata {
     }
 
     public void updateFile(
-            String documentName,
-            String choseong,
-            String extension,
-            String hash,
-            long size,
-            String storedKey) {
+            String documentName, String extension, String hash, long size, String storedKey) {
         this.documentName = documentName;
-        this.choseong = choseong;
+        this.choseong = "초성수정";
         this.extension = extension;
         this.hash = hash;
         this.size = size;
