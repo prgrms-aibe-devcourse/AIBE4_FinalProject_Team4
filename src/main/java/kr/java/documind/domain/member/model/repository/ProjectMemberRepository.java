@@ -63,6 +63,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
             """)
     List<ProjectMember> findByProject_IdAndProjectRole(
             @Param("projectId") UUID projectId, @Param("projectRole") ProjectRole projectRole);
+
     long countByProjectAndProjectRoleAndStatus(
             Project project, ProjectRole projectRole, AccountStatus status);
 }
