@@ -36,16 +36,18 @@ public class ReferenceExtractor {
         if (response.context() == null) {
             return List.of();
         }
-        List<Document> docs = (List<Document>) response.context()
-                .get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT);
+        List<Document> docs =
+                (List<Document>)
+                        response.context().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT);
         return docs != null ? docs : List.of();
     }
 
     private List<ReferenceResponse> buildReferences(List<Document> documents) {
-        Set<Long> sourceIds = documents.stream()
-                .map(doc -> parseMetadata(doc, "source_id", Long::parseLong))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Long> sourceIds =
+                documents.stream()
+                        .map(doc -> parseMetadata(doc, "source_id", Long::parseLong))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
 
         Map<Long, DocumentMetadata> metadataMap = documentMetadataManager.findMapByIds(sourceIds);
 
@@ -65,13 +67,14 @@ public class ReferenceExtractor {
             Integer pageNumber = parseMetadata(doc, "page_number", Integer::parseInt);
             String chunkText = doc.getText() != null ? doc.getText() : "";
 
-            references.add(new ReferenceResponse(
-                    sourceId,
-                    metadata.getDocumentName(),
-                    metadata.getExtension(),
-                    metadata.getVersionString(),
-                    pageNumber,
-                    chunkText));
+            references.add(
+                    new ReferenceResponse(
+                            sourceId,
+                            metadata.getDocumentName(),
+                            metadata.getExtension(),
+                            metadata.getVersionString(),
+                            pageNumber,
+                            chunkText));
         }
         return references;
     }

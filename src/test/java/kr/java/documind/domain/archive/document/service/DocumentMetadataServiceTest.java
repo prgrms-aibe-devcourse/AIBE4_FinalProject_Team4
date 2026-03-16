@@ -60,9 +60,19 @@ class DocumentMetadataServiceTest {
     private DocumentMetadata createMetadata(DocumentGroup group) {
         DomainSource domainSource = DomainSource.create(SourceType.DOCUMENT);
         return DocumentMetadata.create(
-                domainSource, group, "testDoc", "pdf",
-                1, 0, 0, "abc123hash", 1024L, "stored/key",
-                false, EmbeddingStatus.NONE, LocalDateTime.now());
+                domainSource,
+                group,
+                "testDoc",
+                "pdf",
+                1,
+                0,
+                0,
+                "abc123hash",
+                1024L,
+                "stored/key",
+                false,
+                EmbeddingStatus.NONE,
+                LocalDateTime.now());
     }
 
     private MultipartFile mockFile(String filename) {
@@ -73,7 +83,8 @@ class DocumentMetadataServiceTest {
     }
 
     private DocumentFileStorage.StoredDocumentFile storedFile() {
-        return new DocumentFileStorage.StoredDocumentFile("testDoc", "pdf", 1024L, "stored/new-key");
+        return new DocumentFileStorage.StoredDocumentFile(
+                "testDoc", "pdf", 1024L, "stored/new-key");
     }
 
     @Nested
@@ -89,8 +100,7 @@ class DocumentMetadataServiceTest {
 
             given(documentMetadataManager.getByIdAndProjectId(documentId, projectId))
                     .willReturn(metadata);
-            given(documentMetadataManager.findVersionsByGroup(group))
-                    .willReturn(List.of(metadata));
+            given(documentMetadataManager.findVersionsByGroup(group)).willReturn(List.of(metadata));
 
             // When
             var result = documentMetadataService.getDocumentDetail(projectId, documentId);
@@ -111,9 +121,7 @@ class DocumentMetadataServiceTest {
 
             // When & Then
             assertThatThrownBy(
-                            () ->
-                                    documentMetadataService.getDocumentDetail(
-                                            projectId, documentId))
+                            () -> documentMetadataService.getDocumentDetail(projectId, documentId))
                     .isInstanceOf(NotFoundException.class);
         }
     }
@@ -152,8 +160,7 @@ class DocumentMetadataServiceTest {
         void uploadDocumentWithNewGroup_ValidRequest_CreatesGroupAndMetadata() {
             // Given
             MultipartFile file = mockFile("testDoc.pdf");
-            DocumentUploadRequest request =
-                    new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, null);
+            DocumentUploadRequest request = new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, null);
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
@@ -181,8 +188,7 @@ class DocumentMetadataServiceTest {
         void uploadDocumentWithNewGroup_DuplicateGroupName_ThrowsConflictException() {
             // Given
             MultipartFile file = mockFile("testDoc.pdf");
-            DocumentUploadRequest request =
-                    new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, null);
+            DocumentUploadRequest request = new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, null);
 
             doThrow(new ConflictException("문서 그룹명(그룹A)이 카테고리(개발)에 이미 존재합니다."))
                     .when(documentGroupManager)
@@ -201,8 +207,7 @@ class DocumentMetadataServiceTest {
         void uploadDocumentWithNewGroup_DuplicateHash_ThrowsConflictException() {
             // Given
             MultipartFile file = mockFile("testDoc.pdf");
-            DocumentUploadRequest request =
-                    new DocumentUploadRequest("그룹B", "개발", 1, 0, 0, null);
+            DocumentUploadRequest request = new DocumentUploadRequest("그룹B", "개발", 1, 0, 0, null);
             DocumentGroup group = createGroup();
 
             given(documentGroupManager.save(any(DocumentGroup.class))).willReturn(group);
@@ -225,8 +230,7 @@ class DocumentMetadataServiceTest {
             // Given
             MultipartFile file = mock(MultipartFile.class);
             given(file.isEmpty()).willReturn(true);
-            DocumentUploadRequest request =
-                    new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, null);
+            DocumentUploadRequest request = new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, null);
 
             // When & Then
             assertThatThrownBy(
@@ -251,8 +255,7 @@ class DocumentMetadataServiceTest {
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId))
-                    .willReturn(group);
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
             given(documentMetadataManager.existsByGroupAndVersion(group, 2, 0, 0))
                     .willReturn(false);
             given(documentFileStorage.computeHash(file)).willReturn("newHash");
@@ -301,10 +304,8 @@ class DocumentMetadataServiceTest {
                     new NewVersionDocumentUploadRequest(1, 0, 0, null);
             DocumentGroup group = createGroup();
 
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId))
-                    .willReturn(group);
-            given(documentMetadataManager.existsByGroupAndVersion(group, 1, 0, 0))
-                    .willReturn(true);
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
+            given(documentMetadataManager.existsByGroupAndVersion(group, 1, 0, 0)).willReturn(true);
 
             // When & Then
             assertThatThrownBy(
@@ -443,8 +444,7 @@ class DocumentMetadataServiceTest {
 
             given(documentMetadataManager.getByIdAndProjectId(documentId, projectId))
                     .willReturn(metadata);
-            given(documentMetadataManager.existsByGroupAndVersion(group, 2, 0, 0))
-                    .willReturn(true);
+            given(documentMetadataManager.existsByGroupAndVersion(group, 2, 0, 0)).willReturn(true);
 
             // When & Then
             assertThatThrownBy(

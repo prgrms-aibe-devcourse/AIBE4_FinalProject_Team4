@@ -7,8 +7,8 @@ import kr.java.documind.global.exception.BusinessException;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -125,7 +125,10 @@ public class GlobalApiExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
             DataIntegrityViolationException e, HttpServletRequest request) {
-        log.warn("DataIntegrityViolationException [{}]: {}", request.getRequestURI(), e.getMessage());
+        log.warn(
+                "DataIntegrityViolationException [{}]: {}",
+                request.getRequestURI(),
+                e.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(ErrorResponse.of("이미 존재하는 데이터입니다.")));
     }

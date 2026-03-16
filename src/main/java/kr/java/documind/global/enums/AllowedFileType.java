@@ -15,7 +15,10 @@ public enum AllowedFileType {
     XLS("application/vnd.ms-excel", "xls", false),
     XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx", false),
     PPT("application/vnd.ms-powerpoint", "ppt", false),
-    PPTX("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx", false);
+    PPTX(
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "pptx",
+            false);
 
     private static final Map<String, AllowedFileType> BY_MIME_TYPE;
     private static final Map<String, AllowedFileType> BY_EXTENSION;

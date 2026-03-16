@@ -18,8 +18,7 @@ public interface DocumentMetadataRepository extends JpaRepository<DocumentMetada
             "SELECT dm FROM DocumentMetadata dm "
                     + "WHERE dm.documentGroup = :documentGroup "
                     + "ORDER BY dm.majorVersion DESC, dm.minorVersion DESC, dm.patchVersion DESC")
-    List<DocumentMetadata> findVersionsByGroup(
-            @Param("documentGroup") DocumentGroup documentGroup);
+    List<DocumentMetadata> findVersionsByGroup(@Param("documentGroup") DocumentGroup documentGroup);
 
     List<DocumentMetadata> findByIdIn(Collection<Long> ids);
 

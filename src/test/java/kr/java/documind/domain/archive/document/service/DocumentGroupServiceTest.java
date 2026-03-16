@@ -3,12 +3,12 @@ package kr.java.documind.domain.archive.document.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentGroupManager;
@@ -18,10 +18,9 @@ import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.document.model.vo.DocumentGroupSummaryResult;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.global.entity.DomainSource;
+import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
-import kr.java.documind.global.enums.SourceType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,8 +32,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
-import java.time.LocalDateTime;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DocumentGroupService")
@@ -54,9 +51,19 @@ class DocumentGroupServiceTest {
     private DocumentMetadata createMetadata(DocumentGroup group) {
         DomainSource domainSource = DomainSource.create(SourceType.DOCUMENT);
         return DocumentMetadata.create(
-                domainSource, group, "testDoc", "pdf",
-                1, 0, 0, "abc123hash", 1024L, "stored/key",
-                false, EmbeddingStatus.NONE, LocalDateTime.now());
+                domainSource,
+                group,
+                "testDoc",
+                "pdf",
+                1,
+                0,
+                0,
+                "abc123hash",
+                1024L,
+                "stored/key",
+                false,
+                EmbeddingStatus.NONE,
+                LocalDateTime.now());
     }
 
     @Nested
@@ -98,10 +105,8 @@ class DocumentGroupServiceTest {
             DocumentGroup group = createGroup("개발", "그룹A");
             DocumentMetadata metadata = createMetadata(group);
 
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId))
-                    .willReturn(group);
-            given(documentMetadataManager.findVersionsByGroup(group))
-                    .willReturn(List.of(metadata));
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
+            given(documentMetadataManager.findVersionsByGroup(group)).willReturn(List.of(metadata));
 
             // When
             var result = documentGroupService.getDocumentsByGroup(projectId, groupId);
@@ -119,8 +124,7 @@ class DocumentGroupServiceTest {
                     .willThrow(new NotFoundException("프로젝트에서 문서 그룹을 찾을 수 없습니다."));
 
             // When & Then
-            assertThatThrownBy(
-                            () -> documentGroupService.getDocumentsByGroup(projectId, groupId))
+            assertThatThrownBy(() -> documentGroupService.getDocumentsByGroup(projectId, groupId))
                     .isInstanceOf(NotFoundException.class);
         }
     }
@@ -134,8 +138,7 @@ class DocumentGroupServiceTest {
         void updateGroupName_ValidNewName_UpdatesSuccessfully() {
             // Given
             DocumentGroup group = createGroup("개발", "기존그룹");
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId))
-                    .willReturn(group);
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
             // When
             documentGroupService.updateGroupName(projectId, groupId, "새그룹");
@@ -149,18 +152,16 @@ class DocumentGroupServiceTest {
         void updateGroupName_SameName_ThrowsConflictException() {
             // Given
             DocumentGroup group = createGroup("개발", "기존그룹");
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId))
-                    .willReturn(group);
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
             // When & Then
             assertThatThrownBy(
-                            () ->
-                                    documentGroupService.updateGroupName(
-                                            projectId, groupId, "기존그룹"))
+                            () -> documentGroupService.updateGroupName(projectId, groupId, "기존그룹"))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("동일");
 
-            then(documentGroupManager).should(never())
+            then(documentGroupManager)
+                    .should(never())
                     .validateGroupNameUniqueness(any(), any(), any());
         }
 
@@ -169,17 +170,14 @@ class DocumentGroupServiceTest {
         void updateGroupName_DuplicateNameInCategory_ThrowsConflictException() {
             // Given
             DocumentGroup group = createGroup("개발", "기존그룹");
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId))
-                    .willReturn(group);
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
             doThrow(new ConflictException("문서 그룹명(새그룹)이 카테고리(개발)에 이미 존재합니다."))
                     .when(documentGroupManager)
                     .validateGroupNameUniqueness(projectId, "개발", "새그룹");
 
             // When & Then
             assertThatThrownBy(
-                            () ->
-                                    documentGroupService.updateGroupName(
-                                            projectId, groupId, "새그룹"))
+                            () -> documentGroupService.updateGroupName(projectId, groupId, "새그룹"))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("이미 존재");
         }
@@ -194,8 +192,7 @@ class DocumentGroupServiceTest {
         void updateCategory_ValidNewCategory_UpdatesSuccessfully() {
             // Given
             DocumentGroup group = createGroup("개발", "그룹A");
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId))
-                    .willReturn(group);
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
             // When
             documentGroupService.updateCategory(projectId, groupId, "운영");
@@ -209,18 +206,15 @@ class DocumentGroupServiceTest {
         void updateCategory_SameCategory_ThrowsConflictException() {
             // Given
             DocumentGroup group = createGroup("개발", "그룹A");
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId))
-                    .willReturn(group);
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
             // When & Then
-            assertThatThrownBy(
-                            () ->
-                                    documentGroupService.updateCategory(
-                                            projectId, groupId, "개발"))
+            assertThatThrownBy(() -> documentGroupService.updateCategory(projectId, groupId, "개발"))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("동일");
 
-            then(documentGroupManager).should(never())
+            then(documentGroupManager)
+                    .should(never())
                     .validateGroupNameUniqueness(any(), any(), any());
         }
 
@@ -229,17 +223,13 @@ class DocumentGroupServiceTest {
         void updateCategory_DuplicateGroupNameInNewCategory_ThrowsConflictException() {
             // Given
             DocumentGroup group = createGroup("개발", "그룹A");
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId))
-                    .willReturn(group);
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
             doThrow(new ConflictException("문서 그룹명(그룹A)이 카테고리(운영)에 이미 존재합니다."))
                     .when(documentGroupManager)
                     .validateGroupNameUniqueness(projectId, "운영", "그룹A");
 
             // When & Then
-            assertThatThrownBy(
-                            () ->
-                                    documentGroupService.updateCategory(
-                                            projectId, groupId, "운영"))
+            assertThatThrownBy(() -> documentGroupService.updateCategory(projectId, groupId, "운영"))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("이미 존재");
         }

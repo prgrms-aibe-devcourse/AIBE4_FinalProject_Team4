@@ -19,9 +19,7 @@ public class ChatSseConverter {
     private final ObjectMapper objectMapper;
 
     public ServerSentEvent<String> tokenEvent(ChatClientResponse response) {
-        return extractText(response)
-            .map(text -> createEvent("token", text))
-            .orElse(null);
+        return extractText(response).map(text -> createEvent("token", text)).orElse(null);
     }
 
     public ServerSentEvent<String> referencesEvent(List<ReferenceResponse> refs) {
@@ -46,10 +44,10 @@ public class ChatSseConverter {
 
     private Optional<String> extractText(ChatClientResponse response) {
         return Optional.ofNullable(response.chatResponse())
-            .map(r -> r.getResult())
-            .map(r -> r.getOutput())
-            .map(r -> r.getText())
-            .filter(text -> !text.isEmpty());
+                .map(r -> r.getResult())
+                .map(r -> r.getOutput())
+                .map(r -> r.getText())
+                .filter(text -> !text.isEmpty());
     }
 
     private ServerSentEvent<String> createEvent(String event, String data) {

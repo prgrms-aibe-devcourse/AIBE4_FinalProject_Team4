@@ -128,15 +128,14 @@ public class ChatbotService {
 
         List<Long> sourceIds = resolveSourceIds(projectId, request);
         if (sourceIds.isEmpty()) {
-            log.warn("스코프 필터링 대상 문서가 없음: groupName={}, categoryName={}",
-                    request.groupName(), request.categoryName());
+            log.warn(
+                    "스코프 필터링 대상 문서가 없음: groupName={}, categoryName={}",
+                    request.groupName(),
+                    request.categoryName());
             return null;
         }
 
-        String ids =
-                sourceIds.stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(", "));
+        String ids = sourceIds.stream().map(String::valueOf).collect(Collectors.joining(", "));
 
         String expression = "source_id in [" + ids + "]";
         log.debug("벡터스토어 필터 표현식: {}", expression);

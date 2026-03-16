@@ -106,7 +106,8 @@ public class EtlService {
 
         try (InputStream inputStream = resource.getInputStream()) {
             Path tempFilePath = Files.createTempFile("documind-etl-", suffix);
-            Files.copy(inputStream, tempFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(
+                    inputStream, tempFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             return tempFilePath;
         } catch (IOException e) {
             throw new StorageException("임시 파일 생성에 실패했습니다.", e);

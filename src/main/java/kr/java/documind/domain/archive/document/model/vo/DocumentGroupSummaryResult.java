@@ -5,5 +5,4 @@ public record DocumentGroupSummaryResult(
         String groupName,
         String category,
         String latestVersion,
-        long documentCount) {
-}
+        long documentCount) {}
