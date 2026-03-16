@@ -1,9 +1,43 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:fragment="head(title)">
+
+<!--
+  공통 head 메타
+  - base-layout을 쓰지 않는 독립 페이지(login, invitation, error 등)에서 사용
+  - pageDescription 모델 값이 있으면 사용, 없으면 기본 설명 사용
+-->
+<th:block th:fragment="head-meta(title)">
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description"
+          th:content="${pageDescription ?: 'Documind는 프로젝트 문서, 이슈, 패치노트, 로그, 알림을 통합 관리하는 협업 플랫폼입니다.'}"/>
+    <meta name="theme-color" content="#4A9EE8"/>
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon"/>
+    <link rel="apple-touch-icon" href="/images/favicon.png"/>
+
+<!--    <meta property="og:title" content="Documind" />-->
+<!--    <meta property="og:description" content="Documind는 프로젝트 문서, 이슈, 패치노트, 로그, 알림을 통합 관리하는 협업 플랫폼입니다." />-->
+<!--    <meta property="og:image" content="/images/og-image.png" />-->
+<!--    <meta property="og:url" content="http://localhost:8080" />-->
+
     <title th:text="${title} + ' | Documind'">Documind</title>
+</th:block>
+
+<!--
+  공통 head 리소스
+  - Font
+  - Tailwind CDN
+  - Tailwind config
+  - 공통 스타일
+  - 공통 JS 유틸
+-->
+<th:block th:fragment="head-resources">
+    <!-- Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap"
+          rel="stylesheet"/>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,28 +46,438 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: {
-                            50:  '#eef2ff',
-                            100: '#e0e7ff',
-                            200: '#c7d2fe',
-                            300: '#a5b4fc',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            800: '#3730a3',
-                            900: '#312e81',
-                        }
+                        docu: {
+                            primary: {
+                                light: '#D8ECFB',
+                                DEFAULT: '#4A9EE8',
+                                dark: '#2F7FC6',
+                            },
+                            secondary: {
+                                light: '#9CA3AF',
+                                DEFAULT: '#6B7280',
+                                dark: '#4B5563',
+                            },
+                            danger: {
+                                light: '#FBE4E4',
+                                DEFAULT: '#E84A4A',
+                                dark: '#B93838',
+                            },
+                            warning: {
+                                light: '#F8E7BF',
+                                DEFAULT: '#E8A020',
+                                dark: '#B67C18',
+                            },
+                            success: {
+                                light: '#DCEFE4',
+                                DEFAULT: '#3BAA6E',
+                                dark: '#2F8557',
+                            },
+                            ink: '#1A1F3A',
+                        },
+                        surface: {
+                            base: '#F2EFE9',
+                            sub: "#ECE9E2",
+                            point: "#F7F4EE",
+                            input: "#FFFFFF",
+                            hover: "#F8E7BF",
+                            muted: "#ECE9E2",
+                            card: '#FAF8F4',
+                            sidebar: '#FFFFFF',
+                            code: '#1A1F3A',
+                        },
+                        divider: '#D8D4CC',
+                    },
+                    fontSize: {
+                        'display': ['1.875rem', { lineHeight: '2.25rem', fontWeight: '700' }],
+                        'h1': ['1.5rem', { lineHeight: '2rem', fontWeight: '700' }],
+                        'h2': ['1.25rem', { lineHeight: '1.75rem', fontWeight: '600' }],
+                        'base': ['1rem', { lineHeight: '1.5rem', fontWeight: '400' }],
+                        'sm': ['0.875rem', { lineHeight: '1.25rem', fontWeight: '400' }],
+                        'xs': ['0.75rem', { lineHeight: '1rem', fontWeight: '500' }],
+                        '2xs': ['0.625rem', { lineHeight: '0.875rem', fontWeight: '500' }],
+                    },
+                    spacing: {
+                        'sidebar': '240px',
+                        'header': '64px',
+                        'content-p': '1.5rem',
+                        'widget-p': '1.25rem',
+                    },
+                    borderRadius: {
+                        'docu-btn': '0.375rem',
+                        'docu-card': '0.5rem',
+                        'docu-modal': '0.75rem',
+                    },
+                    boxShadow: {
+                        'docu-sm': '2px 2px 0 rgba(26, 31, 58, 0.12)',
+                        'docu-card': '3px 3px 0 rgba(26, 31, 58, 0.18)',
+                        'docu-modal': '4px 4px 0 rgba(26, 31, 58, 0.18)',
+                        'docu-primary': '2px 2px 0 rgba(74, 158, 232, 0.35)',
+                        'docu-danger': '2px 2px 0 rgba(232, 74, 74, 0.28)',
+                        'docu-warning': '2px 2px 0 rgba(232, 160, 32, 0.28)',
+                        'docu-success': '2px 2px 0 rgba(59, 170, 110, 0.28)',
                     },
                     fontFamily: {
-                        sans: ['Pretendard', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-                    }
+                        sans: ['Noto Sans KR', 'Pretendard', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                    borderWidth: {
+                        3: '3px',
+                    },
                 }
-            }
+            },
+            plugins: [],
         }
     </script>
 
+    <style type="text/tailwindcss">
+        @layer base {
+            html {
+                scroll-behavior: smooth;
+            }
+
+            .sr-only-focusable:not(:focus):not(:focus-visible) {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                white-space: nowrap;
+                border-width: 0;
+            }
+
+            /* 기본 스크롤바 */
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #D1D5DB;
+                border-radius: 4px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #9CA3AF;
+            }
+        }
+
+        @layer components {
+            /* Focus */
+            .focus-ring {
+                @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-offset-2;
+            }
+
+            .focus-ring-inset {
+                @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-inset;
+            }
+
+            /* Button System */
+            .btn-base {
+                @apply inline-flex items-center justify-center gap-2 rounded-docu-btn text-sm font-semibold transition-colors;
+            }
+
+            .btn-primary {
+                @apply btn-base px-4 py-2.5 border-2 border-docu-ink bg-docu-primary text-white shadow-docu-primary hover:bg-docu-primary-dark focus-ring;
+            }
+
+            .btn-secondary {
+                @apply btn-base px-4 py-2.5 border-2 border-docu-ink bg-surface-base text-docu-ink shadow-docu-sm hover:bg-white focus-ring;
+            }
+
+            .btn-danger {
+                @apply btn-base px-4 py-2.5 border-2 border-docu-ink bg-docu-danger text-white shadow-docu-danger hover:bg-docu-danger-dark focus-ring;
+            }
+
+            .btn-success {
+                @apply btn-base px-4 py-2.5 border-2 border-docu-ink bg-docu-success text-white shadow-docu-success hover:bg-docu-success-dark focus-ring;
+            }
+
+            .btn-ghost {
+                @apply btn-base px-4 py-2.5 border border-divider bg-surface-card text-docu-ink shadow-docu-sm hover:bg-surface-base focus-ring;
+            }
+
+            .btn-icon {
+                @apply inline-flex items-center justify-center w-9 h-9 rounded-docu-btn border border-divider bg-surface-card text-docu-secondary shadow-docu-sm hover:bg-white hover:text-docu-ink transition-colors focus-ring;
+            }
+
+            .btn-sm {
+                @apply px-3 py-1.5 text-xs;
+            }
+
+            .btn-md {
+                @apply px-4 py-2.5 text-sm;
+            }
+
+            .btn-lg {
+                @apply px-6 py-3 text-base;
+            }
+
+            /* Form Controls */
+            .form-label {
+                @apply block text-xs font-semibold text-docu-ink;
+            }
+
+            .form-help {
+                @apply text-xs text-gray-400;
+            }
+
+            .form-error {
+                @apply text-xs text-docu-danger font-medium;
+            }
+
+            .form-input {
+                @apply w-full px-3 py-2 border border-divider rounded-docu-btn bg-white text-sm text-docu-ink placeholder-gray-400 transition-colors focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20;
+            }
+
+            .form-input-error {
+                @apply border-docu-danger focus:border-docu-danger focus:ring-docu-danger/20;
+            }
+
+            .form-textarea {
+                @apply w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-base text-sm text-docu-ink placeholder-gray-400 resize-none transition-colors focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20;
+            }
+
+            .form-textarea-error {
+                @apply border-docu-danger focus:border-docu-danger focus:ring-docu-danger/20;
+            }
+
+            .form-select {
+                @apply w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-base text-sm text-docu-ink transition-colors focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20;
+            }
+
+            .form-select-error {
+                @apply border-docu-danger focus:border-docu-danger focus:ring-docu-danger/20;
+            }
+
+            .form-disabled {
+                @apply bg-surface-sub text-docu-secondary cursor-not-allowed;
+            }
+
+            /* Badge System */
+            .badge-base {
+                @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border;
+            }
+
+            .badge-severity-critical {
+                @apply badge-base bg-docu-danger-light text-docu-danger border-docu-danger;
+            }
+
+            .badge-severity-high {
+                @apply badge-base bg-docu-primary-light text-docu-primary-dark border-docu-primary;
+            }
+
+            .badge-severity-medium {
+                @apply badge-base bg-docu-warning-light text-docu-warning-dark border-docu-warning;
+            }
+
+            .badge-severity-low {
+                @apply badge-base bg-docu-success-light text-docu-success-dark border-docu-success;
+            }
+
+            .badge-event-new {
+                @apply badge-base bg-docu-primary-light text-docu-primary border-docu-primary;
+            }
+
+            .badge-event-suggest {
+                @apply badge-base bg-purple-100 text-purple-700 border-purple-300;
+            }
+
+            .badge-event-change {
+                @apply badge-base bg-orange-100 text-orange-600 border-orange-300;
+            }
+
+            .badge-event-comment {
+                @apply badge-base bg-gray-100 text-gray-500 border-gray-300;
+            }
+
+            .badge-status-active {
+                @apply badge-base bg-docu-success-light text-docu-success-dark border-docu-success;
+            }
+
+            .badge-status-paused {
+                @apply badge-base bg-gray-100 text-gray-500 border-gray-300;
+            }
+
+            .badge-status-firing {
+                @apply badge-base bg-docu-danger-light text-docu-danger border-docu-danger;
+            }
+
+            .badge-status-pending {
+                @apply badge-base bg-docu-warning-light text-docu-warning-dark border-docu-warning;
+            }
+
+            .badge-status-selected {
+                @apply badge-base bg-docu-primary text-white border-docu-primary-dark;
+            }
+
+            .badge-status-plan {
+                @apply badge-base bg-surface-base text-docu-secondary border-docu-secondary;
+            }
+
+            .badge-default {
+                @apply badge-base bg-gray-100 text-gray-600 border-gray-300;
+            }
+
+            /* Card / Panel */
+            .card-base {
+                @apply bg-surface-card border border-divider rounded-docu-card;
+            }
+
+            .card-shadow-sm {
+                @apply shadow-docu-sm;
+            }
+
+            .card-shadow {
+                @apply shadow-docu-card;
+            }
+
+            .card-modal {
+                @apply bg-surface-card border border-divider rounded-docu-modal shadow-docu-modal;
+            }
+
+            .panel-base {
+                @apply bg-surface-card border border-divider rounded-docu-card shadow-docu-card overflow-hidden;
+            }
+
+            .chip-base {
+                @apply px-2.5 py-1 text-xs font-semibold bg-surface-card text-docu-secondary shadow-docu-sm rounded-docu-btn;
+            }
+
+            /* Navigation */
+            .nav-link-base {
+                @apply rounded-docu-btn transition-colors focus-ring;
+            }
+
+            .sidebar-link {
+                @apply flex items-center gap-3 px-3 py-2.5 rounded-docu-btn text-sm font-medium transition-colors focus-ring;
+            }
+
+            .sidebar-link-active {
+                @apply bg-docu-primary text-white shadow-docu-sm;
+            }
+
+            .sidebar-link-idle {
+                @apply text-docu-secondary hover:bg-surface-base hover:text-docu-ink;
+            }
+
+            /* Pagination */
+            .page-btn {
+                @apply w-8 h-8 flex items-center justify-center rounded-docu-btn transition-colors focus-ring;
+            }
+
+            .page-btn-active {
+                @apply text-xs font-semibold bg-docu-primary text-white;
+            }
+
+            .page-btn-idle {
+                @apply text-xs text-docu-ink hover:bg-surface-base;
+            }
+
+            .page-btn-arrow {
+                @apply text-sm text-gray-400 hover:bg-surface-base;
+            }
+
+            /* Toast / Preview */
+            .toast-top-base {
+                @apply inline-flex items-center gap-3 min-w-[320px] max-w-[640px] px-5 py-3 rounded-full shadow-docu-card;
+            }
+
+            .toast-alarm-base {
+                @apply w-full max-w-sm bg-surface-card rounded-docu-card shadow-docu-card p-4;
+            }
+
+            /* Scroll panel */
+            .docu-scroll-panel {
+                @apply docu-scroll overflow-y-auto;
+            }
+
+            /* Top Toast */
+            .top-toast-base {
+                @apply inline-flex items-center gap-3 min-w-0 px-5 py-3 rounded-full border shadow-docu-card;
+            }
+
+            .top-toast-info {
+                @apply bg-docu-ink text-white border-docu-ink;
+            }
+
+            .top-toast-success {
+                @apply bg-docu-success text-white border-docu-success-dark;
+            }
+
+            .top-toast-warning {
+                @apply bg-docu-warning text-docu-ink border-docu-warning-dark;
+            }
+
+            .top-toast-danger {
+                @apply bg-docu-danger text-white border-docu-danger-dark;
+            }
+
+            .top-toast-icon-wrap {
+                @apply inline-flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0;
+            }
+
+            .top-toast-icon-info {
+                @apply bg-docu-primary-light text-docu-primary;
+            }
+
+            .top-toast-icon-success {
+                @apply bg-white/20 text-white;
+            }
+
+            .top-toast-icon-warning {
+                @apply bg-white/40 text-docu-ink;
+            }
+
+            .top-toast-icon-danger {
+                @apply bg-white/20 text-white;
+            }
+        }
+
+        @layer utilities {
+            .line-clamp-2 {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            .line-clamp-3 {
+                display: -webkit-box;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            /* Docu 전용 스크롤 패널 */
+            .docu-scroll::-webkit-scrollbar {
+                width: 10px;
+                height: 10px;
+            }
+
+            .docu-scroll::-webkit-scrollbar-track {
+                background: #F2EFE9;
+                border-left: 1px solid #D8D4CC;
+            }
+
+            .docu-scroll::-webkit-scrollbar-thumb {
+                background: #C8C4BB;
+                border: 2px solid #F2EFE9;
+                border-radius: 9999px;
+            }
+
+            .docu-scroll::-webkit-scrollbar-thumb:hover {
+                background: #9CA3AF;
+            }
+        }
+    </style>
+
     <!-- 공통 API 유틸리티 (CSRF 토큰 자동 주입 포함) -->
     <script src="/js/common/FetchUtil.js"></script>
-</head>
+</th:block>
+
 </html>

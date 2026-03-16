@@ -12,17 +12,41 @@ public record HeaderInfo(
         String profileImageUrl,
         String companyName,
         String companyProfileUrl,
-        CompanyStatus companyStatus) {
+        CompanyStatus companyStatus,
+        String roleLabel,
+        boolean showFreePlanBadge,
+        String profileFallbackLetter) {
 
     public static HeaderInfo from(Member member, String profileImageUrl, String companyProfileUrl) {
+        String resolvedName =
+                member.getName() != null && !member.getName().isBlank() ? member.getName() : "사용자";
+        String resolvedNickname = member.getNickname();
         Company company = member.getCompany();
+        String resolvedCompanyName = company != null ? company.getName() : null;
+        CompanyStatus companyStatus = company != null ? company.getStatus() : null;
+        GlobalRole role = member.getGlobalRole();
+        String resolvedRoleLabel =
+                switch (role) {
+                    case CEO -> "대표";
+                    case ADMIN -> "운영자";
+                    case EMPLOYEE -> "직원";
+                };
+        boolean resolvedShowFreePlanBadge = role != GlobalRole.ADMIN;
+        String fallbackLetter =
+                (resolvedNickname != null && !resolvedNickname.isBlank())
+                        ? resolvedNickname.substring(0, 1)
+                        : "U";
+
         return new HeaderInfo(
-                member.getName(),
-                member.getNickname(),
-                member.getGlobalRole(),
+                resolvedName,
+                resolvedNickname,
+                role,
                 profileImageUrl,
-                company != null ? company.getName() : null,
+                resolvedCompanyName,
                 companyProfileUrl,
-                company != null ? company.getStatus() : null);
+                companyStatus,
+                resolvedRoleLabel,
+                resolvedShowFreePlanBadge,
+                fallbackLetter);
     }
 }
