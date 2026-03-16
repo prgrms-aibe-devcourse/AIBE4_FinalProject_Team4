@@ -35,7 +35,7 @@ public class CacheConfig {
                         .build();
 
         objectMapper.activateDefaultTyping(
-                BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build(),
+                BasicPolymorphicTypeValidator.builder().allowIfSubType("kr.java.documind").allowIfSubType("java.util").build(),
                 ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY);
 
