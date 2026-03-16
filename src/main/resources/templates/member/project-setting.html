@@ -173,87 +173,90 @@
                         <h2 class="text-base font-bold text-docu-ink">API Key</h2>
                     </div>
 
-                    <div class="p-8">
+                    <div class="p-8 space-y-8">
 
-                        <!-- 키 없는 상태 -->
-                        <div th:if="${data.apiKeyInfo() == null or !data.apiKeyInfo().hasKey()}"
-                             class="flex flex-col items-center gap-4 py-6">
-                            <div class="w-12 h-12 rounded-docu-card bg-surface-base border border-divider flex items-center
-                                        justify-center">
-                                <svg class="w-6 h-6 text-docu-secondary" fill="none"
-                                     stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          stroke-width="1.5"
-                                          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2
-                                             H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707
-                                             l5.964-5.964A6 6 0 1121 9z"/>
-                                </svg>
-                            </div>
-                            <p class="text-sm text-docu-secondary">발급된 API 키가 없습니다.</p>
-                            <button type="button" onclick="reissueApiKey()" class="btn-primary">
-                                키 발급
-                            </button>
-                        </div>
-
-                        <!-- 키 있는 상태 -->
-                        <div th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().hasKey()}"
-                             class="flex flex-col gap-5">
-
-                            <!-- 상태 뱃지 -->
-                            <div class="flex items-center gap-2">
-                                <span class="form-label uppercase tracking-wide">상태</span>
-                                <span th:if="${data.apiKeyInfo().active()}"
-                                      class="badge-status-active">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-docu-success inline-block" aria-hidden="true"></span>
-                                    활성
-                                </span>
-                                <span th:unless="${data.apiKeyInfo().active()}"
-                                      class="badge-status-paused">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" aria-hidden="true"></span>
-                                    정지됨
-                                </span>
-                            </div>
-
-                            <!-- 마스킹된 키 표시 -->
-                            <div class="flex items-center gap-3 px-4 py-3 bg-surface-base
-                                        border border-divider rounded-docu-btn">
-                                <code id="api-key-display"
-                                      class="flex-1 text-sm font-mono text-docu-ink select-all"
-                                      th:text="${data.apiKeyInfo().maskedKey()}">sk_live_****</code>
-                                <button type="button" onclick="copyApiKey()"
-                                        title="복사"
-                                        class="btn-icon w-8 h-8 shrink-0">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              stroke-width="2"
-                                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012
-                                                 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0
-                                                 00-2 2v8a2 2 0 002 2z"/>
+                        <!-- INGEST KEY -->
+                        <div>
+                            <h3 class="text-sm font-semibold text-docu-ink mb-3">Ingest Key (로그 수집용)</h3>
+                            <!-- 키 없는 상태 -->
+                            <div th:if="${data.apiKeyInfo() == null or data.apiKeyInfo().ingestKey() == null or !data.apiKeyInfo().ingestKey().hasKey()}"
+                                 class="flex flex-col items-center gap-4 py-6 border border-divider rounded-docu-card bg-surface-base">
+                                <div class="w-12 h-12 rounded-docu-card bg-surface-card border border-divider flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                                     </svg>
-                                </button>
+                                </div>
+                                <p class="text-sm text-docu-secondary">발급된 Ingest API 키가 없습니다.</p>
+                                <button type="button" onclick="reissueApiKey('INGEST')" class="btn-primary">키 발급</button>
                             </div>
 
-                            <!-- 액션 버튼 -->
-                            <div class="flex gap-3">
-                                <button type="button" onclick="reissueApiKey()" class="btn-ghost">
-                                    재발급
-                                </button>
-                                <!-- ACTIVE → 정지, SUSPENDED → 활성화 -->
-                                <button th:if="${data.apiKeyInfo().active()}"
-                                        type="button"
-                                        th:onclick="toggleApiKey('ACTIVE')"
-                                        class="btn-danger">
-                                    정지
-                                </button>
-                                <button th:unless="${data.apiKeyInfo().active()}"
-                                        type="button"
-                                        th:onclick="toggleApiKey('SUSPENDED')"
-                                        class="btn-success">
-                                    활성화
-                                </button>
+                            <!-- 키 있는 상태 -->
+                            <div th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().ingestKey() != null and data.apiKeyInfo().ingestKey().hasKey()}" class="flex flex-col gap-5">
+                                <div class="flex items-center gap-2">
+                                    <span class="form-label uppercase tracking-wide">상태</span>
+                                    <span th:if="${data.apiKeyInfo().ingestKey().active()}" class="badge-status-active">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-docu-success inline-block" aria-hidden="true"></span>활성
+                                    </span>
+                                    <span th:unless="${data.apiKeyInfo().ingestKey().active()}" class="badge-status-paused">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" aria-hidden="true"></span>정지됨
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn">
+                                    <code class="flex-1 text-sm font-mono text-docu-ink select-all" th:text="${data.apiKeyInfo().ingestKey().maskedKey()}"></code>
+                                    <button type="button" th:onclick="copyApiKey('INGEST')" title="복사" class="btn-icon w-8 h-8 shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                    </button>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button type="button" onclick="reissueApiKey('INGEST')" class="btn-ghost">재발급</button>
+                                    <button th:if="${data.apiKeyInfo().ingestKey().active()}" type="button" th:onclick="toggleApiKey('INGEST', 'ACTIVE')" class="btn-danger">정지</button>
+                                    <button th:unless="${data.apiKeyInfo().ingestKey().active()}" type="button" th:onclick="toggleApiKey('INGEST', 'SUSPENDED')" class="btn-success">활성화</button>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- QUERY KEY -->
+                        <div class="pt-6 border-t border-divider">
+                            <h3 class="text-sm font-semibold text-docu-ink mb-3">Query Key (챗봇 조회용)</h3>
+                            <!-- 키 없는 상태 -->
+                            <div th:if="${data.apiKeyInfo() == null or data.apiKeyInfo().queryKey() == null or !data.apiKeyInfo().queryKey().hasKey()}"
+                                 class="flex flex-col items-center gap-4 py-6 border border-divider rounded-docu-card bg-surface-base">
+                                <div class="w-12 h-12 rounded-docu-card bg-surface-card border border-divider flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                    </svg>
+                                </div>
+                                <p class="text-sm text-docu-secondary">발급된 Query API 키가 없습니다.</p>
+                                <button type="button" onclick="reissueApiKey('QUERY')" class="btn-primary">키 발급</button>
+                            </div>
+
+                            <!-- 키 있는 상태 -->
+                            <div th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().queryKey() != null and data.apiKeyInfo().queryKey().hasKey()}" class="flex flex-col gap-5">
+                                <div class="flex items-center gap-2">
+                                    <span class="form-label uppercase tracking-wide">상태</span>
+                                    <span th:if="${data.apiKeyInfo().queryKey().active()}" class="badge-status-active">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-docu-success inline-block" aria-hidden="true"></span>활성
+                                    </span>
+                                    <span th:unless="${data.apiKeyInfo().queryKey().active()}" class="badge-status-paused">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" aria-hidden="true"></span>정지됨
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn">
+                                    <code class="flex-1 text-sm font-mono text-docu-ink select-all" th:text="${data.apiKeyInfo().queryKey().maskedKey()}"></code>
+                                    <button type="button" th:onclick="copyApiKey('QUERY')" title="복사" class="btn-icon w-8 h-8 shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                    </button>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button type="button" onclick="reissueApiKey('QUERY')" class="btn-ghost">재발급</button>
+                                    <button th:if="${data.apiKeyInfo().queryKey().active()}" type="button" th:onclick="toggleApiKey('QUERY', 'ACTIVE')" class="btn-danger">정지</button>
+                                    <button th:unless="${data.apiKeyInfo().queryKey().active()}" type="button" th:onclick="toggleApiKey('QUERY', 'SUSPENDED')" class="btn-success">활성화</button>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </section>
 

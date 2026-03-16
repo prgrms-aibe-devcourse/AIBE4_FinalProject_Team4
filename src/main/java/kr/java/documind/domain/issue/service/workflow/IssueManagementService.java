@@ -6,6 +6,8 @@ import kr.java.documind.domain.issue.event.IssueResolvedEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
+import kr.java.documind.domain.member.model.enums.AccountStatus;
+import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class IssueManagementService {
 
     private final IssueRepository issueRepository;
+    private final ProjectMemberRepository projectMemberRepository;
     private final IssueWorkflowValidator workflowValidator;
     private final IssueHistoryService historyService;
     private final ApplicationEventPublisher eventPublisher;
@@ -39,6 +42,13 @@ public class IssueManagementService {
     @Transactional
     public void assignIssue(Long issueId, UUID projectId, UUID assigneeId, UUID modifierId) {
         Issue issue = getIssueAndVerifyProject(issueId, projectId);
+
+        // 담당자가 프로젝트 멤버인지 검증
+        if (assigneeId != null
+                && !projectMemberRepository.existsByProject_IdAndMember_IdAndStatus(
+                        projectId, assigneeId, AccountStatus.ACTIVE)) {
+            throw new BadRequestException("담당자가 프로젝트 멤버가 아닙니다: " + assigneeId);
+        }
 
         UUID beforeAssigneeId = issue.getAssigneeId();
 

@@ -78,7 +78,7 @@ public class IssueRecommendationApiController {
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
-        Issue recommendation = recommendationService.getRecommendationDetail(issueId);
+        Issue recommendation = recommendationService.getRecommendationDetail(issueId, projectId);
 
         // 담당자 정보 조회
         AssigneeInfo assignee = null;
@@ -126,6 +126,7 @@ public class IssueRecommendationApiController {
 
         recommendationService.approveRecommendation(
                 issueId,
+                projectId,
                 request.assigneeId(),
                 request.title(),
                 request.description(),
@@ -156,7 +157,7 @@ public class IssueRecommendationApiController {
                     Long issueId,
             @AuthenticationPrincipal CustomUserDetails authMember) {
 
-        recommendationService.rejectRecommendation(issueId, authMember.getMemberId());
+        recommendationService.rejectRecommendation(issueId, projectId, authMember.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success("추천 이슈가 거부되었습니다."));
     }

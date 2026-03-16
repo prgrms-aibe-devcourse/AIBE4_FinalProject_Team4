@@ -209,6 +209,9 @@ public class IssueManagementApiController {
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
+        // 프로젝트 소유권 검증
+        issueManagementService.getIssueDetail(issueId, projectId);
+
         List<IssueHistory> histories = issueHistoryService.getIssueHistories(issueId);
 
         List<IssueHistoryResponse> response =

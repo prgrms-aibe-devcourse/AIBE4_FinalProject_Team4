@@ -66,4 +66,15 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
 
     long countByProjectAndProjectRoleAndStatus(
             Project project, ProjectRole projectRole, AccountStatus status);
+
+    /**
+     * 프로젝트 활성 멤버 존재 여부 확인
+     *
+     * @param projectId 프로젝트 ID
+     * @param memberId 멤버 ID
+     * @param status 계정 상태
+     * @return 존재 여부
+     */
+    boolean existsByProject_IdAndMember_IdAndStatus(
+            UUID projectId, UUID memberId, AccountStatus status);
 }

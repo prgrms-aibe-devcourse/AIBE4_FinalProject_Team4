@@ -8,6 +8,9 @@ import kr.java.documind.domain.issue.model.dto.response.SimilarityResult;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
+import kr.java.documind.domain.member.model.enums.AccountStatus;
+import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
+import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class IssueRecommendationService {
 
     private final IssueRepository issueRepository;
+    private final ProjectMemberRepository projectMemberRepository;
     private final IssueSimilarityCalculator similarityCalculator;
 
     /** 유사도 계산 시 비교할 최대 후보 이슈 수 (성능 최적화) */
@@ -48,13 +52,19 @@ public class IssueRecommendationService {
      * 추천 이슈 상세 조회
      *
      * @param issueId 이슈 ID
+     * @param projectId 프로젝트 ID
      * @return 추천 이슈
      */
-    public Issue getRecommendationDetail(Long issueId) {
+    public Issue getRecommendationDetail(Long issueId, UUID projectId) {
         Issue issue =
                 issueRepository
                         .findById(issueId)
                         .orElseThrow(() -> new NotFoundException("추천 이슈를 찾을 수 없습니다: " + issueId));
+
+        if (!issue.getProjectId().equals(projectId)) {
+            throw new kr.java.documind.global.exception.ForbiddenException(
+                    "해당 프로젝트의 이슈가 아닙니다: " + issueId);
+        }
 
         if (issue.getStatus() != IssueStatus.RECOMMENDED) {
             throw new ConflictException("추천 대기 상태(RECOMMENDED)가 아닙니다. 현재 상태: " + issue.getStatus());
@@ -67,6 +77,7 @@ public class IssueRecommendationService {
      * 추천 이슈 승인 → 실제 이슈로 생성
      *
      * @param issueId 이슈 ID
+     * @param projectId 프로젝트 ID
      * @param assigneeId 담당자 ID (프로젝트 멤버)
      * @param title 이슈 제목 (수정된 제목, null이면 기존 제목 유지)
      * @param description 이슈 설명 (수정된 설명, null이면 기존 설명 유지)
@@ -74,8 +85,20 @@ public class IssueRecommendationService {
      */
     @Transactional
     public void approveRecommendation(
-            Long issueId, UUID assigneeId, String title, String description, UUID modifierId) {
-        Issue issue = getRecommendationDetail(issueId);
+            Long issueId,
+            UUID projectId,
+            UUID assigneeId,
+            String title,
+            String description,
+            UUID modifierId) {
+        Issue issue = getRecommendationDetail(issueId, projectId);
+
+        // 담당자가 프로젝트 멤버인지 검증
+        if (assigneeId != null
+                && !projectMemberRepository.existsByProject_IdAndMember_IdAndStatus(
+                        projectId, assigneeId, AccountStatus.ACTIVE)) {
+            throw new BadRequestException("담당자가 프로젝트 멤버가 아닙니다: " + assigneeId);
+        }
 
         // 제목 및 설명 수정
         if (title != null && !title.isBlank()) {
@@ -106,11 +129,12 @@ public class IssueRecommendationService {
      * 추천 이슈 거부
      *
      * @param issueId 이슈 ID
+     * @param projectId 프로젝트 ID
      * @param modifierId 거부한 사용자 ID
      */
     @Transactional
-    public void rejectRecommendation(Long issueId, UUID modifierId) {
-        Issue issue = getRecommendationDetail(issueId);
+    public void rejectRecommendation(Long issueId, UUID projectId, UUID modifierId) {
+        Issue issue = getRecommendationDetail(issueId, projectId);
 
         issue.reject(); // RECOMMENDED → REJECTED
 
