@@ -125,8 +125,7 @@ public class GlobalApiExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
             DataIntegrityViolationException e, HttpServletRequest request) {
-        if (e.getCause()
-                instanceof org.hibernate.exception.ConstraintViolationException) {
+        if (e.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
             log.warn(
                     "ConstraintViolationException [{}]: {}",
                     request.getRequestURI(),
