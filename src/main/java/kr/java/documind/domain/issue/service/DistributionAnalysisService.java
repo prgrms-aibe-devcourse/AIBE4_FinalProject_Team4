@@ -52,7 +52,9 @@ public class DistributionAnalysisService {
         // 최근 로그 샘플 조회
         List<GameLog> sampleLogs =
                 gameLogRepository.findRecentLogsByFingerprint(
-                        issue.getFingerprint(), PageRequest.of(0, MAX_SAMPLE_SIZE));
+                        issue.getFingerprint(),
+                        issue.getProjectId(),
+                        PageRequest.of(0, MAX_SAMPLE_SIZE));
 
         if (sampleLogs.isEmpty()) {
             log.warn("No logs found for fingerprint: {}", issue.getFingerprint());

@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import kr.java.documind.domain.issue.model.dto.response.AffectedPlayerResponse;
 import kr.java.documind.domain.issue.model.dto.response.OccurrenceTrendResponse;
 import kr.java.documind.domain.logprocessor.model.entity.QGameLog;
@@ -30,7 +31,7 @@ public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
 
     @Override
     public Page<AffectedPlayerResponse> findAffectedPlayersByFingerprint(
-            String fingerprint, Pageable pageable) {
+            String fingerprint, UUID projectId, Pageable pageable) {
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QGameLog gameLog = QGameLog.gameLog;
@@ -44,7 +45,11 @@ public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
                                 gameLog.occurredAt.min(),
                                 gameLog.occurredAt.max())
                         .from(gameLog)
-                        .where(gameLog.fingerprint.eq(fingerprint).and(gameLog.userId.isNotNull()))
+                        .where(
+                                gameLog.fingerprint
+                                        .eq(fingerprint)
+                                        .and(gameLog.projectId.eq(projectId))
+                                        .and(gameLog.userId.isNotNull()))
                         .groupBy(gameLog.userId)
                         .orderBy(gameLog.count().desc(), gameLog.occurredAt.max().desc());
 
@@ -53,7 +58,11 @@ public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
                 queryFactory
                         .select(gameLog.userId)
                         .from(gameLog)
-                        .where(gameLog.fingerprint.eq(fingerprint).and(gameLog.userId.isNotNull()))
+                        .where(
+                                gameLog.fingerprint
+                                        .eq(fingerprint)
+                                        .and(gameLog.projectId.eq(projectId))
+                                        .and(gameLog.userId.isNotNull()))
                         .groupBy(gameLog.userId)
                         .fetch()
                         .size();
@@ -79,7 +88,7 @@ public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
 
     @Override
     public List<OccurrenceTrendResponse> findOccurrenceTrendByFingerprint(
-            String fingerprint, OffsetDateTime startDate, OffsetDateTime endDate) {
+            String fingerprint, UUID projectId, OffsetDateTime startDate, OffsetDateTime endDate) {
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QGameLog gameLog = QGameLog.gameLog;
@@ -95,6 +104,7 @@ public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
                         .where(
                                 gameLog.fingerprint
                                         .eq(fingerprint)
+                                        .and(gameLog.projectId.eq(projectId))
                                         .and(gameLog.occurredAt.goe(startDate))
                                         .and(gameLog.occurredAt.lt(endDate)))
                         .groupBy(

@@ -58,7 +58,7 @@ public class OccurrenceTrendService {
         // 데이터 조회
         List<OccurrenceTrendResponse> rawData =
                 gameLogRepository.findOccurrenceTrendByFingerprint(
-                        issue.getFingerprint(), startDate, endDate);
+                        issue.getFingerprint(), issue.getProjectId(), startDate, endDate);
 
         // 데이터가 없는 날짜는 0으로 채우기
         return fillMissingDates(

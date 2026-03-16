@@ -41,6 +41,7 @@ public class AffectedPlayersService {
                         .orElseThrow(() -> new NotFoundException("이슈를 찾을 수 없습니다: " + issueId));
 
         // 플레이어 통계 조회 (QueryDSL로 직접 DTO 변환)
-        return gameLogRepository.findAffectedPlayersByFingerprint(issue.getFingerprint(), pageable);
+        return gameLogRepository.findAffectedPlayersByFingerprint(
+                issue.getFingerprint(), issue.getProjectId(), pageable);
     }
 }

@@ -52,7 +52,9 @@ public class RootCauseAnalysisService {
         // 최근 로그 샘플 조회 (최대 100개)
         List<GameLog> recentLogs =
                 gameLogRepository.findRecentLogsByFingerprint(
-                        issue.getFingerprint(), PageRequest.of(0, 100));
+                        issue.getFingerprint(),
+                        issue.getProjectId(),
+                        PageRequest.of(0, 100));
 
         // ErrorType 기반 원인 및 해결책
         ErrorType errorType = issue.getErrorType();
