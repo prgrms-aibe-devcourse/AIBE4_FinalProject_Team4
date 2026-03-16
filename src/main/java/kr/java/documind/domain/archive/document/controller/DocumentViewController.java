@@ -15,12 +15,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 @RequiredArgsConstructor
+@ProjectPage(ServiceMenu.DOCUMENTS)
+@RequireProjectMember
 public class DocumentViewController {
 
     private final DocumentMetadataService documentMetadataService;
 
-    @ProjectPage(ServiceMenu.DOCUMENTS)
-    @RequireProjectMember
     @GetMapping("/projects/{publicId}/groups")
     public String documentMainPage(@CurrentProject ProjectRequestContext project, Model model) {
         model.addAttribute("publicId", project.publicId());
