@@ -119,13 +119,9 @@ public class IssueManagementService {
         }
 
         if (status == null) {
-            // 전체 조회 시 실제 이슈만 (RECOMMENDED, REJECTED 제외)
-            return issueRepository.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
-                    .filter(
-                            issue ->
-                                    issue.getStatus() != IssueStatus.RECOMMENDED
-                                            && issue.getStatus() != IssueStatus.REJECTED)
-                    .toList();
+            // 전체 조회 시 실제 이슈만 (RECOMMENDED, REJECTED 제외) - DB 레벨 필터링
+            return issueRepository.findByProjectIdAndStatusNotInOrderByCreatedAtDesc(
+                    projectId, List.of(IssueStatus.RECOMMENDED, IssueStatus.REJECTED));
         }
 
         return issueRepository.findByProjectIdAndStatusOrderByCreatedAtDesc(projectId, status);

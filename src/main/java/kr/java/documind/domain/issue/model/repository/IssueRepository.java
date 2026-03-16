@@ -48,6 +48,18 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
     List<Issue> findByProjectIdAndStatusOrderByCreatedAtDesc(UUID projectId, IssueStatus status);
 
     /**
+     * 프로젝트별 이슈 목록 조회 (특정 상태들 제외, 최신순)
+     *
+     * <p>추천/거부 상태를 제외한 실제 이슈만 조회
+     *
+     * @param projectId 프로젝트 ID
+     * @param excludedStatuses 제외할 상태 목록 (RECOMMENDED, REJECTED)
+     * @return 이슈 목록
+     */
+    List<Issue> findByProjectIdAndStatusNotInOrderByCreatedAtDesc(
+            UUID projectId, List<IssueStatus> excludedStatuses);
+
+    /**
      * 프로젝트별 특정 상태의 이슈 개수
      *
      * @param projectId 프로젝트 ID
