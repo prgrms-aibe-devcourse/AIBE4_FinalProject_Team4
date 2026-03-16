@@ -104,7 +104,7 @@ public class IssueManagementApiController {
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
-        Issue issue = issueManagementService.getIssueDetail(issueId);
+        Issue issue = issueManagementService.getIssueDetail(issueId, projectId);
 
         // 담당자 정보 조회
         AssigneeInfo assignee = null;
@@ -145,7 +145,8 @@ public class IssueManagementApiController {
             @Valid @RequestBody IssueAssignRequest request,
             @AuthenticationPrincipal CustomUserDetails authMember) {
 
-        issueManagementService.assignIssue(issueId, request.assigneeId(), authMember.getMemberId());
+        issueManagementService.assignIssue(
+                issueId, projectId, request.assigneeId(), authMember.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success("담당자가 지정되었습니다."));
     }
@@ -179,6 +180,7 @@ public class IssueManagementApiController {
 
         issueManagementService.updateIssueStatus(
                 issueId,
+                projectId,
                 request.status(),
                 request.resolutionNote(),
                 authMember.getMemberId(),

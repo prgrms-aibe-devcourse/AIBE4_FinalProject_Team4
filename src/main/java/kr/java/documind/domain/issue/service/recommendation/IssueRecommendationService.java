@@ -2,13 +2,14 @@ package kr.java.documind.domain.issue.service.recommendation;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.dto.response.SimilarityResult;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
+import kr.java.documind.global.exception.ConflictException;
+import kr.java.documind.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -53,12 +54,10 @@ public class IssueRecommendationService {
         Issue issue =
                 issueRepository
                         .findById(issueId)
-                        .orElseThrow(
-                                () -> new NoSuchElementException("추천 이슈를 찾을 수 없습니다: " + issueId));
+                        .orElseThrow(() -> new NotFoundException("추천 이슈를 찾을 수 없습니다: " + issueId));
 
         if (issue.getStatus() != IssueStatus.RECOMMENDED) {
-            throw new IllegalStateException(
-                    "추천 대기 상태(RECOMMENDED)가 아닙니다. 현재 상태: " + issue.getStatus());
+            throw new ConflictException("추천 대기 상태(RECOMMENDED)가 아닙니다. 현재 상태: " + issue.getStatus());
         }
 
         return issue;

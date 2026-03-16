@@ -15,6 +15,7 @@ import kr.java.documind.domain.issue.model.enums.ErrorType;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.IssueType;
+import kr.java.documind.global.exception.ConflictException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -208,7 +209,7 @@ public class Issue {
     /** 이슈 추천 승인 (RECOMMENDED → TODO) */
     public void approve() {
         if (this.status != IssueStatus.RECOMMENDED) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "이슈 추천 상태(RECOMMENDED)에서만 승인할 수 있습니다. 현재 상태: " + this.status);
         }
         this.status = IssueStatus.TODO;
@@ -218,7 +219,7 @@ public class Issue {
     /** 이슈 추천 거부 (RECOMMENDED → REJECTED) */
     public void reject() {
         if (this.status != IssueStatus.RECOMMENDED) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "이슈 추천 상태(RECOMMENDED)에서만 거부할 수 있습니다. 현재 상태: " + this.status);
         }
         this.status = IssueStatus.REJECTED;

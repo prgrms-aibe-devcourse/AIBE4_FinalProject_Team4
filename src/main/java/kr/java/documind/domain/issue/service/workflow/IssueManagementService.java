@@ -6,6 +6,7 @@ import kr.java.documind.domain.issue.event.IssueResolvedEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
+import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,12 +32,13 @@ public class IssueManagementService {
      * 이슈 담당자 지정
      *
      * @param issueId 이슈 ID
+     * @param projectId 프로젝트 ID (권한 검증용)
      * @param assigneeId 담당자 멤버 ID
      * @param modifierId 변경 작업을 수행한 멤버 ID
      */
     @Transactional
-    public void assignIssue(Long issueId, UUID assigneeId, UUID modifierId) {
-        Issue issue = getIssueOrThrow(issueId);
+    public void assignIssue(Long issueId, UUID projectId, UUID assigneeId, UUID modifierId) {
+        Issue issue = getIssueAndVerifyProject(issueId, projectId);
 
         UUID beforeAssigneeId = issue.getAssigneeId();
 
@@ -51,6 +53,7 @@ public class IssueManagementService {
      * 이슈 상태 변경
      *
      * @param issueId 이슈 ID
+     * @param projectId 프로젝트 ID (권한 검증용)
      * @param newStatus 변경할 상태
      * @param resolutionNote 해결 방법 설명 (RESOLVED 상태 시 선택 사항)
      * @param modifierId 변경 작업을 수행한 멤버 ID
@@ -59,11 +62,12 @@ public class IssueManagementService {
     @Transactional
     public void updateIssueStatus(
             Long issueId,
+            UUID projectId,
             IssueStatus newStatus,
             String resolutionNote,
             UUID modifierId,
             boolean includeInPatchNote) {
-        Issue issue = getIssueOrThrow(issueId);
+        Issue issue = getIssueAndVerifyProject(issueId, projectId);
 
         IssueStatus beforeStatus = issue.getStatus();
 
@@ -111,7 +115,7 @@ public class IssueManagementService {
     public List<Issue> getIssueList(UUID projectId, IssueStatus status) {
         // 추천 상태를 명시적으로 요청한 경우 예외 처리
         if (status == IssueStatus.RECOMMENDED || status == IssueStatus.REJECTED) {
-            throw new IllegalArgumentException("추천 관련 상태는 IssueRecommendationService를 사용하세요.");
+            throw new BadRequestException("추천 관련 상태는 IssueRecommendationService를 사용하세요.");
         }
 
         if (status == null) {
@@ -131,11 +135,33 @@ public class IssueManagementService {
      * 이슈 상세 조회
      *
      * @param issueId 이슈 ID
+     * @param projectId 프로젝트 ID (권한 검증용)
      * @return 이슈 엔티티
      * @throws NotFoundException 이슈가 존재하지 않는 경우
+     * @throws kr.java.documind.global.exception.ForbiddenException 다른 프로젝트의 이슈인 경우
      */
-    public Issue getIssueDetail(Long issueId) {
-        return getIssueOrThrow(issueId);
+    public Issue getIssueDetail(Long issueId, UUID projectId) {
+        return getIssueAndVerifyProject(issueId, projectId);
+    }
+
+    /**
+     * 이슈 조회 및 프로젝트 권한 검증
+     *
+     * @param issueId 이슈 ID
+     * @param projectId 프로젝트 ID
+     * @return 이슈 엔티티
+     * @throws NotFoundException 이슈가 존재하지 않는 경우
+     * @throws kr.java.documind.global.exception.ForbiddenException 다른 프로젝트의 이슈인 경우
+     */
+    private Issue getIssueAndVerifyProject(Long issueId, UUID projectId) {
+        Issue issue = getIssueOrThrow(issueId);
+
+        if (!issue.getProjectId().equals(projectId)) {
+            throw new kr.java.documind.global.exception.ForbiddenException(
+                    "해당 프로젝트의 이슈가 아닙니다: " + issueId);
+        }
+
+        return issue;
     }
 
     /**

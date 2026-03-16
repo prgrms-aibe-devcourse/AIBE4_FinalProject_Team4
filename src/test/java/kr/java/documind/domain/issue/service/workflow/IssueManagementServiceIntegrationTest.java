@@ -100,7 +100,7 @@ class IssueManagementServiceIntegrationTest {
 
             // when
             issueManagementService.updateIssueStatus(
-                    issueId, newStatus, null, testModifierId, false);
+                    issueId, testProjectId, newStatus, null, testModifierId, false);
 
             // then
             // 1. 이슈 상태 변경 확인
@@ -116,8 +116,8 @@ class IssueManagementServiceIntegrationTest {
             assertThat(history.getIssueId()).isEqualTo(issueId);
             assertThat(history.getModifierId()).isEqualTo(testModifierId);
             assertThat(history.getFieldName()).isEqualTo("STATUS");
-            assertThat(history.getBeforeValue()).isEqualTo("대기중");
-            assertThat(history.getAfterValue()).isEqualTo("처리중");
+            assertThat(history.getBeforeValue()).isEqualTo("TODO");
+            assertThat(history.getAfterValue()).isEqualTo("IN_PROGRESS");
             assertThat(history.getCreatedAt()).isNotNull();
         }
 
@@ -133,7 +133,7 @@ class IssueManagementServiceIntegrationTest {
 
             // when
             issueManagementService.updateIssueStatus(
-                    issueId, newStatus, null, testModifierId, false);
+                    issueId, testProjectId, newStatus, null, testModifierId, false);
 
             // then
             // 1. 이슈 상태 변경 확인
@@ -147,8 +147,8 @@ class IssueManagementServiceIntegrationTest {
             assertThat(histories).hasSize(1);
 
             IssueHistory history = histories.get(0);
-            assertThat(history.getBeforeValue()).isEqualTo("처리중");
-            assertThat(history.getAfterValue()).isEqualTo("해결됨");
+            assertThat(history.getBeforeValue()).isEqualTo("IN_PROGRESS");
+            assertThat(history.getAfterValue()).isEqualTo("RESOLVED");
         }
 
         @Test
@@ -163,7 +163,12 @@ class IssueManagementServiceIntegrationTest {
 
             // when
             issueManagementService.updateIssueStatus(
-                    issueId, IssueStatus.RESOLVED, resolutionNote, testModifierId, false);
+                    issueId,
+                    testProjectId,
+                    IssueStatus.RESOLVED,
+                    resolutionNote,
+                    testModifierId,
+                    false);
 
             // then
             Issue updatedIssue = issueRepository.findById(issueId).orElseThrow();
@@ -178,7 +183,12 @@ class IssueManagementServiceIntegrationTest {
 
             // when
             issueManagementService.updateIssueStatus(
-                    testIssue.getId(), IssueStatus.IN_PROGRESS, null, specificModifierId, false);
+                    testIssue.getId(),
+                    testProjectId,
+                    IssueStatus.IN_PROGRESS,
+                    null,
+                    specificModifierId,
+                    false);
 
             // then
             List<IssueHistory> histories =
@@ -202,6 +212,7 @@ class IssueManagementServiceIntegrationTest {
                             () ->
                                     issueManagementService.updateIssueStatus(
                                             issueId,
+                                            testProjectId,
                                             IssueStatus.RESOLVED,
                                             null,
                                             testModifierId,
@@ -233,7 +244,12 @@ class IssueManagementServiceIntegrationTest {
             assertThatThrownBy(
                             () ->
                                     issueManagementService.updateIssueStatus(
-                                            issueId, IssueStatus.TODO, null, testModifierId, false))
+                                            issueId,
+                                            testProjectId,
+                                            IssueStatus.TODO,
+                                            null,
+                                            testModifierId,
+                                            false))
                     .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("허용되지 않는 상태 전환입니다");
 
@@ -252,7 +268,12 @@ class IssueManagementServiceIntegrationTest {
             assertThatThrownBy(
                             () ->
                                     issueManagementService.updateIssueStatus(
-                                            issueId, IssueStatus.TODO, null, testModifierId, false))
+                                            issueId,
+                                            testProjectId,
+                                            IssueStatus.TODO,
+                                            null,
+                                            testModifierId,
+                                            false))
                     .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("현재 상태와 동일한 상태로는 변경할 수 없습니다");
         }
@@ -273,7 +294,7 @@ class IssueManagementServiceIntegrationTest {
 
             // when
             issueManagementService.updateIssueStatus(
-                    issueId, IssueStatus.RESOLVED, null, testModifierId, true);
+                    issueId, testProjectId, IssueStatus.RESOLVED, null, testModifierId, true);
 
             // then
             long eventCount =
@@ -306,7 +327,12 @@ class IssueManagementServiceIntegrationTest {
 
             // when
             issueManagementService.updateIssueStatus(
-                    issueId, IssueStatus.RESOLVED, null, testModifierId, false); // false
+                    issueId,
+                    testProjectId,
+                    IssueStatus.RESOLVED,
+                    null,
+                    testModifierId,
+                    false); // false
 
             // then
             long eventCount =
@@ -325,7 +351,7 @@ class IssueManagementServiceIntegrationTest {
 
             // when
             issueManagementService.updateIssueStatus(
-                    issueId, IssueStatus.IN_PROGRESS, null, testModifierId, true);
+                    issueId, testProjectId, IssueStatus.IN_PROGRESS, null, testModifierId, true);
 
             // then
             long eventCount =
@@ -349,7 +375,8 @@ class IssueManagementServiceIntegrationTest {
             UUID newAssigneeId = UUID.randomUUID();
 
             // when
-            issueManagementService.assignIssue(issueId, newAssigneeId, testModifierId);
+            issueManagementService.assignIssue(
+                    issueId, testProjectId, newAssigneeId, testModifierId);
 
             // then
             // 1. 담당자 변경 확인
