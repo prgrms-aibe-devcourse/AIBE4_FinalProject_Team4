@@ -48,9 +48,7 @@ public class IssueContextService {
         // 최근 로그 샘플 조회 (최대 100개)
         List<GameLog> recentLogs =
                 gameLogRepository.findRecentLogsByFingerprint(
-                        issue.getFingerprint(),
-                        issue.getProjectId(),
-                        PageRequest.of(0, 100));
+                        issue.getFingerprint(), issue.getProjectId(), PageRequest.of(0, 100));
 
         if (recentLogs.isEmpty()) {
             // 로그가 없으면 기본값 반환
