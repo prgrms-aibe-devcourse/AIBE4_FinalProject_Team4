@@ -121,16 +121,22 @@ public class GlobalApiExceptionHandler {
         return ResponseEntity.status(e.getStatus()).body(ApiResponse.error(errorResponse));
     }
 
-    /** 동시 요청으로 인한 DB unique constraint 위반 (check-then-act 사이 race condition) */
+    /** DB 무결성 위반 — constraint 위반(동시 요청 race condition)은 409, 그 외는 500 */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
             DataIntegrityViolationException e, HttpServletRequest request) {
-        log.warn(
-                "DataIntegrityViolationException [{}]: {}",
-                request.getRequestURI(),
-                e.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ErrorResponse.of("이미 존재하는 데이터입니다.")));
+        if (e.getCause()
+                instanceof org.hibernate.exception.ConstraintViolationException) {
+            log.warn(
+                    "ConstraintViolationException [{}]: {}",
+                    request.getRequestURI(),
+                    e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(ErrorResponse.of("이미 존재하는 데이터입니다.")));
+        }
+        log.error("DataIntegrityViolationException [{}]", request.getRequestURI(), e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(ErrorResponse.of("서버 오류가 발생했습니다.")));
     }
 
     /** 그 외 모든 예외 (500) */
