@@ -24,6 +24,16 @@ public class CacheConfig {
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
+
+        BasicPolymorphicTypeValidator ptv =
+                BasicPolymorphicTypeValidator.builder()
+                        .allowIfBaseType(java.util.List.class)
+                        .allowIfBaseType(java.util.Map.class)
+                        .allowIfSubType("kr.java.documind.") // 도메인 DTO 패키지 허용
+                        .allowIfSubType("java.time.") // 시간 관련 클래스 허용
+                        .allowIfSubType("java.lang.") // String 등 기본 클래스 허용
+                        .build();
+
         objectMapper.activateDefaultTyping(
                 BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build(),
                 ObjectMapper.DefaultTyping.NON_FINAL,
