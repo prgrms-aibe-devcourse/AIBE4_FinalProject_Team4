@@ -1,545 +1,1003 @@
-<!DOCTYPE html>
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{common/layout/base-layout}">
-<head>
-    <title>프로젝트 설정</title>
-</head>
+<!doctype html>
+<html
+    lang="ko"
+    xmlns:th="http://www.thymeleaf.org"
+    xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{common/layout/base-layout}"
+>
+    <head>
+        <title>프로젝트 설정</title>
+    </head>
 
-<body>
-<th:block layout:fragment="body">
-<div id="main-content">
+    <body>
+        <th:block layout:fragment="body">
+            <div id="main-content">
+                <div
+                    th:replace="~{common/fragments/sidebar-project-setting :: sidebar(${data})}"
+                ></div>
 
-    <div th:replace="~{common/fragments/sidebar-project-setting :: sidebar(${data})}"></div>
-
-    <div class="ml-sidebar flex flex-col min-h-screen">
-
-    <!-- 사용자 바 (항상 상단 고정) -->
-    <div class="sticky top-0 z-30">
-        <div th:replace="~{common/fragments/header-auth :: user-bar}"></div>
-    </div>
-
-    <main class="flex-1 py-8">
-        <div class="max-w-3xl mx-auto px-8 mb-6">
-            <h1 class="text-h1 text-docu-ink">프로젝트 설정</h1>
-            <p class="text-sm text-docu-secondary mt-1"
-               th:text="${data.project().name()}">프로젝트명</p>
-        </div>
-
-        <div class="max-w-3xl mx-auto px-8 space-y-6">
-
-                <section id="section-details"
-                         class="card-base card-shadow overflow-hidden scroll-mt-8">
-                    <div class="px-8 py-5 border-b border-divider bg-surface-card">
-                        <h2 class="text-base font-bold text-docu-ink">세부사항</h2>
+                <div class="ml-sidebar flex flex-col min-h-screen">
+                    <!-- 사용자 바 (항상 상단 고정) -->
+                    <div class="sticky top-0 z-30">
+                        <div
+                            th:replace="~{common/fragments/header-auth :: user-bar}"
+                        ></div>
                     </div>
 
-                    <div class="p-8">
+                    <main class="flex-1 py-8">
+                        <div class="max-w-3xl mx-auto px-8 mb-6">
+                            <h1 class="text-h1 text-docu-ink">프로젝트 설정</h1>
+                            <p
+                                class="text-sm text-docu-secondary mt-1"
+                                th:text="${data.project().name()}"
+                            >
+                                프로젝트명
+                            </p>
+                        </div>
 
-                        <!-- ── MANAGER: 편집 가능 ── -->
-                        <th:block th:if="${data.isManager()}">
-                            <div class="flex items-center gap-5">
+                        <div class="max-w-3xl mx-auto px-8 space-y-6">
+                            <section
+                                id="section-details"
+                                class="card-base card-shadow overflow-hidden scroll-mt-8"
+                            >
+                                <div
+                                    class="px-8 py-5 border-b border-divider bg-surface-card"
+                                >
+                                    <h2
+                                        class="text-base font-bold text-docu-ink"
+                                    >
+                                        세부사항
+                                    </h2>
+                                </div>
 
-                                <!-- 로고 (왼쪽) — 우측 하단 연필 배지 -->
-                                <div class="relative shrink-0">
-                                    <button type="button"
-                                            onclick="document.getElementById('project-icon-input').click()"
-                                            class="relative group w-16 h-16 rounded-docu-card bg-docu-primary-light
-                                                   flex items-center justify-center overflow-hidden
-                                                   border-2 border-divider hover:border-docu-primary
-                                                   transition-all cursor-pointer">
-                                        <img id="project-icon-preview"
-                                             th:if="${data.project().profileUrl() != null}"
-                                             th:src="${data.project().profileUrl()}"
-                                             alt="프로젝트 로고"
-                                             class="w-full h-full object-cover"/>
-                                        <svg id="project-icon-placeholder"
-                                             th:if="${data.project().profileUrl() == null}"
-                                             class="w-6 h-6 text-docu-primary" fill="none"
-                                             stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                  stroke-width="1.5"
-                                                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
+                                <div class="p-8">
+                                    <!-- ── MANAGER: 편집 가능 ── -->
+                                    <th:block th:if="${data.isManager()}">
+                                        <div class="flex items-center gap-5">
+                                            <!-- 로고 (왼쪽) — 우측 하단 연필 배지 -->
+                                            <div class="relative shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onclick="
+                                                        document
+                                                            .getElementById(
+                                                                'project-icon-input',
+                                                            )
+                                                            .click()
+                                                    "
+                                                    class="relative group w-16 h-16 rounded-docu-card bg-docu-primary-light flex items-center justify-center overflow-hidden border-2 border-divider hover:border-docu-primary transition-all cursor-pointer"
+                                                >
+                                                    <img
+                                                        id="project-icon-preview"
+                                                        th:if="${data.project().profileUrl() != null}"
+                                                        th:src="${data.project().profileUrl()}"
+                                                        alt="프로젝트 로고"
+                                                        class="w-full h-full object-cover"
+                                                    />
+                                                    <svg
+                                                        id="project-icon-placeholder"
+                                                        th:if="${data.project().profileUrl() == null}"
+                                                        class="w-6 h-6 text-docu-primary"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            stroke-width="1.5"
+                                                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
                                                      a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2
                                                      a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2
                                                      a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z
                                                      M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2
-                                                     a2 2 0 01-2-2v-2z"/>
-                                        </svg>
-                                        <!-- 호버 오버레이 (카메라) -->
-                                        <div class="absolute inset-0 bg-black/20 opacity-0
-                                                    group-hover:opacity-100 transition-opacity
-                                                    flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-white" fill="none"
-                                                 stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                      stroke-width="2"
-                                                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22
+                                                     a2 2 0 01-2-2v-2z"
+                                                        />
+                                                    </svg>
+                                                    <!-- 호버 오버레이 (카메라) -->
+                                                    <div
+                                                        class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                                    >
+                                                        <svg
+                                                            class="w-5 h-5 text-white"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22
                                                          A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22
                                                          A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5
-                                                         a2 2 0 01-2-2V9z M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            </svg>
-                                        </div>
-                                    </button>
-                                    <!-- 연필 배지 (우측 하단) -->
-                                    <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full
-                                                bg-surface-card border border-divider shadow-docu-sm
-                                                flex items-center justify-center pointer-events-none">
-                                        <svg class="w-2.5 h-2.5 text-docu-secondary" fill="none"
-                                             stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                  stroke-width="2.5"
-                                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036
+                                                         a2 2 0 01-2-2V9z M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                                                            />
+                                                        </svg>
+                                                    </div>
+                                                </button>
+                                                <!-- 연필 배지 (우측 하단) -->
+                                                <div
+                                                    class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-surface-card border border-divider shadow-docu-sm flex items-center justify-center pointer-events-none"
+                                                >
+                                                    <svg
+                                                        class="w-2.5 h-2.5 text-docu-secondary"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            stroke-width="2.5"
+                                                            d="M15.232 5.232l3.536 3.536m-2.036-5.036
                                                      a2.5 2.5 0 113.536 3.536L6.5 21.036H3
-                                                     v-3.572L16.732 3.732z"/>
-                                        </svg>
-                                    </div>
-                                    <input type="file" id="project-icon-input"
-                                           accept="image/*" class="hidden"
-                                           onchange="previewProjectIcon(this)"/>
-                                    <!-- 취소 시 복원용 원본 URL -->
-                                    <input type="hidden" id="project-icon-original-src"
-                                           th:value="${data.project().profileUrl()}"/>
-                                </div>
+                                                     v-3.572L16.732 3.732z"
+                                                        />
+                                                    </svg>
+                                                </div>
+                                                <input
+                                                    type="file"
+                                                    id="project-icon-input"
+                                                    accept="image/*"
+                                                    class="hidden"
+                                                    onchange="
+                                                        previewProjectIcon(this)
+                                                    "
+                                                />
+                                                <!-- 취소 시 복원용 원본 URL -->
+                                                <input
+                                                    type="hidden"
+                                                    id="project-icon-original-src"
+                                                    th:value="${data.project().profileUrl()}"
+                                                />
+                                            </div>
 
-                                <!-- 이름 입력 (오른쪽, 길게) -->
-                                <div class="flex-1 flex flex-col gap-1.5 min-w-0">
-                                    <label for="projectName" class="form-label uppercase tracking-wide">
-                                        프로젝트 이름 <span class="text-docu-danger">*</span>
-                                    </label>
-                                    <input type="text" id="projectName" maxlength="100"
-                                           th:value="${data.project().name()}"
-                                           placeholder="프로젝트 이름을 입력하세요"
-                                           class="form-input"/>
-                                    <p id="projectName-error" class="hidden form-error"></p>
-                                </div>
-                            </div>
+                                            <!-- 이름 입력 (오른쪽, 길게) -->
+                                            <div
+                                                class="flex-1 flex flex-col gap-1.5 min-w-0"
+                                            >
+                                                <label
+                                                    for="projectName"
+                                                    class="form-label uppercase tracking-wide"
+                                                >
+                                                    프로젝트 이름
+                                                    <span
+                                                        class="text-docu-danger"
+                                                        >*</span
+                                                    >
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    id="projectName"
+                                                    maxlength="100"
+                                                    th:value="${data.project().name()}"
+                                                    placeholder="프로젝트 이름을 입력하세요"
+                                                    class="form-input"
+                                                />
+                                                <p
+                                                    id="projectName-error"
+                                                    class="hidden form-error"
+                                                ></p>
+                                            </div>
+                                        </div>
 
-                            <!-- 인라인 피드백 + 버튼 -->
-                            <p id="details-global-error" class="hidden mt-4 form-error"></p>
-                            <p id="details-success-message"
-                               class="hidden mt-4 text-sm text-docu-success-dark font-medium"></p>
-                            <div class="flex justify-end gap-3 mt-5">
-                                <button type="button" onclick="cancelDetails()" class="btn-ghost">
-                                    취소
-                                </button>
-                                <button type="button" id="details-save-btn" onclick="saveDetails()"
-                                        class="btn-primary">
-                                    변경
-                                </button>
-                            </div>
-                        </th:block>
+                                        <!-- 인라인 피드백 + 버튼 -->
+                                        <p
+                                            id="details-global-error"
+                                            class="hidden mt-4 form-error"
+                                        ></p>
+                                        <p
+                                            id="details-success-message"
+                                            class="hidden mt-4 text-sm text-docu-success-dark font-medium"
+                                        ></p>
+                                        <div
+                                            class="flex justify-end gap-3 mt-5"
+                                        >
+                                            <button
+                                                type="button"
+                                                onclick="cancelDetails()"
+                                                class="btn-ghost"
+                                            >
+                                                취소
+                                            </button>
+                                            <button
+                                                type="button"
+                                                id="details-save-btn"
+                                                onclick="saveDetails()"
+                                                class="btn-primary"
+                                            >
+                                                변경
+                                            </button>
+                                        </div>
+                                    </th:block>
 
-                        <!-- ── MEMBER: 읽기 전용 ── -->
-                        <th:block th:unless="${data.isManager()}">
-                            <div class="flex items-center gap-5">
-                                <div class="w-16 h-16 rounded-docu-card bg-docu-primary-light flex items-center
-                                            justify-center overflow-hidden border-2 border-divider
-                                            shrink-0">
-                                    <img th:if="${data.project().profileUrl() != null}"
-                                         th:src="${data.project().profileUrl()}"
-                                         alt="프로젝트 로고" class="w-full h-full object-cover"/>
-                                    <svg th:unless="${data.project().profileUrl() != null}"
-                                         class="w-6 h-6 text-docu-primary" fill="none"
-                                         stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              stroke-width="1.5"
-                                              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
+                                    <!-- ── MEMBER: 읽기 전용 ── -->
+                                    <th:block th:unless="${data.isManager()}">
+                                        <div class="flex items-center gap-5">
+                                            <div
+                                                class="w-16 h-16 rounded-docu-card bg-docu-primary-light flex items-center justify-center overflow-hidden border-2 border-divider shrink-0"
+                                            >
+                                                <img
+                                                    th:if="${data.project().profileUrl() != null}"
+                                                    th:src="${data.project().profileUrl()}"
+                                                    alt="프로젝트 로고"
+                                                    class="w-full h-full object-cover"
+                                                />
+                                                <svg
+                                                    th:unless="${data.project().profileUrl() != null}"
+                                                    class="w-6 h-6 text-docu-primary"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="1.5"
+                                                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
                                                  a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2
                                                  a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2
                                                  a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z
                                                  M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2
-                                                 a2 2 0 01-2-2v-2z"/>
-                                    </svg>
-                                </div>
-                                <div class="flex-1 flex flex-col gap-1.5 min-w-0">
-                                    <label class="form-label uppercase tracking-wide">
-                                        프로젝트 이름
-                                    </label>
-                                    <input type="text" readonly
-                                           th:value="${data.project().name()}"
-                                           class="form-input form-disabled"/>
-                                </div>
-                            </div>
-                        </th:block>
-                    </div>
-                </section>
-
-                <section th:if="${data.isManager()}"
-                         id="section-apikey"
-                         class="card-base card-shadow overflow-hidden scroll-mt-8">
-                    <div class="px-8 py-5 border-b border-divider bg-surface-card">
-                        <h2 class="text-base font-bold text-docu-ink">API Key</h2>
-                    </div>
-
-                    <div class="p-8 space-y-8">
-
-                        <!-- INGEST KEY -->
-                        <div>
-                            <h3 class="text-sm font-semibold text-docu-ink mb-3">Ingest Key (로그 수집용)</h3>
-                            <!-- 키 없는 상태 -->
-                            <div th:if="${data.apiKeyInfo() == null or data.apiKeyInfo().ingestKey() == null or !data.apiKeyInfo().ingestKey().hasKey()}"
-                                 class="flex flex-col items-center gap-4 py-6 border border-divider rounded-docu-card bg-surface-base">
-                                <div class="w-12 h-12 rounded-docu-card bg-surface-card border border-divider flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                                    </svg>
-                                </div>
-                                <p class="text-sm text-docu-secondary">발급된 Ingest API 키가 없습니다.</p>
-                                <button type="button" onclick="reissueApiKey('INGEST')" class="btn-primary">키 발급</button>
-                            </div>
-
-                            <!-- 키 있는 상태 -->
-                            <div th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().ingestKey() != null and data.apiKeyInfo().ingestKey().hasKey()}" class="flex flex-col gap-5">
-                                <div class="flex items-center gap-2">
-                                    <span class="form-label uppercase tracking-wide">상태</span>
-                                    <span th:if="${data.apiKeyInfo().ingestKey().active()}" class="badge-status-active">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-docu-success inline-block" aria-hidden="true"></span>활성
-                                    </span>
-                                    <span th:unless="${data.apiKeyInfo().ingestKey().active()}" class="badge-status-paused">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" aria-hidden="true"></span>정지됨
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn">
-                                    <code class="flex-1 text-sm font-mono text-docu-ink select-all" th:text="${data.apiKeyInfo().ingestKey().maskedKey()}"></code>
-                                    <button type="button" th:onclick="copyApiKey('INGEST')" title="복사" class="btn-icon w-8 h-8 shrink-0">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                                    </button>
-                                </div>
-                                <div class="flex gap-3">
-                                    <button type="button" onclick="reissueApiKey('INGEST')" class="btn-ghost">재발급</button>
-                                    <button th:if="${data.apiKeyInfo().ingestKey().active()}" type="button" th:onclick="toggleApiKey('INGEST', 'ACTIVE')" class="btn-danger">정지</button>
-                                    <button th:unless="${data.apiKeyInfo().ingestKey().active()}" type="button" th:onclick="toggleApiKey('INGEST', 'SUSPENDED')" class="btn-success">활성화</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- QUERY KEY -->
-                        <div class="pt-6 border-t border-divider">
-                            <h3 class="text-sm font-semibold text-docu-ink mb-3">Query Key (챗봇 조회용)</h3>
-                            <!-- 키 없는 상태 -->
-                            <div th:if="${data.apiKeyInfo() == null or data.apiKeyInfo().queryKey() == null or !data.apiKeyInfo().queryKey().hasKey()}"
-                                 class="flex flex-col items-center gap-4 py-6 border border-divider rounded-docu-card bg-surface-base">
-                                <div class="w-12 h-12 rounded-docu-card bg-surface-card border border-divider flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                                    </svg>
-                                </div>
-                                <p class="text-sm text-docu-secondary">발급된 Query API 키가 없습니다.</p>
-                                <button type="button" onclick="reissueApiKey('QUERY')" class="btn-primary">키 발급</button>
-                            </div>
-
-                            <!-- 키 있는 상태 -->
-                            <div th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().queryKey() != null and data.apiKeyInfo().queryKey().hasKey()}" class="flex flex-col gap-5">
-                                <div class="flex items-center gap-2">
-                                    <span class="form-label uppercase tracking-wide">상태</span>
-                                    <span th:if="${data.apiKeyInfo().queryKey().active()}" class="badge-status-active">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-docu-success inline-block" aria-hidden="true"></span>활성
-                                    </span>
-                                    <span th:unless="${data.apiKeyInfo().queryKey().active()}" class="badge-status-paused">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" aria-hidden="true"></span>정지됨
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn">
-                                    <code class="flex-1 text-sm font-mono text-docu-ink select-all" th:text="${data.apiKeyInfo().queryKey().maskedKey()}"></code>
-                                    <button type="button" th:onclick="copyApiKey('QUERY')" title="복사" class="btn-icon w-8 h-8 shrink-0">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                                    </button>
-                                </div>
-                                <div class="flex gap-3">
-                                    <button type="button" onclick="reissueApiKey('QUERY')" class="btn-ghost">재발급</button>
-                                    <button th:if="${data.apiKeyInfo().queryKey().active()}" type="button" th:onclick="toggleApiKey('QUERY', 'ACTIVE')" class="btn-danger">정지</button>
-                                    <button th:unless="${data.apiKeyInfo().queryKey().active()}" type="button" th:onclick="toggleApiKey('QUERY', 'SUSPENDED')" class="btn-success">활성화</button>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </section>
-
-                <section id="section-access"
-                         class="card-base card-shadow overflow-hidden scroll-mt-8">
-                    <div class="px-8 py-5 border-b border-divider bg-surface-card flex items-center
-                                justify-between">
-                        <h2 class="text-base font-bold text-docu-ink">액세스</h2>
-                        <!-- 초대 버튼 (MANAGER 전용) -->
-                        <button th:if="${data.isManager()}"
-                                type="button" onclick="openInviteModal()"
-                                class="btn-ghost btn-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                      stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            초대
-                        </button>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead>
-                            <tr class="border-b border-divider bg-surface-base/30">
-                                <th class="px-6 py-3 text-left text-xs font-semibold
-                                               text-docu-secondary uppercase tracking-wide w-1/3">이름
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold
-                                               text-docu-secondary uppercase tracking-wide w-1/3">이메일
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold
-                                               text-docu-secondary uppercase tracking-wide w-36">권한
-                                </th>
-                                <th th:if="${data.isManager()}"
-                                    class="px-6 py-3 text-right text-xs font-semibold
-                                               text-docu-secondary uppercase tracking-wide">작업
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:each="member : ${data.members()}"
-                                class="border-b border-divider last:border-0
-                                           hover:bg-surface-base transition-colors">
-
-                                <!-- 이름 + 아바타 -->
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <!-- 프로필 이미지 -->
-                                        <div class="w-8 h-8 rounded-full overflow-hidden shrink-0">
-                                            <img th:if="${member.profileUrl() != null}"
-                                                 th:src="${member.profileUrl()}"
-                                                 alt="" class="w-full h-full object-cover"/>
-                                            <div th:unless="${member.profileUrl() != null}"
-                                                 class="w-8 h-8 rounded-full bg-docu-primary
-                                                            flex items-center justify-center">
-                                                    <span class="text-white text-xs font-bold"
-                                                          th:text="${member.nickname() != null
-                                                                     ? #strings.substring(member.nickname(), 0, 1)
-                                                                     : 'U'}">U</span>
+                                                 a2 2 0 01-2-2v-2z"
+                                                    />
+                                                </svg>
+                                            </div>
+                                            <div
+                                                class="flex-1 flex flex-col gap-1.5 min-w-0"
+                                            >
+                                                <label
+                                                    class="form-label uppercase tracking-wide"
+                                                >
+                                                    프로젝트 이름
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    readonly
+                                                    th:value="${data.project().name()}"
+                                                    class="form-input form-disabled"
+                                                />
                                             </div>
                                         </div>
-                                        <div>
-                                            <p class="font-semibold text-docu-ink"
-                                               th:text="${member.name()}">이름</p>
-                                            <p class="text-xs text-docu-secondary"
-                                               th:text="${member.nickname()}">닉네임</p>
+                                    </th:block>
+                                </div>
+                            </section>
+
+                            <!-- API Key Section -->
+                            <section
+                                th:if="${data.isManager()}"
+                                id="section-apikey"
+                                class="card-base card-shadow overflow-hidden scroll-mt-8"
+                            >
+                                <div
+                                    class="px-8 py-5 border-b border-divider bg-surface-card"
+                                >
+                                    <h2
+                                        class="text-base font-bold text-docu-ink"
+                                    >
+                                        API Key
+                                    </h2>
+                                </div>
+
+                                <div class="p-8 space-y-8">
+                                    <!-- INGEST KEY -->
+                                    <div>
+                                        <h3
+                                            class="text-sm font-semibold text-docu-ink mb-3"
+                                        >
+                                            Ingest Key (로그 수집용)
+                                        </h3>
+                                        <!-- 키 없는 상태 -->
+                                        <div
+                                            th:if="${data.apiKeyInfo() == null or data.apiKeyInfo().ingestKey() == null or !data.apiKeyInfo().ingestKey().hasKey()}"
+                                            class="flex flex-col items-center gap-4 py-6 border border-divider rounded-docu-card bg-surface-base"
+                                        >
+                                            <div
+                                                class="w-12 h-12 rounded-docu-card bg-surface-card border border-divider flex items-center justify-center"
+                                            >
+                                                <svg
+                                                    class="w-6 h-6 text-docu-secondary"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="1.5"
+                                                        d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                                                    />
+                                                </svg>
+                                            </div>
+                                            <p
+                                                class="text-sm text-docu-secondary"
+                                            >
+                                                발급된 Ingest API 키가 없습니다.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onclick="
+                                                    reissueApiKey('INGEST')
+                                                "
+                                                class="btn-primary"
+                                            >
+                                                키 발급
+                                            </button>
+                                        </div>
+                                        <!-- 키 있는 상태 -->
+                                        <div
+                                            th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().ingestKey() != null and data.apiKeyInfo().ingestKey().hasKey()}"
+                                            class="flex flex-col gap-5"
+                                        >
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                <span
+                                                    class="form-label uppercase tracking-wide"
+                                                    >상태</span
+                                                >
+                                                <span
+                                                    th:if="${data.apiKeyInfo().ingestKey().active()}"
+                                                    class="badge-status-active"
+                                                >
+                                                    <span
+                                                        class="w-1.5 h-1.5 rounded-full bg-docu-success inline-block"
+                                                        aria-hidden="true"
+                                                    ></span
+                                                    >활성
+                                                </span>
+                                                <span
+                                                    th:unless="${data.apiKeyInfo().ingestKey().active()}"
+                                                    class="badge-status-paused"
+                                                >
+                                                    <span
+                                                        class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block"
+                                                        aria-hidden="true"
+                                                    ></span
+                                                    >정지됨
+                                                </span>
+                                            </div>
+                                            <div
+                                                class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn"
+                                            >
+                                                <code
+                                                    class="flex-1 text-sm font-mono text-docu-ink select-all"
+                                                    th:text="${data.apiKeyInfo().ingestKey().maskedKey()}"
+                                                ></code>
+                                                <button
+                                                    type="button"
+                                                    th:onclick="copyApiKey('INGEST')"
+                                                    title="복사"
+                                                    class="btn-icon w-8 h-8 shrink-0"
+                                                >
+                                                    <svg
+                                                        class="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            <div class="flex gap-3">
+                                                <button
+                                                    type="button"
+                                                    onclick="
+                                                        reissueApiKey('INGEST')
+                                                    "
+                                                    class="btn-ghost"
+                                                >
+                                                    재발급
+                                                </button>
+                                                <button
+                                                    th:if="${data.apiKeyInfo().ingestKey().active()}"
+                                                    type="button"
+                                                    th:onclick="toggleApiKey('INGEST', 'ACTIVE')"
+                                                    class="btn-danger"
+                                                >
+                                                    정지
+                                                </button>
+                                                <button
+                                                    th:unless="${data.apiKeyInfo().ingestKey().active()}"
+                                                    type="button"
+                                                    th:onclick="toggleApiKey('INGEST', 'SUSPENDED')"
+                                                    class="btn-success"
+                                                >
+                                                    활성화
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </td>
 
-                                <!-- 이메일 -->
-                                <td class="px-6 py-4 text-docu-secondary"
-                                    th:text="${member.email()}">email
-                                </td>
+                                    <!-- QUERY KEY -->
+                                    <div class="pt-6 border-t border-divider">
+                                        <h3
+                                            class="text-sm font-semibold text-docu-ink mb-3"
+                                        >
+                                            Query Key (챗봇 조회용)
+                                        </h3>
+                                        <!-- 키 없는 상태 -->
+                                        <div
+                                            th:if="${data.apiKeyInfo() == null or data.apiKeyInfo().queryKey() == null or !data.apiKeyInfo().queryKey().hasKey()}"
+                                            class="flex flex-col items-center gap-4 py-6 border border-divider rounded-docu-card bg-surface-base"
+                                        >
+                                            <div
+                                                class="w-12 h-12 rounded-docu-card bg-surface-card border border-divider flex items-center justify-center"
+                                            >
+                                                <svg
+                                                    class="w-6 h-6 text-docu-secondary"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="1.5"
+                                                        d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                                                    />
+                                                </svg>
+                                            </div>
+                                            <p
+                                                class="text-sm text-docu-secondary"
+                                            >
+                                                발급된 Query API 키가 없습니다.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onclick="reissueApiKey('QUERY')"
+                                                class="btn-primary"
+                                            >
+                                                키 발급
+                                            </button>
+                                        </div>
+                                        <!-- 키 있는 상태 -->
+                                        <div
+                                            th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().queryKey() != null and data.apiKeyInfo().queryKey().hasKey()}"
+                                            class="flex flex-col gap-5"
+                                        >
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                <span
+                                                    class="form-label uppercase tracking-wide"
+                                                    >상태</span
+                                                >
+                                                <span
+                                                    th:if="${data.apiKeyInfo().queryKey().active()}"
+                                                    class="badge-status-active"
+                                                >
+                                                    <span
+                                                        class="w-1.5 h-1.5 rounded-full bg-docu-success inline-block"
+                                                        aria-hidden="true"
+                                                    ></span
+                                                    >활성
+                                                </span>
+                                                <span
+                                                    th:unless="${data.apiKeyInfo().queryKey().active()}"
+                                                    class="badge-status-paused"
+                                                >
+                                                    <span
+                                                        class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block"
+                                                        aria-hidden="true"
+                                                    ></span
+                                                    >정지됨
+                                                </span>
+                                            </div>
+                                            <div
+                                                class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn"
+                                            >
+                                                <code
+                                                    class="flex-1 text-sm font-mono text-docu-ink select-all"
+                                                    th:text="${data.apiKeyInfo().queryKey().maskedKey()}"
+                                                ></code>
+                                                <button
+                                                    type="button"
+                                                    th:onclick="copyApiKey('QUERY')"
+                                                    title="복사"
+                                                    class="btn-icon w-8 h-8 shrink-0"
+                                                >
+                                                    <svg
+                                                        class="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            <div class="flex gap-3">
+                                                <button
+                                                    type="button"
+                                                    onclick="
+                                                        reissueApiKey('QUERY')
+                                                    "
+                                                    class="btn-ghost"
+                                                >
+                                                    재발급
+                                                </button>
+                                                <button
+                                                    th:if="${data.apiKeyInfo().queryKey().active()}"
+                                                    type="button"
+                                                    th:onclick="toggleApiKey('QUERY', 'ACTIVE')"
+                                                    class="btn-danger"
+                                                >
+                                                    정지
+                                                </button>
+                                                <button
+                                                    th:unless="${data.apiKeyInfo().queryKey().active()}"
+                                                    type="button"
+                                                    th:onclick="toggleApiKey('QUERY', 'SUSPENDED')"
+                                                    class="btn-success"
+                                                >
+                                                    활성화
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
 
-                                <!-- 권한 -->
-                                <td class="px-6 py-4">
-                                    <!-- MANAGER 뷰: CEO는 배지, 나머지는 셀렉트 -->
-                                    <th:block th:if="${data.isManager()}">
-                                            <span th:if="${member.isCeo()}"
-                                                  class="badge-status-selected">관리자</span>
-                                        <select th:unless="${member.isCeo()}"
-                                                th:attr="data-mid=${member.memberId()}, data-is-me=${member.isCurrentUser()}"
-                                                onchange="changeRole(this)"
-                                                class="text-xs border border-divider rounded-docu-btn
-                                                           px-2 py-1 bg-surface-base text-docu-ink
-                                                           focus:outline-none focus:border-docu-primary
-                                                           focus:ring-2 focus:ring-docu-primary/20 cursor-pointer">
-                                            <option value="MANAGER"
-                                                    th:selected="${member.isManager()}">관리자
-                                            </option>
-                                            <option value="MEMBER"
-                                                    th:selected="${!member.isManager()}">구성원
-                                            </option>
-                                        </select>
-                                    </th:block>
-                                    <!-- MEMBER 뷰: 배지 표시 -->
-                                    <th:block th:unless="${data.isManager()}">
-                                            <span class="badge-base"
-                                                  th:classappend="${member.isManager()}
+                            <section
+                                id="section-access"
+                                class="card-base card-shadow overflow-hidden scroll-mt-8"
+                            >
+                                <div
+                                    class="px-8 py-5 border-b border-divider bg-surface-card flex items-center justify-between"
+                                >
+                                    <h2
+                                        class="text-base font-bold text-docu-ink"
+                                    >
+                                        액세스
+                                    </h2>
+                                    <!-- 초대 버튼 (MANAGER 전용) -->
+                                    <button
+                                        th:if="${data.isManager()}"
+                                        type="button"
+                                        onclick="openInviteModal()"
+                                        class="btn-ghost btn-sm"
+                                    >
+                                        <svg
+                                            class="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M12 4v16m8-8H4"
+                                            />
+                                        </svg>
+                                        초대
+                                    </button>
+                                </div>
+
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr
+                                                class="border-b border-divider bg-surface-base/30"
+                                            >
+                                                <th
+                                                    class="px-6 py-3 text-left text-xs font-semibold text-docu-secondary uppercase tracking-wide w-1/3"
+                                                >
+                                                    이름
+                                                </th>
+                                                <th
+                                                    class="px-6 py-3 text-left text-xs font-semibold text-docu-secondary uppercase tracking-wide w-1/3"
+                                                >
+                                                    이메일
+                                                </th>
+                                                <th
+                                                    class="px-6 py-3 text-left text-xs font-semibold text-docu-secondary uppercase tracking-wide w-36"
+                                                >
+                                                    권한
+                                                </th>
+                                                <th
+                                                    th:if="${data.isManager()}"
+                                                    class="px-6 py-3 text-right text-xs font-semibold text-docu-secondary uppercase tracking-wide"
+                                                >
+                                                    작업
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr
+                                                th:each="member : ${data.members()}"
+                                                class="border-b border-divider last:border-0 hover:bg-surface-base transition-colors"
+                                            >
+                                                <!-- 이름 + 아바타 -->
+                                                <td class="px-6 py-4">
+                                                    <div
+                                                        class="flex items-center gap-3"
+                                                    >
+                                                        <!-- 프로필 이미지 -->
+                                                        <div
+                                                            class="w-8 h-8 rounded-full overflow-hidden shrink-0"
+                                                        >
+                                                            <img
+                                                                th:if="${member.profileUrl() != null}"
+                                                                th:src="${member.profileUrl()}"
+                                                                alt=""
+                                                                class="w-full h-full object-cover"
+                                                            />
+                                                            <div
+                                                                th:unless="${member.profileUrl() != null}"
+                                                                class="w-8 h-8 rounded-full bg-docu-primary flex items-center justify-center"
+                                                            >
+                                                                <span
+                                                                    class="text-white text-xs font-bold"
+                                                                    th:text="${member.nickname() != null
+                                                                     ? #strings.substring(member.nickname(), 0, 1)
+                                                                     : 'U'}"
+                                                                    >U</span
+                                                                >
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <p
+                                                                class="font-semibold text-docu-ink"
+                                                                th:text="${member.name()}"
+                                                            >
+                                                                이름
+                                                            </p>
+                                                            <p
+                                                                class="text-xs text-docu-secondary"
+                                                                th:text="${member.nickname()}"
+                                                            >
+                                                                닉네임
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                <!-- 이메일 -->
+                                                <td
+                                                    class="px-6 py-4 text-docu-secondary"
+                                                    th:text="${member.email()}"
+                                                >
+                                                    email
+                                                </td>
+
+                                                <!-- 권한 -->
+                                                <td class="px-6 py-4">
+                                                    <!-- MANAGER 뷰: CEO는 배지, 나머지는 셀렉트 -->
+                                                    <th:block
+                                                        th:if="${data.isManager()}"
+                                                    >
+                                                        <span
+                                                            th:if="${member.isCeo()}"
+                                                            class="badge-status-selected"
+                                                            >관리자</span
+                                                        >
+                                                        <select
+                                                            th:unless="${member.isCeo()}"
+                                                            th:attr="data-mid=${member.memberId()}, data-is-me=${member.isCurrentUser()}"
+                                                            onchange="
+                                                                changeRole(this)
+                                                            "
+                                                            class="text-xs border border-divider rounded-docu-btn px-2 py-1 bg-surface-base text-docu-ink focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20 cursor-pointer"
+                                                        >
+                                                            <option
+                                                                value="MANAGER"
+                                                                th:selected="${member.isManager()}"
+                                                            >
+                                                                관리자
+                                                            </option>
+                                                            <option
+                                                                value="MEMBER"
+                                                                th:selected="${!member.isManager()}"
+                                                            >
+                                                                구성원
+                                                            </option>
+                                                        </select>
+                                                    </th:block>
+                                                    <!-- MEMBER 뷰: 배지 표시 -->
+                                                    <th:block
+                                                        th:unless="${data.isManager()}"
+                                                    >
+                                                        <span
+                                                            class="badge-base"
+                                                            th:classappend="${member.isManager()}
                                                                    ? 'bg-docu-primary-light text-docu-primary border-docu-primary'
                                                                    : 'bg-surface-base text-docu-secondary border-divider'"
-                                                  th:text="${member.isManager()} ? '관리자' : '구성원'">
-                                                구성원
-                                            </span>
-                                    </th:block>
-                                </td>
+                                                            th:text="${member.isManager()} ? '관리자' : '구성원'"
+                                                        >
+                                                            구성원
+                                                        </span>
+                                                    </th:block>
+                                                </td>
 
-                                <!-- 작업 (MANAGER 전용) -->
-                                <td th:if="${data.isManager()}" class="px-6 py-4 text-right">
-                                    <!-- CEO나 자신은 제거 불가 -->
-                                    <button th:unless="${member.isCeo() or member.isCurrentUser()}"
-                                            type="button"
-                                            th:attr="data-mid=${member.memberId()},
+                                                <!-- 작업 (MANAGER 전용) -->
+                                                <td
+                                                    th:if="${data.isManager()}"
+                                                    class="px-6 py-4 text-right"
+                                                >
+                                                    <!-- CEO나 자신은 제거 불가 -->
+                                                    <button
+                                                        th:unless="${member.isCeo() or member.isCurrentUser()}"
+                                                        type="button"
+                                                        th:attr="data-mid=${member.memberId()},
                                                          data-mname=${member.name()}"
-                                            onclick="removeMember(this.dataset.mid, this.dataset.mname)"
-                                            class="text-xs font-semibold text-docu-danger
-                                                       hover:text-docu-danger-dark transition-colors">
-                                        제거
-                                    </button>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
+                                                        onclick="
+                                                            removeMember(
+                                                                this.dataset
+                                                                    .mid,
+                                                                this.dataset
+                                                                    .mname,
+                                                            )
+                                                        "
+                                                        class="text-xs font-semibold text-docu-danger hover:text-docu-danger-dark transition-colors"
+                                                    >
+                                                        제거
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
 
-                        <!-- 빈 목록 -->
-                        <div th:if="${data.members().isEmpty()}"
-                             class="py-10 text-center text-sm text-docu-secondary">
-                            프로젝트 멤버가 없습니다.
-                        </div>
-                    </div>
-                </section>
+                                    <!-- 빈 목록 -->
+                                    <div
+                                        th:if="${data.members().isEmpty()}"
+                                        class="py-10 text-center text-sm text-docu-secondary"
+                                    >
+                                        프로젝트 멤버가 없습니다.
+                                    </div>
+                                </div>
+                            </section>
 
-                <section id="section-danger"
-                         class="card-base card-shadow overflow-hidden scroll-mt-8">
-                    <div class="px-8 py-5 border-b border-divider bg-surface-card">
-                        <h2 class="text-base font-bold text-docu-danger flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                      stroke-width="2"
-                                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667
+                            <section
+                                id="section-danger"
+                                class="card-base card-shadow overflow-hidden scroll-mt-8"
+                            >
+                                <div
+                                    class="px-8 py-5 border-b border-divider bg-surface-card"
+                                >
+                                    <h2
+                                        class="text-base font-bold text-docu-danger flex items-center gap-2"
+                                    >
+                                        <svg
+                                            class="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667
                                          1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0
-                                         L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                            </svg>
-                            위험 구역
-                        </h2>
-                    </div>
+                                         L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                            />
+                                        </svg>
+                                        위험 구역
+                                    </h2>
+                                </div>
 
-                    <div class="p-6 space-y-3">
+                                <div class="p-6 space-y-3">
+                                    <!-- 프로젝트 나가기 (CEO가 아닌 경우) -->
+                                    <div
+                                        th:unless="${data.isCeo()}"
+                                        class="flex items-center justify-between p-5 rounded-docu-btn border border-docu-danger-light bg-docu-danger-light/30"
+                                    >
+                                        <div>
+                                            <p
+                                                class="text-sm font-semibold text-docu-ink"
+                                            >
+                                                프로젝트 나가기
+                                            </p>
+                                            <p
+                                                class="text-xs text-docu-secondary mt-0.5"
+                                            >
+                                                이 프로젝트에서 탈퇴합니다. 접근
+                                                권한이 즉시 소멸됩니다.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onclick="leaveProject()"
+                                            class="btn-base px-4 py-2.5 border-2 border-docu-ink bg-surface-base text-docu-danger shadow-docu-sm hover:bg-docu-danger-light focus-ring shrink-0"
+                                        >
+                                            프로젝트 나가기
+                                        </button>
+                                    </div>
 
-                        <!-- 프로젝트 나가기 (CEO가 아닌 경우) -->
-                        <div th:unless="${data.isCeo()}"
-                             class="flex items-center justify-between p-5 rounded-docu-btn
-                                    border border-docu-danger-light bg-docu-danger-light/30">
-                            <div>
-                                <p class="text-sm font-semibold text-docu-ink">프로젝트 나가기</p>
-                                <p class="text-xs text-docu-secondary mt-0.5">
-                                    이 프로젝트에서 탈퇴합니다. 접근 권한이 즉시 소멸됩니다.
-                                </p>
-                            </div>
-                            <button type="button" onclick="leaveProject()"
-                                    class="btn-base px-4 py-2.5 border-2 border-docu-ink bg-surface-base text-docu-danger shadow-docu-sm hover:bg-docu-danger-light focus-ring shrink-0">
-                                프로젝트 나가기
-                            </button>
+                                    <!-- 프로젝트 삭제 (CEO + MANAGER 인 경우) -->
+                                    <div
+                                        th:if="${data.isCeo() and data.isManager()}"
+                                        class="flex items-center justify-between p-5 rounded-docu-btn border border-docu-danger-light bg-docu-danger-light/30"
+                                    >
+                                        <div>
+                                            <p
+                                                class="text-sm font-semibold text-docu-ink"
+                                            >
+                                                프로젝트 삭제
+                                            </p>
+                                            <p
+                                                class="text-xs text-docu-secondary mt-0.5"
+                                            >
+                                                이 프로젝트와 관련된 모든 로그,
+                                                문서, 벡터 데이터가 영구
+                                                삭제됩니다.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onclick="deleteProject()"
+                                            class="btn-danger shrink-0"
+                                        >
+                                            프로젝트 삭제
+                                        </button>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                        <!-- /max-w -->
+                    </main>
+
+                    <footer
+                        class="border-t border-divider py-6 text-center text-xs text-docu-secondary"
+                    >
+                        © 2026 Documind Incs. All rights reserved.
+                    </footer>
+                </div>
+
+                <div
+                    th:replace="~{common/fragments/header-auth :: logout-modal}"
+                ></div>
+
+                <!-- 초대 모달 (MANAGER 전용) -->
+                <div
+                    th:if="${data.isManager()}"
+                    id="invite-modal"
+                    class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
+                >
+                    <div class="card-modal w-96 p-8 flex flex-col gap-5">
+                        <div>
+                            <h3 class="text-h2 text-docu-ink mb-1">
+                                멤버 초대
+                            </h3>
+                            <p class="text-sm text-docu-secondary">
+                                이메일로 초대 링크를 전송합니다.
+                            </p>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label
+                                for="invite-email"
+                                class="form-label uppercase tracking-wide"
+                            >
+                                이메일
+                            </label>
+                            <input
+                                type="email"
+                                id="invite-email"
+                                placeholder="email@example.com"
+                                class="form-input"
+                            />
                         </div>
 
-                        <!-- 프로젝트 삭제 (CEO + MANAGER 인 경우) -->
-                        <div th:if="${data.isCeo() and data.isManager()}"
-                             class="flex items-center justify-between p-5 rounded-docu-btn
-                                    border border-docu-danger-light bg-docu-danger-light/30">
-                            <div>
-                                <p class="text-sm font-semibold text-docu-ink">프로젝트 삭제</p>
-                                <p class="text-xs text-docu-secondary mt-0.5">
-                                    이 프로젝트와 관련된 모든 로그, 문서, 벡터 데이터가
-                                    영구 삭제됩니다.
-                                </p>
-                            </div>
-                            <button type="button" onclick="deleteProject()"
-                                    class="btn-danger shrink-0">
-                                프로젝트 삭제
+                        <!-- 역할 선택 -->
+                        <div class="flex flex-col gap-1.5">
+                            <label
+                                for="invite-role"
+                                class="form-label uppercase tracking-wide"
+                            >
+                                역할
+                            </label>
+                            <select id="invite-role" class="form-select">
+                                <option value="MEMBER" selected>구성원</option>
+                                <option value="MANAGER">관리자</option>
+                            </select>
+                        </div>
+
+                        <p
+                            id="invite-error"
+                            class="hidden form-error -mt-2"
+                        ></p>
+
+                        <div class="flex gap-3">
+                            <button
+                                type="button"
+                                onclick="closeInviteModal()"
+                                class="btn-ghost flex-1"
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="button"
+                                id="invite-send-btn"
+                                onclick="sendInvite()"
+                                class="btn-primary flex-1"
+                            >
+                                초대 전송
                             </button>
                         </div>
                     </div>
-                </section>
+                </div>
 
-            </div><!-- /max-w -->
-        </main>
+                <!-- API Key 평문 노출 모달 (발급/재발급 직후 1회만 표시) -->
+                <div
+                    id="api-key-reveal-modal"
+                    class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+                >
+                    <div class="card-modal w-[480px] p-8 flex flex-col gap-5">
+                        <div>
+                            <h3 class="text-h2 text-docu-ink mb-1">
+                                API 키가 발급되었습니다
+                            </h3>
+                            <p class="text-sm text-docu-danger font-semibold">
+                                이 화면을 벗어나면 키 원문을 다시 확인할 수
+                                없습니다. 지금 바로 복사해 두세요.
+                            </p>
+                        </div>
+                        <div
+                            class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn"
+                        >
+                            <code
+                                id="plain-api-key-display"
+                                class="flex-1 text-sm font-mono text-docu-ink break-all select-all"
+                            ></code>
+                            <button
+                                type="button"
+                                onclick="copyPlainApiKey()"
+                                title="복사"
+                                class="btn-icon w-8 h-8 shrink-0"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8
+                                 a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            onclick="closeApiKeyRevealModal()"
+                            class="btn-primary"
+                        >
+                            확인 (페이지 새로고침)
+                        </button>
+                    </div>
+                </div>
 
-        <footer class="border-t border-divider py-6 text-center text-xs text-docu-secondary">
-            © 2026 Documind Incs. All rights reserved.
-        </footer>
-    </div>
-
-    <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
-
-    <!-- 초대 모달 (MANAGER 전용) -->
-    <div th:if="${data.isManager()}"
-         id="invite-modal"
-         class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
-        <div class="card-modal w-96 p-8 flex flex-col gap-5">
-            <div>
-                <h3 class="text-h2 text-docu-ink mb-1">멤버 초대</h3>
-                <p class="text-sm text-docu-secondary">이메일로 초대 링크를 전송합니다.</p>
+                <script th:src="@{/js/member/Auth.js}"></script>
+                <script th:inline="javascript">
+                    /*<![CDATA[*/
+                    const _PS = {
+                        publicId: /*[[${data.project().publicId()}]]*/ "",
+                        projectName: /*[[${data.project().name()}]]*/ "",
+                        isManager: /*[[${data.isManager()}]]*/ false,
+                        isCeo: /*[[${data.isCeo()}]]*/ false,
+                    };
+                    /*]]>*/
+                </script>
+                <script th:src="@{/js/member/ProjectSetting.js}"></script>
             </div>
-            <div class="flex flex-col gap-1.5">
-                <label for="invite-email" class="form-label uppercase tracking-wide">
-                    이메일
-                </label>
-                <input type="email" id="invite-email" placeholder="email@example.com"
-                       class="form-input"/>
-            </div>
-
-            <!-- 역할 선택 -->
-            <div class="flex flex-col gap-1.5">
-                <label for="invite-role" class="form-label uppercase tracking-wide">
-                    역할
-                </label>
-                <select id="invite-role" class="form-select">
-                    <option value="MEMBER" selected>구성원</option>
-                    <option value="MANAGER">관리자</option>
-                </select>
-            </div>
-
-            <p id="invite-error" class="hidden form-error -mt-2"></p>
-
-            <div class="flex gap-3">
-                <button type="button" onclick="closeInviteModal()" class="btn-ghost flex-1">
-                    취소
-                </button>
-                <button type="button" id="invite-send-btn" onclick="sendInvite()"
-                        class="btn-primary flex-1">
-                    초대 전송
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- API Key 평문 노출 모달 (발급/재발급 직후 1회만 표시) -->
-    <div id="api-key-reveal-modal"
-         class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
-        <div class="card-modal w-[480px] p-8 flex flex-col gap-5">
-            <div>
-                <h3 class="text-h2 text-docu-ink mb-1">API 키가 발급되었습니다</h3>
-                <p class="text-sm text-docu-danger font-semibold">
-                    이 화면을 벗어나면 키 원문을 다시 확인할 수 없습니다. 지금 바로 복사해 두세요.
-                </p>
-            </div>
-            <div class="flex items-center gap-3 px-4 py-3 bg-surface-base
-                        border border-divider rounded-docu-btn">
-                <code id="plain-api-key-display"
-                      class="flex-1 text-sm font-mono text-docu-ink break-all select-all"></code>
-                <button type="button" onclick="copyPlainApiKey()"
-                        title="복사"
-                        class="btn-icon w-8 h-8 shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8
-                                 a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                    </svg>
-                </button>
-            </div>
-            <button type="button" onclick="closeApiKeyRevealModal()" class="btn-primary">
-                확인 (페이지 새로고침)
-            </button>
-        </div>
-    </div>
-
-    <script th:src="@{/js/member/Auth.js}"></script>
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        const _PS = {
-            publicId:     /*[[${data.project().publicId()}]]*/  '',
-            projectName:  /*[[${data.project().name()}]]*/      '',
-            isManager:    /*[[${data.isManager()}]]*/             false,
-            isCeo:        /*[[${data.isCeo()}]]*/               false,
-        };
-        /*]]>*/
-    </script>
-    <script th:src="@{/js/member/ProjectSetting.js}"></script>
-
-</div>
-</th:block>
-</body>
+        </th:block>
+    </body>
 </html>

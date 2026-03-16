@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/default}"
+      th:with="activeMenu='archivechat'" lang="ko">
+<head>
+    <title>챗봇</title>
+</head>
+<body>
+<main layout:fragment="content" class="flex-1 flex flex-col h-[calc(100vh-64px)]">
+
+    <!-- 상단 설정 바 -->
+    <div class="bg-white border-b border-gray-200 px-8 py-4">
+        <div class="flex items-center gap-4">
+            <!-- AI 모델 선택 -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm font-medium text-gray-600 whitespace-nowrap">AI 모델</label>
+                <select id="modelSelect"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <option th:each="model : ${chatModels}"
+                            th:value="${model.alias()}"
+                            th:text="${model.displayName()}"
+                            th:selected="${model.defaultModel()}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- 검색 범위 선택 -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm font-medium text-gray-600 whitespace-nowrap">검색 범위</label>
+                <select id="scopeSelect"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <option value="all">전체 문서</option>
+                    <option value="group">그룹</option>
+                    <option value="category">카테고리</option>
+                </select>
+            </div>
+
+            <!-- 그룹/카테고리 목록 (동적 표시) -->
+            <div id="scopeDetailWrapper" class="hidden flex items-center gap-2">
+                <select id="scopeDetailSelect"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 채팅 영역 -->
+    <div id="chatArea" class="flex-1 overflow-y-auto px-8 py-6 bg-amber-50/40">
+
+        <!-- 빈 상태 안내 -->
+        <div id="emptyChat" class="flex flex-col items-center justify-center h-full text-gray-400">
+            <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+            </svg>
+            <p class="text-sm">문서에 대해 질문해 보세요.</p>
+        </div>
+
+        <!-- 채팅 메시지 목록 (JS에서 렌더링) -->
+        <div id="chatMessages" class="hidden space-y-6">
+        </div>
+    </div>
+
+    <!-- 하단 입력 바 -->
+    <div class="bg-white border-t border-gray-200 px-8 py-4">
+        <div class="max-w-4xl mx-auto relative">
+            <textarea id="chatInput"
+                      rows="1"
+                      placeholder="질문을 입력하세요..."
+                      class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      style="max-height: 120px;"></textarea>
+            <button id="sendBtn"
+                    class="absolute right-3 bottom-3 p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 19V5m0 0l-7 7m7-7l7 7"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- 메타 정보 -->
+    <input type="hidden" id="publicId" th:value="${publicId}">
+
+</main>
+
+<th:block layout:fragment="scripts">
+    <script th:src="@{/js/chatbot/main.js}"></script>
+</th:block>
+</body>
+</html>

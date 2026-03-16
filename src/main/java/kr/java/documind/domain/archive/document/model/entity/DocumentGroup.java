@@ -1,15 +1,10 @@
 package kr.java.documind.domain.archive.document.model.entity;
 
-import static jakarta.persistence.FetchType.LAZY;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
-import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.global.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,9 +18,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DocumentGroup extends BaseEntity {
 
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "project_id", nullable = false)
-    private Project project;
+    @Column(name = "project_id", nullable = false)
+    private UUID projectId;
 
     @Column(nullable = false, length = 10)
     private String category;
@@ -36,28 +30,23 @@ public class DocumentGroup extends BaseEntity {
     @Column(nullable = false)
     private String choseong;
 
-    private DocumentGroup(Project project, String category, String groupName, String choseong) {
-        this.project = project;
+    private DocumentGroup(UUID projectId, String category, String groupName, String choseong) {
+        this.projectId = projectId;
         this.category = category;
         this.groupName = groupName;
         this.choseong = choseong;
     }
 
-    public static DocumentGroup create(
-            Project project, String category, String groupName, String choseong) {
-        return new DocumentGroup(project, category, groupName, choseong);
-    }
-
-    public UUID getProjectId() {
-        return project.getId();
+    public static DocumentGroup create(UUID projectId, String category, String groupName) {
+        return new DocumentGroup(projectId, category, groupName, "초성");
     }
 
     public void updateCategory(String category) {
         this.category = category;
     }
 
-    public void updateGroupName(String groupName, String choseong) {
+    public void updateGroupName(String groupName) {
         this.groupName = groupName;
-        this.choseong = choseong;
+        this.choseong = "초성변경";
     }
 }

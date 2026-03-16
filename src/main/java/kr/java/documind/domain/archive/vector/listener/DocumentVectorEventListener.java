@@ -1,8 +1,8 @@
 package kr.java.documind.domain.archive.vector.listener;
 
-import kr.java.documind.domain.archive.document.model.event.DocumentVectorCreateEvent;
-import kr.java.documind.domain.archive.document.model.event.DocumentVectorDeleteEvent;
-import kr.java.documind.domain.archive.document.model.event.DocumentVectorReplaceEvent;
+import kr.java.documind.domain.archive.document.event.DocumentVectorCreateEvent;
+import kr.java.documind.domain.archive.document.event.DocumentVectorDeleteEvent;
+import kr.java.documind.domain.archive.document.event.DocumentVectorReplaceEvent;
 import kr.java.documind.domain.archive.vector.service.EtlService;
 import kr.java.documind.domain.archive.vector.service.VectorStoreService;
 import lombok.RequiredArgsConstructor;
@@ -21,14 +21,14 @@ public class DocumentVectorEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleVectorCreate(DocumentVectorCreateEvent event) {
-        etlService.process(event.sourceId(), event.tempFilePath());
+        etlService.process(event.projectId(), event.sourceId(), event.storedKey());
     }
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleVectorReplace(DocumentVectorReplaceEvent event) {
         vectorStoreService.deleteBySourceId(event.sourceId());
-        etlService.process(event.sourceId(), event.tempFilePath());
+        etlService.process(event.projectId(), event.sourceId(), event.storedKey());
     }
 
     @Async

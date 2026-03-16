@@ -7,6 +7,7 @@ import kr.java.documind.global.exception.BusinessException;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -118,6 +119,23 @@ public class GlobalApiExceptionHandler {
                         ? ErrorResponse.withDetails(e.getMessage(), e.getDetails())
                         : ErrorResponse.of(e.getMessage());
         return ResponseEntity.status(e.getStatus()).body(ApiResponse.error(errorResponse));
+    }
+
+    /** DB 무결성 위반 — constraint 위반(동시 요청 race condition)은 409, 그 외는 500 */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
+            DataIntegrityViolationException e, HttpServletRequest request) {
+        if (e.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
+            log.warn(
+                    "ConstraintViolationException [{}]: {}",
+                    request.getRequestURI(),
+                    e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(ErrorResponse.of("이미 존재하는 데이터입니다.")));
+        }
+        log.error("DataIntegrityViolationException [{}]", request.getRequestURI(), e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(ErrorResponse.of("서버 오류가 발생했습니다.")));
     }
 
     /** 그 외 모든 예외 (500) */
