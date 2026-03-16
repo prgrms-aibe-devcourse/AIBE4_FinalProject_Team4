@@ -17,6 +17,10 @@ public record IssueStatusUpdateRequest(
                 @NotNull(message = "상태는 필수입니다")
                 IssueStatus status,
         @Schema(
+                        description = "해결 방법 설명 (RESOLVED 상태로 변경 시 선택 사항)",
+                        example = "사용자 프로필 조회 전 null 체크 로직 추가")
+                String resolutionNote,
+        @Schema(
                         description = "패치노트 반영 여부 (RESOLVED 상태로 변경 시에만 사용)",
                         example = "true",
                         defaultValue = "true")

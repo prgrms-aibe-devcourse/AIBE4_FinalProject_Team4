@@ -180,6 +180,7 @@ public class IssueManagementApiController {
         issueManagementService.updateIssueStatus(
                 issueId,
                 request.status(),
+                request.resolutionNote(),
                 authMember.getMemberId(),
                 request.shouldIncludeInPatchNote());
 

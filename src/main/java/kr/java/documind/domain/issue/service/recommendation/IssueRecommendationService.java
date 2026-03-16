@@ -69,11 +69,22 @@ public class IssueRecommendationService {
      *
      * @param issueId 이슈 ID
      * @param assigneeId 담당자 ID (프로젝트 멤버)
+     * @param title 이슈 제목 (수정된 제목, null이면 기존 제목 유지)
+     * @param description 이슈 설명 (수정된 설명, null이면 기존 설명 유지)
      * @param modifierId 승인한 사용자 ID
      */
     @Transactional
-    public void approveRecommendation(Long issueId, UUID assigneeId, UUID modifierId) {
+    public void approveRecommendation(
+            Long issueId, UUID assigneeId, String title, String description, UUID modifierId) {
         Issue issue = getRecommendationDetail(issueId);
+
+        // 제목 및 설명 수정
+        if (title != null && !title.isBlank()) {
+            issue.updateTitle(title);
+        }
+        if (description != null && !description.isBlank()) {
+            issue.updateDescription(description);
+        }
 
         // 담당자 할당
         if (assigneeId != null) {
@@ -83,11 +94,13 @@ public class IssueRecommendationService {
         issue.approve(); // RECOMMENDED → TODO
 
         log.info(
-                "Issue recommendation approved. issueId={}, assigneeId={}, modifierId={}, fingerprint={}",
+                "Issue recommendation approved. issueId={}, assigneeId={}, modifierId={}, fingerprint={}, titleUpdated={}, descriptionUpdated={}",
                 issueId,
                 assigneeId,
                 modifierId,
-                issue.getFingerprint());
+                issue.getFingerprint(),
+                title != null,
+                description != null);
     }
 
     /**

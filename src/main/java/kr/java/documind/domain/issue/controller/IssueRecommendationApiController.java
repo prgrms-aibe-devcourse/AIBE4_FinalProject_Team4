@@ -125,7 +125,11 @@ public class IssueRecommendationApiController {
             @AuthenticationPrincipal CustomUserDetails authMember) {
 
         recommendationService.approveRecommendation(
-                issueId, request.assigneeId(), authMember.getMemberId());
+                issueId,
+                request.assigneeId(),
+                request.title(),
+                request.description(),
+                authMember.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success("추천 이슈가 승인되어 이슈로 생성되었습니다."));
     }

@@ -1035,23 +1035,25 @@ function submitComment() {
 
 function openStatusModal() {
     document.getElementById('newStatus').value = '';
+    document.getElementById('resolutionNote').value = '';
     document.getElementById('shouldIncludeInPatchNote').checked = false;
-    document.getElementById('patchNoteOption').classList.add('hidden');
+    document.getElementById('resolvedOptions').classList.add('hidden');
     document.getElementById('statusError').classList.add('hidden');
     openModal('statusModal');
 }
 
 document.getElementById('newStatus')?.addEventListener('change', (e) => {
-    const patchNoteOption = document.getElementById('patchNoteOption');
+    const resolvedOptions = document.getElementById('resolvedOptions');
     if (e.target.value === 'RESOLVED') {
-        patchNoteOption.classList.remove('hidden');
+        resolvedOptions.classList.remove('hidden');
     } else {
-        patchNoteOption.classList.add('hidden');
+        resolvedOptions.classList.add('hidden');
     }
 });
 
 async function submitStatusChange() {
     const status = document.getElementById('newStatus').value;
+    const resolutionNote = document.getElementById('resolutionNote')?.value?.trim() || null;
     const shouldIncludeInPatchNote = document.getElementById('shouldIncludeInPatchNote').checked;
     const errorEl = document.getElementById('statusError');
 
@@ -1066,7 +1068,11 @@ async function submitStatusChange() {
     try {
         const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/status`, {
             method: 'PUT',
-            body: JSON.stringify({ status, shouldIncludeInPatchNote })
+            body: JSON.stringify({
+                status,
+                resolutionNote,
+                shouldIncludeInPatchNote
+            })
         });
 
         if (body.success) {

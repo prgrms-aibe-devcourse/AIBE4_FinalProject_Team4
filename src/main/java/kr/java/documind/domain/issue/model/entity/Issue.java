@@ -166,6 +166,26 @@ public class Issue {
     }
 
     /**
+     * 이슈 제목 수정
+     *
+     * @param title 새로운 제목
+     */
+    public void updateTitle(String title) {
+        this.title = title;
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    /**
+     * 이슈 설명 수정
+     *
+     * @param description 새로운 설명
+     */
+    public void updateDescription(String description) {
+        this.description = description;
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    /**
      * 우선순위 설정
      *
      * @param priority 우선순위

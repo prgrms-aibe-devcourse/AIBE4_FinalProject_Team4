@@ -52,12 +52,17 @@ public class IssueManagementService {
      *
      * @param issueId 이슈 ID
      * @param newStatus 변경할 상태
+     * @param resolutionNote 해결 방법 설명 (RESOLVED 상태 시 선택 사항)
      * @param modifierId 변경 작업을 수행한 멤버 ID
      * @param includeInPatchNote 패치노트 반영 여부 (RESOLVED 상태 시에만 사용)
      */
     @Transactional
     public void updateIssueStatus(
-            Long issueId, IssueStatus newStatus, UUID modifierId, boolean includeInPatchNote) {
+            Long issueId,
+            IssueStatus newStatus,
+            String resolutionNote,
+            UUID modifierId,
+            boolean includeInPatchNote) {
         Issue issue = getIssueOrThrow(issueId);
 
         IssueStatus beforeStatus = issue.getStatus();
@@ -67,6 +72,13 @@ public class IssueManagementService {
 
         // 상태 변경
         issue.changeStatus(newStatus);
+
+        // 해결 방법 설명 저장 (RESOLVED 상태 시)
+        if (newStatus == IssueStatus.RESOLVED
+                && resolutionNote != null
+                && !resolutionNote.isBlank()) {
+            issue.writeResolutionNote(resolutionNote);
+        }
 
         // 이력 저장
         historyService.saveStatusChange(

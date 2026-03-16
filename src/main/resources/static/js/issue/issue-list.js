@@ -316,21 +316,22 @@ function renderRecommendationDetail(rec, members) {
         <div class="space-y-5">
             <!-- 이슈 제목 -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">이슈 제목</label>
-                <p class="text-base font-medium text-gray-900">${rec.title}</p>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">이슈 제목 <span class="text-red-500">*</span></label>
+                <input type="text" id="editIssueTitle" value="${rec.title || ''}"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                       placeholder="이슈 제목을 입력하세요">
             </div>
 
             <!-- 이슈 설명 -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">이슈 설명</label>
-                <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 space-y-3">
-                    <div>
-                        <strong class="text-gray-900">[예외 상세]</strong><br>
-                        Type: ${rec.errorType || 'UNKNOWN'}<br>
-                        Module: ${rec.stackKey ? rec.stackKey.split(':')[0] : 'N/A'}<br>
-                        Function: ${rec.stackKey ? rec.stackKey.split(':')[2] : 'N/A'}
-                    </div>
-                    ${rec.description ? `<div><strong class="text-gray-900">[추가 정보]</strong><br>${rec.description}</div>` : ''}
+                <textarea id="editIssueDescription" rows="8"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                          placeholder="이슈에 대한 상세 설명을 입력하세요">${rec.description || ''}</textarea>
+                <div class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
+                    <strong class="text-gray-900">자동 수집된 정보:</strong><br>
+                    Error Type: ${rec.errorType || 'UNKNOWN'} |
+                    Stack Key: ${rec.stackKey || 'N/A'}
                 </div>
             </div>
 
@@ -429,10 +430,25 @@ async function approveFromDetail() {
     const assigneeSelect = document.getElementById('assigneeSelect');
     const selectedAssigneeId = assigneeSelect ? assigneeSelect.value : null;
 
+    // 수정된 제목과 설명 가져오기
+    const title = document.getElementById('editIssueTitle')?.value?.trim();
+    const description = document.getElementById('editIssueDescription')?.value?.trim();
+
+    // 제목 필수 검증
+    if (!title) {
+        showError('이슈 제목을 입력하세요.');
+        document.getElementById('editIssueTitle')?.focus();
+        return;
+    }
+
     try {
         const body = await callApi(`/api/projects/${currentProjectId}/issue-recommendations/${currentRecommendationId}/approve`, {
             method: 'POST',
-            body: JSON.stringify({ assigneeId: selectedAssigneeId })
+            body: JSON.stringify({
+                assigneeId: selectedAssigneeId,
+                title: title,
+                description: description
+            })
         });
 
         if (body.success) {
@@ -726,26 +742,13 @@ async function submitAssign() {
 function openStatusModal(issueId, currentStatus) {
     document.getElementById('statusIssueId').value = issueId;
     document.getElementById('newStatus').value = '';
-    document.getElementById('shouldIncludeInPatchNote').checked = false;
-    document.getElementById('patchNoteOption').classList.add('hidden');
     document.getElementById('statusError').classList.add('hidden');
     openModal('statusModal');
 }
 
-// RESOLVED 선택 시 패치노트 옵션 표시
-document.getElementById('newStatus')?.addEventListener('change', (e) => {
-    const patchNoteOption = document.getElementById('patchNoteOption');
-    if (e.target.value === 'RESOLVED') {
-        patchNoteOption.classList.remove('hidden');
-    } else {
-        patchNoteOption.classList.add('hidden');
-    }
-});
-
 async function submitStatusChange() {
     const issueId = document.getElementById('statusIssueId').value;
     const status = document.getElementById('newStatus').value;
-    const shouldIncludeInPatchNote = document.getElementById('shouldIncludeInPatchNote').checked;
     const errorEl = document.getElementById('statusError');
 
     errorEl.classList.add('hidden');
@@ -759,7 +762,7 @@ async function submitStatusChange() {
     try {
         const body = await callApi(`/api/projects/${currentProjectId}/issues/${issueId}/status`, {
             method: 'PUT',
-            body: JSON.stringify({ status, shouldIncludeInPatchNote })
+            body: JSON.stringify({ status })
         });
 
         if (body.success) {
