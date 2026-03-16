@@ -34,13 +34,13 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 @RequestMapping("/api/projects/{publicId}/documents")
 @RequiredArgsConstructor
-@RequireProjectMember
 public class DocumentMetadataApiController {
 
     private final DocumentMetadataService documentMetadataService;
     private final EtlService etlService;
 
     @PostMapping
+    @RequireProjectMember
     public ResponseEntity<ApiResponse<DocumentMetadataResponse>> uploadDocumentWithNewGroup(
             @ProjectId UUID projectId,
             @RequestPart("request") @Valid DocumentUploadRequest request,
@@ -51,14 +51,16 @@ public class DocumentMetadataApiController {
     }
 
     @GetMapping("/{documentId}/download")
+    @RequireProjectMember
     public ResponseEntity<Resource> downloadDocument(
             @ProjectId UUID projectId, @PathVariable Long documentId) {
         return buildFileResponse(projectId, documentId, "attachment");
     }
 
     @GetMapping("/{documentId}/preview")
+    @RequireProjectMember
     public ResponseEntity<Resource> previewDocument(
-            @ProjectId UUID projectId, @PathVariable Long documentId) {
+        @ProjectId UUID projectId, @PathVariable Long documentId) {
         return buildFileResponse(projectId, documentId, "inline");
     }
 
@@ -73,6 +75,7 @@ public class DocumentMetadataApiController {
     }
 
     @PatchMapping("/{documentId}")
+    @RequireProjectMember
     public ApiResponse<Void> updateDocument(
             @ProjectId UUID projectId,
             @PathVariable Long documentId,
@@ -83,6 +86,7 @@ public class DocumentMetadataApiController {
     }
 
     @DeleteMapping("/{documentId}")
+    @RequireProjectMember
     public ApiResponse<Void> deleteDocument(
             @ProjectId UUID projectId, @PathVariable Long documentId) {
         documentMetadataService.deleteDocument(projectId, documentId);

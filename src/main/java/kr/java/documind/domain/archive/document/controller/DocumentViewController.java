@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
+@RequireProjectMember
 @RequiredArgsConstructor
 @ProjectPage(ServiceMenu.DOCUMENTS)
-@RequireProjectMember
 public class DocumentViewController {
 
     private final DocumentMetadataService documentMetadataService;

@@ -32,8 +32,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/projects/{publicId}/groups")
-@RequiredArgsConstructor
 @RequireProjectMember
+@RequiredArgsConstructor
 public class DocumentGroupApiController {
 
     private final DocumentGroupService documentGroupService;
