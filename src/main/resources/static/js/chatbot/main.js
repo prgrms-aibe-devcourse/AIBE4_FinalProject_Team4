@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="flex items-center gap-2">
                     <span class="font-semibold text-indigo-600">[${originalIndex}]</span>
                     <span class="font-medium text-gray-700">${escapeHtml(ref.documentName)}</span>
-                    <span class="text-gray-400">v${escapeHtml(ref.version ?? '')}${pageInfo}</span>
+                    <span class="text-gray-400">${escapeHtml(ref.version ?? '')}${pageInfo}</span>
                 </div>
                 <p class="text-gray-500 leading-relaxed">${escapeHtml(previewText)}</p>
             `;
