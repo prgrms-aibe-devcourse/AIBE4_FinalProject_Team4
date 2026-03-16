@@ -3,6 +3,8 @@ package kr.java.documind.global.config;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.time.Duration;
+import java.util.List;
 import kr.java.documind.domain.member.model.dto.ProjectSummary;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -14,9 +16,6 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-
-import java.time.Duration;
-import java.util.List;
 
 @Configuration
 @EnableCaching
@@ -31,7 +30,7 @@ public class CacheConfig {
                 objectMapper
                         .getTypeFactory()
                         .constructCollectionType(List.class, ProjectSummary.class);
-        
+
         RedisSerializer<Object> projectSummarySerializer =
                 new RedisSerializer<Object>() {
                     @Override
