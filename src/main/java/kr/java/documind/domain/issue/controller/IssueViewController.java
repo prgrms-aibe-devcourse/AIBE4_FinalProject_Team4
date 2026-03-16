@@ -2,6 +2,8 @@ package kr.java.documind.domain.issue.controller;
 
 import java.util.UUID;
 import kr.java.documind.global.annotation.ProjectId;
+import kr.java.documind.global.annotation.ProjectPage;
+import kr.java.documind.global.navigation.ServiceMenu;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 @RequiredArgsConstructor
+@ProjectPage(ServiceMenu.ISSUES)
 public class IssueViewController {
 
     @GetMapping("/projects/{publicId}/issues")

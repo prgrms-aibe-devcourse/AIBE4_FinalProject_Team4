@@ -1,119 +1,124 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{common/layout/default}"
-      th:with="activeMenu='issue'" lang="ko">
+      layout:decorate="~{common/layout/service-layout}">
+
 <head>
     <title>이슈 관리</title>
 </head>
+
 <body>
-<main layout:fragment="content" class="flex-1 p-8">
+<th:block layout:fragment="content">
 
-    <!-- 상단 헤더 + 메인 탭 -->
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 mb-4">이슈</h1>
-
-        <!-- 메인 탭 -->
-        <div class="flex items-center gap-2 border-b border-gray-200 mb-4">
-            <button onclick="switchMainTab('recommendations')" id="recommendationsTab"
-                    class="main-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-indigo-600 text-indigo-600">
-                추천 이슈
-            </button>
-            <button onclick="switchMainTab('issues')" id="issuesTab"
-                    class="main-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 hover:text-gray-700">
-                기존 이슈
-            </button>
+    <section class="space-y-6">
+        <div>
+            <div th:replace="~{common/fragments/ui-components :: breadcrumb('이슈')}"></div>
+            <h1 class="text-h1 text-docu-ink mt-3">이슈 관리</h1>
+            <p class="text-sm text-docu-secondary mt-1">프로젝트의 이슈를 추천받고 관리합니다</p>
         </div>
 
-        <!-- 상태 필터 탭 (기존 이슈 탭에서만 표시) -->
-        <div id="statusFilterTabs" class="hidden flex items-center gap-2 border-b border-gray-200">
-            <button onclick="filterByStatus(null)" data-status="all"
-                    class="status-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-indigo-600 text-indigo-600">
-                전체
-            </button>
-            <button onclick="filterByStatus('TODO')" data-status="TODO"
-                    class="status-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 hover:text-gray-700">
-                대기중
-            </button>
-            <button onclick="filterByStatus('IN_PROGRESS')" data-status="IN_PROGRESS"
-                    class="status-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 hover:text-gray-700">
-                처리중
-            </button>
-            <button onclick="filterByStatus('RESOLVED')" data-status="RESOLVED"
-                    class="status-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 hover:text-gray-700">
-                해결됨
-            </button>
-        </div>
-    </div>
-
-    <!-- 추천 이슈 목록 영역 -->
-    <div id="recommendationsSection" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <!-- 테이블 헤더 -->
-        <div class="grid grid-cols-12 gap-4 px-8 py-3 bg-gray-50 border-b border-gray-200 text-sm font-medium text-gray-500">
-            <div class="col-span-4">이슈 정보</div>
-            <div class="col-span-1 text-center">품질</div>
-            <div class="col-span-2 text-center">심각도</div>
-            <div class="col-span-1 text-center">발생 횟수</div>
-            <div class="col-span-1 text-center">최근 발생</div>
-            <div class="col-span-3 text-center">작업</div>
-        </div>
-
-        <!-- 추천 목록 (JS에서 렌더링) -->
-        <div id="recommendationList" class="bg-gray-50 py-2"></div>
-
-        <!-- 데이터 없음 -->
-        <div id="emptyRecommendations" class="hidden py-16 text-center text-gray-400 text-sm bg-white">
-            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <p class="font-medium text-gray-900 mb-1">추천된 이슈가 없습니다</p>
-            <p class="text-xs">로그가 수집되면 자동으로 이슈 추천이 생성됩니다.</p>
-        </div>
-    </div>
-
-    <!-- 기존 이슈 목록 영역 -->
-    <div id="issuesSection" class="hidden bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <!-- 테이블 헤더 -->
-        <div class="grid grid-cols-12 gap-4 px-8 py-3 bg-gray-50 border-b border-gray-200 text-sm font-medium text-gray-500">
-            <div class="col-span-4">이슈 정보</div>
-            <div class="col-span-1 text-center">상태</div>
-            <div class="col-span-2 text-center">심각도</div>
-            <div class="col-span-1 text-center">발생 횟수</div>
-            <div class="col-span-1 text-center">최근 발생</div>
-            <div class="col-span-3 text-center">작업</div>
-        </div>
-
-        <!-- 이슈 목록 (JS에서 렌더링) -->
-        <div id="issueList" class="bg-gray-50 py-2"></div>
-
-        <!-- 데이터 없음 -->
-        <div id="emptyIssues" class="hidden py-16 text-center text-gray-400 text-sm bg-white">
-            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <p class="font-medium text-gray-900 mb-1">등록된 이슈가 없습니다</p>
-            <p class="text-xs">추천 이슈를 승인하면 이곳에 표시됩니다.</p>
-        </div>
-    </div>
-
-    <!-- 페이지 메타 정보 (JS에서 사용) -->
-    <input type="hidden" id="publicId" th:value="${publicId}">
-    <input type="hidden" id="projectId" th:value="${projectId}">
-
-    <!-- ==================== 추천 상세 모달 ==================== -->
-    <div id="recommendationDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40" onclick="closeModal('recommendationDetailModal')"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
-            <!-- 헤더 -->
-            <div class="flex items-center justify-between px-8 pt-8 pb-4 border-b border-gray-200">
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-900">새 이슈 생성</h2>
-                    <p class="text-sm text-gray-500 mt-1">홈 > 이슈 추천 > 새 이슈 생성</p>
-                </div>
-                <button onclick="closeModal('recommendationDetailModal')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <div class="card-base card-shadow p-widget-p">
+            <!-- 메인 탭 -->
+            <div class="flex items-center gap-2 border-b border-divider mb-4">
+                <button onclick="switchMainTab('recommendations')" id="recommendationsTab"
+                        class="main-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-docu-primary text-docu-primary">
+                    추천 이슈
+                </button>
+                <button onclick="switchMainTab('issues')" id="issuesTab"
+                        class="main-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-transparent text-docu-secondary hover:text-docu-ink">
+                    기존 이슈
                 </button>
             </div>
+
+            <!-- 상태 필터 탭 (기존 이슈 탭에서만 표시) -->
+            <div id="statusFilterTabs" class="hidden flex items-center gap-2 border-b border-divider mb-4">
+                <button onclick="filterByStatus(null)" data-status="all"
+                        class="status-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-docu-primary text-docu-primary">
+                    전체
+                </button>
+                <button onclick="filterByStatus('TODO')" data-status="TODO"
+                        class="status-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-transparent text-docu-secondary hover:text-docu-ink">
+                    대기중
+                </button>
+                <button onclick="filterByStatus('IN_PROGRESS')" data-status="IN_PROGRESS"
+                        class="status-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-transparent text-docu-secondary hover:text-docu-ink">
+                    처리중
+                </button>
+                <button onclick="filterByStatus('RESOLVED')" data-status="RESOLVED"
+                        class="status-tab px-4 py-2.5 text-sm font-medium border-b-2 transition-colors border-transparent text-docu-secondary hover:text-docu-ink">
+                    해결됨
+                </button>
+            </div>
+
+            <!-- 추천 이슈 목록 영역 -->
+            <div id="recommendationsSection" class="bg-surface-card rounded-docu-card border border-divider overflow-hidden">
+                <!-- 테이블 헤더 -->
+                <div class="grid grid-cols-12 gap-4 px-8 py-3 bg-surface-subtle border-b border-divider text-sm font-medium text-docu-secondary">
+                    <div class="col-span-4">이슈 정보</div>
+                    <div class="col-span-1 text-center">품질</div>
+                    <div class="col-span-2 text-center">심각도</div>
+                    <div class="col-span-1 text-center">발생 횟수</div>
+                    <div class="col-span-1 text-center">최근 발생</div>
+                    <div class="col-span-3 text-center">작업</div>
+                </div>
+
+                <!-- 추천 목록 (JS에서 렌더링) -->
+                <div id="recommendationList" class="bg-surface-subtle py-2"></div>
+
+                <!-- 데이터 없음 -->
+                <div id="emptyRecommendations" class="hidden py-16 text-center text-docu-secondary text-sm bg-surface-card">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-docu-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="font-medium text-docu-ink mb-1">추천된 이슈가 없습니다</p>
+                    <p class="text-xs">로그가 수집되면 자동으로 이슈 추천이 생성됩니다.</p>
+                </div>
+            </div>
+
+            <!-- 기존 이슈 목록 영역 -->
+            <div id="issuesSection" class="hidden bg-surface-card rounded-docu-card border border-divider overflow-hidden">
+                <!-- 테이블 헤더 -->
+                <div class="grid grid-cols-12 gap-4 px-8 py-3 bg-surface-subtle border-b border-divider text-sm font-medium text-docu-secondary">
+                    <div class="col-span-4">이슈 정보</div>
+                    <div class="col-span-1 text-center">상태</div>
+                    <div class="col-span-2 text-center">심각도</div>
+                    <div class="col-span-1 text-center">발생 횟수</div>
+                    <div class="col-span-1 text-center">최근 발생</div>
+                    <div class="col-span-3 text-center">작업</div>
+                </div>
+
+                <!-- 이슈 목록 (JS에서 렌더링) -->
+                <div id="issueList" class="bg-surface-subtle py-2"></div>
+
+                <!-- 데이터 없음 -->
+                <div id="emptyIssues" class="hidden py-16 text-center text-docu-secondary text-sm bg-surface-card">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-docu-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="font-medium text-docu-ink mb-1">등록된 이슈가 없습니다</p>
+                    <p class="text-xs">추천 이슈를 승인하면 이곳에 표시됩니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 페이지 메타 정보 (JS에서 사용) -->
+        <input type="hidden" id="publicId" th:value="${publicId}">
+        <input type="hidden" id="projectId" th:value="${projectId}">
+
+        <!-- ==================== 추천 상세 모달 ==================== -->
+        <div id="recommendationDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center" onclick="if(event.target === this) closeModal('recommendationDetailModal')">
+            <div class="card-modal w-full max-w-6xl max-h-[90vh] flex flex-col">
+                <!-- 헤더 -->
+                <div class="flex items-center justify-between px-8 pt-8 pb-4 border-b border-divider">
+                    <div>
+                        <h2 class="text-2xl font-bold text-docu-ink">새 이슈 생성</h2>
+                        <p class="text-sm text-docu-secondary mt-1">홈 > 이슈 추천 > 새 이슈 생성</p>
+                    </div>
+                    <button onclick="closeModal('recommendationDetailModal')" class="text-docu-secondary hover:text-docu-ink">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
             <!-- 본문 (2단 레이아웃) -->
             <div class="flex-1 overflow-y-auto">
                 <div class="grid grid-cols-3 gap-6 p-8">
@@ -127,26 +132,25 @@
                     </div>
                 </div>
             </div>
-            <!-- 하단 버튼 -->
-            <div class="flex items-center justify-between px-8 py-5 border-t border-gray-200 bg-gray-50">
-                <p class="text-sm text-gray-600">
-                    <svg class="w-4 h-4 inline text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    이슈 생성 시 담당자에게 알림이 전송됩니다.
-                </p>
-                <div class="flex items-center gap-3">
-                    <button onclick="rejectFromDetail()" class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg">취소</button>
-                    <button onclick="approveFromDetail()" class="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg">이슈 생성</button>
+                <!-- 하단 버튼 -->
+                <div class="flex items-center justify-between px-8 py-5 border-t border-divider bg-surface-subtle">
+                    <p class="text-sm text-docu-secondary">
+                        <svg class="w-4 h-4 inline text-docu-tertiary mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        이슈 생성 시 담당자에게 알림이 전송됩니다.
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <button onclick="rejectFromDetail()" class="btn-secondary">취소</button>
+                        <button onclick="approveFromDetail()" class="btn-primary">이슈 생성</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- ==================== 추천 거부 확인 모달 ==================== -->
-    <div id="rejectConfirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40" onclick="closeModal('rejectConfirmModal')"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <!-- ==================== 추천 거부 확인 모달 ==================== -->
+        <div id="rejectConfirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40" onclick="if(event.target === this) closeModal('rejectConfirmModal')">
+            <div class="card-modal w-full max-w-md">
             <!-- 헤더 -->
             <div class="flex items-center justify-between px-8 pt-8 pb-4">
                 <div class="flex items-center gap-3">
@@ -175,18 +179,17 @@
                     </div>
                 </div>
             </div>
-            <!-- 하단 버튼 -->
-            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-gray-200">
-                <button onclick="closeModal('rejectConfirmModal')" class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800">취소</button>
-                <button onclick="confirmReject()" class="px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg">거부</button>
+                <!-- 하단 버튼 -->
+                <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                    <button onclick="closeModal('rejectConfirmModal')" class="btn-secondary">취소</button>
+                    <button onclick="confirmReject()" class="btn-danger">거부</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- ==================== 이슈 상세 모달 (Quick Triage) ==================== -->
-    <div id="issueDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40" onclick="closeModal('issueDetailModal')"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+        <!-- ==================== 이슈 상세 모달 (Quick Triage) ==================== -->
+        <div id="issueDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40" onclick="if(event.target === this) closeModal('issueDetailModal')">
+            <div class="card-modal w-full max-w-2xl max-h-[85vh] flex flex-col">
             <!-- 헤더 -->
             <div class="px-8 pt-8 pb-6">
                 <div class="flex items-start justify-between mb-4">
@@ -256,28 +259,27 @@
                 </div>
             </div>
 
-            <!-- 하단 버튼 -->
-            <div class="flex items-center justify-between px-8 py-5 border-t border-gray-200 bg-gray-50">
-                <p class="text-xs text-gray-500">
-                    💡 자세한 원인 분석이 필요하신가요?
-                </p>
-                <div class="flex items-center gap-3">
-                    <button onclick="closeModal('issueDetailModal')" class="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800">닫기</button>
-                    <button onclick="openDetailedAnalysis()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                        상세 분석
-                    </button>
+                <!-- 하단 버튼 -->
+                <div class="flex items-center justify-between px-8 py-5 border-t border-divider bg-surface-subtle">
+                    <p class="text-xs text-docu-secondary">
+                        💡 자세한 원인 분석이 필요하신가요?
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <button onclick="closeModal('issueDetailModal')" class="btn-secondary">닫기</button>
+                        <button onclick="openDetailedAnalysis()" class="btn-primary flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            상세 분석
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- ==================== 담당자 할당 모달 ==================== -->
-    <div id="assignModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40" onclick="closeModal('assignModal')"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <!-- ==================== 담당자 할당 모달 ==================== -->
+        <div id="assignModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40" onclick="if(event.target === this) closeModal('assignModal')">
+            <div class="card-modal w-full max-w-md">
             <!-- 헤더 -->
             <div class="flex items-center justify-between px-8 pt-8 pb-4">
                 <h2 class="text-xl font-bold text-gray-900">담당자 할당</h2>
@@ -296,18 +298,17 @@
                     <p class="text-xs text-gray-400 mt-1">예: 123e4567-e89b-12d3-a456-426614174000</p>
                 </div>
             </div>
-            <!-- 하단 버튼 -->
-            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-gray-200">
-                <button onclick="closeModal('assignModal')" class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800">취소</button>
-                <button onclick="submitAssign()" class="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg">할당</button>
+                <!-- 하단 버튼 -->
+                <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                    <button onclick="closeModal('assignModal')" class="btn-secondary">취소</button>
+                    <button onclick="submitAssign()" class="btn-primary">할당</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- ==================== 상태 변경 모달 ==================== -->
-    <div id="statusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40" onclick="closeModal('statusModal')"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <!-- ==================== 상태 변경 모달 ==================== -->
+        <div id="statusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40" onclick="if(event.target === this) closeModal('statusModal')">
+            <div class="card-modal w-full max-w-md">
             <!-- 헤더 -->
             <div class="flex items-center justify-between px-8 pt-8 pb-4">
                 <h2 class="text-xl font-bold text-gray-900">상태 변경</h2>
@@ -331,15 +332,17 @@
                     </p>
                 </div>
             </div>
-            <!-- 하단 버튼 -->
-            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-gray-200">
-                <button onclick="closeModal('statusModal')" class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800">취소</button>
-                <button onclick="submitStatusChange()" class="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg">변경</button>
+                <!-- 하단 버튼 -->
+                <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                    <button onclick="closeModal('statusModal')" class="btn-secondary">취소</button>
+                    <button onclick="submitStatusChange()" class="btn-primary">변경</button>
+                </div>
             </div>
         </div>
-    </div>
 
-</main>
+    </section>
+
+</th:block>
 
 <th:block layout:fragment="scripts">
     <script th:src="@{/js/issue/issue-list.js}"></script>
