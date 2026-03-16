@@ -48,8 +48,15 @@ public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
                         .groupBy(gameLog.userId)
                         .orderBy(gameLog.count().desc(), gameLog.occurredAt.max().desc());
 
-        // 전체 개수 조회 (페이징용)
-        long total = query.fetchCount();
+        // 전체 그룹 개수 조회 (페이징용) - groupBy 사용 시 fetch().size() 필요
+        long total =
+                queryFactory
+                        .select(gameLog.userId)
+                        .from(gameLog)
+                        .where(gameLog.fingerprint.eq(fingerprint).and(gameLog.userId.isNotNull()))
+                        .groupBy(gameLog.userId)
+                        .fetch()
+                        .size();
 
         // 페이징 적용하여 데이터 조회
         List<Tuple> results =
