@@ -28,9 +28,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await callApi(url);
             const items = res.data ?? [];
 
-            scopeDetailSelect.innerHTML = items
-                .map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`)
-                .join('');
+            if (items.length === 0) {
+                const emptyLabel = type === 'group' ? '그룹이 없습니다' : '카테고리가 없습니다';
+                scopeDetailSelect.innerHTML = `<option value="" disabled selected>${emptyLabel}</option>`;
+                scopeDetailSelect.disabled = true;
+            } else {
+                scopeDetailSelect.innerHTML = items
+                    .map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`)
+                    .join('');
+                scopeDetailSelect.disabled = false;
+            }
 
             scopeDetailWrapper.classList.remove('hidden');
         } catch (e) {
@@ -174,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 continue;
             }
             if (line.startsWith('data:')) {
-                dataLines.push(line.slice(5).trimStart());
+                dataLines.push(line.slice(5));
             }
         }
 
@@ -190,10 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleSseEvent(event, data, contentEl, refsEl, state) {
         switch (event) {
-            case 'token':
+            case 'token': {
+                const typingEl = contentEl.parentElement.querySelector('.ai-typing');
+                if (typingEl) typingEl.remove();
                 contentEl.textContent += data;
                 scrollToBottom();
                 break;
+            }
             case 'references':
                 try {
                     const refs = JSON.parse(data);
@@ -205,10 +215,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('참조문서 파싱 실패:', e);
                 }
                 break;
-            case 'error':
+            case 'error': {
+                const typingOnError = contentEl.parentElement.querySelector('.ai-typing');
+                if (typingOnError) typingOnError.remove();
                 contentEl.textContent += data;
                 contentEl.classList.add('text-red-500');
                 break;
+            }
             case 'done':
                 break;
         }
@@ -228,22 +241,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
         citedRefs.forEach((ref, i) => {
             const originalIndex = refs.indexOf(ref) + 1;
-            const previewText = ref.chunkText.length > 150
-                ? ref.chunkText.substring(0, 150) + '...'
-                : ref.chunkText;
-
             const pageInfo = ref.pageNumber ? ` - p.${ref.pageNumber}` : '';
 
             const refItem = document.createElement('div');
             refItem.className = 'flex flex-col gap-1 px-3 py-2 bg-gray-50 rounded-lg text-xs';
             refItem.innerHTML = `
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 cursor-pointer select-none" data-action="openRef">
                     <span class="font-semibold text-indigo-600">[${originalIndex}]</span>
                     <span class="font-medium text-gray-700">${escapeHtml(ref.documentName)}</span>
                     <span class="text-gray-400">${escapeHtml(ref.version ?? '')}${pageInfo}</span>
+                    <span class="ref-toggle text-gray-400 ml-auto">▼ 자세히</span>
                 </div>
-                <p class="text-gray-500 leading-relaxed">${escapeHtml(previewText)}</p>
+                <div class="ref-detail hidden">
+                    <p class="text-gray-500 leading-relaxed whitespace-pre-wrap">${escapeHtml(ref.chunkText)}</p>
+                    <div class="flex items-center justify-between mt-1">
+                        <a href="/projects/${publicId}/documents/${ref.documentId}"
+                           target="_blank"
+                           class="text-indigo-500 hover:text-indigo-700 hover:underline">문서 상세 →</a>
+                        <span class="ref-close cursor-pointer select-none text-gray-400 hover:text-gray-600">▲ 접기</span>
+                    </div>
+                </div>
             `;
+
+            const header = refItem.querySelector('[data-action="openRef"]');
+            const detail = refItem.querySelector('.ref-detail');
+            const toggleLabel = refItem.querySelector('.ref-toggle');
+            const closeBtn = refItem.querySelector('.ref-close');
+
+            header.addEventListener('click', () => {
+                detail.classList.toggle('hidden');
+                toggleLabel.textContent = detail.classList.contains('hidden') ? '▼ 자세히' : '';
+            });
+
+            closeBtn.addEventListener('click', () => {
+                detail.classList.add('hidden');
+                toggleLabel.textContent = '▼ 자세히';
+            });
+
             listEl.appendChild(refItem);
         });
     }
@@ -283,6 +317,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="max-w-2xl w-full">
                 <div class="bg-white rounded-2xl rounded-tl-sm px-5 py-3 shadow-sm border border-gray-100">
                     <p class="ai-content text-sm text-gray-800 whitespace-pre-wrap"></p>
+                    <div class="ai-typing flex items-center gap-1 py-1">
+                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                    </div>
                 </div>
                 <div class="ai-refs hidden mt-2">
                     <p class="text-xs font-medium text-gray-500 mb-1">참조 문서</p>

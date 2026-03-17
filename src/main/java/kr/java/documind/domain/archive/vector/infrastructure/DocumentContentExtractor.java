@@ -10,8 +10,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class DocumentContentExtractor {
 
-    public List<Document> read(Path tempFilePath) {
-        TikaDocumentReader reader = new TikaDocumentReader(new FileSystemResource(tempFilePath));
-        return reader.get();
+    public List<Document> extract(Path tempFilePath) {
+        if (isPdf(tempFilePath)) {
+            return new PdfDocumentReader(tempFilePath).get();
+        }
+        return new TikaDocumentReader(new FileSystemResource(tempFilePath)).get();
+    }
+
+    private boolean isPdf(Path path) {
+        return path.toString().toLowerCase().endsWith(".pdf");
     }
 }
