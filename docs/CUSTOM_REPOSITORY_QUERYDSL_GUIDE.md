@@ -529,7 +529,7 @@ public List<Issue> findAllWithComments() {
 public List<Issue> findAllWithComments() {
     return queryFactory
             .selectFrom(issue)
-            .leftJoin(issue.comments).fetchJoin()  // 한 번에 조회
+            .leftJoin(issue.issueComments).fetchJoin()  // 한 번에 조회
             .fetch();
 }
 ```

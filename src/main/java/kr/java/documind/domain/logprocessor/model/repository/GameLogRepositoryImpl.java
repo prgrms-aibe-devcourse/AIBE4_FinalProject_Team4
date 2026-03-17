@@ -4,7 +4,6 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -27,14 +26,13 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
 
-    private final EntityManager entityManager;
+    private final JPAQueryFactory queryFactory;
 
     @Override
     public Page<AffectedPlayerResponse> findAffectedPlayersByFingerprint(
             String fingerprint, UUID projectId, Pageable pageable) {
 
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        QGameLog gameLog = QGameLog.gameLog;
+                QGameLog gameLog = QGameLog.gameLog;
 
         // 집계 쿼리
         JPAQuery<Tuple> query =
@@ -90,8 +88,7 @@ public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
     public List<OccurrenceTrendResponse> findOccurrenceTrendByFingerprint(
             String fingerprint, UUID projectId, OffsetDateTime startDate, OffsetDateTime endDate) {
 
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        QGameLog gameLog = QGameLog.gameLog;
+                QGameLog gameLog = QGameLog.gameLog;
 
         // DATE(occurred_at) 함수를 사용하여 날짜별로 그룹화
         List<Tuple> results =

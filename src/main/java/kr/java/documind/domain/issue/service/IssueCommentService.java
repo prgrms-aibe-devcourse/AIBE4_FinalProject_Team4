@@ -10,7 +10,7 @@ import kr.java.documind.domain.issue.model.dto.request.CommentCreateRequest;
 import kr.java.documind.domain.issue.model.dto.request.CommentUpdateRequest;
 import kr.java.documind.domain.issue.model.dto.response.CommentResponse;
 import kr.java.documind.domain.issue.model.dto.response.MemberSimpleInfo;
-import kr.java.documind.domain.issue.model.entity.Comment;
+import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
@@ -73,10 +73,10 @@ public class IssueCommentService {
                 validateMentionedMembers(request.mentionedMemberIds(), projectId);
 
         // 3. Comment 엔티티 생성
-        Comment comment = Comment.create(issueId, authorId, request.content(), validatedMentionIds);
+        IssueComment issueComment = IssueComment.create(issueId, authorId, request.content(), validatedMentionIds);
 
         // 4. 저장
-        commentRepository.save(comment);
+        commentRepository.save(issueComment);
 
         log.info(
                 "[IssueCommentService] 댓글 생성: issueId={}, authorId={}, mentionCount={}",
@@ -89,7 +89,7 @@ public class IssueCommentService {
         // validatedMentionIds));
 
         // 6. 응답 생성
-        return buildCommentResponse(comment);
+        return buildCommentResponse(issueComment);
     }
 
     /**
@@ -111,13 +111,13 @@ public class IssueCommentService {
             CommentUpdateRequest request) {
 
         // 1. 댓글 조회
-        Comment comment =
+        IssueComment issueComment =
                 commentRepository
                         .findById(commentId)
                         .orElseThrow(() -> new NotFoundException("댓글을 찾을 수 없습니다: " + commentId));
 
         // 2. 이슈 일치 확인
-        if (!comment.getIssueId().equals(issueId)) {
+        if (!issueComment.getIssueId().equals(issueId)) {
             throw new BadRequestException("해당 이슈의 댓글이 아닙니다");
         }
 
@@ -132,7 +132,7 @@ public class IssueCommentService {
         }
 
         // 4. 작성자 본인 확인
-        if (!comment.getMemberId().equals(memberId)) {
+        if (!issueComment.getMemberId().equals(memberId)) {
             throw new ForbiddenException("자신이 작성한 댓글만 수정할 수 있습니다");
         }
 
@@ -141,7 +141,7 @@ public class IssueCommentService {
                 validateMentionedMembers(request.mentionedMemberIds(), projectId);
 
         // 6. 댓글 수정
-        comment.updateContent(request.content(), validatedMentionIds);
+        issueComment.updateContent(request.content(), validatedMentionIds);
 
         log.info(
                 "[IssueCommentService] 댓글 수정: commentId={}, memberId={}, mentionCount={}",
@@ -150,7 +150,7 @@ public class IssueCommentService {
                 validatedMentionIds.size());
 
         // 7. 응답 생성
-        return buildCommentResponse(comment);
+        return buildCommentResponse(issueComment);
     }
 
     /**
@@ -165,13 +165,13 @@ public class IssueCommentService {
     public void deleteComment(Long commentId, Long issueId, UUID projectId, UUID memberId) {
 
         // 1. 댓글 조회
-        Comment comment =
+        IssueComment issueComment =
                 commentRepository
                         .findById(commentId)
                         .orElseThrow(() -> new NotFoundException("댓글을 찾을 수 없습니다: " + commentId));
 
         // 2. 이슈 일치 확인
-        if (!comment.getIssueId().equals(issueId)) {
+        if (!issueComment.getIssueId().equals(issueId)) {
             throw new BadRequestException("해당 이슈의 댓글이 아닙니다");
         }
 
@@ -186,7 +186,7 @@ public class IssueCommentService {
         }
 
         // 4. 작성자 본인 확인
-        if (!comment.getMemberId().equals(memberId)) {
+        if (!issueComment.getMemberId().equals(memberId)) {
             throw new ForbiddenException("자신이 작성한 댓글만 삭제할 수 있습니다");
         }
 
@@ -221,19 +221,19 @@ public class IssueCommentService {
         }
 
         // 2. 댓글 목록 조회 (오래된 순)
-        List<Comment> comments = commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId);
+        List<IssueComment> issueComments = commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId);
 
         // 3. 페이지네이션 적용
         int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), comments.size());
-        List<Comment> pageComments =
-                start >= comments.size() ? List.of() : comments.subList(start, end);
+        int end = Math.min((start + pageable.getPageSize()), issueComments.size());
+        List<IssueComment> pageIssueComments =
+                start >= issueComments.size() ? List.of() : issueComments.subList(start, end);
 
         // 4. DTO 변환 (작성자 및 멘션 정보 포함)
         List<CommentResponse> responses =
-                pageComments.stream().map(this::buildCommentResponse).toList();
+                pageIssueComments.stream().map(this::buildCommentResponse).toList();
 
-        return new PageImpl<>(responses, pageable, comments.size());
+        return new PageImpl<>(responses, pageable, issueComments.size());
     }
 
     /**
@@ -271,32 +271,32 @@ public class IssueCommentService {
     /**
      * Comment 엔티티 → CommentResponse 변환 (작성자 및 멘션 정보 포함)
      *
-     * @param comment Comment 엔티티
+     * @param issueComment Comment 엔티티
      * @return CommentResponse
      */
-    private CommentResponse buildCommentResponse(Comment comment) {
+    private CommentResponse buildCommentResponse(IssueComment issueComment) {
         // 작성자 정보 조회
         Member author =
-                memberRepository.findById(comment.getMemberId()).orElse(null); // 탈퇴한 사용자일 수 있음
+                memberRepository.findById(issueComment.getMemberId()).orElse(null); // 탈퇴한 사용자일 수 있음
         MemberSimpleInfo authorInfo = author != null ? MemberSimpleInfo.from(author) : null;
 
         // 멘션된 사용자 정보 조회
         List<MemberSimpleInfo> mentionedMembers = List.of();
-        if (comment.getMentionedMemberIds() != null && !comment.getMentionedMemberIds().isEmpty()) {
-            List<Member> members = memberRepository.findAllById(comment.getMentionedMemberIds());
+        if (issueComment.getMentionedMemberIds() != null && !issueComment.getMentionedMemberIds().isEmpty()) {
+            List<Member> members = memberRepository.findAllById(issueComment.getMentionedMemberIds());
 
             // UUID 순서 보존을 위한 Map 사용
             Map<UUID, Member> memberMap =
                     members.stream().collect(Collectors.toMap(Member::getId, Function.identity()));
 
             mentionedMembers =
-                    comment.getMentionedMemberIds().stream()
+                    issueComment.getMentionedMemberIds().stream()
                             .map(memberMap::get)
                             .filter(m -> m != null) // 탈퇴한 사용자 제외
                             .map(MemberSimpleInfo::from)
                             .toList();
         }
 
-        return CommentResponse.from(comment, authorInfo, mentionedMembers);
+        return CommentResponse.from(issueComment, authorInfo, mentionedMembers);
     }
 }

@@ -10,7 +10,6 @@ import kr.java.documind.domain.issue.model.dto.request.CommentCreateRequest;
 import kr.java.documind.domain.issue.model.dto.request.CommentUpdateRequest;
 import kr.java.documind.domain.issue.model.dto.response.CommentResponse;
 import kr.java.documind.domain.issue.service.IssueCommentService;
-import kr.java.documind.global.annotation.RequireProjectMember;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.response.PageResponses;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
@@ -34,7 +33,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/projects/{projectId}/issues/{issueId}/comments")
 @RequiredArgsConstructor
-@RequireProjectMember
 public class IssueCommentApiController {
 
     private final IssueCommentService issueCommentService;

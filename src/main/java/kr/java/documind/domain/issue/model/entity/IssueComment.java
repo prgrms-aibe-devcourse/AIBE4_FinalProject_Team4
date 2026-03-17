@@ -23,13 +23,13 @@ import org.hibernate.annotations.Type;
  *
  * <p>이슈에 대한 협업 커뮤니케이션을 위한 댓글
  */
-@Entity(name = "comment")
-@Table(name = "comment")
+@Entity
+@Table(name = "issue_comment")
 @Getter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Comment {
+public class IssueComment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -70,10 +70,10 @@ public class Comment {
      * @param mentionedMemberIds 멘션된 사용자 ID 목록
      * @return Comment 엔티티
      */
-    public static Comment create(
+    public static IssueComment create(
             Long issueId, UUID memberId, String content, List<UUID> mentionedMemberIds) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-        return Comment.builder()
+        return IssueComment.builder()
                 .issueId(issueId)
                 .memberId(memberId)
                 .content(content)

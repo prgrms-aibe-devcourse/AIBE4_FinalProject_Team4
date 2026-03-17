@@ -3,7 +3,7 @@ package kr.java.documind.domain.issue.model.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.List;
-import kr.java.documind.domain.issue.model.entity.Comment;
+import kr.java.documind.domain.issue.model.entity.IssueComment;
 
 /**
  * 댓글 응답
@@ -22,20 +22,20 @@ public record CommentResponse(
     /**
      * Entity → DTO 변환 (작성자 정보 포함)
      *
-     * @param comment Comment 엔티티
+     * @param issueComment Comment 엔티티
      * @param author 작성자 정보
      * @param mentionedMembers 멘션된 사용자 목록
      * @return CommentResponse
      */
     public static CommentResponse from(
-            Comment comment, MemberSimpleInfo author, List<MemberSimpleInfo> mentionedMembers) {
+            IssueComment issueComment, MemberSimpleInfo author, List<MemberSimpleInfo> mentionedMembers) {
         return new CommentResponse(
-                comment.getId(),
-                comment.getIssueId(),
+                issueComment.getId(),
+                issueComment.getIssueId(),
                 author,
-                comment.getContent(),
+                issueComment.getContent(),
                 mentionedMembers,
-                comment.getCreatedAt(),
-                comment.getUpdatedAt());
+                issueComment.getCreatedAt(),
+                issueComment.getUpdatedAt());
     }
 }
