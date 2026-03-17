@@ -144,7 +144,7 @@ public class DocumentMetadata {
             String storedKey,
             boolean isProcessed,
             EmbeddingStatus embeddingStatus,
-            LocalDateTime uploadedAt) {
+            OffsetDateTime uploadedAt) {
         return new DocumentMetadata(
                 domainSource,
                 documentGroup,

@@ -8,7 +8,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentGroupManager;
@@ -63,7 +63,7 @@ class DocumentGroupServiceTest {
                 "stored/key",
                 false,
                 EmbeddingStatus.NONE,
-                LocalDateTime.now());
+                OffsetDateTime.now());
     }
 
     @Nested

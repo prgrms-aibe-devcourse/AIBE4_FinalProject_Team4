@@ -10,7 +10,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentFileStorage;
@@ -72,7 +72,7 @@ class DocumentMetadataServiceTest {
                 "stored/key",
                 false,
                 EmbeddingStatus.NONE,
-                LocalDateTime.now());
+                OffsetDateTime.now());
     }
 
     private MultipartFile mockFile(String filename) {

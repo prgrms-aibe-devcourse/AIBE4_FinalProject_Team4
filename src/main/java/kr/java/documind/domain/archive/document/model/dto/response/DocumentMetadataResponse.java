@@ -1,6 +1,5 @@
 package kr.java.documind.domain.archive.document.model.dto.response;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
