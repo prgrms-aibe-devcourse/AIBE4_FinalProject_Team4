@@ -2,7 +2,6 @@ package kr.java.documind.domain.logexplorer.model.enums;
 
 import java.util.Arrays;
 import java.util.Optional;
-
 import kr.java.documind.global.exception.InvalidQueryException;
 import lombok.Getter;
 
@@ -46,14 +45,11 @@ public enum QueryableColumn {
      */
     public static QueryableColumn parseColumn(String columnRef) {
         if (columnRef == null || columnRef.isBlank()) {
-            throw new InvalidQueryException(
-                    "컬럼명이 비어있습니다.");
+            throw new InvalidQueryException("컬럼명이 비어있습니다.");
         }
         String baseName = columnRef.contains(".") ? columnRef.split("\\.")[0] : columnRef;
         return fromDbName(baseName)
-                .orElseThrow(
-                        () ->
-                                new InvalidQueryException("허용되지 않는 컬럼: " + baseName));
+                .orElseThrow(() -> new InvalidQueryException("허용되지 않는 컬럼: " + baseName));
     }
 
     /**
@@ -69,8 +65,7 @@ public enum QueryableColumn {
         String[] path = java.util.Arrays.copyOfRange(parts, 1, parts.length);
         for (String segment : path) {
             if (!JSONB_SEGMENT_PATTERN.matcher(segment).matches()) {
-                throw new InvalidQueryException(
-                        "유효하지 않은 JSONB 경로 세그먼트: " + segment);
+                throw new InvalidQueryException("유효하지 않은 JSONB 경로 세그먼트: " + segment);
             }
         }
         return path;
@@ -79,8 +74,7 @@ public enum QueryableColumn {
     /** alias가 허용 패턴인지 검증 */
     public static void validateAlias(String alias) {
         if (alias != null && !alias.isBlank() && !ALIAS_PATTERN.matcher(alias).matches()) {
-            throw new InvalidQueryException(
-                    "유효하지 않은 alias: " + alias);
+            throw new InvalidQueryException("유효하지 않은 alias: " + alias);
         }
     }
 }

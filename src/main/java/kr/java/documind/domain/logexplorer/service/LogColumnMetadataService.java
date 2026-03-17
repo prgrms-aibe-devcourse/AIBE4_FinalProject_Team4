@@ -36,9 +36,7 @@ public class LogColumnMetadataService {
                         .map(
                                 col ->
                                         new ColumnMeta(
-                                                col.getDbName(),
-                                                col.getDataType(),
-                                                col.isJsonb()))
+                                                col.getDbName(), col.getDataType(), col.isJsonb()))
                         .toList();
 
         Map<String, List<String>> jsonbKeys =
