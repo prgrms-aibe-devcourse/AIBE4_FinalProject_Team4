@@ -48,7 +48,7 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
 
         String selectClause = buildSelectClause(request.selects());
         String whereClause = buildWhereClause(request, projectId, params);
-        String groupByClause = buildGroupByClause(request.groupBy());
+        String groupByClause = buildGroupByClause(request.groupBy(), request.selects());
 
         // Global Aggregation (GROUP BY 없이 집계 함수만 사용) 시 ORDER BY 불가 — SQL 표준 위반
         boolean isGlobalAggregation = isGlobalAggregation(request.selects(), request.groupBy());
@@ -278,12 +278,33 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
     // GROUP BY / ORDER BY 빌더
     // ──────────────────────────────────────────────────────────────────────────
 
-    private String buildGroupByClause(List<String> groupBy) {
-        if (groupBy == null || groupBy.isEmpty()) {
+    private String buildGroupByClause(List<String> groupBy, List<SelectField> selects) {
+        java.util.Set<String> groupColumns = new java.util.LinkedHashSet<>();
+
+        if (groupBy != null) {
+            groupColumns.addAll(groupBy);
+        }
+
+        // DB에서 에러가 발생하는 것을 방지하기 위해 쿼리에 집계 함수가 하나라도 존재한다면,
+        // SELECT 항목 중 집계 함수가 없는 '일반 컬럼'들을 모두 수집하여 GROUP BY 절에 강제 포함시킴
+        boolean hasAggregation =
+                selects != null && selects.stream().anyMatch(s -> s.aggregation() != null);
+        if (hasAggregation && selects != null) {
+            for (SelectField field : selects) {
+                if (field.aggregation() == null
+                        && field.column() != null
+                        && !field.column().isBlank()) {
+                    groupColumns.add(field.column());
+                }
+            }
+        }
+
+        if (groupColumns.isEmpty()) {
             return "";
         }
+
         String cols =
-                groupBy.stream().map(this::resolveColumnRef).collect(Collectors.joining(", "));
+                groupColumns.stream().map(this::resolveColumnRef).collect(Collectors.joining(", "));
         return " GROUP BY " + cols;
     }
 

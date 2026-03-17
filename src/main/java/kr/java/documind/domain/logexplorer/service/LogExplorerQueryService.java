@@ -103,19 +103,41 @@ public class LogExplorerQueryService {
     }
 
     private void validateGroupBy(List<String> groupBy, List<SelectField> selects) {
-        if (groupBy == null || groupBy.isEmpty()) {
-            return;
-        }
-        // GROUP BY 사용 시 SELECT에 집계 함수가 있어야 유의미
-        if (selects == null || selects.isEmpty()) {
-            throw new InvalidQueryException("GROUP BY를 사용할 때는 SELECT 항목(집계 함수 포함)을 명시해야 합니다.");
-        }
-        boolean hasAggregation = selects.stream().anyMatch(s -> s.aggregation() != null);
-        if (!hasAggregation) {
+        boolean hasGroupBy = groupBy != null && !groupBy.isEmpty();
+        boolean hasAggregation =
+                selects != null && selects.stream().anyMatch(s -> s.aggregation() != null);
+
+        if (hasGroupBy && !hasAggregation) {
             throw new InvalidQueryException("GROUP BY를 사용할 때는 최소 하나의 집계 함수가 SELECT에 포함되어야 합니다.");
         }
-        for (String col : groupBy) {
-            QueryableColumn.parseColumn(col); // 화이트리스트 검증
+
+        // 집계 함수가 쿼리에 포함되어 있을 때, 비집계 컬럼(일반 컬럼)이 문법에 맞게 쓰였는지 철저히 검사
+        if (hasAggregation && selects != null) {
+            for (SelectField field : selects) {
+                boolean isNonAggregated =
+                        field.aggregation() == null
+                                && field.column() != null
+                                && !field.column().isBlank();
+
+                if (isNonAggregated) {
+                    if (hasGroupBy && !groupBy.contains(field.column())) {
+                        // 에러 케이스 1: GROUP BY를 썼는데, SELECT 절의 일반 컬럼이 GROUP BY 목록에 누락된 경우
+                        throw new InvalidQueryException(
+                                "집계 함수와 함께 조회하는 일반 컬럼은 반드시 GROUP BY 절에 명시해야 합니다: "
+                                        + field.column());
+                    } else if (!hasGroupBy) {
+                        // 에러 케이스 2: GROUP BY 없이 전체 집계(COUNT 등)를 하면서 일반 컬럼을 같이 조회하려는 경우
+                        throw new InvalidQueryException(
+                                "GROUP BY 없이 집계 함수를 사용할 때 일반 컬럼을 함께 조회할 수 없습니다: " + field.column());
+                    }
+                }
+            }
+        }
+
+        if (hasGroupBy) {
+            for (String col : groupBy) {
+                QueryableColumn.parseColumn(col); // 화이트리스트 검증
+            }
         }
     }
 }
