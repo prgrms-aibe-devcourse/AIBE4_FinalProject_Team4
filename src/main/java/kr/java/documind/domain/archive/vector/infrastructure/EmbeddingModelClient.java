@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class EmbeddingModelClient {
 
     private static final int BATCH_SIZE = 50;
-    private static final long BATCH_DELAY_MS = 5_000;
+    private static final long BATCH_DELAY_MS = 1_000;
 
     private final EmbeddingModel embeddingModel;
 
