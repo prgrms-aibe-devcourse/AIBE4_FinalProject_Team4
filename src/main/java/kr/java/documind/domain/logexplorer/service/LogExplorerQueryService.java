@@ -46,13 +46,13 @@ public class LogExplorerQueryService {
         if (request.from() == null || request.to() == null) {
             return;
         }
+        if (request.from().isAfter(request.to())) {
+            throw new InvalidQueryException("from은 to보다 이전 시각이어야 합니다.");
+        }
         Duration range = Duration.between(request.from(), request.to());
         if (range.toDays() > MAX_RANGE_DAYS) {
             throw new QueryComplexityException(
                     "조회 시간 범위는 최대 " + MAX_RANGE_DAYS + "일입니다. 요청된 범위: " + range.toDays() + "일");
-        }
-        if (request.from().isAfter(request.to())) {
-            throw new InvalidQueryException("from은 to보다 이전 시각이어야 합니다.");
         }
     }
 
