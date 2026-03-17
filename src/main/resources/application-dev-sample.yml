@@ -183,6 +183,11 @@ app:
   mail:
     from-address: ${GMAIL_FROM_ADDRESS}
 
+  patchnote:
+    rag:
+      token-limit: 6000
+      prompt-overhead: 800
+
 worker:
   # 배치 처리 설정
   bulk:

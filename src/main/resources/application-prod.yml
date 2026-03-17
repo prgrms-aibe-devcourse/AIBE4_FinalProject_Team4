@@ -25,17 +25,17 @@ spring:
       database: 0
 
   mail:
-      host: smtp.gmail.com
-      port: 587
-      username: ${GMAIL_USERNAME}
-      password: ${GMAIL_APP_PASSWORD}
-      properties:
-          mail:
-              smtp:
-                  auth: true
-                  starttls:
-                      enable: true
-                      required: true
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME}
+    password: ${GMAIL_APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
   cloud:
     aws:
@@ -70,15 +70,15 @@ spring:
         dimensions: 1536 # 임베딩 벡터 차원 (text-embedding-3-large 축소)
 
 redis:
-    stream:
-        key: ${REDIS_STREAM_KEY:stream:log-stream}
-        group: ${REDIS_STREAM_GROUP:log-group}
-        consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
+  stream:
+    key: ${REDIS_STREAM_KEY:stream:log-stream}
+    group: ${REDIS_STREAM_GROUP:log-group}
+    consumer: ${REDIS_STREAM_CONSUMER:log-consumer-1}
 
-        # 향후 스트림 전용 ElastiCache 도입 시 코드를 분리하기 위한 설정
-        # 기본값은 REDIS_HOST를 따라가게 하여 1개일 때도 작동함
-        host: ${STREAM_REDIS_HOST:${REDIS_HOST:redis}}
-        port: ${STREAM_REDIS_PORT:${REDIS_PORT:6379}}
+    # 향후 스트림 전용 ElastiCache 도입 시 코드를 분리하기 위한 설정
+    # 기본값은 REDIS_HOST를 따라가게 하여 1개일 때도 작동함
+    host: ${STREAM_REDIS_HOST:${REDIS_HOST:redis}}
+    port: ${STREAM_REDIS_PORT:${REDIS_PORT:6379}}
 
 management:
   endpoints:
@@ -141,14 +141,19 @@ app:
     redis-prefix: "ratelimit:"
 
   api-key:
-      hmac-secret: ${API_KEY_HMAC_SECRET}
+    hmac-secret: ${API_KEY_HMAC_SECRET}
 
   invitation:
-      expiration-hours: 72
-      hmac-secret: ${INVITATION_HMAC_SECRET}
+    expiration-hours: 72
+    hmac-secret: ${INVITATION_HMAC_SECRET}
 
   mail:
-      from-address: ${GMAIL_FROM_ADDRESS}
+    from-address: ${GMAIL_FROM_ADDRESS}
+
+  patchnote:
+    rag:
+      token-limit: 12000
+      prompt-overhead: 800
 
 logging:
   level:
