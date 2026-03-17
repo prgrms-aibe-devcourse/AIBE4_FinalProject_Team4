@@ -1,0 +1,7 @@
+# Dockerfile.postgres
+FROM pgvector/pgvector:pg16
+
+# root 권한으로 pg_bigm 확장 라이브러리 설치
+RUN apt-get update \
+    && apt-get install -y postgresql-16-pg-bigm \
+    && rm -rf /var/lib/apt/lists/*
