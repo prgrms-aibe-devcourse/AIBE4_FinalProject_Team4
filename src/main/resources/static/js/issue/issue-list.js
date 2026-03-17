@@ -430,7 +430,7 @@ async function approveRecommendation(recommendationId) {
         });
 
         if (body.success) {
-            alert('추천이 승인되어 이슈로 생성되었습니다.');
+            showTopToast('추천이 승인되어 이슈로 생성되었습니다.', 'success');
             loadRecommendationList();
         } else {
             showError(body.error?.message || '승인에 실패했습니다.');
@@ -485,7 +485,7 @@ async function approveFromDetail() {
 
         if (body.success) {
             closeModal('recommendationDetailModal');
-            alert('추천이 승인되어 이슈로 생성되었습니다.');
+            showTopToast('추천이 승인되어 이슈로 생성되었습니다.', 'success');
             loadRecommendationList();
         } else {
             showError(body.error?.message || '승인에 실패했습니다.');
@@ -516,7 +516,7 @@ async function confirmReject() {
 
         if (body.success) {
             closeModal('rejectConfirmModal');
-            alert('추천이 거부되었습니다.');
+            showTopToast('추천이 거부되었습니다.', 'success');
             loadRecommendationList();
         } else {
             showError(body.error?.message || '거부에 실패했습니다.');
@@ -759,7 +759,7 @@ async function submitAssign() {
         if (body.success) {
             closeModal('assignModal');
             loadIssueList();
-            alert('담당자가 지정되었습니다.');
+            showTopToast('담당자가 지정되었습니다.', 'success');
         } else {
             errorEl.textContent = body.error?.message || '담당자 지정에 실패했습니다.';
             errorEl.classList.remove('hidden');
@@ -803,7 +803,7 @@ async function submitStatusChange() {
         if (body.success) {
             closeModal('statusModal');
             loadIssueList();
-            alert('이슈 상태가 변경되었습니다.');
+            showTopToast('이슈 상태가 변경되었습니다.', 'success');
         } else {
             errorEl.textContent = body.error?.message || '상태 변경에 실패했습니다.';
             errorEl.classList.remove('hidden');
@@ -919,5 +919,5 @@ function getPriorityBadge(priority) {
 }
 
 function showError(message) {
-    alert(message);
+    showTopToast(message, 'danger');
 }

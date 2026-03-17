@@ -1106,12 +1106,12 @@ function submitComment() {
     const commentText = document.getElementById('newComment').value.trim();
 
     if (!commentText) {
-        alert('댓글 내용을 입력하세요.');
+        showTopToast('댓글 내용을 입력하세요.', 'warning');
         return;
     }
 
     // TODO: Phase 3에서 댓글 API 연동
-    alert('댓글 기능은 곧 추가될 예정입니다.');
+    showTopToast('댓글 기능은 곧 추가될 예정입니다.', 'info');
     document.getElementById('newComment').value = '';
 }
 
@@ -1163,7 +1163,7 @@ async function submitStatusChange() {
 
         if (body.success) {
             closeModal('statusModal');
-            alert('이슈 상태가 변경되었습니다.');
+            showTopToast('이슈 상태가 변경되었습니다.', 'success');
             loadIssueDetail(); // 새로고침
         } else {
             errorEl.textContent = body.error?.message || '상태 변경에 실패했습니다.';
@@ -1227,7 +1227,7 @@ function shareIssue() {
 
     if (navigator.clipboard) {
         navigator.clipboard.writeText(url).then(() => {
-            alert('이슈 URL이 복사되었습니다.');
+            showTopToast('이슈 URL이 복사되었습니다.', 'success');
         }).catch(() => {
             prompt('이슈 URL:', url);
         });
@@ -1245,5 +1245,5 @@ function closeModal(modalId) {
 }
 
 function showError(message) {
-    alert(message);
+    showTopToast(message, 'danger');
 }
