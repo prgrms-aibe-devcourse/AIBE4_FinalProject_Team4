@@ -13,8 +13,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
-import kr.java.documind.domain.auth.model.enums.ApiKeyType;
-import kr.java.documind.domain.auth.service.ProjectApiKeyValidationService;
 import kr.java.documind.domain.auth.web.ProjectContextHolder;
 import kr.java.documind.global.annotation.QueryRateLimit;
 import kr.java.documind.global.exception.TooManyRequestsException;
@@ -42,7 +40,6 @@ public class QueryRateLimitInterceptor implements HandlerInterceptor {
     public static final String HEADER_REMAINING_QUERY_TOKEN = "Remaining-Query-Token";
 
     private final ProxyManager<String> proxyManager;
-    private final ProjectApiKeyValidationService apiKeyValidationService;
 
     @Value("${app.rate-limit.query.capacity:20}")
     private int capacity;
@@ -94,19 +91,14 @@ public class QueryRateLimitInterceptor implements HandlerInterceptor {
         // 외부 API 접근: 컨텍스트가 없다면 헤더의 API Key 검증
         String apiKey = request.getHeader(HEADER_API_KEY);
         if (StringUtils.hasText(apiKey)) {
-            // 반드시 '조회 전용(QUERY)' 키인지 타입 검증 수행
-            UUID projectId = apiKeyValidationService.getProjectIdByApiKey(apiKey, ApiKeyType.QUERY);
-
-            if (projectId != null) {
-                // API Key 기반 접근 시 컨트롤러 파라미터 매핑을 위해 Request Attribute에 백업
-                request.setAttribute("projectId", projectId);
-                return projectId;
-            }
-            throw new UnauthorizedException("유효하지 않거나 정지된 API Key입니다.");
+            // TODO: 향후 외부 시스템 연동을 위해 API-KEY 기반 조회 기능이 필요할 경우 하이브리드 인증 로직을 구현
+            // 현재는 보안을 유지하기 위해 API Key 조회를 원천 차단함
+            log.warn("API Key를 통한 로그 조회 시도 차단됨");
+            throw new UnauthorizedException("현재 API Key를 통한 로그 조회가 허용되지 않습니다. 웹 콘솔을 이용해 주세요.");
         }
 
         // 세션도 없고 API Key도 없는 경우
-        throw new UnauthorizedException("로그 조회를 위한 인증 정보(세션 또는 API Key)가 존재하지 않습니다.");
+        throw new UnauthorizedException("로그 조회를 위한 인증 정보가 존재하지 않습니다.");
     }
 
     private BucketConfiguration createBucketConfiguration() {
