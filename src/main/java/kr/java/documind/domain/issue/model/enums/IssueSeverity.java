@@ -112,6 +112,20 @@ public enum IssueSeverity {
     }
 
     /**
+     * 화면 표시용 레이블 (P1, P2, P3, P4 형식)
+     *
+     * @return 표시 이름
+     */
+    public String getDisplayLabel() {
+        return switch (this) {
+            case CRITICAL -> "P1 긴급";
+            case HIGH -> "P2 높음";
+            case MEDIUM -> "P3 보통";
+            case LOW -> "P4 낮음";
+        };
+    }
+
+    /**
      * DB에 저장할 때 사용 (VARCHAR 컬럼)
      *
      * @return 심각도 문자열 (대문자)

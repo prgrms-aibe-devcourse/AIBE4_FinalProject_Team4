@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
+import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.IssueType;
@@ -63,8 +64,9 @@ public class Issue {
     @Builder.Default
     private IssueStatus status = IssueStatus.TODO;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private String priority;
+    private IssuePriority priority;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -191,7 +193,7 @@ public class Issue {
      *
      * @param priority 우선순위
      */
-    public void setPriority(String priority) {
+    public void setPriority(IssuePriority priority) {
         this.priority = priority;
         this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }

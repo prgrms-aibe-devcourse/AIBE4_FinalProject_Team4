@@ -796,7 +796,22 @@ function renderMetaInfo(issue) {
         `;
     }
 
-    document.getElementById('priorityInfo').textContent = issue.priority || 'N/A';
+    // 우선순위 표시
+    const priorityInfoEl = document.getElementById('priorityInfo');
+    priorityInfoEl.dataset.priority = issue.priority || '';
+    if (issue.priority) {
+        const priorityMap = {
+            P1: { label: 'P1 긴급', color: 'bg-red-100 text-red-700' },
+            P2: { label: 'P2 높음', color: 'bg-orange-100 text-orange-700' },
+            P3: { label: 'P3 보통', color: 'bg-yellow-100 text-yellow-700' },
+            P4: { label: 'P4 낮음', color: 'bg-gray-100 text-gray-700' }
+        };
+        const { label, color } = priorityMap[issue.priority] || { label: issue.priority, color: 'bg-gray-100 text-gray-700' };
+        priorityInfoEl.innerHTML = `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
+    } else {
+        priorityInfoEl.innerHTML = '<span class="text-xs text-gray-400">미설정</span>';
+    }
+
     document.getElementById('occurrenceCount').textContent = `${issue.occurrenceCount}회`;
     document.getElementById('firstOccurred').textContent = formatDateTime(issue.firstOccurredAt);
     document.getElementById('lastOccurred').textContent = formatDateTime(issue.lastOccurredAt);
@@ -994,6 +1009,13 @@ async function saveAssigneeChange() {
         return;
     }
 
+    // 현재 담당자와 동일한 경우 검증
+    if (currentAssignee && currentAssignee.memberId === selectedAssigneeId) {
+        errorEl.textContent = '이미 해당 담당자로 지정되어 있습니다.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
     try {
         const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/assignee`, {
             method: 'PUT',
@@ -1001,9 +1023,73 @@ async function saveAssigneeChange() {
         });
 
         if (body.success) {
+            cancelAssigneeEdit(); // 편집 모드 닫기
             loadIssueDetail(); // 새로고침
         } else {
             errorEl.textContent = body.error?.message || '담당자 변경에 실패했습니다.';
+            errorEl.classList.remove('hidden');
+        }
+    } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 우선순위 변경
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function enterPriorityEditMode() {
+    // 표시 모드 숨기고 편집 모드 표시
+    document.getElementById('priorityDisplay').classList.add('hidden');
+    document.getElementById('priorityEdit').classList.remove('hidden');
+
+    // 현재 우선순위 선택
+    const currentPriority = document.getElementById('priorityInfo').dataset.priority;
+    const select = document.getElementById('prioritySelect');
+    if (currentPriority) {
+        select.value = currentPriority;
+    }
+}
+
+function cancelPriorityEdit() {
+    // 편집 모드 숨기고 표시 모드 표시
+    document.getElementById('priorityEdit').classList.add('hidden');
+    document.getElementById('priorityDisplay').classList.remove('hidden');
+    document.getElementById('priorityEditError').classList.add('hidden');
+}
+
+async function savePriorityChange() {
+    const selectedPriority = document.getElementById('prioritySelect').value;
+    const errorEl = document.getElementById('priorityEditError');
+
+    errorEl.classList.add('hidden');
+
+    if (!selectedPriority) {
+        errorEl.textContent = '우선순위를 선택하세요.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    // 현재 우선순위와 동일한 경우 검증
+    const currentPriority = document.getElementById('priorityInfo').dataset.priority;
+    if (currentPriority === selectedPriority) {
+        errorEl.textContent = '이미 해당 우선순위로 설정되어 있습니다.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/priority`, {
+            method: 'PUT',
+            body: JSON.stringify({ priority: selectedPriority })
+        });
+
+        if (body.success) {
+            cancelPriorityEdit(); // 편집 모드 닫기
+            loadIssueDetail(); // 새로고침
+        } else {
+            errorEl.textContent = body.error?.message || '우선순위 변경에 실패했습니다.';
             errorEl.classList.remove('hidden');
         }
     } catch (err) {

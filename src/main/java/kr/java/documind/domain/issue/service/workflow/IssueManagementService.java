@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.issue.event.IssueResolvedEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
@@ -43,14 +44,19 @@ public class IssueManagementService {
     public void assignIssue(Long issueId, UUID projectId, UUID assigneeId, UUID modifierId) {
         Issue issue = getIssueAndVerifyProject(issueId, projectId);
 
+        UUID beforeAssigneeId = issue.getAssigneeId();
+
+        // 동일한 담당자로 변경 시도 시 예외
+        if (beforeAssigneeId != null && beforeAssigneeId.equals(assigneeId)) {
+            throw new BadRequestException("이미 해당 담당자로 지정되어 있습니다.");
+        }
+
         // 담당자가 프로젝트 멤버인지 검증
         if (assigneeId != null
                 && !projectMemberRepository.existsByProject_IdAndMember_IdAndStatus(
                         projectId, assigneeId, AccountStatus.ACTIVE)) {
             throw new BadRequestException("담당자가 프로젝트 멤버가 아닙니다: " + assigneeId);
         }
-
-        UUID beforeAssigneeId = issue.getAssigneeId();
 
         // 담당자 할당
         issue.assignTo(assigneeId);
@@ -111,6 +117,33 @@ public class IssueManagementService {
                             modifierId);
             eventPublisher.publishEvent(event);
         }
+    }
+
+    /**
+     * 이슈 우선순위 변경
+     *
+     * @param issueId 이슈 ID
+     * @param projectId 프로젝트 ID
+     * @param newPriority 변경할 우선순위
+     * @param modifierId 변경자 멤버 ID
+     */
+    @Transactional
+    public void updateIssuePriority(
+            Long issueId, UUID projectId, IssuePriority newPriority, UUID modifierId) {
+        Issue issue = getIssueAndVerifyProject(issueId, projectId);
+
+        IssuePriority beforePriority = issue.getPriority();
+
+        // 동일한 우선순위로 변경 시도 시 예외
+        if (beforePriority == newPriority) {
+            throw new BadRequestException("이미 해당 우선순위로 설정되어 있습니다.");
+        }
+
+        // 우선순위 변경
+        issue.setPriority(newPriority);
+
+        // 이력 저장
+        historyService.savePriorityChange(issueId, modifierId, beforePriority, newPriority);
     }
 
     /**
