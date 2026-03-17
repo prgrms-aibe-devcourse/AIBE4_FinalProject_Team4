@@ -3,7 +3,8 @@ package kr.java.documind.domain.archive.document.service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -227,7 +228,7 @@ public class DocumentMetadataService {
                                 .storedKey(storeResult.storedKey())
                                 .isProcessed(isProcessed)
                                 .embeddingStatus(EmbeddingStatus.NONE)
-                                .uploadedAt(LocalDateTime.now())
+                                .uploadedAt(OffsetDateTime.now(ZoneOffset.UTC))
                                 .build());
 
         handleEmbeddingAfterSave(documentMetadata, file, extension, false);
