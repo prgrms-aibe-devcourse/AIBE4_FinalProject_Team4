@@ -53,6 +53,7 @@ public class ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectApiKeyRepository projectApiKeyRepository;
     private final MemberService memberService;
+    private final kr.java.documind.domain.member.model.repository.MemberRepository memberRepository;
     private final FileStore fileStore;
     private final PlatformTransactionManager txManager;
 
@@ -529,6 +530,38 @@ public class ProjectService {
                         pm ->
                                 kr.java.documind.domain.member.model.dto.ProjectMemberSimpleResponse
                                         .of(pm.getMember().getId(), pm.getMember().getNickname()))
+                .toList();
+    }
+
+    /**
+     * 프로젝트 멤버 닉네임 검색 (멘션 자동완성용)
+     *
+     * @param projectId 프로젝트 ID
+     * @param query 검색 쿼리 (닉네임 부분 일치)
+     * @param limit 최대 결과 수
+     * @return 매칭된 멤버 목록
+     */
+    public List<kr.java.documind.domain.member.model.dto.ProjectMemberSimpleResponse>
+            searchProjectMembersByNickname(UUID projectId, String query, int limit) {
+        Project project =
+                projectRepository
+                        .findById(projectId)
+                        .orElseThrow(() -> new ProjectNotFoundException());
+
+        if (project.isDeleted()) {
+            throw new DeletedProjectException();
+        }
+
+        List<Member> members =
+                memberRepository.searchProjectMembersByNickname(
+                        projectId, query, AccountStatus.ACTIVE);
+
+        return members.stream()
+                .limit(limit)
+                .map(
+                        m ->
+                                kr.java.documind.domain.member.model.dto.ProjectMemberSimpleResponse
+                                        .of(m.getId(), m.getNickname()))
                 .toList();
     }
 }

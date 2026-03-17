@@ -40,4 +40,26 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
                     + "AND m.globalRole = :role")
     List<Member> findByCompanyIdInAndGlobalRole(
             @Param("companyIds") List<Long> companyIds, @Param("role") GlobalRole role);
+
+    /**
+     * 프로젝트 멤버 중 닉네임으로 검색 (멘션 자동완성용)
+     *
+     * @param projectId 프로젝트 ID
+     * @param nickname 검색할 닉네임 (부분 일치)
+     * @param status 멤버 상태
+     * @return 매칭된 멤버 목록
+     */
+    @Query(
+            """
+            SELECT m FROM Member m
+            JOIN ProjectMember pm ON pm.member.id = m.id
+            WHERE pm.project.id = :projectId
+              AND pm.status = :status
+              AND m.nickname LIKE CONCAT('%', :nickname, '%')
+            ORDER BY m.nickname ASC
+            """)
+    List<Member> searchProjectMembersByNickname(
+            @Param("projectId") UUID projectId,
+            @Param("nickname") String nickname,
+            @Param("status") AccountStatus status);
 }
