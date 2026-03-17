@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * 로그 탐색기 조회 요청.
@@ -23,8 +24,8 @@ import java.util.List;
  * @param offset 페이징 오프셋 (기본 0).
  */
 public record LogQueryRequest(
-        @NotNull OffsetDateTime from,
-        @NotNull OffsetDateTime to,
+        @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
+        @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
         @NotNull String timeField,
         @Size(max = 10) @Valid List<SelectField> selects,
         @Size(max = 10) @Valid List<WhereFilter> wheres,

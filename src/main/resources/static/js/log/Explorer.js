@@ -127,6 +127,29 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ── Time Picker ────────────────────────────────────────────────────────
+        // 사용자의 로컬 시간대에 맞춰 datetime-local에 들어갈 수 있는 형식(YYYY-MM-DDTHH:mm)으로 변환
+        toLocalISOString(date) {
+            const tzOffset = date.getTimezoneOffset() * 60000; // offset in milliseconds
+            const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16);
+            return localISOTime;
+        },
+
+        // 백엔드로 보낼 때 ISO 8601 형식(시간대 포함)으로 변환
+        // datetime-local의 값(예: "2026-03-17T14:00")에 브라우저의 시간대(예: "+09:00")를 결합
+        toOffsetDateTimeString(localDateTimeStr) {
+            if (!localDateTimeStr) return null;
+            const date = new Date(localDateTimeStr);
+            if (isNaN(date.getTime())) return null;
+
+            const tzOffset = -date.getTimezoneOffset();
+            const diff = tzOffset >= 0 ? '+' : '-';
+            const pad = num => `${Math.floor(Math.abs(num))}`.padStart(2, '0');
+            const timezoneString = diff + pad(tzOffset / 60) + ':' + pad(tzOffset % 60);
+
+            // "2026-03-17T14:00:00+09:00" 형식으로 조립
+            return localDateTimeStr + ':00' + timezoneString;
+        },
+
         applyRelativeRange(range) {
             const now = new Date();
             const from = new Date(now);
@@ -139,8 +162,8 @@ document.addEventListener('alpine:init', () => {
                 case '30d': from.setDate(from.getDate() - 30); break;
                 default:    from.setHours(from.getHours() - 1);
             }
-            this.query.from = from.toISOString();
-            this.query.to = now.toISOString();
+            this.query.from = this.toLocalISOString(from);
+            this.query.to = this.toLocalISOString(now);
         },
 
         formatDateTime(iso) {
@@ -160,8 +183,8 @@ document.addEventListener('alpine:init', () => {
             const offset = loadMore ? this.results.currentOffset : 0;
 
             const payload = {
-                from: this.query.from,
-                to: this.query.to,
+                from: this.toOffsetDateTimeString(this.query.from),
+                to: this.toOffsetDateTimeString(this.query.to),
                 timeField: this.query.timeField,
                 selects: this.query.selects.map(({ id, ...rest }) => rest),
                 wheres: this.query.wheres.map(({ id, ...rest }) => rest),
