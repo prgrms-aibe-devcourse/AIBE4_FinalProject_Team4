@@ -8,7 +8,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import kr.java.documind.domain.auth.model.enums.ApiKeyType;
 import kr.java.documind.domain.member.model.enums.ApiKeyStatus;
 import kr.java.documind.global.entity.BaseEntity;
@@ -43,8 +44,8 @@ public class ProjectApiKey extends BaseEntity {
     @Column(name = "key_last4", nullable = false, length = 4)
     private String keyLast4;
 
-    @Column(name = "revoked_at")
-    private LocalDateTime revokedAt;
+    @Column(name = "revoked_at", columnDefinition = "TIMESTAMPTZ")
+    private OffsetDateTime revokedAt;
 
     public static ProjectApiKey create(
             Project project,
@@ -68,7 +69,7 @@ public class ProjectApiKey extends BaseEntity {
 
     public void revoke() {
         this.apiKeyStatus = ApiKeyStatus.REVOKED;
-        this.revokedAt = LocalDateTime.now();
+        this.revokedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     public void activate() {

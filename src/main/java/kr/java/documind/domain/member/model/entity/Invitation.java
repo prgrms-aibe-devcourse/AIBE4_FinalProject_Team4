@@ -8,7 +8,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.domain.auth.model.enums.ProjectRole;
 import kr.java.documind.domain.member.model.enums.InvitationStatus;
@@ -47,14 +48,14 @@ public class Invitation extends UuidBaseEntity {
     @Column(nullable = false, length = 20)
     private InvitationStatus status;
 
-    @Column(name = "used_at")
-    private LocalDateTime usedAt;
+    @Column(name = "used_at", columnDefinition = "TIMESTAMPTZ")
+    private OffsetDateTime usedAt;
 
-    @Column(name = "revoked_at")
-    private LocalDateTime revokedAt;
+    @Column(name = "revoked_at", columnDefinition = "TIMESTAMPTZ")
+    private OffsetDateTime revokedAt;
 
-    @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    @Column(name = "expires_at", nullable = false, columnDefinition = "TIMESTAMPTZ")
+    private OffsetDateTime expiresAt;
 
     // member 파라미터 없음: 초대 발송 시점에 수신자가 신규 유저일 수 있어 member 미확정
     public static Invitation create(
@@ -62,7 +63,7 @@ public class Invitation extends UuidBaseEntity {
             Member inviter,
             String targetEmail,
             ProjectRole targetRole,
-            LocalDateTime expiresAt) {
+            OffsetDateTime expiresAt) {
         Invitation invitation = new Invitation();
         invitation.project = project;
         invitation.inviter = inviter;
@@ -77,12 +78,12 @@ public class Invitation extends UuidBaseEntity {
     public void use(Member member) {
         this.member = member;
         this.status = InvitationStatus.USED;
-        this.usedAt = LocalDateTime.now();
+        this.usedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     public void revoke() {
         this.status = InvitationStatus.REVOKED;
-        this.revokedAt = LocalDateTime.now();
+        this.revokedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     public void expire() {
@@ -95,6 +96,6 @@ public class Invitation extends UuidBaseEntity {
 
     public boolean isExpired() {
         return this.status == InvitationStatus.EXPIRED
-                || LocalDateTime.now().isAfter(this.expiresAt);
+                || OffsetDateTime.now(ZoneOffset.UTC).isAfter(this.expiresAt);
     }
 }
