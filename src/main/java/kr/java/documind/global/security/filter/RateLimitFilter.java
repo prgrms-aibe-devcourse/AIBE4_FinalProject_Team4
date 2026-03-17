@@ -40,10 +40,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ProxyManager<String> proxyManager;
     private final ProjectApiKeyValidationService apiKeyValidationService;
 
-    @Value("${app.rate-limit.capacity:50}")
+    @Value("${app.rate-limit.ingest.capacity:50}")
     private int capacity;
 
-    @Value("${app.rate-limit.redis-prefix:rate-limit:}")
+    @Value("${app.rate-limit.ingest.redis-prefix:rate-limit:ingest}")
     private String rateLimitPrefix;
 
     @Override
@@ -63,7 +63,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throw new BadRequestException(HEADER_API_KEY + " 헤더가 누락되었습니다.");
         }
 
-        // TODO: 로그 조회 API에 대한 Rate limit 구현
         UUID projectId = apiKeyValidationService.getProjectIdByApiKey(apiKey, ApiKeyType.INGEST);
         if (projectId == null) {
             throw new UnauthorizedException("유효하지 않거나 정지된 API Key입니다.");

@@ -10,6 +10,7 @@ import kr.java.documind.domain.logexplorer.model.dto.response.LogQueryResponse;
 import kr.java.documind.domain.logexplorer.service.LogColumnMetadataService;
 import kr.java.documind.domain.logexplorer.service.LogExplorerQueryService;
 import kr.java.documind.global.annotation.CurrentProject;
+import kr.java.documind.global.annotation.QueryRateLimit;
 import kr.java.documind.global.annotation.RequireProjectMember;
 import kr.java.documind.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class LogExplorerApiController {
 
     @Operation(summary = "로그 탐색 쿼리 실행", description = "동적 필터, 집계, 정렬을 포함한 로그 조회를 수행합니다. 분당 20회 제한.")
     @RequireProjectMember
+    @QueryRateLimit
     @PostMapping("/{publicId}/logs/query")
     public ResponseEntity<ApiResponse<LogQueryResponse>> executeQuery(
             @CurrentProject ProjectRequestContext ctx,
