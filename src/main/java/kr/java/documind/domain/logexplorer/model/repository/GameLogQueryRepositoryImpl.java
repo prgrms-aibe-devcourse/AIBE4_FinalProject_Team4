@@ -341,7 +341,9 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
 
         String[] pathParts = QueryableColumn.parseJsonbPath(columnRef);
         if (pathParts.length == 0) {
-            return col.getDbName();
+            // 원본 jsonb 컬럼에 문자열 연산자(ILIKE 등)가 적용될 경우 발생하는 에러를 막기 위해
+            // 전체 JSON 객체를 문자열(text) 타입으로 강제 캐스팅
+            return col.getDbName() + "::text";
         }
         if (pathParts.length == 1) {
             // SQL: (attributes->>'key')

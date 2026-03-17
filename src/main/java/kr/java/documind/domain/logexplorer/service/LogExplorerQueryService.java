@@ -62,13 +62,25 @@ public class LogExplorerQueryService {
         validateGroupBy(request.groupBy(), request.selects());
     }
 
+    private void validateColumnRef(String columnName) {
+        QueryableColumn col = QueryableColumn.parseColumn(columnName);
+        if (col.isJsonb() && !columnName.contains(".")) {
+            throw new InvalidQueryException(
+                    "원본 JSONB 컬럼("
+                            + col.name()
+                            + ")은 직접 선택하거나 검색할 수 없습니다. 하위 경로를 지정해주세요. (예: "
+                            + col.name()
+                            + ".key)");
+        }
+    }
+
     private void validateSelectFields(List<SelectField> selects) {
         if (selects == null || selects.isEmpty()) {
             return;
         }
         for (SelectField field : selects) {
             if (field.column() != null && !field.column().isBlank()) {
-                QueryableColumn.parseColumn(field.column()); // 화이트리스트 검증
+                validateColumnRef(field.column()); // 화이트리스트 및 JSONB 단일 사용 검증
             } else if (field.aggregation() == null) {
                 throw new InvalidQueryException("SELECT 항목에 컬럼 또는 집계 함수가 필요합니다.");
             }
@@ -83,7 +95,7 @@ public class LogExplorerQueryService {
             if (filter.column() == null || filter.column().isBlank()) {
                 throw new InvalidQueryException("WHERE 조건에 컬럼명이 필요합니다.");
             }
-            QueryableColumn.parseColumn(filter.column()); // 화이트리스트 검증
+            validateColumnRef(filter.column());
 
             if (filter.operator() == null) {
                 throw new InvalidQueryException("WHERE 조건에 연산자가 필요합니다.");
@@ -136,7 +148,7 @@ public class LogExplorerQueryService {
 
         if (hasGroupBy) {
             for (String col : groupBy) {
-                QueryableColumn.parseColumn(col); // 화이트리스트 검증
+                validateColumnRef(col);
             }
         }
     }

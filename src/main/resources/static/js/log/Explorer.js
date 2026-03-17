@@ -61,7 +61,6 @@ document.addEventListener('alpine:init', () => {
                 if (!col.isJsonb) {
                     options.push({ value: col.name, label: col.name });
                 } else {
-                    options.push({ value: col.name, label: col.name + ' (JSONB)' });
                     const keys = this.jsonbKeys?.[col.name] || [];
                     for (const key of keys) {
                         options.push({
