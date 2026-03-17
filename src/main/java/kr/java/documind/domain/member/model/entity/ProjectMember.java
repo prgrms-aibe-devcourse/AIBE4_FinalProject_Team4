@@ -9,7 +9,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import kr.java.documind.domain.auth.model.entity.Project;
 import kr.java.documind.domain.auth.model.enums.ProjectRole;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
@@ -46,8 +47,8 @@ public class ProjectMember extends BaseEntity {
     @Column(nullable = false, length = 20)
     private AccountStatus status;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    @Column(name = "deleted_at", columnDefinition = "TIMESTAMPTZ")
+    private OffsetDateTime deletedAt;
 
     public static ProjectMember create(Project project, Member member, ProjectRole projectRole) {
         ProjectMember pm = new ProjectMember();
@@ -72,7 +73,7 @@ public class ProjectMember extends BaseEntity {
 
     public void softDelete() {
         this.status = AccountStatus.DELETED;
-        this.deletedAt = LocalDateTime.now();
+        this.deletedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     public boolean isActive() {

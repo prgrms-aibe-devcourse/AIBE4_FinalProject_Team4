@@ -5,7 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import kr.java.documind.domain.member.model.enums.CompanyStatus;
 import kr.java.documind.global.entity.BaseEntity;
 import lombok.AccessLevel;
@@ -28,8 +28,8 @@ public class Company extends BaseEntity {
     @Column(nullable = false, length = 20)
     private CompanyStatus status;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    @Column(name = "deleted_at", columnDefinition = "TIMESTAMPTZ")
+    private OffsetDateTime deletedAt;
 
     public static Company create(String name) {
         Company company = new Company();
