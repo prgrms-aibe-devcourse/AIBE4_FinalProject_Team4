@@ -29,10 +29,7 @@ public class EmbeddingModelClient {
             }
             List<String> batch = texts.subList(i, Math.min(i + BATCH_SIZE, texts.size()));
             allEmbeddings.addAll(embeddingModel.embed(batch));
-            log.debug(
-                    "임베딩 배치 완료 - {}/{}",
-                    Math.min(i + BATCH_SIZE, texts.size()),
-                    texts.size());
+            log.debug("임베딩 배치 완료 - {}/{}", Math.min(i + BATCH_SIZE, texts.size()), texts.size());
         }
 
         return allEmbeddings;

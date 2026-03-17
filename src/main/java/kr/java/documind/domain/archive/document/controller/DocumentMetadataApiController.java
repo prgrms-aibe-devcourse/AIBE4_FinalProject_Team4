@@ -60,7 +60,7 @@ public class DocumentMetadataApiController {
     @GetMapping("/{documentId}/preview")
     @RequireProjectMember
     public ResponseEntity<Resource> previewDocument(
-        @ProjectId UUID projectId, @PathVariable Long documentId) {
+            @ProjectId UUID projectId, @PathVariable Long documentId) {
         return buildFileResponse(projectId, documentId, "inline");
     }
 

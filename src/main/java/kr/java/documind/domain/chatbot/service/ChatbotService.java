@@ -152,7 +152,8 @@ public class ChatbotService {
 
     private String buildSystemMessage(String userSystemMessage) {
         String template = readTemplate();
-        return template.replace("{userSystemMessage}", userSystemMessage != null ? userSystemMessage : "");
+        return template.replace(
+                "{userSystemMessage}", userSystemMessage != null ? userSystemMessage : "");
     }
 
     private String readTemplate() {

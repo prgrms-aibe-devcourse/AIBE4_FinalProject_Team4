@@ -27,8 +27,11 @@ public class DuplicateRemovalPostProcessor implements DocumentPostProcessor {
 
         int removed = documents.size() - deduplicated.size();
         if (removed > 0) {
-            log.info("[PostProcessor] 중복 청크 {} 건 제거 ({} → {})",
-                    removed, documents.size(), deduplicated.size());
+            log.info(
+                    "[PostProcessor] 중복 청크 {} 건 제거 ({} → {})",
+                    removed,
+                    documents.size(),
+                    deduplicated.size());
         }
 
         return deduplicated;

@@ -69,8 +69,11 @@ public class ReferenceExtractor {
             Integer pageNumber = parseMetadata(doc, "page_number", Integer::parseInt);
             String chunkText = doc.getText() != null ? doc.getText() : "";
 
-            log.debug("[Reference] sourceId={}, page={}, textLength={}, text={}",
-                    sourceId, pageNumber, chunkText.length(),
+            log.debug(
+                    "[Reference] sourceId={}, page={}, textLength={}, text={}",
+                    sourceId,
+                    pageNumber,
+                    chunkText.length(),
                     chunkText.length() > 200 ? chunkText.substring(0, 200) + "..." : chunkText);
 
             references.add(

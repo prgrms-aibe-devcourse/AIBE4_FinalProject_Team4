@@ -51,8 +51,7 @@ public class RagConfig {
 
     @Bean
     public RetrievalAugmentationAdvisor retrievalAugmentationAdvisor(
-            DocumentRetriever deduplicatingRetriever,
-            ContextualQueryAugmenter queryAugmenter) {
+            DocumentRetriever deduplicatingRetriever, ContextualQueryAugmenter queryAugmenter) {
         return RetrievalAugmentationAdvisor.builder()
                 .documentRetriever(deduplicatingRetriever)
                 .queryAugmenter(queryAugmenter)

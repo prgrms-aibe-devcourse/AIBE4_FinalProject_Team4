@@ -20,8 +20,8 @@ import technology.tabula.ObjectExtractor;
 import technology.tabula.Page;
 import technology.tabula.RectangularTextContainer;
 import technology.tabula.Table;
-import technology.tabula.TextElement;
 import technology.tabula.TextChunk;
+import technology.tabula.TextElement;
 import technology.tabula.extractors.BasicExtractionAlgorithm;
 import technology.tabula.extractors.SpreadsheetExtractionAlgorithm;
 
@@ -169,9 +169,7 @@ public class PdfDocumentReader implements DocumentReader {
                         .filter(
                                 row ->
                                         row.stream()
-                                                .anyMatch(
-                                                        cell ->
-                                                                !cell.getText().trim().isEmpty()))
+                                                .anyMatch(cell -> !cell.getText().trim().isEmpty()))
                         .count();
         return nonEmptyRows >= MIN_TABLE_DATA_ROWS;
     }
@@ -207,10 +205,13 @@ public class PdfDocumentReader implements DocumentReader {
         }
 
         float firstColumnLeft = findFirstColumnLeft(table);
-        List<TextChunk> leftCandidates = TextElement.mergeWords(page.getText()).stream()
-                .filter(text -> isLeftSideLabel(text, table, firstColumnLeft))
-                .sorted(Comparator.comparing(TextChunk::getTop).thenComparing(TextChunk::getLeft))
-                .toList();
+        List<TextChunk> leftCandidates =
+                TextElement.mergeWords(page.getText()).stream()
+                        .filter(text -> isLeftSideLabel(text, table, firstColumnLeft))
+                        .sorted(
+                                Comparator.comparing(TextChunk::getTop)
+                                        .thenComparing(TextChunk::getLeft))
+                        .toList();
 
         if (leftCandidates.isEmpty()) {
             return baseGrid;
@@ -227,19 +228,25 @@ public class PdfDocumentReader implements DocumentReader {
             }
         }
 
-        boolean allLabelsAlreadyInGrid = leftCandidates.stream()
-                .allMatch(candidate -> existingColumn0Values.contains(normalizeText(candidate.getText())));
+        boolean allLabelsAlreadyInGrid =
+                leftCandidates.stream()
+                        .allMatch(
+                                candidate ->
+                                        existingColumn0Values.contains(
+                                                normalizeText(candidate.getText())));
         if (allLabelsAlreadyInGrid) {
             return baseGrid;
         }
 
         int headerRowCount = detectHeaderRowCount(baseGrid);
-        Map<Integer, String> groupLabelByRow = buildGroupLabelMap(baseGrid, leftCandidates, headerRowCount);
+        Map<Integer, String> groupLabelByRow =
+                buildGroupLabelMap(baseGrid, leftCandidates, headerRowCount);
         List<List<String>> enrichedGrid = new ArrayList<>();
 
         for (int rowIndex = 0; rowIndex < baseGrid.size(); rowIndex++) {
             String rowLabel = groupLabelByRow.getOrDefault(rowIndex, "");
-            List<String> enrichedRow = reshapeRow(baseGrid.get(rowIndex), rowIndex, rowLabel, headerRowCount);
+            List<String> enrichedRow =
+                    reshapeRow(baseGrid.get(rowIndex), rowIndex, rowLabel, headerRowCount);
             enrichedGrid.add(enrichedRow);
         }
 

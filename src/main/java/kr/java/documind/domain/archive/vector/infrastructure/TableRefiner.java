@@ -126,13 +126,9 @@ public class TableRefiner {
                     for (String[] splitCell : splitCells) {
                         if (splitCell.length > 1 && splitCell.length == maxLines) {
                             newRow.add(splitCell[line].trim());
-                        } else if (splitCell.length > 1
-                                && splitCell.length > maxLines / 2) {
+                        } else if (splitCell.length > 1 && splitCell.length > maxLines / 2) {
                             // 줄 수 근접: 가능한 값 분배, 초과분은 빈 셀
-                            newRow.add(
-                                    line < splitCell.length
-                                            ? splitCell[line].trim()
-                                            : "");
+                            newRow.add(line < splitCell.length ? splitCell[line].trim() : "");
                         } else if (splitCell.length > 1) {
                             newRow.add(line == 0 ? joinLines(splitCell) : "");
                         } else {
@@ -167,8 +163,7 @@ public class TableRefiner {
         for (List<String> row : grid) {
             List<String> normalizedRow = new ArrayList<>();
             for (String cell : row) {
-                String normalized =
-                        cell.replace("\r", " ").replaceAll("\\s+", " ").trim();
+                String normalized = cell.replace("\r", " ").replaceAll("\\s+", " ").trim();
                 normalizedRow.add(normalized);
             }
             result.add(normalizedRow);
@@ -509,8 +504,7 @@ public class TableRefiner {
         if (!allNonEmpty) {
             return false;
         }
-        boolean allNumeric =
-                firstRow.stream().allMatch(cell -> cell.matches("-?\\d+(\\.\\d+)?"));
+        boolean allNumeric = firstRow.stream().allMatch(cell -> cell.matches("-?\\d+(\\.\\d+)?"));
         return !allNumeric;
     }
 
@@ -702,10 +696,7 @@ public class TableRefiner {
 
         // 데이터 행이 하나라도 있으면 데이터 표 → 파편화 아님
         for (List<String> row : grid) {
-            long numericCount =
-                    row.stream()
-                            .filter(cell -> cell.matches("-?[\\d,.]+|·|-"))
-                            .count();
+            long numericCount = row.stream().filter(cell -> cell.matches("-?[\\d,.]+|·|-")).count();
             if (numericCount >= 2) {
                 return false;
             }
