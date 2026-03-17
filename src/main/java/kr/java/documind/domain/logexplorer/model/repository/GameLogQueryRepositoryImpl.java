@@ -238,20 +238,20 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
             case IS_NULL -> colRef + " IS NULL";
             case IS_NOT_NULL -> colRef + " IS NOT NULL";
             case CONTAINS -> {
-                params.add("%" + filter.value() + "%");
-                yield colRef + " ILIKE ?";
+                params.add("%" + escapeLike(filter.value()) + "%");
+                yield colRef + " ILIKE ? ESCAPE '\\'";
             }
             case NOT_CONTAINS -> {
-                params.add("%" + filter.value() + "%");
-                yield "NOT (" + colRef + " ILIKE ?)";
+                params.add("%" + escapeLike(filter.value()) + "%");
+                yield "NOT (" + colRef + " ILIKE ? ESCAPE '\\')";
             }
             case STARTS_WITH -> {
-                params.add(filter.value() + "%");
-                yield colRef + " ILIKE ?";
+                params.add(escapeLike(filter.value()) + "%");
+                yield colRef + " ILIKE ? ESCAPE '\\'";
             }
             case ENDS_WITH -> {
-                params.add("%" + filter.value());
-                yield colRef + " ILIKE ?";
+                params.add("%" + escapeLike(filter.value()));
+                yield colRef + " ILIKE ? ESCAPE '\\'";
             }
             case IS_EMPTY -> colRef + " = ''";
             case IS_NOT_EMPTY -> colRef + " <> ''";
@@ -336,6 +336,10 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
     // ──────────────────────────────────────────────────────────────────────────
     // 유틸 메서드
     // ──────────────────────────────────────────────────────────────────────────
+
+    private String escapeLike(String value) {
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
 
     private String sanitizedAlias(String alias) {
         if (alias == null || alias.isBlank()) {
