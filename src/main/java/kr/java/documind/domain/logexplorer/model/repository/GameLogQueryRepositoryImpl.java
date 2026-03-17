@@ -146,16 +146,16 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
     }
 
     private String buildSelectExpression(SelectField field) {
-        String alias = sanitizedAlias(field.alias());
+        String colRef = resolveColumnRef(field.column());
 
-        if (field.column() == null || field.column().isBlank()) {
-            if (field.aggregation() == AggregationFunction.COUNT) {
-                return "COUNT(*)" + alias;
-            }
-            throw new InvalidQueryException("집계 함수 없이 컬럼명이 비어있습니다.");
+        String aliasStr = field.alias();
+        if (aliasStr == null || aliasStr.isBlank()) {
+            // 점(.)이나 특수문자가 포함된 경우 SQL 문법을 위해 쌍따옴표로 감싼 별칭 생성
+            // attributes.system.init_type -> AS "attributes.system.init_type"
+            aliasStr = field.column();
         }
 
-        String colRef = resolveColumnRef(field.column());
+        String alias = " AS \"" + aliasStr + "\"";
 
         if (field.aggregation() == null) {
             return colRef + alias;
@@ -345,15 +345,18 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
             // 전체 JSON 객체를 문자열(text) 타입으로 강제 캐스팅
             return col.getDbName() + "::text";
         }
+
+        // 데이터가 'system.init_type'처럼 단일 키인 경우를 대응
+        // 원본 경로(columnRef)에서 컬럼명을 제외한 나머지 전체 경로 문자열을 추출
+        String fullPath = columnRef.substring(col.name().length() + 1);
+
         if (pathParts.length == 1) {
             // SQL: (attributes->>'key')
             return "((" + col.getDbName() + ")->>'" + pathParts[0] + "')";
         }
-        // 중첩 경로: #>> '{game,fps}'
-        // pathParts는 이미 ^[a-zA-Z0-9_]{1,64}$ 검증 완료 → 리터럴 삽입 안전
-        String pathLiteral = String.join(",", pathParts);
-        // SQL: (attributes#>>'{game,fps}')
-        return "((" + col.getDbName() + ")#>>'" + "{" + pathLiteral + "}')";
+
+        // 단일 키를 우선으로 조회
+        return "((" + col.getDbName() + ")->>'" + fullPath + "')";
     }
 
     // ──────────────────────────────────────────────────────────────────────────
