@@ -1,6 +1,6 @@
 package kr.java.documind.domain.archive.document.model.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
@@ -15,8 +15,8 @@ public record DocumentDetailResponse(
         String category,
         boolean isProcessed,
         EmbeddingStatus embeddingStatus,
-        LocalDateTime uploadedAt,
-        LocalDateTime reuploadedAt,
+        OffsetDateTime uploadedAt,
+        OffsetDateTime reuploadedAt,
         List<DocumentMetadataResponse> versions) {
 
     public static DocumentDetailResponse of(

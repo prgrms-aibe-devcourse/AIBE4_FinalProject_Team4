@@ -211,7 +211,7 @@ public class DocumentMetadataService {
                                 storedFile.storedKey(),
                                 isProcessed,
                                 EmbeddingStatus.NONE,
-                                java.time.LocalDateTime.now()));
+                                java.time.OffsetDateTime.now()));
 
         documentVectorEventPublisher.createEvent(projectId, documentMetadata);
 
