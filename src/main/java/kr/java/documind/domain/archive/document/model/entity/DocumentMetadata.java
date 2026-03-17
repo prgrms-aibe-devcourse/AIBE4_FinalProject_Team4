@@ -14,8 +14,7 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.LocalDateTime;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.global.entity.DomainSource;
 import lombok.AccessLevel;
@@ -87,18 +86,18 @@ public class DocumentMetadata {
     private EmbeddingStatus embeddingStatus;
 
     @Column(nullable = false, columnDefinition = "TIMESTAMPTZ")
-    private OffsetDateTime uploadedAt;
+    private LocalDateTime uploadedAt;
 
     @Column(columnDefinition = "TIMESTAMPTZ")
-    private OffsetDateTime reuploadedAt;
+    private LocalDateTime reuploadedAt;
 
     @CreatedDate
     @Column(updatable = false, columnDefinition = "TIMESTAMPTZ")
-    private OffsetDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @LastModifiedDate
     @Column(columnDefinition = "TIMESTAMPTZ")
-    private OffsetDateTime updatedAt;
+    private LocalDateTime updatedAt;
 
     private DocumentMetadata(
             DomainSource domainSource,
@@ -114,7 +113,7 @@ public class DocumentMetadata {
             String storedKey,
             boolean isProcessed,
             EmbeddingStatus embeddingStatus,
-            OffsetDateTime uploadedAt) {
+            LocalDateTime uploadedAt) {
         this.domainSource = domainSource;
         this.documentGroup = documentGroup;
         this.documentName = documentName;
@@ -191,6 +190,6 @@ public class DocumentMetadata {
     }
 
     public void markModified() {
-        this.reuploadedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        this.reuploadedAt = LocalDateTime.now();
     }
 }

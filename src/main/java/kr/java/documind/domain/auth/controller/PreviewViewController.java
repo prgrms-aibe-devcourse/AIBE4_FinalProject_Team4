@@ -1,6 +1,6 @@
 package kr.java.documind.domain.auth.controller;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import kr.java.documind.domain.auth.model.enums.ProjectRole;
 import kr.java.documind.domain.member.model.dto.InviteViewData;
 import org.springframework.stereotype.Controller;
@@ -37,7 +37,7 @@ public class PreviewViewController {
                         false,
                         false,
                         null,
-                        LocalDateTime.now());
+                        OffsetDateTime.now());
         model.addAttribute("data", data);
         model.addAttribute("pageTitle", "초대 수락 페이지");
         return "member/invite-confirm";
@@ -55,7 +55,7 @@ public class PreviewViewController {
                         true,
                         true,
                         "탈퇴할 회사",
-                        LocalDateTime.now());
+                        OffsetDateTime.now());
         model.addAttribute("data", data);
         model.addAttribute("pageTitle", "초대- 탈퇴 페이지");
         return "member/invite-company-leave";

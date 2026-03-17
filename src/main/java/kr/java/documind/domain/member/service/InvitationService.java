@@ -1,7 +1,8 @@
 package kr.java.documind.domain.member.service;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,8 +75,8 @@ public class InvitationService {
         String rawToken = HmacApiKeyUtil.generatePlainKey("inv_");
         String tokenHash = HmacApiKeyUtil.computeHmac(rawToken, hmacSecret);
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiresAt = now.plusHours(expirationHours);
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime expiresAt = now.plusHours(expirationHours);
 
         Invitation invitation =
                 Invitation.create(
@@ -122,7 +123,7 @@ public class InvitationService {
                 invitation.getInviter().getName(),
                 invitation.getTargetRole(),
                 hasDifferentCompany,
-                hasDifferentCompany && member.isCeo(),
+                member.isCeo(),
                 hasDifferentCompany ? member.getCompany().getName() : null,
                 invitation.getExpiresAt());
     }
@@ -184,7 +185,7 @@ public class InvitationService {
     }
 
     private void saveTokenToRedis(
-            String tokenHash, UUID invitationId, LocalDateTime now, LocalDateTime expiresAt) {
+            String tokenHash, UUID invitationId, OffsetDateTime now, OffsetDateTime expiresAt) {
         long ttlSeconds = ChronoUnit.SECONDS.between(now, expiresAt);
         redisTemplate
                 .opsForValue()
@@ -255,6 +256,8 @@ public class InvitationService {
         }
     }
 
+    private record InviteResolution(Invitation invitation, String tokenHash) {}
+
     private InviteResolution resolveToken(String rawToken) {
         String tokenHash = HmacApiKeyUtil.computeHmac(rawToken, hmacSecret);
         String invitationIdStr;
@@ -282,14 +285,13 @@ public class InvitationService {
             throw new InvalidInviteTokenException("초대 링크가 만료되었습니다. 운영자에게 재초대를 요청해 주세요.");
         }
 
-        return switch (invitation.getStatus()) {
-            case PENDING -> new InviteResolution(invitation, tokenHash);
-            case EXPIRED -> throw new InvalidInviteTokenException(
-                    "초대 링크가 만료되었습니다. 운영자에게 재초대를 요청해 주세요.");
-            case REVOKED, USED -> throw new InvalidInviteTokenException(
-                    "만료되었거나 철회된 초대 링크입니다. 운영자에게 재초대를 요청해 주세요.");
-        };
+        InvitationStatus status = invitation.getStatus();
+        if (status == InvitationStatus.PENDING) {
+            return new InviteResolution(invitation, tokenHash);
+        } else if (status == InvitationStatus.EXPIRED) {
+            throw new InvalidInviteTokenException("초대 링크가 만료되었습니다. 운영자에게 재초대를 요청해 주세요.");
+        } else {
+            throw new InvalidInviteTokenException("만료되었거나 철회된 초대 링크입니다. 운영자에게 재초대를 요청해 주세요.");
+        }
     }
-
-    private record InviteResolution(Invitation invitation, String tokenHash) {}
 }

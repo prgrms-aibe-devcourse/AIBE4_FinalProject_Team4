@@ -2,6 +2,7 @@ package kr.java.documind.domain.member.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import kr.java.documind.domain.member.event.InvitationCreatedEvent;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,8 @@ public class MailService {
 
     public void sendInvitationEmail(InvitationCreatedEvent event) throws MessagingException {
         String inviteUrl = baseUrl + "/invite?token=" + event.rawToken();
-        String expiresAtFormatted = event.expiresAt().format(EXPIRES_AT_FORMATTER);
+        String expiresAtFormatted =
+                event.expiresAt().atZoneSameInstant(ZoneId.of("Asia/Seoul")).format(EXPIRES_AT_FORMATTER);
 
         Context ctx = new Context();
         ctx.setVariable("inviterName", event.inviterName());

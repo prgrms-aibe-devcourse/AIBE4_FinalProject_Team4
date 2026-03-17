@@ -1,6 +1,7 @@
 package kr.java.documind.domain.member.service;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class CompanyService {
 
     private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy.MM.dd");
+            DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
 
     private final CompanyRepository companyRepository;
     private final MemberService memberService;
@@ -128,11 +129,11 @@ public class CompanyService {
         return fileStore.getAccessUrl(key);
     }
 
-    private String formatDate(LocalDateTime dateTime) {
+    private String formatDate(OffsetDateTime dateTime) {
         if (dateTime == null) {
             return "-";
         }
-        return dateTime.format(DATE_FORMATTER);
+        return dateTime.atZoneSameInstant(ZoneId.of("Asia/Seoul")).format(DATE_FORMATTER);
     }
 
     @Transactional
