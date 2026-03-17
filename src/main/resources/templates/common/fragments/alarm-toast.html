@@ -1,31 +1,232 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="alarm-toast">
-    <!-- 우측 하단 알림 토스트 컨테이너 (초기 상태: 화면 아래로 숨김) -->
+    <!-- 우측 하단 알림 토스트 스택 -->
     <div id="alarm-toast-container"
-         class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 transition-transform duration-500 translate-y-full">
-        <!-- 알림 메시지 템플릿 (JS로 동적 생성 가능) -->
-        <div id="alarm-toast-template" class="hidden bg-white border border-gray-200 shadow-lg rounded-xl p-4 max-w-sm">
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0">
-                    <svg class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div class="ml-3 w-0 flex-1 pt-0.5">
-                    <p class="text-sm font-medium text-gray-900">알림 제목</p>
-                    <p class="mt-1 text-sm text-gray-500">알림 내용</p>
-                </div>
-                <div class="ml-4 flex-shrink-0 flex">
-                    <button class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        <span class="sr-only">닫기</span>
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
+         class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50 flex flex-col gap-3 items-stretch sm:items-end"
+         aria-live="polite"
+         aria-atomic="false">
     </div>
+
+    <script>
+        (function () {
+            const containerId = 'alarm-toast-container';
+            const defaultDuration = 5000;
+
+            function getToastMeta(type) {
+                switch (type) {
+
+                    // 문서
+                    case 'rag':
+                        return {
+                            card: 'border-docu-primary',
+                            iconWrap: 'bg-docu-primary-light text-docu-primary border border-docu-primary/20',
+                            title: 'text-docu-primary',
+                            badge: 'bg-docu-primary text-white',
+                            action: 'text-docu-primary',
+                            icon:
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6M9 17h6"></path>'
+                        };
+
+                    // 패치노트
+                    case 'patchnote':
+                        return {
+                            card: 'border-docu-success',
+                            iconWrap: 'bg-docu-success-light text-docu-success border border-docu-success/20',
+                            title: 'text-docu-success',
+                            badge: 'bg-docu-success text-white',
+                            action: 'text-docu-success',
+                            icon:
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5"></path>'
+                        };
+
+                    // 로그 탐색기
+                    case 'log':
+                        return {
+                            card: 'border-docu-warning',
+                            iconWrap: 'bg-docu-warning-light text-docu-warning-dark border border-docu-warning/30',
+                            title: 'text-docu-warning-dark',
+                            badge: 'bg-docu-warning-dark text-white',
+                            action: 'text-docu-warning-dark',
+                            icon:
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h4"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M10 6h10"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M4 12h7"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M17 12h3"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M4 18h2"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M12 18h8"></path>' +
+                                '<circle cx="8" cy="6" r="1"></circle>' +
+                                '<circle cx="14" cy="12" r="1"></circle>' +
+                                '<circle cx="9" cy="18" r="1"></circle>'
+                        };
+
+                    // 이슈
+                    case 'issue':
+                        return {
+                            card: 'border-docu-danger',
+                            iconWrap: 'bg-docu-danger-light text-docu-danger border border-docu-danger/20',
+                            title: 'text-docu-danger',
+                            badge: 'bg-docu-danger text-white',
+                            action: 'text-docu-danger',
+                            icon:
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M12 16h.01"></path>' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path>'
+                        };
+
+                    default:
+                        return {
+                            card: 'border-divider',
+                            iconWrap: 'bg-gray-100 text-gray-500 border border-gray-300',
+                            title: 'text-gray-600',
+                            badge: 'bg-gray-400 text-white',
+                            action: 'text-gray-500',
+                            icon:
+                                '<circle cx="12" cy="12" r="9"></circle>'
+                        };
+                }
+            }
+
+            function sanitizeUrl(url) {
+                const value = String(url || '#').trim();
+
+                if (
+                    value.startsWith('/') ||
+                    value.startsWith('#') ||
+                    value.startsWith('http://') ||
+                    value.startsWith('https://')
+                ) {
+                    return value;
+                }
+
+                return '#';
+            }
+
+            function createAlarmToast({
+                                          title = '알림',
+                                          badgeLabel = '새 알림',
+                                          message = '',
+                                          actionLabel = '바로가기 >',
+                                          actionHref = '#',
+                                          type = 'info',
+                                          duration = defaultDuration
+                                      }) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                const meta = getToastMeta(type);
+                const toast = document.createElement('div');
+                const safeHref = sanitizeUrl(actionHref);
+
+                let removeTimer = null;
+                let remainingTime = duration;
+                let startTime = null;
+                let paused = false;
+
+                toast.setAttribute('role', 'status');
+                toast.setAttribute('aria-atomic', 'true');
+
+                toast.className =
+                    'w-full sm:max-w-sm bg-surface-card border rounded-docu-card shadow-docu-card p-4 ' +
+                    meta.card +
+                    ' translate-y-6 opacity-0 transition-all duration-300';
+
+                toast.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${meta.iconWrap}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                                ${meta.icon}
+                            </svg>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="text-sm font-bold ${meta.title}">${escapeHtml(title)}</p>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${meta.badge}">
+                                    ${escapeHtml(badgeLabel)}
+                                </span>
+                            </div>
+
+                            <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2">
+                                ${escapeHtml(message)}
+                            </p>
+
+                            <a href="${escapeAttribute(safeHref)}"
+                               class="inline-flex items-center gap-1 mt-3 text-xs font-semibold ${meta.action} hover:underline">
+                                ${escapeHtml(actionLabel)}
+                            </a>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(toast);
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        toast.classList.remove('translate-y-6', 'opacity-0');
+                    });
+                });
+
+                function removeToast() {
+                    if (!toast.isConnected) return;
+                    toast.classList.add('translate-y-4', 'opacity-0');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }
+
+                function startTimer(ms) {
+                    clearTimeout(removeTimer);
+                    startTime = Date.now();
+                    removeTimer = setTimeout(() => {
+                        removeToast();
+                    }, ms);
+                }
+
+                function pauseTimer() {
+                    if (paused || removeTimer === null) return;
+                    clearTimeout(removeTimer);
+                    removeTimer = null;
+                    remainingTime -= Date.now() - startTime;
+                    paused = true;
+                }
+
+                function resumeTimer() {
+                    if (!paused) return;
+                    paused = false;
+                    startTimer(Math.max(remainingTime, 0));
+                }
+
+                toast.addEventListener('mouseenter', pauseTimer);
+                toast.addEventListener('mouseleave', resumeTimer);
+
+                startTimer(duration);
+            }
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function escapeAttribute(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            }
+
+            window.showAlarmToast = createAlarmToast;
+        })();
+    </script>
 </div>
 </html>

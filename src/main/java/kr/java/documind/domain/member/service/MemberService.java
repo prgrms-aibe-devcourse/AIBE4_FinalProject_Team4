@@ -32,18 +32,16 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final FileStore fileStore;
 
-    public record ProfilePageData(HeaderInfo headerInfo, MemberProfileDetail profileDetail) {}
+    public record ProfilePageData(MemberProfileDetail profileDetail) {}
 
-    public record CompanyPageData(HeaderInfo headerInfo, CompanyDetail companyDetail) {}
+    public record CompanyPageData(CompanyDetail companyDetail) {}
 
-    public ProfilePageData getProfilePageData(UUID memberId) {
-        Member member = getMemberWithCompany(memberId);
-        return new ProfilePageData(buildHeaderInfo(member), buildProfileDetail(member));
+    public ProfilePageData getProfilePageData(Member member) {
+        return new ProfilePageData(buildProfileDetail(member));
     }
 
-    public CompanyPageData getCompanyPageData(UUID memberId) {
-        Member member = getMemberWithCompany(memberId);
-        return new CompanyPageData(buildHeaderInfo(member), buildCompanyDetail(member));
+    public CompanyPageData getCompanyPageData(Member member) {
+        return new CompanyPageData(buildCompanyDetail(member));
     }
 
     public HeaderInfo getHeaderInfo(UUID memberId) {
@@ -151,13 +149,9 @@ public class MemberService {
         Member member = getMemberWithCompany(memberId);
         String oldKey = member.getProfileKey();
 
-        // 1. 새 파일 먼저 업로드
         String newKey = fileStore.save(file).storedKey();
-        // 2. 롤백 시 newKey 자동 삭제 (orphan 방지)
         fileStore.deleteOnRollback(newKey);
-        // 3. DB 업데이트
         member.updateProfile(null, newKey, null);
-        // 4. 커밋 확정 후 기존 파일 삭제 (롤백 시에는 삭제하지 않음)
         if (oldKey != null) {
             fileStore.deleteOnCommit(oldKey);
         }

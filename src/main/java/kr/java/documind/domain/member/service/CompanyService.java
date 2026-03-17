@@ -5,7 +5,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import kr.java.documind.domain.auth.model.dto.HeaderInfo;
 import kr.java.documind.domain.member.exception.CompanyNotFoundException;
 import kr.java.documind.domain.member.model.dto.AdminCompanyCard;
 import kr.java.documind.domain.member.model.entity.Company;
@@ -36,7 +35,6 @@ public class CompanyService {
     private final FileStore fileStore;
 
     public record AdminPageData(
-            HeaderInfo headerInfo,
             List<AdminCompanyCard> pendingCompanies,
             List<AdminCompanyCard> approvedCompanies,
             List<AdminCompanyCard> suspendedCompanies,
@@ -44,19 +42,12 @@ public class CompanyService {
             long approvedCount,
             long suspendedCount) {}
 
-    public AdminPageData getAdminCompanyPageData(UUID adminMemberId) {
-        HeaderInfo headerInfo = memberService.getHeaderInfo(adminMemberId);
+    public AdminPageData getAdminCompanyPageData() {
         List<AdminCompanyCard> pending = buildAdminCards(CompanyStatus.PENDING);
         List<AdminCompanyCard> approved = buildAdminCards(CompanyStatus.APPROVED);
         List<AdminCompanyCard> suspended = buildAdminCards(CompanyStatus.SUSPENDED);
         return new AdminPageData(
-                headerInfo,
-                pending,
-                approved,
-                suspended,
-                pending.size(),
-                approved.size(),
-                suspended.size());
+                pending, approved, suspended, pending.size(), approved.size(), suspended.size());
     }
 
     @Transactional

@@ -14,7 +14,7 @@ function showCreatedBanner() {
     const msg = sessionStorage.getItem('projectCreatedMessage');
     if (!msg) return;
     sessionStorage.removeItem('projectCreatedMessage');
-    showTopToast(msg);
+    showTopToast(msg, 'success');
 }
 
 function initProjectDropdown() {
@@ -162,8 +162,8 @@ function _showDetailsMsg(message, type = 'info') {
     const el = document.getElementById('details-success-message');
     if (!el) return;
     el.textContent = message;
-    el.classList.remove('hidden', 'text-green-600', 'text-gray-500');
-    el.classList.add(type === 'success' ? 'text-green-600' : 'text-gray-500');
+    el.classList.remove('hidden', 'text-docu-success-dark', 'text-docu-secondary');
+    el.classList.add(type === 'success' ? 'text-docu-success-dark' : 'text-docu-secondary');
     el.classList.remove('hidden');
     setTimeout(() => el.classList.add('hidden'), 3000);
 }
@@ -293,8 +293,8 @@ function copyApiKey() {
     if (!display) return;
 
     navigator.clipboard.writeText(display.textContent.trim())
-        .then(() => showTopToast('클립보드에 복사되었습니다.'))
-        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.'));
+        .then(() => showTopToast('클립보드에 복사되었습니다.', 'success'))
+        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.', 'danger'));
 }
 
 async function reissueApiKey() {
@@ -332,8 +332,8 @@ function copyPlainApiKey() {
     const display = document.getElementById('plain-api-key-display');
     if (!display) return;
     navigator.clipboard.writeText(display.textContent.trim())
-        .then(() => showTopToast('클립보드에 복사되었습니다.'))
-        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.'));
+        .then(() => showTopToast('클립보드에 복사되었습니다.', 'success'))
+        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.', 'danger'));
 }
 
 async function toggleApiKey(currentStatus) {
@@ -460,7 +460,7 @@ async function sendInvite() {
         });
         if (body.success) {
             closeInviteModal();
-            showTopToast('초대를 발송했습니다. 메일은 비동기로 처리됩니다.');
+            showTopToast('초대를 발송했습니다. 메일은 비동기로 처리됩니다.', 'success');
         } else {
             setError(body.error?.message ?? '초대 전송에 실패했습니다.');
         }

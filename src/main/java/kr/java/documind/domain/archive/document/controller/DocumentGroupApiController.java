@@ -11,9 +11,11 @@ import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetad
 import kr.java.documind.domain.archive.document.service.DocumentGroupService;
 import kr.java.documind.domain.archive.document.service.DocumentMetadataService;
 import kr.java.documind.global.annotation.ProjectId;
+import kr.java.documind.global.annotation.RequireProjectMember;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.response.PageResponses;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -31,15 +33,18 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/projects/{publicId}/groups")
 @RequiredArgsConstructor
+@RequireProjectMember
 public class DocumentGroupApiController {
 
     private final DocumentGroupService documentGroupService;
-    private final DocumentMetadataService documentService;
+    private final DocumentMetadataService documentMetadataService;
 
     @GetMapping
     public ApiResponse<List<DocumentGroupResponse>> getDocumentGroups(
             @ProjectId UUID projectId, @PageableDefault(sort = "groupName") Pageable pageable) {
-        return PageResponses.of(documentGroupService.getDocumentGroups(projectId, pageable));
+        Page<DocumentGroupResponse> groups =
+                documentGroupService.getDocumentGroups(projectId, pageable);
+        return PageResponses.of(groups);
     }
 
     @GetMapping("/{groupId}/documents")
@@ -51,13 +56,13 @@ public class DocumentGroupApiController {
     }
 
     @PostMapping("/{groupId}/documents")
-    public ResponseEntity<ApiResponse<DocumentMetadataResponse>> uploadNewVersionDocument(
+    public ResponseEntity<ApiResponse<DocumentMetadataResponse>> uploadDocumentToGroup(
             @ProjectId UUID projectId,
             @PathVariable Long groupId,
             @RequestPart("request") @Valid NewVersionDocumentUploadRequest request,
             @RequestPart("file") MultipartFile file) {
         DocumentMetadataResponse response =
-                documentService.uploadNewVersionDocument(projectId, groupId, request, file);
+                documentMetadataService.uploadDocumentToGroup(projectId, groupId, request, file);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
@@ -66,7 +71,7 @@ public class DocumentGroupApiController {
             @ProjectId UUID projectId,
             @PathVariable Long groupId,
             @RequestBody @Valid GroupNameUpdateRequest request) {
-        documentGroupService.updateGroupName(projectId, groupId, request);
+        documentGroupService.updateGroupName(projectId, groupId, request.groupName());
         return ApiResponse.success();
     }
 
@@ -75,7 +80,7 @@ public class DocumentGroupApiController {
             @ProjectId UUID projectId,
             @PathVariable Long groupId,
             @RequestBody @Valid CategoryUpdateRequest request) {
-        documentGroupService.updateCategory(projectId, groupId, request);
+        documentGroupService.updateCategory(projectId, groupId, request.category());
         return ApiResponse.success();
     }
 }

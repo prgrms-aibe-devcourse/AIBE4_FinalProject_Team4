@@ -6,16 +6,19 @@ import lombok.Getter;
 
 @Getter
 public enum AllowedFileType {
-    JPG("image/jpeg", "jpg"),
-    PNG("image/png", "png"),
-    TXT("text/plain", "txt"),
-    PDF("application/pdf", "pdf"),
-    DOC("application/msword", "doc"),
-    DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"),
-    XLS("application/vnd.ms-excel", "xls"),
-    XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
-    PPT("application/vnd.ms-powerpoint", "ppt"),
-    PPTX("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx");
+    JPG("image/jpeg", "jpg", false),
+    PNG("image/png", "png", false),
+    TXT("text/plain", "txt", false),
+    PDF("application/pdf", "pdf", true),
+    DOC("application/msword", "doc", false),
+    DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx", false),
+    XLS("application/vnd.ms-excel", "xls", false),
+    XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx", false),
+    PPT("application/vnd.ms-powerpoint", "ppt", false),
+    PPTX(
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "pptx",
+            false);
 
     private static final Map<String, AllowedFileType> BY_MIME_TYPE;
     private static final Map<String, AllowedFileType> BY_EXTENSION;
@@ -33,10 +36,12 @@ public enum AllowedFileType {
 
     private final String mimeType;
     private final String extension;
+    private final boolean embeddable;
 
-    AllowedFileType(String mimeType, String extension) {
+    AllowedFileType(String mimeType, String extension, boolean embeddable) {
         this.mimeType = mimeType;
         this.extension = extension;
+        this.embeddable = embeddable;
     }
 
     public static AllowedFileType fromMimeType(String mimeType) {

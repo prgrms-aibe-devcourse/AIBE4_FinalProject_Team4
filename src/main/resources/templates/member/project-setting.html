@@ -1,169 +1,38 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout/layout :: layout('프로젝트 설정', ~{:: #main-content})}">
-<head><!-- layout.html 의 head 로 대체 --></head>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/base-layout}">
+<head>
+    <title>프로젝트 설정</title>
+</head>
 
-<body class="bg-gray-100 min-h-screen">
+<body>
+<th:block layout:fragment="body">
 <div id="main-content">
 
-    <aside class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200
-                  flex flex-col z-40 overflow-y-auto">
+    <div th:replace="~{common/fragments/sidebar-project-setting :: sidebar(${data})}"></div>
 
-        <!-- ── 로고 ── -->
-        <div class="h-14 px-5 flex items-center border-b border-gray-100 shrink-0">
-            <a href="/member/dashboard" class="flex items-center gap-2">
-                <img src="/images/logo.png" alt="DOCUMIND" class="h-7 w-auto object-contain">
-            </a>
-        </div>
+    <div class="ml-sidebar flex flex-col min-h-screen">
 
-        <!-- ── 뒤로가기 ── -->
-        <div class="px-4 py-3 border-b border-gray-100 shrink-0">
-            <a href="/member/dashboard"
-               class="flex items-center gap-2 text-sm font-semibold text-gray-700
-                      hover:text-gray-900 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M15 19l-7-7 7-7"/>
-                </svg>
-                프로젝트 설정
-            </a>
-        </div>
-
-        <!-- ── 프로젝트 드롭다운 ── -->
-        <div class="px-3 py-3 border-b border-gray-100 shrink-0">
-            <div class="relative">
-                <button id="project-dropdown-btn"
-                        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl
-                               hover:bg-gray-50 transition-colors text-left">
-                    <!-- 현재 프로젝트 아이콘 -->
-                    <div class="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center
-                                overflow-hidden shrink-0 ring-1 ring-gray-200">
-                        <img th:if="${data.project().profileUrl() != null}"
-                             th:src="${data.project().profileUrl()}"
-                             alt="프로젝트 로고" class="w-full h-full object-cover"/>
-                        <svg th:unless="${data.project().profileUrl() != null}"
-                             class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor"
-                             viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0
-                                     01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2
-                                     a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0
-                                     01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2
-                                     a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                        </svg>
-                    </div>
-                    <span class="flex-1 text-sm font-semibold text-gray-900 truncate"
-                          th:text="${data.project().name()}">프로젝트명</span>
-                    <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none"
-                         stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-
-                <!-- 드롭다운 메뉴 -->
-                <div id="project-dropdown-menu"
-                     class="hidden absolute left-0 right-0 top-full mt-1 bg-white border
-                            border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                    <!-- 최대 5개 높이(~240px)까지만 표시, 초과 시 스크롤 -->
-                    <div class="overflow-y-auto max-h-[240px]">
-                        <div th:each="proj : ${data.myProjects()}"
-                             class="border-b border-gray-50 last:border-0">
-                            <a th:href="@{/projects/{id}/settings(id=${proj.publicId()})}"
-                               class="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50
-                                  transition-colors">
-                                <div class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center
-                                        justify-center overflow-hidden shrink-0">
-                                    <img th:if="${proj.profileUrl() != null}"
-                                         th:src="${proj.profileUrl()}" alt=""
-                                         class="w-full h-full object-cover"/>
-                                    <svg th:unless="${proj.profileUrl() != null}"
-                                         class="w-3.5 h-3.5 text-indigo-400" fill="none"
-                                         stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              stroke-width="1.5"
-                                              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6
-                                             a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2
-                                             a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"/>
-                                    </svg>
-                                </div>
-                                <span class="flex-1 text-sm text-gray-700 truncate"
-                                      th:text="${proj.name()}">프로젝트명</span>
-                                <!-- 현재 선택된 프로젝트 체크 -->
-                                <svg th:if="${proj.publicId() == data.project().publicId()}"
-                                     class="w-4 h-4 text-blue-500 shrink-0" fill="none"
-                                     stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                            </a>
-                        </div>
-                        <!-- 빈 목록 대비 -->
-                        <div th:if="${data.myProjects().isEmpty()}"
-                             class="px-4 py-3 text-xs text-gray-400 text-center">
-                            참여 중인 프로젝트가 없습니다.
-                        </div>
-                    </div><!-- /overflow-y-auto -->
-                </div>
-            </div>
-        </div>
-
-        <!-- ── 섹션 내비게이션 ── -->
-        <nav class="flex-1 px-3 py-4 space-y-0.5">
-
-            <!-- 세부사항 -->
-            <button class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl
-                           text-left text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-                    data-target="section-details">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
-                             a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                세부사항
-            </button>
-
-            <!-- API Key (MANAGER 전용) -->
-            <button th:if="${data.isManager()}"
-                    class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl
-                           text-left text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-                    data-target="section-apikey">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4
-                             a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964
-                             A6 6 0 1121 9z"/>
-                </svg>
-                API Key
-            </button>
-
-            <!-- 액세스 -->
-            <button class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-xl
-                           text-left text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-                    data-target="section-access">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1
-                             a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-                액세스
-            </button>
-        </nav>
-    </aside>
-
-    <div class="ml-64 flex flex-col min-h-screen">
-
-        <!-- 사용자 바 -->
+    <!-- 사용자 바 (항상 상단 고정) -->
+    <div class="sticky top-0 z-30">
         <div th:replace="~{common/fragments/header-auth :: user-bar}"></div>
+    </div>
 
-        <main class="flex-1 py-8">
-            <div class="max-w-3xl mx-auto px-8 space-y-6">
+    <main class="flex-1 py-8">
+        <div class="max-w-3xl mx-auto px-8 mb-6">
+            <h1 class="text-h1 text-docu-ink">프로젝트 설정</h1>
+            <p class="text-sm text-docu-secondary mt-1"
+               th:text="${data.project().name()}">프로젝트명</p>
+        </div>
+
+        <div class="max-w-3xl mx-auto px-8 space-y-6">
 
                 <section id="section-details"
-                         class="bg-white rounded-2xl border border-gray-200 shadow-sm
-                                overflow-hidden scroll-mt-8">
-                    <div class="px-8 py-5 border-b border-gray-100">
-                        <h2 class="text-base font-bold text-gray-900">세부사항</h2>
+                         class="card-base card-shadow overflow-hidden scroll-mt-8">
+                    <div class="px-8 py-5 border-b border-divider bg-surface-card">
+                        <h2 class="text-base font-bold text-docu-ink">세부사항</h2>
                     </div>
 
                     <div class="p-8">
@@ -176,9 +45,9 @@
                                 <div class="relative shrink-0">
                                     <button type="button"
                                             onclick="document.getElementById('project-icon-input').click()"
-                                            class="relative group w-16 h-16 rounded-2xl bg-indigo-100
+                                            class="relative group w-16 h-16 rounded-docu-card bg-docu-primary-light
                                                    flex items-center justify-center overflow-hidden
-                                                   ring-2 ring-gray-200 hover:ring-indigo-300
+                                                   border-2 border-divider hover:border-docu-primary
                                                    transition-all cursor-pointer">
                                         <img id="project-icon-preview"
                                              th:if="${data.project().profileUrl() != null}"
@@ -187,7 +56,7 @@
                                              class="w-full h-full object-cover"/>
                                         <svg id="project-icon-placeholder"
                                              th:if="${data.project().profileUrl() == null}"
-                                             class="w-6 h-6 text-indigo-400" fill="none"
+                                             class="w-6 h-6 text-docu-primary" fill="none"
                                              stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                   stroke-width="1.5"
@@ -215,9 +84,9 @@
                                     </button>
                                     <!-- 연필 배지 (우측 하단) -->
                                     <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full
-                                                bg-white border border-gray-200 shadow
+                                                bg-surface-card border border-divider shadow-docu-sm
                                                 flex items-center justify-center pointer-events-none">
-                                        <svg class="w-2.5 h-2.5 text-gray-500" fill="none"
+                                        <svg class="w-2.5 h-2.5 text-docu-secondary" fill="none"
                                              stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                   stroke-width="2.5"
@@ -236,38 +105,27 @@
 
                                 <!-- 이름 입력 (오른쪽, 길게) -->
                                 <div class="flex-1 flex flex-col gap-1.5 min-w-0">
-                                    <label for="projectName"
-                                           class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        프로젝트 이름 <span class="text-red-400">*</span>
+                                    <label for="projectName" class="form-label uppercase tracking-wide">
+                                        프로젝트 이름 <span class="text-docu-danger">*</span>
                                     </label>
                                     <input type="text" id="projectName" maxlength="100"
                                            th:value="${data.project().name()}"
                                            placeholder="프로젝트 이름을 입력하세요"
-                                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200
-                                                  rounded-xl text-sm text-gray-700 focus:outline-none
-                                                  focus:ring-2 focus:ring-blue-300
-                                                  focus:border-transparent transition-all"/>
-                                    <p id="projectName-error"
-                                       class="hidden text-xs text-red-500"></p>
+                                           class="form-input"/>
+                                    <p id="projectName-error" class="hidden form-error"></p>
                                 </div>
                             </div>
 
                             <!-- 인라인 피드백 + 버튼 -->
-                            <p id="details-global-error"
-                               class="hidden mt-4 text-sm text-red-500"></p>
+                            <p id="details-global-error" class="hidden mt-4 form-error"></p>
                             <p id="details-success-message"
-                               class="hidden mt-4 text-sm text-green-600 font-medium"></p>
+                               class="hidden mt-4 text-sm text-docu-success-dark font-medium"></p>
                             <div class="flex justify-end gap-3 mt-5">
-                                <button type="button" onclick="cancelDetails()"
-                                        class="px-5 py-2.5 rounded-xl border border-gray-200
-                                               text-sm font-semibold text-gray-700
-                                               hover:bg-gray-50 transition-colors">
+                                <button type="button" onclick="cancelDetails()" class="btn-ghost">
                                     취소
                                 </button>
-                                <button type="button" id="details-save-btn"
-                                        onclick="saveDetails()"
-                                        class="px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
-                                               text-sm font-semibold text-white transition-colors">
+                                <button type="button" id="details-save-btn" onclick="saveDetails()"
+                                        class="btn-primary">
                                     변경
                                 </button>
                             </div>
@@ -276,14 +134,14 @@
                         <!-- ── MEMBER: 읽기 전용 ── -->
                         <th:block th:unless="${data.isManager()}">
                             <div class="flex items-center gap-5">
-                                <div class="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center
-                                            justify-center overflow-hidden ring-2 ring-gray-200
+                                <div class="w-16 h-16 rounded-docu-card bg-docu-primary-light flex items-center
+                                            justify-center overflow-hidden border-2 border-divider
                                             shrink-0">
                                     <img th:if="${data.project().profileUrl() != null}"
                                          th:src="${data.project().profileUrl()}"
                                          alt="프로젝트 로고" class="w-full h-full object-cover"/>
                                     <svg th:unless="${data.project().profileUrl() != null}"
-                                         class="w-6 h-6 text-indigo-400" fill="none"
+                                         class="w-6 h-6 text-docu-primary" fill="none"
                                          stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                               stroke-width="1.5"
@@ -296,139 +154,120 @@
                                     </svg>
                                 </div>
                                 <div class="flex-1 flex flex-col gap-1.5 min-w-0">
-                                    <label class="text-xs font-semibold text-gray-500
-                                                  uppercase tracking-wide">
+                                    <label class="form-label uppercase tracking-wide">
                                         프로젝트 이름
                                     </label>
                                     <input type="text" readonly
                                            th:value="${data.project().name()}"
-                                           class="w-full px-4 py-3 bg-gray-100 border border-gray-200
-                                                  rounded-xl text-sm text-gray-500 cursor-not-allowed"/>
+                                           class="form-input form-disabled"/>
                                 </div>
                             </div>
                         </th:block>
                     </div>
                 </section>
 
+                <!-- API Key Section -->
                 <section th:if="${data.isManager()}"
                          id="section-apikey"
-                         class="bg-white rounded-2xl border border-gray-200 shadow-sm
-                                overflow-hidden scroll-mt-8">
-                    <div class="px-8 py-5 border-b border-gray-100">
-                        <h2 class="text-base font-bold text-gray-900">API Key</h2>
+                         class="card-base card-shadow overflow-hidden scroll-mt-8">
+                    <div class="px-8 py-5 border-b border-divider bg-surface-card">
+                        <h2 class="text-base font-bold text-docu-ink">API Key</h2>
                     </div>
 
-                    <div class="p-8">
+                    <div class="p-8 space-y-8">
 
-                        <!-- 키 없는 상태 -->
-                        <div th:if="${data.apiKeyInfo() == null or !data.apiKeyInfo().hasKey()}"
-                             class="flex flex-col items-center gap-4 py-6">
-                            <div class="w-12 h-12 rounded-2xl bg-gray-100 flex items-center
-                                        justify-center">
-                                <svg class="w-6 h-6 text-gray-400" fill="none"
-                                     stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          stroke-width="1.5"
-                                          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2
-                                             H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707
-                                             l5.964-5.964A6 6 0 1121 9z"/>
-                                </svg>
-                            </div>
-                            <p class="text-sm text-gray-500">발급된 API 키가 없습니다.</p>
-                            <button type="button" onclick="reissueApiKey()"
-                                    class="px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
-                                           text-sm font-semibold text-white transition-colors">
-                                키 발급
-                            </button>
-                        </div>
-
-                        <!-- 키 있는 상태 -->
-                        <div th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().hasKey()}"
-                             class="flex flex-col gap-5">
-
-                            <!-- 상태 뱃지 -->
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-semibold text-gray-500 uppercase
-                                             tracking-wide">상태</span>
-                                <span th:if="${data.apiKeyInfo().active()}"
-                                      class="inline-flex items-center gap-1 px-2.5 py-0.5
-                                             rounded-full text-xs font-semibold bg-green-100
-                                             text-green-700">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                    활성
-                                </span>
-                                <span th:unless="${data.apiKeyInfo().active()}"
-                                      class="inline-flex items-center gap-1 px-2.5 py-0.5
-                                             rounded-full text-xs font-semibold bg-yellow-100
-                                             text-yellow-700">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
-                                    정지됨
-                                </span>
-                            </div>
-
-                            <!-- 마스킹된 키 표시 -->
-                            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50
-                                        border border-gray-200 rounded-xl">
-                                <code id="api-key-display"
-                                      class="flex-1 text-sm font-mono text-gray-700 select-all"
-                                      th:text="${data.apiKeyInfo().maskedKey()}">sk_live_****</code>
-                                <button type="button" onclick="copyApiKey()"
-                                        title="복사"
-                                        class="shrink-0 p-1.5 rounded-lg hover:bg-gray-200
-                                               transition-colors text-gray-500 hover:text-gray-700">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              stroke-width="2"
-                                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012
-                                                 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0
-                                                 00-2 2v8a2 2 0 002 2z"/>
+                        <!-- INGEST KEY -->
+                        <div>
+                            <h3 class="text-sm font-semibold text-docu-ink mb-3">Ingest Key (로그 수집용)</h3>
+                            <!-- 키 없는 상태 -->
+                            <div th:if="${data.apiKeyInfo() == null or data.apiKeyInfo().ingestKey() == null or !data.apiKeyInfo().ingestKey().hasKey()}"
+                                 class="flex flex-col items-center gap-4 py-6 border border-divider rounded-docu-card bg-surface-base">
+                                <div class="w-12 h-12 rounded-docu-card bg-surface-card border border-divider flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                                     </svg>
-                                </button>
+                                </div>
+                                <p class="text-sm text-docu-secondary">발급된 Ingest API 키가 없습니다.</p>
+                                <button type="button" onclick="reissueApiKey('INGEST')" class="btn-primary">키 발급</button>
                             </div>
-
-                            <!-- 액션 버튼 -->
-                            <div class="flex gap-3">
-                                <button type="button" onclick="reissueApiKey()"
-                                        class="px-4 py-2.5 rounded-xl border border-gray-200
-                                               text-sm font-semibold text-gray-700
-                                               hover:bg-gray-50 transition-colors">
-                                    재발급
-                                </button>
-                                <!-- ACTIVE → 정지, SUSPENDED → 활성화 -->
-                                <button th:if="${data.apiKeyInfo().active()}"
-                                        type="button"
-                                        th:onclick="toggleApiKey('ACTIVE')"
-                                        class="px-4 py-2.5 rounded-xl border border-red-200
-                                               text-sm font-semibold text-red-600
-                                               hover:bg-red-50 transition-colors">
-                                    정지
-                                </button>
-                                <button th:unless="${data.apiKeyInfo().active()}"
-                                        type="button"
-                                        th:onclick="toggleApiKey('SUSPENDED')"
-                                        class="px-4 py-2.5 rounded-xl border border-green-200
-                                               text-sm font-semibold text-green-600
-                                               hover:bg-green-50 transition-colors">
-                                    활성화
-                                </button>
+                            <!-- 키 있는 상태 -->
+                            <div th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().ingestKey() != null and data.apiKeyInfo().ingestKey().hasKey()}" class="flex flex-col gap-5">
+                                <div class="flex items-center gap-2">
+                                    <span class="form-label uppercase tracking-wide">상태</span>
+                                    <span th:if="${data.apiKeyInfo().ingestKey().active()}" class="badge-status-active">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-docu-success inline-block" aria-hidden="true"></span>활성
+                                    </span>
+                                    <span th:unless="${data.apiKeyInfo().ingestKey().active()}" class="badge-status-paused">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" aria-hidden="true"></span>정지됨
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn">
+                                    <code class="flex-1 text-sm font-mono text-docu-ink select-all" th:text="${data.apiKeyInfo().ingestKey().maskedKey()}"></code>
+                                    <button type="button" th:onclick="copyApiKey('INGEST')" title="복사" class="btn-icon w-8 h-8 shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                    </button>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button type="button" onclick="reissueApiKey('INGEST')" class="btn-ghost">재발급</button>
+                                    <button th:if="${data.apiKeyInfo().ingestKey().active()}" type="button" th:onclick="toggleApiKey('INGEST', 'ACTIVE')" class="btn-danger">정지</button>
+                                    <button th:unless="${data.apiKeyInfo().ingestKey().active()}" type="button" th:onclick="toggleApiKey('INGEST', 'SUSPENDED')" class="btn-success">활성화</button>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- QUERY KEY -->
+                        <div class="pt-6 border-t border-divider">
+                            <h3 class="text-sm font-semibold text-docu-ink mb-3">Query Key (챗봇 조회용)</h3>
+                            <!-- 키 없는 상태 -->
+                            <div th:if="${data.apiKeyInfo() == null or data.apiKeyInfo().queryKey() == null or !data.apiKeyInfo().queryKey().hasKey()}"
+                                 class="flex flex-col items-center gap-4 py-6 border border-divider rounded-docu-card bg-surface-base">
+                                <div class="w-12 h-12 rounded-docu-card bg-surface-card border border-divider flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                    </svg>
+                                </div>
+                                <p class="text-sm text-docu-secondary">발급된 Query API 키가 없습니다.</p>
+                                <button type="button" onclick="reissueApiKey('QUERY')" class="btn-primary">키 발급</button>
+                            </div>
+                            <!-- 키 있는 상태 -->
+                            <div th:if="${data.apiKeyInfo() != null and data.apiKeyInfo().queryKey() != null and data.apiKeyInfo().queryKey().hasKey()}" class="flex flex-col gap-5">
+                                <div class="flex items-center gap-2">
+                                    <span class="form-label uppercase tracking-wide">상태</span>
+                                    <span th:if="${data.apiKeyInfo().queryKey().active()}" class="badge-status-active">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-docu-success inline-block" aria-hidden="true"></span>활성
+                                    </span>
+                                    <span th:unless="${data.apiKeyInfo().queryKey().active()}" class="badge-status-paused">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" aria-hidden="true"></span>정지됨
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn">
+                                    <code class="flex-1 text-sm font-mono text-docu-ink select-all" th:text="${data.apiKeyInfo().queryKey().maskedKey()}"></code>
+                                    <button type="button" th:onclick="copyApiKey('QUERY')" title="복사" class="btn-icon w-8 h-8 shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                    </button>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button type="button" onclick="reissueApiKey('QUERY')" class="btn-ghost">재발급</button>
+                                    <button th:if="${data.apiKeyInfo().queryKey().active()}" type="button" th:onclick="toggleApiKey('QUERY', 'ACTIVE')" class="btn-danger">정지</button>
+                                    <button th:unless="${data.apiKeyInfo().queryKey().active()}" type="button" th:onclick="toggleApiKey('QUERY', 'SUSPENDED')" class="btn-success">활성화</button>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </section>
 
                 <section id="section-access"
-                         class="bg-white rounded-2xl border border-gray-200 shadow-sm
-                                overflow-hidden scroll-mt-8">
-                    <div class="px-8 py-5 border-b border-gray-100 flex items-center
+                         class="card-base card-shadow overflow-hidden scroll-mt-8">
+                    <div class="px-8 py-5 border-b border-divider bg-surface-card flex items-center
                                 justify-between">
-                        <h2 class="text-base font-bold text-gray-900">액세스</h2>
+                        <h2 class="text-base font-bold text-docu-ink">액세스</h2>
                         <!-- 초대 버튼 (MANAGER 전용) -->
                         <button th:if="${data.isManager()}"
                                 type="button" onclick="openInviteModal()"
-                                class="flex items-center gap-1.5 px-4 py-2 rounded-xl
-                                       border border-gray-200 text-sm font-semibold text-gray-700
-                                       hover:bg-gray-50 transition-colors">
+                                class="btn-ghost btn-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor"
                                  viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -441,26 +280,26 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
-                            <tr class="border-b border-gray-100">
+                            <tr class="border-b border-divider bg-surface-base/30">
                                 <th class="px-6 py-3 text-left text-xs font-semibold
-                                               text-gray-500 uppercase tracking-wide w-1/3">이름
+                                               text-docu-secondary uppercase tracking-wide w-1/3">이름
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold
-                                               text-gray-500 uppercase tracking-wide w-1/3">이메일
+                                               text-docu-secondary uppercase tracking-wide w-1/3">이메일
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold
-                                               text-gray-500 uppercase tracking-wide w-36">권한
+                                               text-docu-secondary uppercase tracking-wide w-36">권한
                                 </th>
                                 <th th:if="${data.isManager()}"
                                     class="px-6 py-3 text-right text-xs font-semibold
-                                               text-gray-500 uppercase tracking-wide">작업
+                                               text-docu-secondary uppercase tracking-wide">작업
                                 </th>
                             </tr>
                             </thead>
                             <tbody>
                             <tr th:each="member : ${data.members()}"
-                                class="border-b border-gray-50 last:border-0
-                                           hover:bg-gray-50 transition-colors">
+                                class="border-b border-divider last:border-0
+                                           hover:bg-surface-base transition-colors">
 
                                 <!-- 이름 + 아바타 -->
                                 <td class="px-6 py-4">
@@ -471,7 +310,7 @@
                                                  th:src="${member.profileUrl()}"
                                                  alt="" class="w-full h-full object-cover"/>
                                             <div th:unless="${member.profileUrl() != null}"
-                                                 class="w-8 h-8 rounded-full bg-indigo-400
+                                                 class="w-8 h-8 rounded-full bg-docu-primary
                                                             flex items-center justify-center">
                                                     <span class="text-white text-xs font-bold"
                                                           th:text="${member.nickname() != null
@@ -480,16 +319,16 @@
                                             </div>
                                         </div>
                                         <div>
-                                            <p class="font-semibold text-gray-900"
+                                            <p class="font-semibold text-docu-ink"
                                                th:text="${member.name()}">이름</p>
-                                            <p class="text-xs text-gray-400"
+                                            <p class="text-xs text-docu-secondary"
                                                th:text="${member.nickname()}">닉네임</p>
                                         </div>
                                     </div>
                                 </td>
 
                                 <!-- 이메일 -->
-                                <td class="px-6 py-4 text-gray-500"
+                                <td class="px-6 py-4 text-docu-secondary"
                                     th:text="${member.email()}">email
                                 </td>
 
@@ -498,16 +337,14 @@
                                     <!-- MANAGER 뷰: CEO는 배지, 나머지는 셀렉트 -->
                                     <th:block th:if="${data.isManager()}">
                                             <span th:if="${member.isCeo()}"
-                                                  class="inline-flex items-center px-2.5 py-1
-                                                         rounded-lg text-xs font-semibold
-                                                         bg-indigo-50 text-indigo-700">관리자</span>
+                                                  class="badge-status-selected">관리자</span>
                                         <select th:unless="${member.isCeo()}"
                                                 th:attr="data-mid=${member.memberId()}, data-is-me=${member.isCurrentUser()}"
                                                 onchange="changeRole(this)"
-                                                class="text-xs border border-gray-200 rounded-lg
-                                                           px-2 py-1 bg-white text-gray-700
-                                                           focus:outline-none focus:ring-1
-                                                           focus:ring-blue-300 cursor-pointer">
+                                                class="text-xs border border-divider rounded-docu-btn
+                                                           px-2 py-1 bg-surface-base text-docu-ink
+                                                           focus:outline-none focus:border-docu-primary
+                                                           focus:ring-2 focus:ring-docu-primary/20 cursor-pointer">
                                             <option value="MANAGER"
                                                     th:selected="${member.isManager()}">관리자
                                             </option>
@@ -518,11 +355,10 @@
                                     </th:block>
                                     <!-- MEMBER 뷰: 배지 표시 -->
                                     <th:block th:unless="${data.isManager()}">
-                                            <span class="inline-flex items-center px-2.5 py-1
-                                                         rounded-lg text-xs font-semibold"
+                                            <span class="badge-base"
                                                   th:classappend="${member.isManager()}
-                                                                   ? 'bg-indigo-50 text-indigo-700'
-                                                                   : 'bg-gray-100 text-gray-600'"
+                                                                   ? 'bg-docu-primary-light text-docu-primary border-docu-primary'
+                                                                   : 'bg-surface-base text-docu-secondary border-divider'"
                                                   th:text="${member.isManager()} ? '관리자' : '구성원'">
                                                 구성원
                                             </span>
@@ -537,8 +373,8 @@
                                             th:attr="data-mid=${member.memberId()},
                                                          data-mname=${member.name()}"
                                             onclick="removeMember(this.dataset.mid, this.dataset.mname)"
-                                            class="text-xs font-semibold text-red-500
-                                                       hover:text-red-700 transition-colors">
+                                            class="text-xs font-semibold text-docu-danger
+                                                       hover:text-docu-danger-dark transition-colors">
                                         제거
                                     </button>
                                 </td>
@@ -548,17 +384,16 @@
 
                         <!-- 빈 목록 -->
                         <div th:if="${data.members().isEmpty()}"
-                             class="py-10 text-center text-sm text-gray-400">
+                             class="py-10 text-center text-sm text-docu-secondary">
                             프로젝트 멤버가 없습니다.
                         </div>
                     </div>
                 </section>
 
                 <section id="section-danger"
-                         class="bg-white rounded-2xl border border-gray-200 shadow-sm
-                                overflow-hidden scroll-mt-8">
-                    <div class="px-8 py-5 border-b border-gray-100">
-                        <h2 class="text-base font-bold text-red-600 flex items-center gap-2">
+                         class="card-base card-shadow overflow-hidden scroll-mt-8">
+                    <div class="px-8 py-5 border-b border-divider bg-surface-card">
+                        <h2 class="text-base font-bold text-docu-danger flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor"
                                  viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -575,37 +410,33 @@
 
                         <!-- 프로젝트 나가기 (CEO가 아닌 경우) -->
                         <div th:unless="${data.isCeo()}"
-                             class="flex items-center justify-between p-5 rounded-xl
-                                    border border-red-100 bg-red-50">
+                             class="flex items-center justify-between p-5 rounded-docu-btn
+                                    border border-docu-danger-light bg-docu-danger-light/30">
                             <div>
-                                <p class="text-sm font-semibold text-gray-900">프로젝트 나가기</p>
-                                <p class="text-xs text-gray-500 mt-0.5">
+                                <p class="text-sm font-semibold text-docu-ink">프로젝트 나가기</p>
+                                <p class="text-xs text-docu-secondary mt-0.5">
                                     이 프로젝트에서 탈퇴합니다. 접근 권한이 즉시 소멸됩니다.
                                 </p>
                             </div>
                             <button type="button" onclick="leaveProject()"
-                                    class="shrink-0 px-4 py-2.5 rounded-xl border border-red-300
-                                           text-sm font-semibold text-red-600
-                                           hover:bg-red-100 transition-colors">
+                                    class="btn-base px-4 py-2.5 border-2 border-docu-ink bg-surface-base text-docu-danger shadow-docu-sm hover:bg-docu-danger-light focus-ring shrink-0">
                                 프로젝트 나가기
                             </button>
                         </div>
 
                         <!-- 프로젝트 삭제 (CEO + MANAGER 인 경우) -->
                         <div th:if="${data.isCeo() and data.isManager()}"
-                             class="flex items-center justify-between p-5 rounded-xl
-                                    border border-red-200 bg-red-50">
+                             class="flex items-center justify-between p-5 rounded-docu-btn
+                                    border border-docu-danger-light bg-docu-danger-light/30">
                             <div>
-                                <p class="text-sm font-semibold text-gray-900">프로젝트 삭제</p>
-                                <p class="text-xs text-gray-500 mt-0.5">
+                                <p class="text-sm font-semibold text-docu-ink">프로젝트 삭제</p>
+                                <p class="text-xs text-docu-secondary mt-0.5">
                                     이 프로젝트와 관련된 모든 로그, 문서, 벡터 데이터가
                                     영구 삭제됩니다.
                                 </p>
                             </div>
                             <button type="button" onclick="deleteProject()"
-                                    class="shrink-0 px-4 py-2.5 rounded-xl bg-red-600
-                                           hover:bg-red-700 text-sm font-semibold text-white
-                                           transition-colors">
+                                    class="btn-danger shrink-0">
                                 프로젝트 삭제
                             </button>
                         </div>
@@ -615,7 +446,7 @@
             </div><!-- /max-w -->
         </main>
 
-        <footer class="border-t border-gray-200 py-6 text-center text-xs text-gray-400">
+        <footer class="border-t border-divider py-6 text-center text-xs text-docu-secondary">
             © 2026 Documind Incs. All rights reserved.
         </footer>
     </div>
@@ -626,50 +457,38 @@
     <div th:if="${data.isManager()}"
          id="invite-modal"
          class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
-        <div class="bg-white rounded-2xl shadow-2xl w-96 p-8 flex flex-col gap-5">
+        <div class="card-modal w-96 p-8 flex flex-col gap-5">
             <div>
-                <h3 class="text-base font-bold text-gray-900 mb-1">멤버 초대</h3>
-                <p class="text-sm text-gray-500">이메일로 초대 링크를 전송합니다.</p>
+                <h3 class="text-h2 text-docu-ink mb-1">멤버 초대</h3>
+                <p class="text-sm text-docu-secondary">이메일로 초대 링크를 전송합니다.</p>
             </div>
             <div class="flex flex-col gap-1.5">
-                <label for="invite-email"
-                       class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <label for="invite-email" class="form-label uppercase tracking-wide">
                     이메일
                 </label>
                 <input type="email" id="invite-email" placeholder="email@example.com"
-                       class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                              text-sm text-gray-700 focus:outline-none focus:ring-2
-                              focus:ring-blue-300 focus:border-transparent transition-all"/>
+                       class="form-input"/>
             </div>
 
             <!-- 역할 선택 -->
             <div class="flex flex-col gap-1.5">
-                <label for="invite-role"
-                       class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <label for="invite-role" class="form-label uppercase tracking-wide">
                     역할
                 </label>
-                <select id="invite-role"
-                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                               text-sm text-gray-700 focus:outline-none focus:ring-2
-                               focus:ring-blue-300 focus:border-transparent transition-all
-                               cursor-pointer">
+                <select id="invite-role" class="form-select">
                     <option value="MEMBER" selected>구성원</option>
                     <option value="MANAGER">관리자</option>
                 </select>
             </div>
 
-            <p id="invite-error" class="hidden text-xs text-red-500 -mt-2"></p>
+            <p id="invite-error" class="hidden form-error -mt-2"></p>
 
             <div class="flex gap-3">
-                <button type="button" onclick="closeInviteModal()"
-                        class="flex-1 py-2.5 rounded-xl border border-gray-200
-                               text-sm font-semibold text-gray-700 hover:bg-gray-50
-                               transition-colors">
+                <button type="button" onclick="closeInviteModal()" class="btn-ghost flex-1">
                     취소
                 </button>
                 <button type="button" id="invite-send-btn" onclick="sendInvite()"
-                        class="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
-                               text-sm font-semibold text-white transition-colors">
+                        class="btn-primary flex-1">
                     초대 전송
                 </button>
             </div>
@@ -679,21 +498,20 @@
     <!-- API Key 평문 노출 모달 (발급/재발급 직후 1회만 표시) -->
     <div id="api-key-reveal-modal"
          class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
-        <div class="bg-white rounded-2xl shadow-2xl w-[480px] p-8 flex flex-col gap-5">
+        <div class="card-modal w-[480px] p-8 flex flex-col gap-5">
             <div>
-                <h3 class="text-base font-bold text-gray-900 mb-1">API 키가 발급되었습니다</h3>
-                <p class="text-sm text-red-500 font-semibold">
+                <h3 class="text-h2 text-docu-ink mb-1">API 키가 발급되었습니다</h3>
+                <p class="text-sm text-docu-danger font-semibold">
                     이 화면을 벗어나면 키 원문을 다시 확인할 수 없습니다. 지금 바로 복사해 두세요.
                 </p>
             </div>
-            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50
-                        border border-gray-200 rounded-xl">
+            <div class="flex items-center gap-3 px-4 py-3 bg-surface-base
+                        border border-divider rounded-docu-btn">
                 <code id="plain-api-key-display"
-                      class="flex-1 text-sm font-mono text-gray-700 break-all select-all"></code>
+                      class="flex-1 text-sm font-mono text-docu-ink break-all select-all"></code>
                 <button type="button" onclick="copyPlainApiKey()"
                         title="복사"
-                        class="shrink-0 p-1.5 rounded-lg hover:bg-gray-200
-                               transition-colors text-gray-500 hover:text-gray-700">
+                        class="btn-icon w-8 h-8 shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8
@@ -701,9 +519,7 @@
                     </svg>
                 </button>
             </div>
-            <button type="button" onclick="closeApiKeyRevealModal()"
-                    class="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
-                           text-sm font-semibold text-white transition-colors">
+            <button type="button" onclick="closeApiKeyRevealModal()" class="btn-primary">
                 확인 (페이지 새로고침)
             </button>
         </div>
@@ -723,5 +539,6 @@
     <script th:src="@{/js/member/ProjectSetting.js}"></script>
 
 </div>
+</th:block>
 </body>
 </html>

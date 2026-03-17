@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/base-layout}">
+<body>
+<th:block layout:fragment="body">
+
+    <!-- 마이페이지 사이드바 (showSidebar=true 일 때만 표시) -->
+    <th:block th:if="${showSidebar}">
+        <th:block th:replace="~{common/fragments/sidebar-mypage :: sidebar-mypage(${activeMenu})}"></th:block>
+    </th:block>
+
+    <!-- 사이드바 오른쪽 전체 영역 -->
+    <div class="min-h-screen flex flex-col bg-surface-base"
+         th:classappend="${showSidebar} ? 'lg:pl-sidebar' : ''">
+
+        <!-- 상단 유저 바 -->
+        <div class="sticky top-0 z-30">
+            <div th:replace="~{common/fragments/header-auth :: user-bar}"></div>
+        </div>
+
+        <main id="main-content"
+              class="flex-1 p-4 sm:p-content-p overflow-y-auto pb-20 lg:pb-content-p"
+              role="main"
+              tabindex="-1">
+            <th:block layout:fragment="content">
+                <!-- fallback -->
+            </th:block>
+        </main>
+
+        <div th:replace="~{common/layout/layout-common :: app-footer}"></div>
+    </div>
+
+    <th:block th:replace="~{common/layout/layout-common :: layout-overlays}"></th:block>
+
+</th:block>
+</body>
+</html>

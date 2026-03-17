@@ -1,439 +1,269 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout/layout :: layout('회사 관리 (운영자)', ~{:: #main-content})}">
-
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/mypage-layout}">
 <head>
-    <!-- layout.html의 head로 대체 -->
+    <title>회사 관리 (운영자)</title>
 </head>
+<body>
+<div layout:fragment="content">
+    <div class="max-w-7xl mx-auto space-y-6">
 
-<body class="bg-gray-100 min-h-screen">
-<div id="main-content">
+        <!-- 페이지 타이틀 -->
+        <div>
+            <h2 class="text-h1 text-docu-ink">회사 관리</h2>
+            <p class="mt-1 text-sm text-docu-secondary">
+                회사 가입 신청을 검토하고 승인 또는 거부합니다.
+            </p>
+        </div>
 
-    <!-- ── 고정 사이드바 ── -->
-    <div th:replace="~{common/fragments/sidebar-mypage :: sidebar-mypage('company')}"></div>
+        <!-- 성공 메시지 -->
+        <div id="admin-success-msg" class="hidden p-4 rounded-docu-btn bg-docu-success-light border border-docu-success text-sm text-docu-success-dark"></div>
 
-    <!-- ── 오른쪽 패널 ── -->
-    <div class="ml-64 flex flex-col min-h-screen">
-
-        <!-- 사용자 바 -->
-        <div th:replace="~{common/fragments/header-auth :: user-bar}"></div>
-
-        <main class="flex-1 px-8 py-8">
-
-            <!-- 페이지 제목 -->
-            <div class="mb-6">
-                <h1 class="text-xl font-bold text-gray-900">회사 관리</h1>
-                <p class="mt-1 text-sm text-gray-500">회사 가입 신청을 검토하고 승인 또는 거부합니다.</p>
+        <!-- 탭 컨테이너 -->
+        <div class="bg-surface-card rounded-docu-card border border-divider shadow-docu-card overflow-hidden">
+            <!-- 탭 헤더 -->
+            <div class="flex border-b border-divider px-4 bg-surface-base/50">
+                <button id="tab-btn-pending" type="button" onclick="switchTab('pending')"
+                        class="flex items-center gap-2 px-6 py-4 text-sm font-semibold border-b-2 border-transparent text-docu-secondary hover:text-docu-ink transition-colors">
+                    승인 대기
+                    <span th:if="${pendingCount > 0}" th:text="${pendingCount}" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-docu-warning-light text-docu-warning-dark text-xs font-bold"></span>
+                    <span th:unless="${pendingCount > 0}" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-surface-base text-docu-secondary text-xs font-bold">0</span>
+                </button>
+                <button id="tab-btn-approved" type="button" onclick="switchTab('approved')"
+                        class="flex items-center gap-2 px-6 py-4 text-sm font-semibold border-b-2 border-transparent text-docu-secondary hover:text-docu-ink transition-colors">
+                    승인 완료
+                    <span th:if="${approvedCount > 0}" th:text="${approvedCount}" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-docu-success-light text-docu-success-dark text-xs font-bold"></span>
+                    <span th:unless="${approvedCount > 0}" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-surface-base text-docu-secondary text-xs font-bold">0</span>
+                </button>
+                <button id="tab-btn-suspended" type="button" onclick="switchTab('suspended')"
+                        class="flex items-center gap-2 px-6 py-4 text-sm font-semibold border-b-2 border-transparent text-docu-secondary hover:text-docu-ink transition-colors">
+                    승인 거부
+                    <span th:if="${suspendedCount > 0}" th:text="${suspendedCount}" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-docu-danger-light text-docu-danger text-xs font-bold"></span>
+                    <span th:unless="${suspendedCount > 0}" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-surface-base text-docu-secondary text-xs font-bold">0</span>
+                </button>
             </div>
 
-            <!-- 성공 메시지 (sessionStorage에서 복원) -->
-            <div id="admin-success-msg"
-                 class="hidden mb-6 p-4 bg-green-50 border border-green-200
-                        rounded-xl text-sm text-green-700"></div>
-
-            <!-- ── 탭 바 ── -->
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-
-                <!-- 탭 헤더 -->
-                <div class="flex border-b border-gray-200 px-2">
-
-                    <!-- 승인 대기 탭 -->
-                    <button id="tab-btn-pending"
-                            type="button"
-                            onclick="switchTab('pending')"
-                            class="flex items-center gap-2 px-5 py-4 text-sm transition-colors">
-                        승인 대기
-                        <span th:if="${pendingCount > 0}"
-                              th:text="${pendingCount}"
-                              class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
-                                     rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
-                        </span>
-                        <span th:unless="${pendingCount > 0}"
-                              class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
-                                     rounded-full bg-gray-100 text-gray-500 text-xs font-semibold">0</span>
-                    </button>
-
-                    <!-- 승인 완료 탭 -->
-                    <button id="tab-btn-approved"
-                            type="button"
-                            onclick="switchTab('approved')"
-                            class="flex items-center gap-2 px-5 py-4 text-sm transition-colors">
-                        승인 완료
-                        <span th:if="${approvedCount > 0}"
-                              th:text="${approvedCount}"
-                              class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
-                                     rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">
-                        </span>
-                        <span th:unless="${approvedCount > 0}"
-                              class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
-                                     rounded-full bg-gray-100 text-gray-500 text-xs font-semibold">0</span>
-                    </button>
-
-                    <!-- 승인 거부 탭 -->
-                    <button id="tab-btn-suspended"
-                            type="button"
-                            onclick="switchTab('suspended')"
-                            class="flex items-center gap-2 px-5 py-4 text-sm transition-colors">
-                        승인 거부
-                        <span th:if="${suspendedCount > 0}"
-                              th:text="${suspendedCount}"
-                              class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
-                                     rounded-full bg-red-100 text-red-600 text-xs font-semibold">
-                        </span>
-                        <span th:unless="${suspendedCount > 0}"
-                              class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
-                                     rounded-full bg-gray-100 text-gray-500 text-xs font-semibold">0</span>
-                    </button>
+            <!-- 탭 패널: 승인 대기 -->
+            <div id="tab-pending" class="p-6">
+                <div th:if="${#lists.isEmpty(pending)}" class="flex flex-col items-center justify-center py-16 text-center">
+                    <div class="w-16 h-16 rounded-full bg-surface-base border border-divider flex items-center justify-center mb-4">
+                        <span class="text-2xl">📭</span>
+                    </div>
+                    <p class="text-sm font-semibold text-docu-ink">검토 대기 중인 회사가 없습니다.</p>
+                    <p class="mt-1 text-xs text-docu-secondary">새로운 신청이 들어오면 이곳에 표시됩니다.</p>
                 </div>
 
-                <!-- ── 탭 패널 : 승인 대기 ── -->
-                <div id="tab-pending" class="p-6">
-
-                    <!-- 빈 상태 -->
-                    <div th:if="${#lists.isEmpty(pending)}"
-                         class="flex flex-col items-center justify-center py-16 text-center">
-                        <div class="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-                            <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
+                <div th:unless="${#lists.isEmpty(pending)}" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div th:each="c : ${pending}" class="bg-surface-card border border-divider rounded-docu-card shadow-docu-sm hover:shadow-docu-card hover:-translate-y-0.5 transition-all">
+                        <!-- 카드 헤더 -->
+                        <div class="flex items-center gap-4 p-5 border-b border-divider/50">
+                            <div th:if="${c.companyProfileUrl() != null}" class="w-12 h-12 rounded-docu-btn overflow-hidden shrink-0 border border-divider">
+                                <img th:src="${c.companyProfileUrl()}" alt="회사 로고" class="w-full h-full object-cover"/>
+                            </div>
+                            <div th:unless="${c.companyProfileUrl() != null}" class="w-12 h-12 rounded-docu-btn bg-docu-primary flex items-center justify-center shrink-0 text-white font-bold text-lg">
+                                <span th:text="${#strings.substring(c.companyName(), 0, 1)}">C</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 th:text="${c.companyName()}" class="text-sm font-bold text-docu-ink truncate">회사명</h3>
+                                <span class="inline-flex mt-1 px-2 py-0.5 rounded-full text-xs font-bold bg-docu-warning-light text-docu-warning-dark">승인 대기</span>
+                            </div>
                         </div>
-                        <p class="text-sm font-medium text-gray-700">검토 대기 중인 회사가 없습니다.</p>
-                        <p class="mt-1 text-xs text-gray-400">새로운 신청이 들어오면 이곳에 표시됩니다.</p>
-                    </div>
 
-                    <!-- 카드 그리드 -->
-                    <div th:unless="${#lists.isEmpty(pending)}"
-                         class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-
-                        <div th:each="c : ${pending}"
-                             class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-
-                            <!-- 카드 헤더 : 회사 정보 -->
-                            <div class="flex items-center gap-4 px-6 pt-6 pb-4">
-                                <!-- 회사 프로필 이미지 -->
-                                <div th:if="${c.companyProfileUrl() != null}"
-                                     class="w-12 h-12 rounded-xl overflow-hidden shrink-0 ring-1 ring-gray-200">
-                                    <img th:src="${c.companyProfileUrl()}" alt="회사 로고" class="w-full h-full object-cover"/>
-                                </div>
-                                <div th:unless="${c.companyProfileUrl() != null}"
-                                     class="w-12 h-12 rounded-xl bg-sky-400 flex items-center justify-center shrink-0">
-                                    <span th:text="${#strings.substring(c.companyName(), 0, 1)}"
-                                          class="text-lg font-bold text-white"></span>
-                                </div>
-
-                                <!-- 회사명 + 상태 뱃지 -->
-                                <div class="flex-1 min-w-0">
-                                    <p th:text="${c.companyName()}"
-                                       class="text-sm font-bold text-gray-900 truncate"></p>
-                                    <!-- 상태 뱃지 -->
-                                    <span th:switch="${c.companyStatus().name()}">
-                                        <span th:case="'PENDING'"
-                                              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                                            승인 대기
-                                        </span>
-                                        <span th:case="'APPROVED'"
-                                              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                                            승인 완료
-                                        </span>
-                                        <span th:case="'SUSPENDED'"
-                                              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
-                                            거부됨
-                                        </span>
-                                    </span>
-                                </div>
+                        <!-- 상세 정보 -->
+                        <div class="p-5 space-y-4">
+                            <div class="flex gap-6 text-xs text-docu-secondary">
+                                <span>신청일 <strong th:text="${c.appliedAt()}" class="text-docu-ink ml-1">2024-01-01</strong></span>
+                                <span>수정일 <strong th:text="${c.updatedAt()}" class="text-docu-ink ml-1">2024-01-01</strong></span>
                             </div>
 
-                            <!-- 날짜 행 -->
-                            <div class="px-6 pb-4 flex gap-6 text-xs text-gray-400">
-                                <span>신청일 <span th:text="${c.appliedAt()}" class="text-gray-600 font-medium"></span></span>
-                                <span>수정일 <span th:text="${c.updatedAt()}" class="text-gray-600 font-medium"></span></span>
-                            </div>
+                            <div class="p-4 bg-surface-base rounded-docu-btn border border-divider/50">
+                                <p class="text-xs font-bold text-docu-secondary mb-2 uppercase tracking-wide">대표자 정보</p>
 
-                            <!-- 구분선 -->
-                            <div class="mx-6 border-t border-gray-100"></div>
-
-                            <!-- CEO 정보 -->
-                            <div class="px-6 py-4">
-                                <!-- CEO 없는 경우 -->
-                                <div th:if="${c.ceoMissing()}"
-                                     class="flex items-center gap-2 text-xs text-gray-400 italic">
-                                    <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <!-- CEO 없음 -->
+                                <div th:if="${c.ceoMissing()}" class="flex items-center gap-2 text-xs text-docu-secondary">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                                     </svg>
-                                    대표자 정보 없음
+                                    <span>대표자 정보를 찾을 수 없습니다.</span>
                                 </div>
 
-                                <!-- CEO 있는 경우 -->
-                                <div th:unless="${c.ceoMissing()}"
-                                     class="flex items-center gap-3">
-                                    <!-- CEO 프로필 이미지 -->
-                                    <div th:if="${c.ceoProfileUrl() != null}"
-                                         class="w-9 h-9 rounded-full overflow-hidden shrink-0 ring-1 ring-gray-200">
-                                        <img th:src="${c.ceoProfileUrl()}" alt="대표자" class="w-full h-full object-cover"/>
+                                <!-- CEO 있음 -->
+                                <div th:unless="${c.ceoMissing()}" class="flex items-center gap-3">
+                                    <div th:if="${c.ceoProfileUrl() != null}" class="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-divider">
+                                        <img th:src="${c.ceoProfileUrl()}" class="w-full h-full object-cover"/>
                                     </div>
-                                    <div th:unless="${c.ceoProfileUrl() != null}"
-                                         class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                                        <span th:text="${c.ceoName() != null ? #strings.substring(c.ceoName(), 0, 1) : 'C'}"
-                                              class="text-sm font-semibold text-indigo-500"></span>
-                                    </div>
-
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <span th:text="${c.ceoName()}"
-                                                  class="text-sm font-semibold text-gray-800 truncate"></span>
-                                            <!-- 계정 상태 뱃지 -->
-                                            <span th:if="${c.ceoAccountStatus() != null and c.ceoAccountStatus().name() == 'SUSPENDED'}"
-                                                  class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-600">
-                                                정지
-                                            </span>
-                                        </div>
-                                        <p th:text="${c.ceoEmail()}"
-                                           class="text-xs text-gray-400 truncate mt-0.5"></p>
-                                        <p th:if="${c.ceoPosition() != null}"
-                                           th:text="${c.ceoPosition()}"
-                                           class="text-xs text-gray-400 truncate"></p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 액션 버튼 : 승인 대기 탭 → 승인 + 거부 -->
-                            <div class="px-6 pb-6 flex gap-3">
-                                <button type="button"
-                                        th:data-id="${c.companyId()}"
-                                        th:data-name="${c.companyName()}"
-                                        onclick="approveCompany(this)"
-                                        class="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
-                                               text-sm font-semibold text-white transition-colors">
-                                    승인
-                                </button>
-                                <button type="button"
-                                        th:data-id="${c.companyId()}"
-                                        th:data-name="${c.companyName()}"
-                                        onclick="rejectCompany(this)"
-                                        class="flex-1 py-2.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100
-                                               text-sm font-semibold text-red-600 transition-colors">
-                                    거부
-                                </button>
-                            </div>
-
-                        </div><!-- /card -->
-                    </div><!-- /grid -->
-                </div><!-- /tab-pending -->
-
-                <!-- ── 탭 패널 : 승인 완료 ── -->
-                <div id="tab-approved" class="p-6 hidden">
-
-                    <!-- 빈 상태 -->
-                    <div th:if="${#lists.isEmpty(approved)}"
-                         class="flex flex-col items-center justify-center py-16 text-center">
-                        <div class="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
-                            <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
-                                         m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                            </svg>
-                        </div>
-                        <p class="text-sm font-medium text-gray-700">승인된 회사가 없습니다.</p>
-                    </div>
-
-                    <!-- 카드 그리드 -->
-                    <div th:unless="${#lists.isEmpty(approved)}"
-                         class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-
-                        <div th:each="c : ${approved}"
-                             class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-
-                            <!-- 카드 헤더 -->
-                            <div class="flex items-center gap-4 px-6 pt-6 pb-4">
-                                <div th:if="${c.companyProfileUrl() != null}"
-                                     class="w-12 h-12 rounded-xl overflow-hidden shrink-0 ring-1 ring-gray-200">
-                                    <img th:src="${c.companyProfileUrl()}" alt="회사 로고" class="w-full h-full object-cover"/>
-                                </div>
-                                <div th:unless="${c.companyProfileUrl() != null}"
-                                     class="w-12 h-12 rounded-xl bg-sky-400 flex items-center justify-center shrink-0">
-                                    <span th:text="${#strings.substring(c.companyName(), 0, 1)}"
-                                          class="text-lg font-bold text-white"></span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p th:text="${c.companyName()}"
-                                       class="text-sm font-bold text-gray-900 truncate"></p>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                                        승인 완료
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- 날짜 행 -->
-                            <div class="px-6 pb-4 flex gap-6 text-xs text-gray-400">
-                                <span>신청일 <span th:text="${c.appliedAt()}" class="text-gray-600 font-medium"></span></span>
-                                <span>수정일 <span th:text="${c.updatedAt()}" class="text-gray-600 font-medium"></span></span>
-                            </div>
-
-                            <div class="mx-6 border-t border-gray-100"></div>
-
-                            <!-- CEO 정보 -->
-                            <div class="px-6 py-4">
-                                <div th:if="${c.ceoMissing()}"
-                                     class="flex items-center gap-2 text-xs text-gray-400 italic">
-                                    <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                    </svg>
-                                    대표자 정보 없음
-                                </div>
-                                <div th:unless="${c.ceoMissing()}"
-                                     class="flex items-center gap-3">
-                                    <div th:if="${c.ceoProfileUrl() != null}"
-                                         class="w-9 h-9 rounded-full overflow-hidden shrink-0 ring-1 ring-gray-200">
-                                        <img th:src="${c.ceoProfileUrl()}" alt="대표자" class="w-full h-full object-cover"/>
-                                    </div>
-                                    <div th:unless="${c.ceoProfileUrl() != null}"
-                                         class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                                        <span th:text="${c.ceoName() != null ? #strings.substring(c.ceoName(), 0, 1) : 'C'}"
-                                              class="text-sm font-semibold text-indigo-500"></span>
+                                    <div th:unless="${c.ceoProfileUrl() != null}" class="w-8 h-8 rounded-full bg-surface-base flex items-center justify-center shrink-0 text-docu-secondary font-bold text-xs border border-divider">
+                                        <span th:text="${c.ceoName() != null ? #strings.substring(c.ceoName(), 0, 1) : 'C'}">C</span>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <span th:text="${c.ceoName()}"
-                                                  class="text-sm font-semibold text-gray-800 truncate"></span>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <p th:text="${c.ceoName()}" class="text-sm font-semibold text-docu-ink truncate">대표자명</p>
                                             <span th:if="${c.ceoAccountStatus() != null and c.ceoAccountStatus().name() == 'SUSPENDED'}"
-                                                  class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-600">
-                                                정지
-                                            </span>
+                                                  class="inline-flex px-1.5 py-0.5 rounded text-xs font-bold bg-docu-warning-light text-docu-warning-dark">정지</span>
                                         </div>
-                                        <p th:text="${c.ceoEmail()}"
-                                           class="text-xs text-gray-400 truncate mt-0.5"></p>
-                                        <p th:if="${c.ceoPosition() != null}"
-                                           th:text="${c.ceoPosition()}"
-                                           class="text-xs text-gray-400 truncate"></p>
+                                        <p th:text="${c.ceoEmail()}" class="text-xs text-docu-secondary truncate">email@example.com</p>
+                                        <p th:if="${c.ceoPosition() != null}" th:text="${c.ceoPosition()}"
+                                           class="text-xs text-docu-secondary truncate">직책</p>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- 승인 완료 탭 : 추가 액션 없음 (한 번 승인된 회사는 변경 불가) -->
-
-                        </div><!-- /card -->
-                    </div><!-- /grid -->
-                </div><!-- /tab-approved -->
-
-                <!-- ── 탭 패널 : 승인 거부 ── -->
-                <div id="tab-suspended" class="p-6 hidden">
-
-                    <!-- 빈 상태 -->
-                    <div th:if="${#lists.isEmpty(suspended)}"
-                         class="flex flex-col items-center justify-center py-16 text-center">
-                        <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                            <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                            </svg>
                         </div>
-                        <p class="text-sm font-medium text-gray-700">거부된 회사가 없습니다.</p>
+
+                        <!-- 액션 버튼 -->
+                        <div class="px-5 pb-5 flex gap-3">
+                            <button type="button" th:data-id="${c.companyId()}" th:data-name="${c.companyName()}" onclick="approveCompany(this)"
+                                    class="flex-1 py-2 rounded-docu-btn bg-docu-primary text-white text-sm font-bold shadow-docu-sm hover:bg-docu-primary-dark transition-colors">
+                                승인
+                            </button>
+                            <button type="button" th:data-id="${c.companyId()}" th:data-name="${c.companyName()}" onclick="rejectCompany(this)"
+                                    class="flex-1 py-2 rounded-docu-btn bg-surface-card border-2 border-docu-danger text-docu-danger text-sm font-bold shadow-docu-sm hover:bg-docu-danger-light transition-colors">
+                                거부
+                            </button>
+                        </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- 카드 그리드 -->
-                    <div th:unless="${#lists.isEmpty(suspended)}"
-                         class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-
-                        <div th:each="c : ${suspended}"
-                             class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-
-                            <!-- 카드 헤더 -->
-                            <div class="flex items-center gap-4 px-6 pt-6 pb-4">
-                                <div th:if="${c.companyProfileUrl() != null}"
-                                     class="w-12 h-12 rounded-xl overflow-hidden shrink-0 ring-1 ring-gray-200">
-                                    <img th:src="${c.companyProfileUrl()}" alt="회사 로고" class="w-full h-full object-cover"/>
-                                </div>
-                                <div th:unless="${c.companyProfileUrl() != null}"
-                                     class="w-12 h-12 rounded-xl bg-sky-400 flex items-center justify-center shrink-0">
-                                    <span th:text="${#strings.substring(c.companyName(), 0, 1)}"
-                                          class="text-lg font-bold text-white"></span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p th:text="${c.companyName()}"
-                                       class="text-sm font-bold text-gray-900 truncate"></p>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
-                                        거부됨
-                                    </span>
-                                </div>
+            <!-- 탭 패널: 승인 완료 -->
+            <div id="tab-approved" class="p-6 hidden">
+                <div th:if="${#lists.isEmpty(approved)}" class="flex flex-col items-center justify-center py-16 text-center">
+                    <div class="w-16 h-16 rounded-full bg-surface-base border border-divider flex items-center justify-center mb-4">
+                        <span class="text-2xl">📭</span>
+                    </div>
+                    <p class="text-sm font-semibold text-docu-ink">승인된 회사가 없습니다.</p>
+                </div>
+                <div th:unless="${#lists.isEmpty(approved)}" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div th:each="c : ${approved}" class="bg-surface-card border border-divider rounded-docu-card shadow-docu-sm hover:shadow-docu-card transition-all">
+                        <div class="flex items-center gap-4 p-5 border-b border-divider/50">
+                            <div th:if="${c.companyProfileUrl() != null}" class="w-12 h-12 rounded-docu-btn overflow-hidden shrink-0 border border-divider">
+                                <img th:src="${c.companyProfileUrl()}" class="w-full h-full object-cover"/>
                             </div>
-
-                            <!-- 날짜 행 -->
-                            <div class="px-6 pb-4 flex gap-6 text-xs text-gray-400">
-                                <span>신청일 <span th:text="${c.appliedAt()}" class="text-gray-600 font-medium"></span></span>
-                                <span>수정일 <span th:text="${c.updatedAt()}" class="text-gray-600 font-medium"></span></span>
+                            <div th:unless="${c.companyProfileUrl() != null}" class="w-12 h-12 rounded-docu-btn bg-docu-primary flex items-center justify-center shrink-0 text-white font-bold text-lg">
+                                <span th:text="${#strings.substring(c.companyName(), 0, 1)}">C</span>
                             </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 th:text="${c.companyName()}" class="text-sm font-bold text-docu-ink truncate">회사명</h3>
+                                <span class="inline-flex mt-1 px-2 py-0.5 rounded-full text-xs font-bold bg-docu-success-light text-docu-success-dark">승인 완료</span>
+                            </div>
+                        </div>
+                        <div class="p-5 space-y-4">
+                            <div class="flex gap-6 text-xs text-docu-secondary">
+                                <span>신청일 <strong th:text="${c.appliedAt()}" class="text-docu-ink ml-1"></strong></span>
+                                <span>승인일 <strong th:text="${c.updatedAt()}" class="text-docu-ink ml-1"></strong></span>
+                            </div>
+                            <div class="p-4 bg-surface-base rounded-docu-btn border border-divider/50">
+                                <p class="text-xs font-bold text-docu-secondary mb-2 uppercase tracking-wide">대표자 정보</p>
 
-                            <div class="mx-6 border-t border-gray-100"></div>
-
-                            <!-- CEO 정보 -->
-                            <div class="px-6 py-4">
-                                <div th:if="${c.ceoMissing()}"
-                                     class="flex items-center gap-2 text-xs text-gray-400 italic">
-                                    <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <!-- CEO 없음 -->
+                                <div th:if="${c.ceoMissing()}" class="flex items-center gap-2 text-xs text-docu-secondary">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                                     </svg>
-                                    대표자 정보 없음
+                                    <span>대표자 정보를 찾을 수 없습니다.</span>
                                 </div>
-                                <div th:unless="${c.ceoMissing()}"
-                                     class="flex items-center gap-3">
-                                    <div th:if="${c.ceoProfileUrl() != null}"
-                                         class="w-9 h-9 rounded-full overflow-hidden shrink-0 ring-1 ring-gray-200">
-                                        <img th:src="${c.ceoProfileUrl()}" alt="대표자" class="w-full h-full object-cover"/>
+
+                                <!-- CEO 있음 -->
+                                <div th:unless="${c.ceoMissing()}" class="flex items-center gap-3">
+                                    <div th:if="${c.ceoProfileUrl() != null}" class="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-divider">
+                                        <img th:src="${c.ceoProfileUrl()}" class="w-full h-full object-cover"/>
                                     </div>
-                                    <div th:unless="${c.ceoProfileUrl() != null}"
-                                         class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                                        <span th:text="${c.ceoName() != null ? #strings.substring(c.ceoName(), 0, 1) : 'C'}"
-                                              class="text-sm font-semibold text-indigo-500"></span>
+                                    <div th:unless="${c.ceoProfileUrl() != null}" class="w-8 h-8 rounded-full bg-surface-base flex items-center justify-center shrink-0 text-docu-secondary font-bold text-xs border border-divider">
+                                        <span th:text="${c.ceoName() != null ? #strings.substring(c.ceoName(), 0, 1) : 'C'}">C</span>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <span th:text="${c.ceoName()}"
-                                                  class="text-sm font-semibold text-gray-800 truncate"></span>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <p th:text="${c.ceoName()}" class="text-sm font-semibold text-docu-ink truncate">대표자명</p>
                                             <span th:if="${c.ceoAccountStatus() != null and c.ceoAccountStatus().name() == 'SUSPENDED'}"
-                                                  class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-600">
-                                                정지
-                                            </span>
+                                                  class="inline-flex px-1.5 py-0.5 rounded text-xs font-bold bg-docu-warning-light text-docu-warning-dark">정지</span>
                                         </div>
-                                        <p th:text="${c.ceoEmail()}"
-                                           class="text-xs text-gray-400 truncate mt-0.5"></p>
-                                        <p th:if="${c.ceoPosition() != null}"
-                                           th:text="${c.ceoPosition()}"
-                                           class="text-xs text-gray-400 truncate"></p>
+                                        <p th:text="${c.ceoEmail()}" class="text-xs text-docu-secondary truncate">email@example.com</p>
+                                        <p th:if="${c.ceoPosition() != null}" th:text="${c.ceoPosition()}"
+                                           class="text-xs text-docu-secondary truncate">직책</p>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                            <!-- 액션 버튼 : 거부 탭 → 승인만 -->
-                            <div class="px-6 pb-6">
-                                <button type="button"
-                                        th:data-id="${c.companyId()}"
-                                        th:data-name="${c.companyName()}"
-                                        onclick="approveCompany(this)"
-                                        class="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600
-                                               text-sm font-semibold text-white transition-colors">
-                                    승인
-                                </button>
+            <!-- 탭 패널: 승인 거부 -->
+            <div id="tab-suspended" class="p-6 hidden">
+                <div th:if="${#lists.isEmpty(suspended)}" class="flex flex-col items-center justify-center py-16 text-center">
+                    <div class="w-16 h-16 rounded-full bg-surface-base border border-divider flex items-center justify-center mb-4">
+                        <span class="text-2xl">📭</span>
+                    </div>
+                    <p class="text-sm font-semibold text-docu-ink">거부된 회사가 없습니다.</p>
+                </div>
+                <div th:unless="${#lists.isEmpty(suspended)}" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div th:each="c : ${suspended}" class="bg-surface-card border border-divider rounded-docu-card shadow-docu-sm hover:shadow-docu-card transition-all">
+                        <div class="flex items-center gap-4 p-5 border-b border-divider/50">
+                            <div th:if="${c.companyProfileUrl() != null}" class="w-12 h-12 rounded-docu-btn overflow-hidden shrink-0 border border-divider">
+                                <img th:src="${c.companyProfileUrl()}" class="w-full h-full object-cover"/>
                             </div>
+                            <div th:unless="${c.companyProfileUrl() != null}" class="w-12 h-12 rounded-docu-btn bg-docu-primary flex items-center justify-center shrink-0 text-white font-bold text-lg">
+                                <span th:text="${#strings.substring(c.companyName(), 0, 1)}">C</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 th:text="${c.companyName()}" class="text-sm font-bold text-docu-ink truncate">회사명</h3>
+                                <span class="inline-flex mt-1 px-2 py-0.5 rounded-full text-xs font-bold bg-docu-danger-light text-docu-danger">거부됨</span>
+                            </div>
+                        </div>
+                        <div class="p-5 space-y-4">
+                            <div class="flex gap-6 text-xs text-docu-secondary">
+                                <span>신청일 <strong th:text="${c.appliedAt()}" class="text-docu-ink ml-1"></strong></span>
+                                <span>거부일 <strong th:text="${c.updatedAt()}" class="text-docu-ink ml-1"></strong></span>
+                            </div>
+                            <div class="p-4 bg-surface-base rounded-docu-btn border border-divider/50">
+                                <p class="text-xs font-bold text-docu-secondary mb-2 uppercase tracking-wide">대표자 정보</p>
 
-                        </div><!-- /card -->
-                    </div><!-- /grid -->
-                </div><!-- /tab-suspended -->
+                                <!-- CEO 없음 -->
+                                <div th:if="${c.ceoMissing()}" class="flex items-center gap-2 text-xs text-docu-secondary">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                    </svg>
+                                    <span>대표자 정보를 찾을 수 없습니다.</span>
+                                </div>
 
-            </div><!-- /탭 컨테이너 -->
-        </main>
+                                <!-- CEO 있음 -->
+                                <div th:unless="${c.ceoMissing()}" class="flex items-center gap-3">
+                                    <div th:if="${c.ceoProfileUrl() != null}" class="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-divider">
+                                        <img th:src="${c.ceoProfileUrl()}" class="w-full h-full object-cover"/>
+                                    </div>
+                                    <div th:unless="${c.ceoProfileUrl() != null}" class="w-8 h-8 rounded-full bg-surface-base flex items-center justify-center shrink-0 text-docu-secondary font-bold text-xs border border-divider">
+                                        <span th:text="${c.ceoName() != null ? #strings.substring(c.ceoName(), 0, 1) : 'C'}">C</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <p th:text="${c.ceoName()}" class="text-sm font-semibold text-docu-ink truncate">대표자명</p>
+                                            <span th:if="${c.ceoAccountStatus() != null and c.ceoAccountStatus().name() == 'SUSPENDED'}"
+                                                  class="inline-flex px-1.5 py-0.5 rounded text-xs font-bold bg-docu-warning-light text-docu-warning-dark">정지</span>
+                                        </div>
+                                        <p th:text="${c.ceoEmail()}" class="text-xs text-docu-secondary truncate">email@example.com</p>
+                                        <p th:if="${c.ceoPosition() != null}" th:text="${c.ceoPosition()}"
+                                           class="text-xs text-docu-secondary truncate">직책</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-5 pb-5">
+                            <button type="button" th:data-id="${c.companyId()}" th:data-name="${c.companyName()}" onclick="approveCompany(this)"
+                                    class="w-full py-2 rounded-docu-btn bg-docu-primary text-white text-sm font-bold shadow-docu-sm hover:bg-docu-primary-dark transition-colors">
+                                승인 처리로 변경
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <footer class="border-t border-gray-200 py-6 text-center text-xs text-gray-400">
-            © 2026 Documind Incs. All rights reserved.
-        </footer>
-    </div><!-- /오른쪽 패널 -->
-
-    <!-- 로그아웃 모달 + 공통 JS -->
-    <div th:replace="~{common/fragments/header-auth :: logout-modal}"></div>
-    <script th:src="@{/js/member/Auth.js}"></script>
+    <!-- 스크립트 로드 -->
     <script th:src="@{/js/member/CompanyAdmin.js}"></script>
 </div>
 </body>

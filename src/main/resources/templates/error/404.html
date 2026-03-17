@@ -2,24 +2,137 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon"/>
+    <link rel="apple-touch-icon" href="/images/favicon.png"/>
     <title>404 Not Found</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #eef2ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .card { text-align: center; padding: 48px; }
-        .code { font-size: 6rem; font-weight: 800; color: #6366f1; line-height: 1; }
-        .title { font-size: 1.5rem; color: #3730a3; margin: 8px 0 16px; }
-        .message { color: #4338ca; background: #e0e7ff; padding: 12px 20px; border-radius: 8px; margin-bottom: 24px; }
-        a { color: #4f46e5; text-decoration: none; font-weight: 600; }
-        a:hover { text-decoration: underline; }
+
+        :root {
+            --docu-ink: #1A1F3A;
+            --docu-primary: #4A9EE8;
+            --surface-base: #F2EFE9;
+            --surface-card: #FAF8F4;
+            --tone-bg: #E8F1FC;
+            --tone-main: #4A9EE8;
+            --tone-dark: #2F5F98;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', 'Pretendard', 'Segoe UI', sans-serif;
+            background: var(--surface-base);
+            color: var(--docu-ink);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(26, 31, 58, 0.08) 0.8px, transparent 0.8px);
+            background-size: 10px 10px;
+            pointer-events: none;
+        }
+
+        .card {
+            position: relative;
+            width: 100%;
+            max-width: 560px;
+            background: var(--surface-card);
+            border: 2px solid var(--docu-ink);
+            box-shadow: 4px 4px 0 rgba(26, 31, 58, 0.18);
+            padding: 40px 32px;
+            text-align: center;
+        }
+
+        .label {
+            display: inline-block;
+            margin-bottom: 18px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border: 2px solid var(--docu-ink);
+            background: var(--surface-base);
+            box-shadow: 2px 2px 0 rgba(26, 31, 58, 0.12);
+        }
+
+        .code {
+            font-size: 5.5rem;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--tone-main);
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--docu-ink);
+            margin-bottom: 14px;
+        }
+
+        .message {
+            background: var(--tone-bg);
+            border: 2px solid var(--docu-ink);
+            color: var(--tone-dark);
+            padding: 14px 16px;
+            margin: 0 auto 24px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            box-shadow: 3px 3px 0 rgba(26, 31, 58, 0.10);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 18px;
+            border: 2px solid var(--docu-ink);
+            background: var(--tone-main);
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            box-shadow: 3px 3px 0 rgba(26, 31, 58, 0.18);
+            transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease;
+        }
+
+        .btn:hover { background: #2F7FC6; }
+        .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(26, 31, 58, 0.18); }
+
+        .sub {
+            margin-top: 16px;
+            font-size: 0.8rem;
+            color: #6B7280;
+            letter-spacing: 0.04em;
+        }
+
+        @media (max-width: 640px) {
+            .card { padding: 32px 20px; }
+            .code { font-size: 4.25rem; }
+            .title { font-size: 1.4rem; }
+            .btn { width: 100%; }
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="code">404</div>
-        <div class="title">Not Found</div>
-        <div class="message" th:text="${message} ?: '요청한 페이지를 찾을 수 없습니다.'">요청한 페이지를 찾을 수 없습니다.</div>
-        <a href="/test/exception">테스트 페이지로 돌아가기</a>
-    </div>
+<div class="card">
+    <div class="label">▶ ERROR STATUS</div>
+    <div class="code">404</div>
+    <div class="title">페이지를 찾을 수 없습니다</div>
+    <div class="message" th:text="${message} ?: '요청한 페이지를 찾을 수 없습니다.'">요청한 페이지를 찾을 수 없습니다.</div>
+    <a href="/" class="btn">메인 페이지로 돌아가기</a>
+    <div class="sub">DOCUMIND ERROR SCREEN</div>
+</div>
 </body>
 </html>

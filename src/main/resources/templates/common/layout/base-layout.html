@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description"
+          th:content="${pageDescription ?: 'Documind는 프로젝트 문서, 이슈, 패치노트, 알림을 통합 관리하는 협업 플랫폼입니다.'}"/>
+    <meta name="theme-color" content="#4A9EE8"/>
+
+    <link rel="icon" type="image/png" href="/images/favicon.png"/>
+    <link rel="apple-touch-icon" href="/images/favicon.png"/>
+
+    <title th:text="${pageTitle != null ? pageTitle + ' | Documind' : 'Documind'}">Documind</title>
+
+    <!-- 공통 Head 리소스 -->
+    <th:block th:replace="~{common/fragments/head :: head-resources}"></th:block>
+
+    <!-- 페이지/레이아웃별 추가 <head> 리소스 -->
+    <th:block layout:fragment="head-extra"></th:block>
+</head>
+
+<body class="bg-surface-base text-docu-ink min-h-screen font-sans antialiased">
+
+<a href="#main-content"
+   class="sr-only-focusable fixed top-3 left-3 z-[300] px-4 py-2 bg-docu-primary text-white rounded-docu-btn shadow-docu-sm
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-offset-2">
+    본문으로 건너뛰기
+</a>
+
+<!-- 상단 슬라이드 토스트 -->
+<div th:replace="~{common/fragments/top-toast :: top-toast}"></div>
+
+<!-- 핵심 바디 슬롯 -->
+<th:block layout:fragment="body">
+    <!-- fallback -->
+</th:block>
+
+<!-- 실시간 알림 토스트 -->
+<div th:replace="~{common/fragments/alarm-toast :: alarm-toast}"></div>
+
+<!-- 페이지별 추가 스크립트 -->
+<th:block layout:fragment="scripts"></th:block>
+
+</body>
+</html>

@@ -27,6 +27,7 @@ import kr.java.documind.global.util.HmacApiKeyUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -127,6 +128,7 @@ public class InvitationService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "projectSelector", key = "#memberId")
     public String acceptInvitation(String rawToken, UUID memberId, boolean forceLeaveCompany) {
         log.info(
                 "[InvitationService] acceptInvitation 호출 시작: tokenHashPrefix={}..., memberId={}",

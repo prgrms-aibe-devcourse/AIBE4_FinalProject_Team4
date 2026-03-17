@@ -2,6 +2,22 @@
    대시보드 - 프로젝트 생성 모달
    ────────────────────────────────────────────── */
 
+// ── 페이지 로드 시 sessionStorage 토스트 표시 ──────────
+document.addEventListener('DOMContentLoaded', function () {
+    const msg = sessionStorage.getItem('successMessage');
+    if (msg) {
+        sessionStorage.removeItem('successMessage');
+        showTopToast(msg, 'success');
+    }
+});
+
+// bfcache로 복원된 경우 최신 목록 반영을 위해 새로고침
+window.addEventListener('pageshow', function (e) {
+    if (e.persisted) {
+        window.location.reload();
+    }
+});
+
 // ── 프로젝트 목록 더 보기 / 접기 ────────────────────
 
 function toggleProjectList() {
@@ -9,17 +25,22 @@ function toggleProjectList() {
     const label     = document.getElementById('project-list-toggle-label');
     const icon      = document.getElementById('project-list-toggle-icon');
     const expanded  = container.dataset.expanded === 'true';
+    const articles  = container.querySelectorAll('article');
 
     if (expanded) {
-        container.scrollTop = 0;
-        container.style.maxHeight = '285px';
-        container.style.overflowY = 'hidden';
+        // 접기: 4번째 이후 숨기고 페이지 맨 위로 스크롤
+        articles.forEach(function (art, i) {
+            if (i >= 3) art.classList.add('hidden');
+        });
         container.dataset.expanded = 'false';
         label.textContent = '더 보기';
         icon.style.transform = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-        container.style.maxHeight = '440px';
-        container.style.overflowY = 'auto';
+        // 더 보기: 모든 카드 표시
+        articles.forEach(function (art) {
+            art.classList.remove('hidden');
+        });
         container.dataset.expanded = 'true';
         label.textContent = '접기';
         icon.style.transform = 'rotate(180deg)';
