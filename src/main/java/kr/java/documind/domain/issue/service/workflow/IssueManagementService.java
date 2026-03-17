@@ -1,14 +1,15 @@
 package kr.java.documind.domain.issue.service.workflow;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import kr.java.documind.domain.issue.event.IssueResolvedEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
+import kr.java.documind.domain.patchnote.event.IssueStatusChangedEvent;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -104,19 +105,19 @@ public class IssueManagementService {
         historyService.saveStatusChange(
                 issueId, modifierId, beforeStatus.getValue(), newStatus.getValue());
 
-        // RESOLVED 상태로 변경 시 이벤트 발행 (AI 패치노트 생성 트리거)
-        if (newStatus == IssueStatus.RESOLVED && includeInPatchNote) {
-            IssueResolvedEvent event =
-                    new IssueResolvedEvent(
-                            issue.getId(),
-                            issue.getProjectId(),
-                            issue.getTitle(),
-                            issue.getDescription(),
-                            issue.getFingerprint(),
-                            issue.getResolvedAt(),
-                            modifierId);
-            eventPublisher.publishEvent(event);
-        }
+        // 상태 변경 이벤트 발행
+        // - RESOLVED 전환 시 → IssueStatusChangedEventHandler.handleIssueResolved() 가 pending_item 적재
+        // - RESOLVED → 다른 상태 전환 시 → handleIssueRollback() 이 벡터·pending_item 정리
+        IssueStatusChangedEvent statusChangedEvent =
+                new IssueStatusChangedEvent(
+                        issue.getId(),
+                        issue.getProjectId(),
+                        beforeStatus,
+                        newStatus,
+                        !includeInPatchNote,
+                        modifierId,
+                        Instant.now());
+        eventPublisher.publishEvent(statusChangedEvent);
     }
 
     /**
