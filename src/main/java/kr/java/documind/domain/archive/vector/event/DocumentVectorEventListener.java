@@ -1,4 +1,4 @@
-package kr.java.documind.domain.archive.vector.listener;
+package kr.java.documind.domain.archive.vector.event;
 
 import kr.java.documind.domain.archive.document.event.DocumentVectorCreateEvent;
 import kr.java.documind.domain.archive.document.event.DocumentVectorDeleteEvent;
