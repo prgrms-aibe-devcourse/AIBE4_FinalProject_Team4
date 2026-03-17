@@ -27,6 +27,7 @@ import kr.java.documind.domain.issue.service.RootCauseAnalysisService;
 import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
 import kr.java.documind.domain.issue.service.workflow.IssueManagementService;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
+import kr.java.documind.global.annotation.RequireProjectMember;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/projects/{projectId}/issues")
 @RequiredArgsConstructor
+@RequireProjectMember
 public class IssueManagementApiController {
 
     private final IssueManagementService issueManagementService;

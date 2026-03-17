@@ -2,6 +2,7 @@ package kr.java.documind.domain.issue.model.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 이슈 우선순위(Priority)를 정의하는 Enum
@@ -15,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  *   <li>P4: 낮음 (여유 있을 때 처리)
  * </ul>
  */
+@Slf4j
 public enum IssuePriority {
     P1("P1", "긴급"),
     P2("P2", "높음"),
@@ -69,6 +71,7 @@ public enum IssuePriority {
         }
 
         // 인식하지 못한 값은 P3으로 fallback
+        log.warn("Unknown priority value: {}, defaulting to P3", value);
         return P3;
     }
 
