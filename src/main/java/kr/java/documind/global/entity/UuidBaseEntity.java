@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.Getter;
