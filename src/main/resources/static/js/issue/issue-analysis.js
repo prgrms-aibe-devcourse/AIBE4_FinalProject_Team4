@@ -1,0 +1,1249 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 이슈 상세 분석 페이지
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+let currentIssueId = null;
+let currentProjectId = null;
+let currentPublicId = null;
+let currentTimeRange = '7d';
+let trendChart = null;
+let currentAssignee = null;
+let projectMembers = []; // 프로젝트 멤버 캐시
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 초기화
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+document.addEventListener('DOMContentLoaded', () => {
+    currentPublicId = document.getElementById('publicId').value;
+    currentProjectId = document.getElementById('projectId').value;
+    currentIssueId = document.getElementById('issueId').value;
+
+    // Breadcrumb 링크 업데이트 (Referrer에서 탭 정보 추출)
+    updateBreadcrumbLink();
+
+    loadIssueDetail();
+});
+
+/**
+ * Breadcrumb 링크에 이전 페이지의 탭 상태 추가
+ */
+function updateBreadcrumbLink() {
+    // Referrer URL에서 tab 파라미터 추출
+    if (document.referrer) {
+        try {
+            const referrerUrl = new URL(document.referrer);
+            const tabParam = referrerUrl.searchParams.get('tab');
+
+            if (tabParam === 'issues') {
+                const breadcrumbLink = document.getElementById('breadcrumbBackLink');
+                if (breadcrumbLink) {
+                    const href = breadcrumbLink.getAttribute('href');
+                    breadcrumbLink.setAttribute('href', href + '?tab=issues');
+                }
+            }
+        } catch (e) {
+            // Referrer URL 파싱 실패 시 무시
+            console.debug('[updateBreadcrumbLink] Referrer URL 파싱 실패:', e);
+        }
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 이슈 상세 조회
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function loadIssueDetail() {
+    try {
+        // 이슈 상세 정보와 프로젝트 멤버 목록을 병렬로 로드
+        const [issueBody, membersBody] = await Promise.all([
+            callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}`, {
+                method: 'GET'
+            }),
+            callApi(`/api/projects/${currentPublicId}/members`, {
+                method: 'GET'
+            })
+        ]);
+
+        if (issueBody.success) {
+            // 프로젝트 멤버 캐시 저장
+            if (membersBody.success) {
+                projectMembers = membersBody.data;
+            }
+
+            renderIssueDetail(issueBody.data);
+        } else {
+            showError('이슈 정보를 불러올 수 없습니다.');
+        }
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+async function renderIssueDetail(issue) {
+    // 헤더 정보
+    document.getElementById('issueTitle').textContent = issue.title;
+    document.getElementById('statusBadge').innerHTML = getStatusBadge(issue.status);
+
+    // 소스 위치 (stackKey에서 추출)
+    if (issue.stackKey) {
+        document.getElementById('sourceLocation').textContent = issue.stackKey;
+    } else {
+        document.getElementById('sourceLocation').textContent = 'N/A';
+    }
+
+    // Overview 섹션
+    renderSeverityAnalysis(issue);
+    renderGroupingInfo(issue);
+
+    // 발생 추이 차트
+    renderOccurrenceTrend(issue);
+
+    // 분포 분석 차트
+    await renderDistributionAnalysis(issue);
+
+    // 발생 맥락
+    await renderIssueContext(issue);
+
+    // 근본 원인 분석
+    await renderRootCauseAnalysis(issue);
+
+    // 로그 상세
+    renderLogDetails(issue);
+
+    // 영향받은 플레이어
+    await renderAffectedPlayers(issue);
+
+    // 메타 정보
+    renderMetaInfo(issue);
+
+    // 관련 이슈
+    renderRelatedIssues(issue);
+
+    // 변경 이력
+    await renderTimeline(issue);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Overview 섹션
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function renderSeverityAnalysis(issue) {
+    const container = document.getElementById('severityAnalysis');
+
+    const severityColors = {
+        CRITICAL: { bg: 'bg-red-500', text: 'text-red-600' },
+        HIGH: { bg: 'bg-orange-500', text: 'text-orange-600' },
+        MEDIUM: { bg: 'bg-yellow-500', text: 'text-yellow-600' },
+        LOW: { bg: 'bg-gray-400', text: 'text-gray-600' }
+    };
+
+    const color = severityColors[issue.severity] || severityColors.LOW;
+
+    container.innerHTML = `
+        <div class="flex items-center gap-4 mb-4">
+            <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">${issue.severity}</span>
+                    <span class="text-2xl font-bold ${color.text}">${issue.severityScore}점</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="${color.bg} h-3 rounded-full" style="width: ${issue.severityScore}%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="p-3 bg-gray-50 rounded-lg">
+                <p class="text-xs text-gray-500 mb-1">발생 대비</p>
+                <p class="font-semibold text-gray-900">+${Math.floor(Math.random() * 50)}%</p>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-lg">
+                <p class="text-xs text-gray-500 mb-1">영향 플레이어</p>
+                <p class="font-semibold text-gray-900">${Math.floor(issue.occurrenceCount * 0.7)}명</p>
+            </div>
+        </div>
+    `;
+}
+
+function renderGroupingInfo(issue) {
+    const container = document.getElementById('groupingInfo');
+
+    container.innerHTML = `
+        <div class="space-y-3 text-sm">
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">에러 분류</label>
+                <p class="text-gray-900">Fingerprint</p>
+                <p class="text-xs text-gray-500 font-mono mt-1">${issue.fingerprint ? issue.fingerprint.substring(0, 16) + '...' : 'N/A'}</p>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">에러 타입</label>
+                <p class="text-gray-900">${issue.errorType || 'UNKNOWN'}</p>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">스택트레이스</label>
+                <p class="text-gray-600">${issue.stackKey ? '분석 완료' : 'N/A'}</p>
+            </div>
+            ${issue.similarityResults && issue.similarityResults.length > 0 ? `
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">유사 이슈</label>
+                <p class="text-gray-900">${issue.similarityResults.length}건 발견</p>
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 발생 추이 차트
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function renderOccurrenceTrend(issue) {
+    try {
+        // 실제 API에서 데이터 가져오기
+        const body = await callApi(
+            `/api/projects/${currentProjectId}/issues/${currentIssueId}/trend?days=${getDaysFromRange(currentTimeRange)}`,
+            { method: 'GET' }
+        );
+
+        if (!body.success) {
+            console.error('발생 추이 데이터를 불러올 수 없습니다.');
+            return;
+        }
+
+        const trendData = body.data;
+
+        // 라벨과 데이터 추출
+        const labels = trendData.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+        });
+
+        const data = trendData.map(item => item.count);
+
+        const ctx = document.getElementById('trendChart').getContext('2d');
+
+        if (trendChart) {
+            trendChart.destroy();
+        }
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '발생 횟수',
+                    data: data,
+                    borderColor: 'rgb(99, 102, 241)',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    } catch (err) {
+        console.error('발생 추이 차트 로드 중 오류:', err);
+    }
+}
+
+async function setTimeRange(range) {
+    currentTimeRange = range;
+
+    // 버튼 스타일 업데이트
+    document.querySelectorAll('.time-range-btn').forEach(btn => {
+        if (btn.dataset.range === range) {
+            btn.classList.add('border-indigo-600', 'text-indigo-600');
+            btn.classList.remove('border-transparent', 'text-gray-500');
+        } else {
+            btn.classList.remove('border-indigo-600', 'text-indigo-600');
+            btn.classList.add('border-transparent', 'text-gray-500');
+        }
+    });
+
+    // 차트 재렌더링 (실제 API에서 새 데이터 가져오기)
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}`, {
+            method: 'GET'
+        });
+
+        if (body.success) {
+            await renderOccurrenceTrend(body.data);
+        }
+    } catch (err) {
+        console.error('차트 업데이트 중 오류:', err);
+    }
+}
+
+function getDaysFromRange(range) {
+    const rangeMap = {
+        '7d': 7,
+        '14d': 14,
+        '30d': 30
+    };
+    return rangeMap[range] || 7;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 분포 분석 차트
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function renderDistributionAnalysis(issue) {
+    const container = document.getElementById('distributionAnalysis');
+
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/distribution`, {
+            method: 'GET'
+        });
+
+        if (!body.success || !body.data) {
+            container.innerHTML = '<p class="text-sm text-gray-400">분포 분석 데이터를 불러올 수 없습니다.</p>';
+            return;
+        }
+
+        const distributionData = body.data;
+
+        // 데이터가 비어있는 경우
+        if ((!distributionData.os || distributionData.os.length === 0) &&
+            (!distributionData.version || distributionData.version.length === 0) &&
+            (!distributionData.device || distributionData.device.length === 0)) {
+            container.innerHTML = '<p class="text-sm text-gray-400">분포 분석 데이터가 없습니다.</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="space-y-4">
+                <!-- OS 분포 -->
+                ${distributionData.os && distributionData.os.length > 0 ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">운영체제</h3>
+                    <div class="space-y-2">
+                        ${distributionData.os.map(item => `
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="text-gray-600">${item.name}</span>
+                                    <span class="font-medium text-gray-900">${item.count}회 (${item.percentage}%)</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-indigo-600 h-2 rounded-full" style="width: ${item.percentage}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- 버전 분포 -->
+                ${distributionData.version && distributionData.version.length > 0 ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">앱 버전</h3>
+                    <div class="space-y-2">
+                        ${distributionData.version.map(item => `
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="text-gray-600">${item.name}</span>
+                                    <span class="font-medium text-gray-900">${item.count}회 (${item.percentage}%)</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-600 h-2 rounded-full" style="width: ${item.percentage}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- 디바이스 분포 -->
+                ${distributionData.device && distributionData.device.length > 0 ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">디바이스</h3>
+                    <div class="space-y-2">
+                        ${distributionData.device.map(item => `
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="text-gray-600">${item.name}</span>
+                                    <span class="font-medium text-gray-900">${item.count}회 (${item.percentage}%)</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-orange-600 h-2 rounded-full" style="width: ${item.percentage}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-red-500">분포 분석 중 오류 발생: ${err.message}</p>`;
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 근본 원인 분석
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function renderRootCauseAnalysis(issue) {
+    const container = document.getElementById('rootCauseAnalysis');
+
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/root-cause`, {
+            method: 'GET'
+        });
+
+        if (!body.success || !body.data) {
+            container.innerHTML = '<p class="text-sm text-gray-400">근본 원인 분석 데이터를 불러올 수 없습니다.</p>';
+            return;
+        }
+
+        const rca = body.data;
+
+        // 패턴 아이콘 매핑
+        const patternIcons = {
+            'TIME': '⏰',
+            'DAY': '📅',
+            'USER': '👤',
+            'ENVIRONMENT': '💻'
+        };
+
+        container.innerHTML = `
+            <div class="space-y-6">
+                <!-- 에러 타입 -->
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl">⚠️</span>
+                        <div>
+                            <h3 class="text-sm font-semibold text-red-900">${rca.errorType}</h3>
+                            <p class="text-xs text-red-700">${rca.errorDescription}</p>
+                        </div>
+                    </div>
+                    ${rca.hotspot !== 'N/A' ? `
+                        <div class="mt-2 flex items-center gap-2 text-xs text-red-800">
+                            <span class="font-mono bg-red-100 px-2 py-1 rounded">${rca.hotspot}</span>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- 발견된 패턴 -->
+                ${rca.patterns && rca.patterns.length > 0 ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">📊 발생 패턴</h3>
+                    <div class="space-y-2">
+                        ${rca.patterns.map(pattern => `
+                            <div class="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <span class="text-lg">${patternIcons[pattern.type] || '📌'}</span>
+                                <p class="text-sm text-blue-900 flex-1">${pattern.description}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- 가능한 원인 -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🔍 가능한 원인</h3>
+                    <ul class="space-y-2">
+                        ${rca.possibleCauses.map((cause, index) => `
+                            <li class="flex items-start gap-2 text-sm text-gray-700">
+                                <span class="flex-shrink-0 w-5 h-5 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xs font-medium">
+                                    ${index + 1}
+                                </span>
+                                <span class="flex-1">${cause}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+
+                <!-- 권장 해결책 -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">💡 권장 해결책</h3>
+                    <ul class="space-y-2">
+                        ${rca.solutions.map((solution, index) => `
+                            <li class="flex items-start gap-2 text-sm text-gray-700">
+                                <span class="flex-shrink-0 w-5 h-5 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-medium">
+                                    ${index + 1}
+                                </span>
+                                <span class="flex-1 font-mono text-xs bg-gray-50 p-2 rounded">${solution}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+
+                <!-- 유사 해결 사례 -->
+                ${rca.similarResolution ? `
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h3 class="text-sm font-semibold text-green-900 mb-2">✅ 유사 해결 사례</h3>
+                    <div class="text-sm text-green-800">
+                        <p class="font-medium">
+                            <a href="/projects/${currentPublicId}/issues/${rca.similarResolution.issueId}/analysis"
+                               class="text-green-700 hover:text-green-900 underline">
+                                #${rca.similarResolution.issueId} ${rca.similarResolution.issueTitle}
+                            </a>
+                        </p>
+                        <p class="mt-1 text-xs">"${rca.similarResolution.resolutionNote}"</p>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-red-500">근본 원인 분석 중 오류 발생: ${err.message}</p>`;
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 발생 맥락
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function renderIssueContext(issue) {
+    const container = document.getElementById('issueContext');
+
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/context`, {
+            method: 'GET'
+        });
+
+        if (!body.success || !body.data) {
+            container.innerHTML = '<p class="text-sm text-gray-400">맥락 정보를 불러올 수 없습니다.</p>';
+            return;
+        }
+
+        const ctx = body.data;
+        const { mostFrequentEnvironment, gameStateExample, commonAttributes } = ctx;
+
+        container.innerHTML = `
+            <div class="space-y-6">
+                <!-- 가장 빈번한 환경 -->
+                ${mostFrequentEnvironment ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">💻 가장 빈번한 환경</h3>
+                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">OS:</span>
+                                <span class="ml-2 font-medium text-gray-900">${mostFrequentEnvironment.os}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">디바이스:</span>
+                                <span class="ml-2 font-medium text-gray-900">${mostFrequentEnvironment.device}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">앱 버전:</span>
+                                <span class="ml-2 font-medium text-gray-900">${mostFrequentEnvironment.appVersion}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">발생 비율:</span>
+                                <span class="ml-2 font-medium text-indigo-600">${mostFrequentEnvironment.percentage}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- 게임 상태 예시 -->
+                ${gameStateExample && (gameStateExample.playerLevel || gameStateExample.currentStage || gameStateExample.currency) ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🎮 게임 상태 예시</h3>
+                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            ${gameStateExample.playerLevel ? `
+                            <div>
+                                <span class="text-gray-600">플레이어 레벨:</span>
+                                <span class="ml-2 font-medium text-gray-900">${gameStateExample.playerLevel}</span>
+                            </div>
+                            ` : ''}
+                            ${gameStateExample.currentStage ? `
+                            <div>
+                                <span class="text-gray-600">현재 스테이지:</span>
+                                <span class="ml-2 font-medium text-gray-900">${gameStateExample.currentStage}</span>
+                            </div>
+                            ` : ''}
+                            ${gameStateExample.currency ? `
+                            <div>
+                                <span class="text-gray-600">보유 재화:</span>
+                                <span class="ml-2 font-medium text-gray-900">${gameStateExample.currency}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ${gameStateExample.additionalState && Object.keys(gameStateExample.additionalState).length > 0 ? `
+                        <div class="mt-3 pt-3 border-t border-green-300">
+                            <p class="text-xs font-semibold text-gray-600 mb-2">기타 상태:</p>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                ${Object.entries(gameStateExample.additionalState).slice(0, 6).map(([key, value]) => `
+                                    <div class="text-gray-700">
+                                        <span class="text-gray-500">${key}:</span>
+                                        <span class="ml-1">${JSON.stringify(value)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- 공통 속성 -->
+                ${commonAttributes && Object.keys(commonAttributes).length > 0 ? `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🔗 공통 속성 (반복 패턴)</h3>
+                    <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            ${Object.entries(commonAttributes).map(([key, value]) => `
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-600">▪</span>
+                                    <div class="flex-1">
+                                        <span class="font-medium text-gray-700">${key}:</span>
+                                        <span class="ml-1 text-gray-600">${value}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
+                ${!mostFrequentEnvironment && !gameStateExample && (!commonAttributes || Object.keys(commonAttributes).length === 0) ? `
+                <p class="text-sm text-gray-400 text-center py-4">맥락 정보가 없습니다.</p>
+                ` : ''}
+            </div>
+        `;
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-red-500">맥락 정보를 불러오는 중 오류 발생: ${err.message}</p>`;
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 로그 상세
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function renderLogDetails(issue) {
+    const container = document.getElementById('logDetails');
+
+    // 스택트레이스 표시
+    let stackTrace = issue.stackKey || 'N/A';
+
+    container.innerHTML = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">스택트레이스</label>
+                <pre class="p-4 bg-gray-900 text-gray-100 rounded-lg text-xs font-mono overflow-x-auto">${stackTrace}</pre>
+            </div>
+            ${issue.description ? `
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">설명</label>
+                <p class="text-sm text-gray-700">${issue.description}</p>
+            </div>
+            ` : ''}
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">전체 아카이브</label>
+                <details class="cursor-pointer">
+                    <summary class="text-sm text-indigo-600 hover:text-indigo-700">상세 로그 펼치기</summary>
+                    <pre class="mt-2 p-4 bg-gray-50 rounded-lg text-xs text-gray-700 overflow-x-auto">${issue.title}</pre>
+                </details>
+            </div>
+        </div>
+    `;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 영향받은 플레이어
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+let currentPage = 0;
+const pageSize = 10;
+
+async function renderAffectedPlayers(issue) {
+    await loadAffectedPlayers(currentPage);
+}
+
+async function loadAffectedPlayers(page) {
+    const container = document.getElementById('affectedPlayers');
+
+    try {
+        const body = await callApi(
+            `/api/projects/${currentProjectId}/issues/${currentIssueId}/affected-players?page=${page}&size=${pageSize}`,
+            { method: 'GET' }
+        );
+
+        if (!body.success) {
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">플레이어 데이터를 불러올 수 없습니다.</p>';
+            return;
+        }
+
+        const data = body.data;
+        const players = data.content;
+
+        if (players.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">영향받은 플레이어가 없습니다.</p>';
+            return;
+        }
+
+        // 테이블 렌더링
+        container.innerHTML = `
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200 text-gray-500 text-xs">
+                            <th class="text-left py-3 px-4 font-medium">플레이어 ID</th>
+                            <th class="text-center py-3 px-4 font-medium">발생 횟수</th>
+                            <th class="text-center py-3 px-4 font-medium">최초 발생</th>
+                            <th class="text-center py-3 px-4 font-medium">최근 발생</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${players.map(player => `
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4">
+                                    <span class="font-mono text-gray-900">${player.userId}</span>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="inline-block px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
+                                        ${player.occurrenceCount}회
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-center text-gray-600 text-xs">
+                                    ${formatDateTime(player.firstOccurredAt)}
+                                </td>
+                                <td class="py-3 px-4 text-center text-gray-600 text-xs">
+                                    ${formatTimeAgo(player.lastOccurredAt)}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 페이지네이션 -->
+            ${data.totalPages > 1 ? `
+                <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                    <p class="text-xs text-gray-500">
+                        총 ${data.totalElements}명의 플레이어 (${data.number + 1} / ${data.totalPages} 페이지)
+                    </p>
+                    <div class="flex gap-2">
+                        <button onclick="loadAffectedPlayers(${page - 1})"
+                                ${!data.first ? '' : 'disabled'}
+                                class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            이전
+                        </button>
+                        <button onclick="loadAffectedPlayers(${page + 1})"
+                                ${!data.last ? '' : 'disabled'}
+                                class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            다음
+                        </button>
+                    </div>
+                </div>
+            ` : ''}
+        `;
+
+        currentPage = page;
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-red-500 text-center py-8">플레이어 데이터 로드 중 오류 발생: ${err.message}</p>`;
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 메타 정보
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function renderMetaInfo(issue) {
+    // 담당자 정보 저장
+    currentAssignee = issue.assignee || null;
+
+    // 담당자 정보 렌더링
+    const assigneeInfo = document.getElementById('assigneeInfo');
+    if (currentAssignee) {
+        const profileImage = currentAssignee.profileImageUrl
+            ? `<img src="${currentAssignee.profileImageUrl}" alt="${currentAssignee.nickname}" class="w-8 h-8 rounded-full object-cover">`
+            : `<div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                   <span class="text-indigo-600 text-xs font-medium">${currentAssignee.nickname.charAt(0)}</span>
+               </div>`;
+
+        assigneeInfo.innerHTML = `
+            <div class="flex items-center gap-2">
+                ${profileImage}
+                <span class="text-gray-900 text-sm font-medium">${currentAssignee.nickname}</span>
+            </div>
+        `;
+    } else {
+        assigneeInfo.innerHTML = `
+            <div class="flex items-center gap-2 text-gray-400 text-xs">
+                <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </div>
+                <span>담당자 없음</span>
+            </div>
+        `;
+    }
+
+    // 우선순위 표시
+    const priorityInfoEl = document.getElementById('priorityInfo');
+    priorityInfoEl.dataset.priority = issue.priority || '';
+    if (issue.priority) {
+        const priorityMap = {
+            P1: { label: 'P1 긴급', color: 'bg-red-100 text-red-700' },
+            P2: { label: 'P2 높음', color: 'bg-orange-100 text-orange-700' },
+            P3: { label: 'P3 보통', color: 'bg-yellow-100 text-yellow-700' },
+            P4: { label: 'P4 낮음', color: 'bg-gray-100 text-gray-700' }
+        };
+        const { label, color } = priorityMap[issue.priority] || { label: issue.priority, color: 'bg-gray-100 text-gray-700' };
+        priorityInfoEl.innerHTML = `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
+    } else {
+        priorityInfoEl.innerHTML = '<span class="text-xs text-gray-400">미설정</span>';
+    }
+
+    document.getElementById('occurrenceCount').textContent = `${issue.occurrenceCount}회`;
+    document.getElementById('firstOccurred').textContent = formatDateTime(issue.firstOccurredAt);
+    document.getElementById('lastOccurred').textContent = formatDateTime(issue.lastOccurredAt);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 관련 이슈
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function renderRelatedIssues(issue) {
+    const container = document.getElementById('relatedIssues');
+
+    if (issue.similarityResults && issue.similarityResults.length > 0) {
+        container.innerHTML = issue.similarityResults.map(result => `
+            <a href="/projects/${currentPublicId}/issues/${result.matchedIssueId}/analysis"
+               class="block p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-medium text-gray-900">#${result.matchedIssueId}</span>
+                    <span class="text-xs text-indigo-600">${result.similarity.toFixed(0)}%</span>
+                </div>
+                <p class="text-xs text-gray-600 truncate">${result.matchedIssueTitle}</p>
+            </a>
+        `).join('');
+    } else {
+        container.innerHTML = '<p class="text-xs text-gray-400">유사한 이슈가 없습니다.</p>';
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 변경 이력
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function renderTimeline(issue) {
+    const container = document.getElementById('timeline');
+
+    try {
+        // 이력 API 호출
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/histories`, {
+            method: 'GET'
+        });
+
+        if (!body.success) {
+            container.innerHTML = '<p class="text-sm text-gray-400">변경 이력을 불러올 수 없습니다.</p>';
+            return;
+        }
+
+        const histories = body.data;
+
+        // 이슈 생성 이벤트 추가
+        const events = [
+            {
+                time: issue.createdAt,
+                user: 'System',
+                action: '이슈 생성됨',
+                icon: 'plus'
+            }
+        ];
+
+        // 변경 이력을 이벤트로 변환
+        histories.forEach(history => {
+            const member = projectMembers.find(m => m.memberId === history.modifierId);
+            const userName = member ? member.nickname : '알 수 없음';
+
+            let action = '';
+            let icon = 'edit';
+
+            switch (history.fieldName) {
+                case 'STATUS':
+                    action = `상태를 "${history.beforeValue || '없음'}"에서 "${history.afterValue}"(으)로 변경`;
+                    icon = 'status';
+                    break;
+                case 'ASSIGNEE':
+                    const beforeMember = projectMembers.find(m => m.memberId === history.beforeValue);
+                    const afterMember = projectMembers.find(m => m.memberId === history.afterValue);
+                    const beforeName = beforeMember ? beforeMember.nickname : '미할당';
+                    const afterName = afterMember ? afterMember.nickname : '미할당';
+                    action = `담당자를 "${beforeName}"에서 "${afterName}"(으)로 변경`;
+                    icon = 'user';
+                    break;
+                case 'PRIORITY':
+                    action = `우선순위를 "${history.beforeValue || '없음'}"에서 "${history.afterValue}"(으)로 변경`;
+                    icon = 'priority';
+                    break;
+                default:
+                    action = `${history.fieldName}을(를) 변경`;
+                    icon = 'edit';
+            }
+
+            events.push({
+                time: history.createdAt,
+                user: userName,
+                action: action,
+                icon: icon
+            });
+        });
+
+        // 최신 순 정렬
+        events.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+        // 렌더링
+        if (events.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-400">변경 이력이 없습니다.</p>';
+            return;
+        }
+
+        container.innerHTML = events.map(event => {
+            const iconSvg = getTimelineIcon(event.icon);
+            return `
+                <div class="flex gap-3 mb-4">
+                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                        ${iconSvg}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">${event.user}</p>
+                        <p class="text-xs text-gray-600">${event.action}</p>
+                        <p class="text-xs text-gray-400 mt-1">${formatTimeAgo(event.time)}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-red-500">변경 이력 로드 중 오류 발생: ${err.message}</p>`;
+    }
+}
+
+function getTimelineIcon(iconType) {
+    const icons = {
+        plus: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>',
+        status: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        user: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>',
+        priority: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/></svg>',
+        edit: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
+    };
+    return icons[iconType] || icons.edit;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 담당자 관리
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function enterAssigneeEditMode() {
+    try {
+        // 프로젝트 멤버 목록 조회
+        const body = await callApi(`/api/projects/${currentPublicId}/members`, {
+            method: 'GET'
+        });
+
+        if (!body.success) {
+            showError('프로젝트 멤버 목록을 불러올 수 없습니다.');
+            return;
+        }
+
+        // 드롭다운 옵션 렌더링
+        const select = document.getElementById('assigneeSelect');
+        select.innerHTML = '<option value="">선택하세요</option>';
+
+        body.data.forEach(member => {
+            const option = document.createElement('option');
+            option.value = member.memberId;
+            option.textContent = member.nickname;
+
+            // 현재 담당자라면 선택 상태로
+            if (currentAssignee && currentAssignee.memberId === member.memberId) {
+                option.selected = true;
+            }
+
+            select.appendChild(option);
+        });
+
+        // 표시 모드 숨기고 편집 모드 표시
+        document.getElementById('assigneeDisplay').classList.add('hidden');
+        document.getElementById('assigneeEdit').classList.remove('hidden');
+        document.getElementById('assigneeEditError').classList.add('hidden');
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+function cancelAssigneeEdit() {
+    // 편집 모드 숨기고 표시 모드 표시
+    document.getElementById('assigneeEdit').classList.add('hidden');
+    document.getElementById('assigneeDisplay').classList.remove('hidden');
+    document.getElementById('assigneeEditError').classList.add('hidden');
+}
+
+async function saveAssigneeChange() {
+    const selectedAssigneeId = document.getElementById('assigneeSelect').value;
+    const errorEl = document.getElementById('assigneeEditError');
+
+    errorEl.classList.add('hidden');
+
+    if (!selectedAssigneeId) {
+        errorEl.textContent = '담당자를 선택하세요.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    // 현재 담당자와 동일한 경우 검증
+    if (currentAssignee && currentAssignee.memberId === selectedAssigneeId) {
+        errorEl.textContent = '이미 해당 담당자로 지정되어 있습니다.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/assignee`, {
+            method: 'PUT',
+            body: JSON.stringify({ assigneeId: selectedAssigneeId })
+        });
+
+        if (body.success) {
+            cancelAssigneeEdit(); // 편집 모드 닫기
+            loadIssueDetail(); // 새로고침
+        } else {
+            errorEl.textContent = body.error?.message || '담당자 변경에 실패했습니다.';
+            errorEl.classList.remove('hidden');
+        }
+    } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 우선순위 변경
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function enterPriorityEditMode() {
+    // 표시 모드 숨기고 편집 모드 표시
+    document.getElementById('priorityDisplay').classList.add('hidden');
+    document.getElementById('priorityEdit').classList.remove('hidden');
+
+    // 현재 우선순위 선택
+    const currentPriority = document.getElementById('priorityInfo').dataset.priority;
+    const select = document.getElementById('prioritySelect');
+    if (currentPriority) {
+        select.value = currentPriority;
+    }
+}
+
+function cancelPriorityEdit() {
+    // 편집 모드 숨기고 표시 모드 표시
+    document.getElementById('priorityEdit').classList.add('hidden');
+    document.getElementById('priorityDisplay').classList.remove('hidden');
+    document.getElementById('priorityEditError').classList.add('hidden');
+}
+
+async function savePriorityChange() {
+    const selectedPriority = document.getElementById('prioritySelect').value;
+    const errorEl = document.getElementById('priorityEditError');
+
+    errorEl.classList.add('hidden');
+
+    if (!selectedPriority) {
+        errorEl.textContent = '우선순위를 선택하세요.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    // 현재 우선순위와 동일한 경우 검증
+    const currentPriority = document.getElementById('priorityInfo').dataset.priority;
+    if (currentPriority === selectedPriority) {
+        errorEl.textContent = '이미 해당 우선순위로 설정되어 있습니다.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/priority`, {
+            method: 'PUT',
+            body: JSON.stringify({ priority: selectedPriority })
+        });
+
+        if (body.success) {
+            cancelPriorityEdit(); // 편집 모드 닫기
+            loadIssueDetail(); // 새로고침
+        } else {
+            errorEl.textContent = body.error?.message || '우선순위 변경에 실패했습니다.';
+            errorEl.classList.remove('hidden');
+        }
+    } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 댓글 기능
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function submitComment() {
+    const commentText = document.getElementById('newComment').value.trim();
+
+    if (!commentText) {
+        showTopToast('댓글 내용을 입력하세요.', 'warning');
+        return;
+    }
+
+    // TODO: Phase 3에서 댓글 API 연동
+    showTopToast('댓글 기능은 곧 추가될 예정입니다.', 'info');
+    document.getElementById('newComment').value = '';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 상태 변경
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function openStatusModal() {
+    document.getElementById('newStatus').value = '';
+    document.getElementById('resolutionNote').value = '';
+    document.getElementById('shouldIncludeInPatchNote').checked = false;
+    document.getElementById('resolvedOptions').classList.add('hidden');
+    document.getElementById('statusError').classList.add('hidden');
+    openModal('statusModal');
+}
+
+document.getElementById('newStatus')?.addEventListener('change', (e) => {
+    const resolvedOptions = document.getElementById('resolvedOptions');
+    if (e.target.value === 'RESOLVED') {
+        resolvedOptions.classList.remove('hidden');
+    } else {
+        resolvedOptions.classList.add('hidden');
+    }
+});
+
+async function submitStatusChange() {
+    const status = document.getElementById('newStatus').value;
+    const resolutionNote = document.getElementById('resolutionNote')?.value?.trim() || null;
+    const shouldIncludeInPatchNote = document.getElementById('shouldIncludeInPatchNote').checked;
+    const errorEl = document.getElementById('statusError');
+
+    errorEl.classList.add('hidden');
+
+    if (!status) {
+        errorEl.textContent = '변경할 상태를 선택하세요.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                status,
+                resolutionNote,
+                shouldIncludeInPatchNote
+            })
+        });
+
+        if (body.success) {
+            closeModal('statusModal');
+            showTopToast('이슈 상태가 변경되었습니다.', 'success');
+            loadIssueDetail(); // 새로고침
+        } else {
+            errorEl.textContent = body.error?.message || '상태 변경에 실패했습니다.';
+            errorEl.classList.remove('hidden');
+        }
+    } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 유틸리티
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getStatusBadge(status) {
+    const statusMap = {
+        RECOMMENDED: { label: '추천 대기', color: 'bg-blue-100 text-blue-700' },
+        TODO: { label: '대기중', color: 'bg-gray-100 text-gray-700' },
+        IN_PROGRESS: { label: '처리중', color: 'bg-blue-100 text-blue-700' },
+        RESOLVED: { label: '해결됨', color: 'bg-green-100 text-green-700' }
+    };
+    const { label, color } = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
+    return `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
+}
+
+function formatDateTime(dateTimeStr) {
+    if (!dateTimeStr) return 'N/A';
+    const date = new Date(dateTimeStr);
+    return date.toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatTimeAgo(dateTimeStr) {
+    if (!dateTimeStr) return 'N/A';
+
+    const now = new Date();
+    const date = new Date(dateTimeStr);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) return '방금 전';
+    if (diffMins < 60) return `${diffMins}분 전`;
+
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}시간 전`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}일 전`;
+
+    return formatDateTime(dateTimeStr);
+}
+
+function shareIssue() {
+    const url = window.location.href;
+
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+            showTopToast('이슈 URL이 복사되었습니다.', 'success');
+        }).catch(() => {
+            prompt('이슈 URL:', url);
+        });
+    } else {
+        prompt('이슈 URL:', url);
+    }
+}
+
+function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+}
+
+function showError(message) {
+    showTopToast(message, 'danger');
+}

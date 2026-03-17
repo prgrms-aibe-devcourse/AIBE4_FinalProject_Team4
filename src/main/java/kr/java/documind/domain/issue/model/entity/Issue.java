@@ -12,9 +12,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
+import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.IssueType;
+import kr.java.documind.global.exception.ConflictException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,7 +40,7 @@ public class Issue {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "assignee_id", nullable = false)
+    @Column(name = "assignee_id")
     private UUID assigneeId;
 
     @Column(name = "project_id", nullable = false)
@@ -62,8 +64,9 @@ public class Issue {
     @Builder.Default
     private IssueStatus status = IssueStatus.TODO;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private String priority;
+    private IssuePriority priority;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -134,13 +137,17 @@ public class Issue {
         this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
 
         // RESOLVED 상태로 변경 시 resolved_at 설정
-        if (newStatus == IssueStatus.RESOLVED && this.resolvedAt == null) {
+        if (newStatus == IssueStatus.RESOLVED) {
             this.resolvedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        }
+        // RESOLVED에서 다른 상태로 되돌릴 시 resolved_at 초기화
+        else if (this.resolvedAt != null) {
+            this.resolvedAt = null;
         }
     }
 
     /**
-     * 담당자 지정
+     * 담당자 할당
      *
      * @param assigneeId 담당자 ID
      */
@@ -162,11 +169,31 @@ public class Issue {
     }
 
     /**
+     * 이슈 제목 수정
+     *
+     * @param title 새로운 제목
+     */
+    public void updateTitle(String title) {
+        this.title = title;
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    /**
+     * 이슈 설명 수정
+     *
+     * @param description 새로운 설명
+     */
+    public void updateDescription(String description) {
+        this.description = description;
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    /**
      * 우선순위 설정
      *
      * @param priority 우선순위
      */
-    public void setPriority(String priority) {
+    public void setPriority(IssuePriority priority) {
         this.priority = priority;
         this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
@@ -178,6 +205,26 @@ public class Issue {
      */
     public void writeResolutionNote(String resolutionNote) {
         this.resolutionNote = resolutionNote;
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    /** 이슈 추천 승인 (RECOMMENDED → TODO) */
+    public void approve() {
+        if (this.status != IssueStatus.RECOMMENDED) {
+            throw new ConflictException(
+                    "이슈 추천 상태(RECOMMENDED)에서만 승인할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = IssueStatus.TODO;
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    /** 이슈 추천 거부 (RECOMMENDED → REJECTED) */
+    public void reject() {
+        if (this.status != IssueStatus.RECOMMENDED) {
+            throw new ConflictException(
+                    "이슈 추천 상태(RECOMMENDED)에서만 거부할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = IssueStatus.REJECTED;
         this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 }

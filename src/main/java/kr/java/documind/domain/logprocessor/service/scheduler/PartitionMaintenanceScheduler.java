@@ -87,9 +87,12 @@ public class PartitionMaintenanceScheduler {
     }
 
     /**
-     * 향후 2주 파티션 생성 (Hot Storage)
+     * 파티션 생성 (Hot Storage)
      *
-     * <p>데이터 유실 방지를 위해 현재 주 + 2주까지 파티션을 미리 생성
+     * <p>데이터 유실 방지를 위해 과거 1주 ~ 미래 2주까지 파티션을 생성
+     *
+     * <p><b>과거 1주 포함 이유:</b> 로그 수집 시 (서버 시간 - 24h) ~ (서버 시간 + 1h) 허용하므로, 월요일 00:00 이후 24시간 전 로그(지난
+     * 주 일요일)가 유입될 수 있음
      *
      * <p><b>타임존:</b> UTC 기준으로 동작 (파티션 경계와 일치)
      */
@@ -99,15 +102,17 @@ public class PartitionMaintenanceScheduler {
             LocalDate today = LocalDate.now(ZoneOffset.UTC);
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
-            // 현재 주 + 2주까지 생성
-            for (int i = 0; i <= 2; i++) {
+            // 과거 1주 ~ 미래 2주까지 생성 (24시간 전 로그 대응)
+            for (int i = -1; i <= 2; i++) {
                 LocalDate targetMonday = monday.plusWeeks(i);
                 createPartitionIfNotExists(targetMonday);
             }
 
-            log.info("[Partition] Successfully created future partitions (Hot Storage)");
+            log.info(
+                    "[Partition] Successfully created partitions (Past 1 week ~ Future 2 weeks for"
+                            + " 24h log tolerance)");
         } catch (Exception e) {
-            log.error("[Partition] Failed to create future partitions", e);
+            log.error("[Partition] Failed to create partitions", e);
         }
     }
 

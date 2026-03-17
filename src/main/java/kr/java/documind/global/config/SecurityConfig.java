@@ -52,6 +52,8 @@ public class SecurityConfig {
         "/images/**",
         "/fonts/**",
         "/favicon.ico",
+        "/swagger-ui/**",
+        "/v3/api-docs/**",
     };
 
     /** 인증 없이 접근 가능한 POST 경로 */

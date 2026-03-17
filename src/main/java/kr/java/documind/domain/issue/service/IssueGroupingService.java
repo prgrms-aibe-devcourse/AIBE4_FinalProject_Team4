@@ -3,6 +3,7 @@ package kr.java.documind.domain.issue.service;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import kr.java.documind.domain.auth.model.enums.ProjectRole;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
@@ -10,6 +11,8 @@ import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.issue.service.fingerprint.FingerprintResult;
 import kr.java.documind.domain.issue.service.severity.IssueSeverityService;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
+import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
+import kr.java.documind.global.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,6 +32,7 @@ public class IssueGroupingService {
 
     private final IssueRepository issueRepository;
     private final IssueSeverityService issueSeverityService;
+    private final ProjectMemberRepository projectMemberRepository;
 
     /**
      * 로그에 대한 이슈를 찾거나 생성
@@ -107,7 +111,7 @@ public class IssueGroupingService {
                             })
                     .orElseThrow(
                             () ->
-                                    new IllegalStateException(
+                                    new ConflictException(
                                             "Issue should exist after UNIQUE violation. fingerprint="
                                                     + fingerprint));
         }
@@ -122,6 +126,7 @@ public class IssueGroupingService {
      */
     private Issue createNewIssue(GameLog gameLog, FingerprintResult fingerprintResult) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        UUID projectId = gameLog.getProjectId();
 
         // 이슈 제목 생성 (archive에서 첫 줄 추출)
         String title = extractTitle(gameLog.getArchive());
@@ -132,12 +137,15 @@ public class IssueGroupingService {
         // StackKey 생성 (archive에서 직접 추출)
         String stackKey = extractStackKeyFromArchive(gameLog.getArchive());
 
+        // 프로젝트 관리자를 기본 담당자로 설정
+        UUID defaultAssigneeId = findProjectManager(projectId);
+
         return Issue.builder()
-                .assigneeId(UUID.randomUUID()) // TODO: 실제 담당자 배정 로직 필요
-                .projectId(gameLog.getProjectId())
+                .assigneeId(defaultAssigneeId) // 프로젝트 관리자를 기본 담당자로 할당
+                .projectId(projectId)
                 .fingerprint(fingerprintResult.getFingerprint())
                 .title(title)
-                .status(IssueStatus.TODO)
+                .status(IssueStatus.RECOMMENDED) // 추천 상태로 생성
                 .errorType(errorType)
                 .stackKey(stackKey)
                 .occurrenceCount(1)
@@ -146,6 +154,22 @@ public class IssueGroupingService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
+    }
+
+    /**
+     * 프로젝트 관리자 조회
+     *
+     * @param projectId 프로젝트 ID
+     * @return 프로젝트 관리자의 Member ID
+     */
+    private UUID findProjectManager(UUID projectId) {
+        return projectMemberRepository
+                .findByProject_IdAndProjectRole(projectId, ProjectRole.MANAGER)
+                .stream()
+                .findFirst()
+                .map(pm -> pm.getMember().getId())
+                .orElseThrow(
+                        () -> new ConflictException("프로젝트 관리자를 찾을 수 없습니다. projectId=" + projectId));
     }
 
     /**
