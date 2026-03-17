@@ -668,11 +668,11 @@ function renderLogDetails(issue) {
 // 영향받은 플레이어
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-let currentPage = 0;
-const pageSize = 10;
+let affectedPlayersPage = 0;
+const affectedPlayersPageSize = 10;
 
 async function renderAffectedPlayers(issue) {
-    await loadAffectedPlayers(currentPage);
+    await loadAffectedPlayers(affectedPlayersPage);
 }
 
 async function loadAffectedPlayers(page) {
@@ -680,7 +680,7 @@ async function loadAffectedPlayers(page) {
 
     try {
         const body = await callApi(
-            `/api/projects/${currentProjectId}/issues/${currentIssueId}/affected-players?page=${page}&size=${pageSize}`,
+            `/api/projects/${currentProjectId}/issues/${currentIssueId}/affected-players?page=${page}&size=${affectedPlayersPageSize}`,
             { method: 'GET' }
         );
 
@@ -754,7 +754,7 @@ async function loadAffectedPlayers(page) {
             ` : ''}
         `;
 
-        currentPage = page;
+        affectedPlayersPage = page;
     } catch (err) {
         container.innerHTML = `<p class="text-sm text-red-500 text-center py-8">플레이어 데이터 로드 중 오류 발생: ${err.message}</p>`;
     }
@@ -1013,21 +1013,9 @@ async function saveAssigneeChange() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 댓글 기능
+// 댓글 기능 (issue-comment.js에서 처리)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function submitComment() {
-    const commentText = document.getElementById('newComment').value.trim();
-
-    if (!commentText) {
-        alert('댓글 내용을 입력하세요.');
-        return;
-    }
-
-    // TODO: Phase 3에서 댓글 API 연동
-    alert('댓글 기능은 곧 추가될 예정입니다.');
-    document.getElementById('newComment').value = '';
-}
+// 댓글 기능은 issue-comment.js에서 처리됩니다.
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 상태 변경

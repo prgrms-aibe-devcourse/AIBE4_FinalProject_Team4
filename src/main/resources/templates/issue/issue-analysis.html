@@ -202,18 +202,44 @@
                 </div>
             </div>
 
-            <!-- 내부 댓글 -->
+            <!-- 댓글 섹션 -->
             <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 class="text-sm font-bold text-gray-900 mb-4">내부 댓글</h3>
-                <div id="comments" class="space-y-3 mb-4">
-                    <p class="text-xs text-gray-400">댓글이 없습니다.</p>
+                <h3 class="text-sm font-bold text-gray-900 mb-4">댓글 <span id="commentCount" class="text-gray-400">(0)</span></h3>
+
+                <!-- 댓글 목록 -->
+                <div id="commentList" class="space-y-4 mb-4">
+                    <p class="text-xs text-gray-400 text-center py-4">댓글이 없습니다.</p>
                 </div>
-                <textarea id="newComment" placeholder="댓글을 입력하세요..."
-                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          rows="3"></textarea>
-                <button onclick="submitComment()" class="mt-2 w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
-                    댓글 작성
-                </button>
+
+                <!-- 페이지네이션 -->
+                <div id="commentPagination" class="hidden flex items-center justify-center gap-2 mb-4">
+                    <button onclick="loadComments(currentPage - 1)" id="prevPage" class="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        이전
+                    </button>
+                    <span id="pageInfo" class="text-xs text-gray-600"></span>
+                    <button onclick="loadComments(currentPage + 1)" id="nextPage" class="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        다음
+                    </button>
+                </div>
+
+                <!-- 댓글 작성 폼 -->
+                <div class="relative">
+                    <textarea id="commentInput" placeholder="댓글을 입력하세요... (@닉네임으로 멘션 가능)"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              rows="3"></textarea>
+
+                    <!-- 멘션 자동완성 드롭다운 -->
+                    <div id="mentionDropdown" class="hidden absolute bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10 w-full mt-1">
+                        <!-- 멤버 목록이 여기에 렌더링됩니다 -->
+                    </div>
+
+                    <div class="flex items-center justify-between mt-2">
+                        <span id="mentionedMembersPreview" class="text-xs text-gray-500"></span>
+                        <button onclick="submitComment()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
+                            댓글 작성
+                        </button>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -223,6 +249,9 @@
     <input type="hidden" id="publicId" th:value="${publicId}">
     <input type="hidden" id="projectId" th:value="${projectId}">
     <input type="hidden" id="issueId" th:value="${issueId}">
+    <script th:inline="javascript">
+        window.currentMemberId = /*[[${#authentication.principal.memberId}]]*/ null;
+    </script>
 
     <!-- ==================== 상태 변경 모달 ==================== -->
     <div id="statusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
@@ -279,6 +308,7 @@
 <th:block layout:fragment="scripts">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script th:src="@{/js/issue/issue-analysis.js}"></script>
+    <script th:src="@{/js/issue/issue-comment.js}"></script>
 </th:block>
 </body>
 </html>
