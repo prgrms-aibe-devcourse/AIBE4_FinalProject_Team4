@@ -164,7 +164,18 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
         if (field.aggregation() == AggregationFunction.COUNT_DISTINCT) {
             return "COUNT(DISTINCT " + colRef + ")" + alias;
         }
-        return field.aggregation().getSqlFunction() + "(" + colRef + ")" + alias;
+
+        String expr = colRef;
+        String aggName = field.aggregation().name();
+        if (colRef.contains("->>")
+                && (aggName.equals("AVG")
+                        || aggName.equals("SUM")
+                        || aggName.equals("MIN")
+                        || aggName.equals("MAX"))) {
+            expr = "CAST(" + colRef + " AS numeric)";
+        }
+
+        return field.aggregation().getSqlFunction() + "(" + expr + ")" + alias;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
