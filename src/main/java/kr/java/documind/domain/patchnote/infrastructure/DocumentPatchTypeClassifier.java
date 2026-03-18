@@ -1,6 +1,7 @@
 package kr.java.documind.domain.patchnote.infrastructure;
 
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
  * <p>{@code extract-document-summary.st} 프롬프트의 {@code category} 필드는 "NEW" / "CHANGE" / "FIX" /
  * "MAINTENANCE" 중 하나를 반환한다. 알 수 없는 값이 들어오면 {@link PatchType#FIX}로 폴백한다.
  */
+@Slf4j
 @Component
 public class DocumentPatchTypeClassifier {
 
@@ -27,7 +29,12 @@ public class DocumentPatchTypeClassifier {
             case "CHANGE" -> PatchType.CHANGE;
             case "FIX" -> PatchType.FIX;
             case "MAINTENANCE" -> PatchType.MAINTENANCE;
-            default -> PatchType.FIX;
+            default -> {
+                log.warn(
+                        "[DocumentPatchTypeClassifier] 알 수 없는 카테고리: '{}', FIX로 폴백",
+                        categoryFromLlm.trim().toUpperCase());
+                yield PatchType.FIX;
+            }
         };
     }
 }

@@ -102,7 +102,8 @@ public class DocumentSummaryGenerator {
 
             if (title.isBlank()) title = documentName;
             if (summary.isBlank()) summary = documentName;
-            if (categoryFromLlm.isBlank()) categoryFromLlm = fallbackCategory.toUpperCase();
+            if (categoryFromLlm.isBlank())
+                categoryFromLlm = (fallbackCategory != null) ? fallbackCategory.toUpperCase() : "";
 
             return new DocumentSummaryResult(title, summary, categoryFromLlm);
 
@@ -121,6 +122,7 @@ public class DocumentSummaryGenerator {
     }
 
     private DocumentSummaryResult fallback(String documentName, String category) {
-        return new DocumentSummaryResult(documentName, documentName, category.toUpperCase());
+        String safeCategory = (category != null) ? category.toUpperCase() : "";
+        return new DocumentSummaryResult(documentName, documentName, safeCategory);
     }
 }
