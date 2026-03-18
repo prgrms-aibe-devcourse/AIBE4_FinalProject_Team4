@@ -12,6 +12,8 @@ import kr.java.documind.domain.issue.model.dto.response.SimilarityResult;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.service.recommendation.IssueRecommendationService;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
+import kr.java.documind.global.annotation.CurrentProject;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Issue Recommendation", description = "이슈 추천 API (승인/거부)")
 @RestController
-@RequestMapping("/api/projects/{projectId}/issue-recommendations")
+@RequestMapping("/api/projects/{publicId}/issue-recommendations")
 @RequiredArgsConstructor
 public class IssueRecommendationApiController {
 
@@ -36,21 +38,16 @@ public class IssueRecommendationApiController {
     /**
      * 추천 이슈 목록 조회
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @return 추천 이슈 목록
      */
     @Operation(summary = "추천 이슈 목록 조회", description = "로그 분석 결과 추천된 이슈 목록을 조회합니다 (RECOMMENDED 상태).")
     @IssueRecommendationSwaggerDocs.GetRecommendationListDocs
     @GetMapping
     public ResponseEntity<ApiResponse<List<IssueListResponse>>> getRecommendationList(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId) {
+            @CurrentProject ProjectRequestContext ctx) {
 
-        List<Issue> recommendations = recommendationService.getRecommendationList(projectId);
+        List<Issue> recommendations = recommendationService.getRecommendationList(ctx.projectId());
 
         List<IssueListResponse> response =
                 recommendations.stream().map(IssueListResponse::from).toList();
@@ -61,7 +58,7 @@ public class IssueRecommendationApiController {
     /**
      * 추천 이슈 상세 조회
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @return 추천 이슈 상세
      */
@@ -69,16 +66,11 @@ public class IssueRecommendationApiController {
     @IssueRecommendationSwaggerDocs.GetRecommendationDetailDocs
     @GetMapping("/{issueId}")
     public ResponseEntity<ApiResponse<IssueDetailResponse>> getRecommendationDetail(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
-        Issue recommendation = recommendationService.getRecommendationDetail(issueId, projectId);
+        Issue recommendation = recommendationService.getRecommendationDetail(issueId, ctx.projectId());
 
         // 담당자 정보 조회
         AssigneeInfo assignee = null;
@@ -103,7 +95,7 @@ public class IssueRecommendationApiController {
     /**
      * 추천 이슈 승인 → 실제 이슈 생성
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @param request 승인 요청 (담당자 ID)
      * @param authMember 현재 로그인한 사용자
@@ -113,12 +105,7 @@ public class IssueRecommendationApiController {
     @IssueRecommendationSwaggerDocs.ApproveRecommendationDocs
     @PostMapping("/{issueId}/approve")
     public ResponseEntity<ApiResponse<Void>> approveRecommendation(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
             @RequestBody ApproveRecommendationRequest request,
@@ -126,7 +113,7 @@ public class IssueRecommendationApiController {
 
         recommendationService.approveRecommendation(
                 issueId,
-                projectId,
+                ctx.projectId(),
                 request.assigneeId(),
                 request.title(),
                 request.description(),
@@ -139,7 +126,7 @@ public class IssueRecommendationApiController {
     /**
      * 추천 이슈 거부
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @param authMember 현재 로그인한 사용자
      * @return 성공 메시지
@@ -148,17 +135,12 @@ public class IssueRecommendationApiController {
     @IssueRecommendationSwaggerDocs.RejectRecommendationDocs
     @PostMapping("/{issueId}/reject")
     public ResponseEntity<ApiResponse<Void>> rejectRecommendation(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
             @AuthenticationPrincipal CustomUserDetails authMember) {
 
-        recommendationService.rejectRecommendation(issueId, projectId, authMember.getMemberId());
+        recommendationService.rejectRecommendation(issueId, ctx.projectId(), authMember.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success("추천 이슈가 거부되었습니다."));
     }
