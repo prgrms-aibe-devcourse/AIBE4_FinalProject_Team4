@@ -26,6 +26,8 @@ import kr.java.documind.domain.issue.service.RootCauseAnalysisService;
 import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
 import kr.java.documind.domain.issue.service.workflow.IssueManagementService;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
+import kr.java.documind.global.annotation.CurrentProject;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +46,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Issue Management", description = "이슈 관리 API (담당자 할당, 상태 변경, 이력 조회)")
 @RestController
-@RequestMapping("/api/projects/{projectId}/issues")
+@RequestMapping("/api/projects/{publicId}/issues")
 @RequiredArgsConstructor
 public class IssueManagementApiController {
 
@@ -60,7 +62,7 @@ public class IssueManagementApiController {
     /**
      * 프로젝트별 이슈 목록 조회
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param status 필터링할 상태 (선택)
      * @return 이슈 목록
      */
@@ -68,16 +70,11 @@ public class IssueManagementApiController {
     @IssueManagementSwaggerDocs.GetIssueListDocs
     @GetMapping
     public ResponseEntity<ApiResponse<List<IssueListResponse>>> getIssueList(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 상태 (선택)", example = "TODO") @RequestParam(required = false)
                     IssueStatus status) {
 
-        List<Issue> issues = issueManagementService.getIssueList(projectId, status);
+        List<Issue> issues = issueManagementService.getIssueList(ctx.projectId(), status);
 
         List<IssueListResponse> response = issues.stream().map(IssueListResponse::from).toList();
 
@@ -87,7 +84,7 @@ public class IssueManagementApiController {
     /**
      * 이슈 상세 조회
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @return 이슈 상세 정보
      */
@@ -95,16 +92,11 @@ public class IssueManagementApiController {
     @IssueManagementSwaggerDocs.GetIssueDetailDocs
     @GetMapping("/{issueId}")
     public ResponseEntity<ApiResponse<IssueDetailResponse>> getIssueDetail(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
-        Issue issue = issueManagementService.getIssueDetail(issueId, projectId);
+        Issue issue = issueManagementService.getIssueDetail(issueId, ctx.projectId());
 
         // 담당자 정보 조회
         AssigneeInfo assignee = null;
@@ -124,7 +116,7 @@ public class IssueManagementApiController {
     /**
      * 이슈 담당자 지정
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @param request 담당자 ID
      * @param authMember 현재 로그인한 사용자 (변경자)
@@ -134,19 +126,14 @@ public class IssueManagementApiController {
     @IssueManagementSwaggerDocs.AssignIssueDocs
     @PutMapping("/{issueId}/assignee")
     public ResponseEntity<ApiResponse<Void>> assignIssue(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
             @Valid @RequestBody IssueAssignRequest request,
             @AuthenticationPrincipal CustomUserDetails authMember) {
 
         issueManagementService.assignIssue(
-                issueId, projectId, request.assigneeId(), authMember.getMemberId());
+                issueId, ctx.projectId(), request.assigneeId(), authMember.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success("담당자가 지정되었습니다."));
     }
@@ -154,7 +141,7 @@ public class IssueManagementApiController {
     /**
      * 이슈 상태 변경
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @param request 변경할 상태 및 패치노트 포함 여부
      * @param authMember 현재 로그인한 사용자 (변경자)
@@ -167,12 +154,7 @@ public class IssueManagementApiController {
     @IssueManagementSwaggerDocs.UpdateStatusDocs
     @PutMapping("/{issueId}/status")
     public ResponseEntity<ApiResponse<Void>> updateIssueStatus(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
             @Valid @RequestBody IssueStatusUpdateRequest request,
@@ -180,7 +162,7 @@ public class IssueManagementApiController {
 
         issueManagementService.updateIssueStatus(
                 issueId,
-                projectId,
+                ctx.projectId(),
                 request.status(),
                 request.resolutionNote(),
                 authMember.getMemberId(),
@@ -192,7 +174,7 @@ public class IssueManagementApiController {
     /**
      * 이슈 변경 이력 조회
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @return 변경 이력 목록 (최신순)
      */
@@ -200,17 +182,12 @@ public class IssueManagementApiController {
     @IssueManagementSwaggerDocs.GetHistoriesDocs
     @GetMapping("/{issueId}/histories")
     public ResponseEntity<ApiResponse<List<IssueHistoryResponse>>> getIssueHistories(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
         // 프로젝트 소유권 검증
-        issueManagementService.getIssueDetail(issueId, projectId);
+        issueManagementService.getIssueDetail(issueId, ctx.projectId());
 
         List<IssueHistory> histories = issueHistoryService.getIssueHistories(issueId);
 
@@ -223,19 +200,14 @@ public class IssueManagementApiController {
     /**
      * 이슈 분포 분석 데이터 조회
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @return 분포 분석 데이터 (OS, 버전, 디바이스)
      */
     @Operation(summary = "이슈 분포 분석 조회", description = "이슈의 OS, 앱 버전, 디바이스별 발생 분포를 분석합니다.")
     @GetMapping("/{issueId}/distribution")
     public ResponseEntity<ApiResponse<DistributionDataResponse>> getDistributionAnalysis(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
@@ -248,7 +220,7 @@ public class IssueManagementApiController {
     /**
      * 이슈로 영향받은 플레이어 목록 조회
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @param pageable 페이지네이션 (기본: page=0, size=20)
      * @return 영향받은 플레이어 목록
@@ -258,12 +230,7 @@ public class IssueManagementApiController {
             description = "특정 이슈로 인해 영향을 받은 플레이어 목록 및 통계를 조회합니다. 발생 횟수 내림차순으로 정렬됩니다.")
     @GetMapping("/{issueId}/affected-players")
     public ResponseEntity<ApiResponse<Page<AffectedPlayerResponse>>> getAffectedPlayers(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
             @PageableDefault(size = 20) Pageable pageable) {
@@ -277,7 +244,7 @@ public class IssueManagementApiController {
     /**
      * 이슈 발생 추이 조회
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @param days 조회 기간 (일 단위, 기본: 7일)
      * @return 날짜별 발생 횟수
@@ -287,12 +254,7 @@ public class IssueManagementApiController {
             description = "특정 이슈의 시간대별 발생 추이를 조회합니다. 기본 7일간의 데이터를 제공합니다.")
     @GetMapping("/{issueId}/trend")
     public ResponseEntity<ApiResponse<List<OccurrenceTrendResponse>>> getOccurrenceTrend(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
             @Parameter(description = "조회 기간 (일 단위)", example = "7")
@@ -308,19 +270,14 @@ public class IssueManagementApiController {
     /**
      * 이슈 근본 원인 분석
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @return 근본 원인 분석 결과
      */
     @Operation(summary = "이슈 근본 원인 분석", description = "규칙 기반 패턴 분석을 통해 이슈의 근본 원인 및 해결 방법을 제시합니다.")
     @GetMapping("/{issueId}/root-cause")
     public ResponseEntity<ApiResponse<RootCauseAnalysisResponse>> getRootCauseAnalysis(
-            @Parameter(
-                            description = "프로젝트 ID",
-                            example = "123e4567-e89b-12d3-a456-426614174000",
-                            required = true)
-                    @PathVariable
-                    java.util.UUID projectId,
+            @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
@@ -332,7 +289,7 @@ public class IssueManagementApiController {
     /**
      * 이슈 발생 맥락 정보 조회
      *
-     * @param projectId 프로젝트 ID
+     * @param ctx 프로젝트 컨텍스트
      * @param issueId 이슈 ID
      * @return 맥락 정보 (환경, 게임 상태)
      */
@@ -342,12 +299,7 @@ public class IssueManagementApiController {
                     ApiResponse<
                             kr.java.documind.domain.issue.model.dto.response.IssueContextResponse>>
             getIssueContext(
-                    @Parameter(
-                                    description = "프로젝트 ID",
-                                    example = "123e4567-e89b-12d3-a456-426614174000",
-                                    required = true)
-                            @PathVariable
-                            java.util.UUID projectId,
+                    @CurrentProject ProjectRequestContext ctx,
                     @Parameter(description = "이슈 ID", example = "101", required = true)
                             @PathVariable
                             Long issueId) {
