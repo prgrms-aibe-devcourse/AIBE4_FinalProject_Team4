@@ -87,9 +87,7 @@ public class IssueStatusChangedEventHandler {
                         issue.getResolutionNote(),
                         issue.getSeverity() != null ? issue.getSeverity().name() : null,
                         issue.getIssueType() != null ? issue.getIssueType().name() : null,
-                        issue.getResolvedAt() != null
-                                ? issue.getResolvedAt().toInstant()
-                                : null,
+                        issue.getResolvedAt() != null ? issue.getResolvedAt().toInstant() : null,
                         List.of());
         List<Document> chunks = issueChunkingService.buildChunks(chunkingSource);
 

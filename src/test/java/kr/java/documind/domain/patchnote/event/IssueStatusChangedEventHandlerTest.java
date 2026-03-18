@@ -66,8 +66,13 @@ class IssueStatusChangedEventHandlerTest {
 
     private IssueStatusChangedEvent resolvedEvent(boolean excludeFromPatchNote) {
         return new IssueStatusChangedEvent(
-                ISSUE_ID, PROJECT_ID, IssueStatus.IN_PROGRESS, IssueStatus.RESOLVED,
-                excludeFromPatchNote, ACTOR_ID, Instant.now());
+                ISSUE_ID,
+                PROJECT_ID,
+                IssueStatus.IN_PROGRESS,
+                IssueStatus.RESOLVED,
+                excludeFromPatchNote,
+                ACTOR_ID,
+                Instant.now());
     }
 
     private IssueStatusChangedEvent nonResolvedEvent(IssueStatus newStatus) {
@@ -77,7 +82,13 @@ class IssueStatusChangedEventHandlerTest {
 
     private IssueStatusChangedEvent rollbackEvent(IssueStatus newStatus) {
         return new IssueStatusChangedEvent(
-                ISSUE_ID, PROJECT_ID, IssueStatus.RESOLVED, newStatus, false, ACTOR_ID, Instant.now());
+                ISSUE_ID,
+                PROJECT_ID,
+                IssueStatus.RESOLVED,
+                newStatus,
+                false,
+                ACTOR_ID,
+                Instant.now());
     }
 
     private Issue sufficientIssue(String description, String resolutionNote) {
@@ -94,10 +105,9 @@ class IssueStatusChangedEventHandlerTest {
     /** 성공 경로 공통 stubbing */
     private void stubSuccessPath(Issue issue) {
         given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
-        given(issueChunkingService.buildChunks(any()))
-                .willReturn(List.of(new Document("청크 텍스트")));
+        given(issueChunkingService.buildChunks(any())).willReturn(List.of(new Document("청크 텍스트")));
         given(embeddingModelClient.embed(any()))
-                .willReturn(List.of(new float[]{0.1f, 0.2f, 0.3f}));
+                .willReturn(List.of(new float[] {0.1f, 0.2f, 0.3f}));
         given(issueSummaryGenerator.generate(any()))
                 .willReturn(new IssueSummaryResult("플레이어 친화적 제목", "요약입니다"));
         given(patchTypeResolver.resolveFromIssueType(any())).willReturn(PatchType.FIX);
@@ -156,7 +166,8 @@ class IssueStatusChangedEventHandlerTest {
 
         @Test
         @DisplayName("정보 검증: description, resolutionNote 모두 짧음 → IssueInsufficientInfoException")
-        void handleIssueResolved_description과resolutionNote모두14자이하_IssueInsufficientInfoException발생() {
+        void
+                handleIssueResolved_description과resolutionNote모두14자이하_IssueInsufficientInfoException발생() {
             // Given — 10자 (MIN_CONTENT_LENGTH=15 미달)
             Issue issue = sufficientIssue("짧은설명1234567", null);
             given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
@@ -169,7 +180,8 @@ class IssueStatusChangedEventHandlerTest {
 
         @Test
         @DisplayName("정보 검증: description 정확히 14자(경계값-1) → IssueInsufficientInfoException")
-        void handleIssueResolved_description14자_resolutionNote없음_IssueInsufficientInfoException발생() {
+        void
+                handleIssueResolved_description14자_resolutionNote없음_IssueInsufficientInfoException발생() {
             // Given — 정확히 14자
             Issue issue = sufficientIssue("A".repeat(14), null);
             given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
@@ -285,9 +297,15 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("성공 흐름: occurredAt=null → NPE 없이 현재 시각으로 대체")
         void handleIssueResolved_occurredAt_null_정상처리() {
             // Given
-            IssueStatusChangedEvent event = new IssueStatusChangedEvent(
-                    ISSUE_ID, PROJECT_ID, IssueStatus.IN_PROGRESS, IssueStatus.RESOLVED,
-                    false, ACTOR_ID, null);
+            IssueStatusChangedEvent event =
+                    new IssueStatusChangedEvent(
+                            ISSUE_ID,
+                            PROJECT_ID,
+                            IssueStatus.IN_PROGRESS,
+                            IssueStatus.RESOLVED,
+                            false,
+                            ACTOR_ID,
+                            null);
             Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
             stubSuccessPath(issue);
 
@@ -353,9 +371,15 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("롤백 조기 종료: oldStatus=IN_PROGRESS → deleteForRollback 미호출")
         void handleIssueRollback_oldStatus가RESOLVED아님_즉시종료() {
             // Given
-            IssueStatusChangedEvent event = new IssueStatusChangedEvent(
-                    ISSUE_ID, PROJECT_ID, IssueStatus.IN_PROGRESS, IssueStatus.TODO,
-                    false, ACTOR_ID, Instant.now());
+            IssueStatusChangedEvent event =
+                    new IssueStatusChangedEvent(
+                            ISSUE_ID,
+                            PROJECT_ID,
+                            IssueStatus.IN_PROGRESS,
+                            IssueStatus.TODO,
+                            false,
+                            ACTOR_ID,
+                            Instant.now());
 
             // When
             handler.handleIssueRollback(event);
@@ -368,9 +392,15 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("롤백 조기 종료: oldStatus=RESOLVED, newStatus=RESOLVED → 즉시 종료")
         void handleIssueRollback_newStatus가RESOLVED_즉시종료() {
             // Given — RESOLVED → RESOLVED
-            IssueStatusChangedEvent event = new IssueStatusChangedEvent(
-                    ISSUE_ID, PROJECT_ID, IssueStatus.RESOLVED, IssueStatus.RESOLVED,
-                    false, ACTOR_ID, Instant.now());
+            IssueStatusChangedEvent event =
+                    new IssueStatusChangedEvent(
+                            ISSUE_ID,
+                            PROJECT_ID,
+                            IssueStatus.RESOLVED,
+                            IssueStatus.RESOLVED,
+                            false,
+                            ACTOR_ID,
+                            Instant.now());
 
             // When
             handler.handleIssueRollback(event);
@@ -450,7 +480,8 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("이슈 삭제: markSourceDeleted 정확한 인자로 호출")
         void handleIssueDeleted_markSourceDeleted_호출() {
             // Given
-            IssueDeletedEvent event = new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
+            IssueDeletedEvent event =
+                    new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
 
             // When
             handler.handleIssueDeleted(event);
@@ -465,7 +496,8 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("이슈 삭제 예외 삼킴: markSourceDeleted 예외 발생 → 전파되지 않음")
         void handleIssueDeleted_예외발생시_삼킴() {
             // Given
-            IssueDeletedEvent event = new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
+            IssueDeletedEvent event =
+                    new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
             willThrow(new RuntimeException("DB 오류"))
                     .given(pendingItemService)
                     .markSourceDeleted(PROJECT_ID, ISSUE_ID, SourceType.ISSUE);
@@ -488,21 +520,29 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueResolved_다른프로젝트ID_격리처리() {
             // Given
             UUID otherProjectId = UUID.randomUUID();
-            IssueStatusChangedEvent event = new IssueStatusChangedEvent(
-                    ISSUE_ID, otherProjectId, IssueStatus.IN_PROGRESS, IssueStatus.RESOLVED,
-                    false, ACTOR_ID, Instant.now());
-            Issue issue = Issue.builder()
-                    .id(ISSUE_ID)
-                    .projectId(otherProjectId)
-                    .title("다른 프로젝트 이슈")
-                    .description("충분한 설명 텍스트입니다")
-                    .fingerprint("fp-other")
-                    .build();
+            IssueStatusChangedEvent event =
+                    new IssueStatusChangedEvent(
+                            ISSUE_ID,
+                            otherProjectId,
+                            IssueStatus.IN_PROGRESS,
+                            IssueStatus.RESOLVED,
+                            false,
+                            ACTOR_ID,
+                            Instant.now());
+            Issue issue =
+                    Issue.builder()
+                            .id(ISSUE_ID)
+                            .projectId(otherProjectId)
+                            .title("다른 프로젝트 이슈")
+                            .description("충분한 설명 텍스트입니다")
+                            .fingerprint("fp-other")
+                            .build();
 
             given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
             given(issueChunkingService.buildChunks(any())).willReturn(List.of(new Document("텍스트")));
-            given(embeddingModelClient.embed(any())).willReturn(List.of(new float[]{0.1f}));
-            given(issueSummaryGenerator.generate(any())).willReturn(new IssueSummaryResult("제목", "요약"));
+            given(embeddingModelClient.embed(any())).willReturn(List.of(new float[] {0.1f}));
+            given(issueSummaryGenerator.generate(any()))
+                    .willReturn(new IssueSummaryResult("제목", "요약"));
             given(patchTypeResolver.resolveFromIssueType(any())).willReturn(PatchType.FIX);
             given(choseongUtil.extract(any())).willReturn("ㅈ");
 
@@ -512,7 +552,8 @@ class IssueStatusChangedEventHandlerTest {
             // Then
             ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
             then(eventPublisher).should().publishEvent(captor.capture());
-            IssuePendingItemCreatedEvent published = (IssuePendingItemCreatedEvent) captor.getValue();
+            IssuePendingItemCreatedEvent published =
+                    (IssuePendingItemCreatedEvent) captor.getValue();
             assertThat(published.projectId()).isEqualTo(otherProjectId);
         }
     }
@@ -538,7 +579,8 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then — upsert 내부에서 기존 항목 refresh 처리
-            then(pendingItemService).should(times(2))
+            then(pendingItemService)
+                    .should(times(2))
                     .saveVectorThenUpsert(any(), any(), any(), any());
         }
     }

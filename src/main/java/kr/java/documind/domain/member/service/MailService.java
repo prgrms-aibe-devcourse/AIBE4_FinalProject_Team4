@@ -34,7 +34,9 @@ public class MailService {
     public void sendInvitationEmail(InvitationCreatedEvent event) throws MessagingException {
         String inviteUrl = baseUrl + "/invite?token=" + event.rawToken();
         String expiresAtFormatted =
-                event.expiresAt().atZoneSameInstant(ZoneId.of("Asia/Seoul")).format(EXPIRES_AT_FORMATTER);
+                event.expiresAt()
+                        .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
+                        .format(EXPIRES_AT_FORMATTER);
 
         Context ctx = new Context();
         ctx.setVariable("inviterName", event.inviterName());

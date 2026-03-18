@@ -26,7 +26,9 @@ public record MemberProfileDetail(
 
         String formattedDate =
                 member.getCreatedAt() != null
-                        ? member.getCreatedAt().atZoneSameInstant(ZoneId.of("Asia/Seoul")).format(DATE_FMT)
+                        ? member.getCreatedAt()
+                                .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
+                                .format(DATE_FMT)
                         : null;
 
         return new MemberProfileDetail(

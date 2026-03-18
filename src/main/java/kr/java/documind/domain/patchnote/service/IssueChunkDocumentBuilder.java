@@ -1,5 +1,7 @@
 package kr.java.documind.domain.patchnote.service;
 
+import java.util.HashMap;
+import java.util.Map;
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkAnalysis;
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkDraft;
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkingSource;
@@ -7,36 +9,32 @@ import kr.java.documind.domain.patchnote.model.dto.IssueCommentChunkSource;
 import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Component
 public class IssueChunkDocumentBuilder {
 
     public Document build(
-        IssueChunkingSource source,
-        IssueChunkDraft draft,
-        int chunkIndex,
-        int totalChunks,
-        IssueChunkAnalysis analysis) {
+            IssueChunkingSource source,
+            IssueChunkDraft draft,
+            int chunkIndex,
+            int totalChunks,
+            IssueChunkAnalysis analysis) {
 
         String text = buildText(source, draft);
         Map<String, Object> metadata =
-            buildMetadata(source, draft, chunkIndex, totalChunks, analysis);
+                buildMetadata(source, draft, chunkIndex, totalChunks, analysis);
 
         return new Document(text, metadata);
     }
 
-    private String buildText(
-        IssueChunkingSource source,
-        IssueChunkDraft draft) {
+    private String buildText(IssueChunkingSource source, IssueChunkDraft draft) {
 
         return switch (draft.chunkRole()) {
             case "background" -> buildBackgroundText(source);
             case "resolution" -> buildResolutionText(source);
             case "background_resolution" -> buildMergedText(source);
             case "comment" -> buildCommentText(source, draft);
-            default -> throw new IllegalArgumentException("Unknown chunkRole: " + draft.chunkRole());
+            default -> throw new IllegalArgumentException(
+                    "Unknown chunkRole: " + draft.chunkRole());
         };
     }
 
@@ -57,9 +55,9 @@ public class IssueChunkDocumentBuilder {
 
     private String buildResolutionText(IssueChunkingSource source) {
         return "이 문서는 게임 이슈의 해결 정보입니다.\n제목: "
-            + defaultString(source.title(), "제목 없음")
-            + "\n해결 내용: "
-            + defaultString(source.resolutionNote(), "");
+                + defaultString(source.title(), "제목 없음")
+                + "\n해결 내용: "
+                + defaultString(source.resolutionNote(), "");
     }
 
     private String buildMergedText(IssueChunkingSource source) {
@@ -78,9 +76,7 @@ public class IssueChunkDocumentBuilder {
         return sb.toString();
     }
 
-    private String buildCommentText(
-        IssueChunkingSource source,
-        IssueChunkDraft draft) {
+    private String buildCommentText(IssueChunkingSource source, IssueChunkDraft draft) {
 
         StringBuilder sb = new StringBuilder();
         sb.append("이 문서는 게임 이슈 관련 댓글입니다.");
@@ -98,11 +94,11 @@ public class IssueChunkDocumentBuilder {
     }
 
     private Map<String, Object> buildMetadata(
-        IssueChunkingSource source,
-        IssueChunkDraft draft,
-        int chunkIndex,
-        int totalChunks,
-        IssueChunkAnalysis analysis) {
+            IssueChunkingSource source,
+            IssueChunkDraft draft,
+            int chunkIndex,
+            int totalChunks,
+            IssueChunkAnalysis analysis) {
 
         Map<String, Object> metadata = new HashMap<>();
 

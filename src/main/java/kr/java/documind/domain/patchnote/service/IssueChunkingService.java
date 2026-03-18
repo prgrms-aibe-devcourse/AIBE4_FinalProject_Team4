@@ -2,7 +2,6 @@ package kr.java.documind.domain.patchnote.service;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkAnalysis;
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkDraft;
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkingSource;
@@ -19,8 +18,8 @@ public class IssueChunkingService {
     private final IssueChunkDocumentBuilder documentBuilder;
 
     public IssueChunkingService(
-        IssueChunkHeuristicAnalyzer heuristicAnalyzer,
-        IssueChunkDocumentBuilder documentBuilder) {
+            IssueChunkHeuristicAnalyzer heuristicAnalyzer,
+            IssueChunkDocumentBuilder documentBuilder) {
         this.heuristicAnalyzer = heuristicAnalyzer;
         this.documentBuilder = documentBuilder;
     }
@@ -36,8 +35,7 @@ public class IssueChunkingService {
     }
 
     private List<IssueChunkDraft> buildPrimaryDrafts(
-        IssueChunkingSource source,
-        IssueChunkAnalysis analysis) {
+            IssueChunkingSource source, IssueChunkAnalysis analysis) {
 
         List<IssueChunkDraft> drafts = new ArrayList<>();
         drafts.add(IssueChunkDraft.background());
@@ -53,9 +51,7 @@ public class IssueChunkingService {
         return drafts;
     }
 
-    private void appendCommentDrafts(
-        IssueChunkingSource source,
-        List<IssueChunkDraft> drafts) {
+    private void appendCommentDrafts(IssueChunkingSource source, List<IssueChunkDraft> drafts) {
 
         int commentIndex = 0;
         for (IssueCommentChunkSource comment : source.comments()) {
@@ -68,21 +64,13 @@ public class IssueChunkingService {
     }
 
     private List<Document> toDocuments(
-        IssueChunkingSource source,
-        List<IssueChunkDraft> drafts,
-        IssueChunkAnalysis analysis) {
+            IssueChunkingSource source, List<IssueChunkDraft> drafts, IssueChunkAnalysis analysis) {
 
         List<Document> documents = new ArrayList<>();
         int totalChunks = drafts.size();
 
         for (int i = 0; i < drafts.size(); i++) {
-            documents.add(
-                documentBuilder.build(
-                    source,
-                    drafts.get(i),
-                    i,
-                    totalChunks,
-                    analysis));
+            documents.add(documentBuilder.build(source, drafts.get(i), i, totalChunks, analysis));
         }
 
         return documents;

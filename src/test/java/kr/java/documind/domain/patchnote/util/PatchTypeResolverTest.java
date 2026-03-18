@@ -67,10 +67,7 @@ class PatchTypeResolverTest {
 
         static Stream<IssueType> changeIssueTypes() {
             return Stream.of(
-                    IssueType.PERFORMANCE,
-                    IssueType.NETWORK,
-                    IssueType.BALANCE,
-                    IssueType.UX);
+                    IssueType.PERFORMANCE, IssueType.NETWORK, IssueType.BALANCE, IssueType.UX);
         }
 
         @ParameterizedTest(name = "issueType={0} → MAINTENANCE")

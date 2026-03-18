@@ -96,9 +96,7 @@ public class IssueSummaryGenerator {
 
         } catch (Exception e) {
             log.warn(
-                    "[IssueSummaryGenerator] JSON 파싱 실패, 기본 요약 사용 - issueId: {}",
-                    issue.getId(),
-                    e);
+                    "[IssueSummaryGenerator] JSON 파싱 실패, 기본 요약 사용 - issueId: {}", issue.getId(), e);
             return fallback(issue);
         }
     }
@@ -107,9 +105,7 @@ public class IssueSummaryGenerator {
         if (!text.startsWith("```")) {
             return text;
         }
-        return text.replaceAll("^```(?:json)?\\s*", "")
-                   .replaceAll("\\s*```$", "")
-                   .trim();
+        return text.replaceAll("^```(?:json)?\\s*", "").replaceAll("\\s*```$", "").trim();
     }
 
     private IssueSummaryResult fallback(Issue issue) {

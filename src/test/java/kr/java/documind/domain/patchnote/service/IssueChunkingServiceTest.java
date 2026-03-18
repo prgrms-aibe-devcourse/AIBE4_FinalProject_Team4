@@ -144,11 +144,13 @@ class IssueChunkingServiceTest {
             assertThat(chunks).hasSize(3);
             assertThat(chunks.get(0).getMetadata()).containsEntry("chunk_role", "background");
             assertThat(chunks.get(1).getMetadata()).containsEntry("chunk_role", "resolution");
-            assertThat(chunks.get(2).getMetadata()).containsEntry("chunk_role", "background_resolution");
+            assertThat(chunks.get(2).getMetadata())
+                    .containsEntry("chunk_role", "background_resolution");
         }
 
         @Test
-        @DisplayName("청크 생성: chunk_contains_resolution — background=false, resolution=true, merged=true")
+        @DisplayName(
+                "청크 생성: chunk_contains_resolution — background=false, resolution=true, merged=true")
         void buildChunks_chunk_contains_resolution_metadata확인() {
             // Given
             IssueChunkingSource source = sourceWithResolution("해결 방법입니다");
@@ -159,8 +161,10 @@ class IssueChunkingServiceTest {
             // Then
             assertThat(chunks.get(0).getMetadata())
                     .containsEntry("chunk_contains_resolution", false);
-            assertThat(chunks.get(1).getMetadata()).containsEntry("chunk_contains_resolution", true);
-            assertThat(chunks.get(2).getMetadata()).containsEntry("chunk_contains_resolution", true);
+            assertThat(chunks.get(1).getMetadata())
+                    .containsEntry("chunk_contains_resolution", true);
+            assertThat(chunks.get(2).getMetadata())
+                    .containsEntry("chunk_contains_resolution", true);
         }
     }
 
@@ -188,8 +192,11 @@ class IssueChunkingServiceTest {
             List<Document> chunks = chunkingService.buildChunks(source);
 
             // Then
-            assertThat(chunks).allSatisfy(
-                    chunk -> assertThat(chunk.getMetadata()).containsEntry("has_numeric_change", true));
+            assertThat(chunks)
+                    .allSatisfy(
+                            chunk ->
+                                    assertThat(chunk.getMetadata())
+                                            .containsEntry("has_numeric_change", true));
         }
 
         @Test
@@ -212,8 +219,11 @@ class IssueChunkingServiceTest {
             List<Document> chunks = chunkingService.buildChunks(source);
 
             // Then
-            assertThat(chunks).allSatisfy(
-                    chunk -> assertThat(chunk.getMetadata()).containsEntry("affects_player", true));
+            assertThat(chunks)
+                    .allSatisfy(
+                            chunk ->
+                                    assertThat(chunk.getMetadata())
+                                            .containsEntry("affects_player", true));
         }
 
         @Test
@@ -246,10 +256,14 @@ class IssueChunkingServiceTest {
             List<Document> chunks = chunkingService.buildChunks(source);
 
             // Then
-            assertThat(chunks).allSatisfy(chunk -> {
-                assertThat(chunk.getMetadata()).containsEntry("source_type", "ISSUE");
-                assertThat(chunk.getMetadata()).containsEntry("source_id", ISSUE_ID);
-            });
+            assertThat(chunks)
+                    .allSatisfy(
+                            chunk -> {
+                                assertThat(chunk.getMetadata())
+                                        .containsEntry("source_type", "ISSUE");
+                                assertThat(chunk.getMetadata())
+                                        .containsEntry("source_id", ISSUE_ID);
+                            });
         }
 
         @Test
@@ -266,8 +280,11 @@ class IssueChunkingServiceTest {
             assertThat(chunks.get(0).getMetadata()).containsEntry("chunk_index", 0);
             assertThat(chunks.get(1).getMetadata()).containsEntry("chunk_index", 1);
             assertThat(chunks.get(2).getMetadata()).containsEntry("chunk_index", 2);
-            assertThat(chunks).allSatisfy(
-                    chunk -> assertThat(chunk.getMetadata()).containsEntry("total_chunks", 3));
+            assertThat(chunks)
+                    .allSatisfy(
+                            chunk ->
+                                    assertThat(chunk.getMetadata())
+                                            .containsEntry("total_chunks", 3));
         }
 
         @Test

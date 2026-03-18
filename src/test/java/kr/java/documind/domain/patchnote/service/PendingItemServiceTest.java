@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -75,8 +74,9 @@ class PendingItemServiceTest {
         void upsertPendingItem_기존항목없음_새항목저장() {
             // Given
             PendingItemCreateDto dto = buildDto(PendingItemStatus.PENDING);
-            given(pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(Optional.empty());
 
             // When
@@ -91,12 +91,20 @@ class PendingItemServiceTest {
         void upsertPendingItem_기존항목존재_refresh호출() {
             // Given
             PendingItemCreateDto dto = buildDto(PendingItemStatus.PENDING);
-            PendingItem existing = PendingItem.create(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE,
-                    "이전 제목", "이전 요약", "ㅇㅈ", PatchType.FIX,
-                    PendingItemStatus.PENDING, NOW.minusDays(1));
-            given(pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            PendingItem existing =
+                    PendingItem.create(
+                            PROJECT_ID,
+                            SOURCE_ID,
+                            SourceType.ISSUE,
+                            "이전 제목",
+                            "이전 요약",
+                            "ㅇㅈ",
+                            PatchType.FIX,
+                            PendingItemStatus.PENDING,
+                            NOW.minusDays(1));
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(Optional.of(existing));
 
             // When
@@ -112,12 +120,20 @@ class PendingItemServiceTest {
         void upsertPendingItem_EXCLUDED항목_status유지refresh() {
             // Given
             PendingItemCreateDto dto = buildDto(PendingItemStatus.PENDING);
-            PendingItem excluded = PendingItem.create(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE,
-                    "이전 제목", "이전 요약", "ㅇㅈ", PatchType.FIX,
-                    PendingItemStatus.EXCLUDED, NOW.minusDays(1));
-            given(pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            PendingItem excluded =
+                    PendingItem.create(
+                            PROJECT_ID,
+                            SOURCE_ID,
+                            SourceType.ISSUE,
+                            "이전 제목",
+                            "이전 요약",
+                            "ㅇㅈ",
+                            PatchType.FIX,
+                            PendingItemStatus.EXCLUDED,
+                            NOW.minusDays(1));
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(Optional.of(excluded));
 
             // When
@@ -133,13 +149,21 @@ class PendingItemServiceTest {
         void upsertPendingItem_COMPLETED항목_status유지refresh() {
             // Given
             PendingItemCreateDto dto = buildDto(PendingItemStatus.PENDING);
-            PendingItem completed = PendingItem.create(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE,
-                    "이전 제목", "이전 요약", "ㅇㅈ", PatchType.FIX,
-                    PendingItemStatus.PENDING, NOW.minusDays(1));
+            PendingItem completed =
+                    PendingItem.create(
+                            PROJECT_ID,
+                            SOURCE_ID,
+                            SourceType.ISSUE,
+                            "이전 제목",
+                            "이전 요약",
+                            "ㅇㅈ",
+                            PatchType.FIX,
+                            PendingItemStatus.PENDING,
+                            NOW.minusDays(1));
             completed.complete(); // PENDING → COMPLETED
-            given(pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(Optional.of(completed));
 
             // When
@@ -175,7 +199,8 @@ class PendingItemServiceTest {
             PendingItemCreateDto dto = buildDto(PendingItemStatus.PENDING);
             DataAccessException cause = new DataIntegrityViolationException("DB 오류");
             willThrow(new RuntimeException("벡터 삭제 실패"))
-                    .given(vectorStoreManager).deleteBySourceId(SOURCE_ID);
+                    .given(vectorStoreManager)
+                    .deleteBySourceId(SOURCE_ID);
 
             // When & Then
             assertThatThrownBy(() -> pendingItemService.recoverUpsert(cause, dto))
@@ -191,15 +216,25 @@ class PendingItemServiceTest {
         @DisplayName("롤백: PENDING 항목 → hard delete, true 반환")
         void deleteForRollback_PENDING항목_hardDelete후true반환() {
             // Given
-            PendingItem item = PendingItem.create(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE,
-                    "제목", "요약", "ㅈㅇ", PatchType.FIX, PendingItemStatus.PENDING, NOW);
-            given(pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            PendingItem item =
+                    PendingItem.create(
+                            PROJECT_ID,
+                            SOURCE_ID,
+                            SourceType.ISSUE,
+                            "제목",
+                            "요약",
+                            "ㅈㅇ",
+                            PatchType.FIX,
+                            PendingItemStatus.PENDING,
+                            NOW);
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(Optional.of(item));
 
             // When
-            boolean result = pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result =
+                    pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isTrue();
@@ -210,15 +245,25 @@ class PendingItemServiceTest {
         @DisplayName("롤백: EXCLUDED 항목 → hard delete, true 반환")
         void deleteForRollback_EXCLUDED항목_hardDelete후true반환() {
             // Given
-            PendingItem item = PendingItem.create(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE,
-                    "제목", "요약", "ㅈㅇ", PatchType.FIX, PendingItemStatus.EXCLUDED, NOW);
-            given(pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            PendingItem item =
+                    PendingItem.create(
+                            PROJECT_ID,
+                            SOURCE_ID,
+                            SourceType.ISSUE,
+                            "제목",
+                            "요약",
+                            "ㅈㅇ",
+                            PatchType.FIX,
+                            PendingItemStatus.EXCLUDED,
+                            NOW);
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(Optional.of(item));
 
             // When
-            boolean result = pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result =
+                    pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isTrue();
@@ -229,16 +274,26 @@ class PendingItemServiceTest {
         @DisplayName("롤백: COMPLETED 항목 → sourceDeleted 처리, false 반환")
         void deleteForRollback_COMPLETED항목_sourceDeleted처리후false반환() {
             // Given
-            PendingItem item = PendingItem.create(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE,
-                    "제목", "요약", "ㅈㅇ", PatchType.FIX, PendingItemStatus.PENDING, NOW);
+            PendingItem item =
+                    PendingItem.create(
+                            PROJECT_ID,
+                            SOURCE_ID,
+                            SourceType.ISSUE,
+                            "제목",
+                            "요약",
+                            "ㅈㅇ",
+                            PatchType.FIX,
+                            PendingItemStatus.PENDING,
+                            NOW);
             item.complete(); // PENDING → COMPLETED
-            given(pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(Optional.of(item));
 
             // When
-            boolean result = pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result =
+                    pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isFalse();
@@ -250,12 +305,14 @@ class PendingItemServiceTest {
         @DisplayName("롤백: 항목 없음 → false 반환, delete 미호출")
         void deleteForRollback_항목없음_false반환() {
             // Given
-            given(pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(Optional.empty());
 
             // When
-            boolean result = pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result =
+                    pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isFalse();
@@ -297,11 +354,13 @@ class PendingItemServiceTest {
 
             // When & Then
             assertThatThrownBy(
-                            () -> pendingItemService.saveVectorThenUpsert(
-                                    SOURCE_ID, List.of(), List.of(), dto))
+                            () ->
+                                    pendingItemService.saveVectorThenUpsert(
+                                            SOURCE_ID, List.of(), List.of(), dto))
                     .isInstanceOf(RuntimeException.class);
-            then(pendingItemRepository).should(never()).findByProjectIdAndSourceTypeAndSourceId(
-                    any(), any(), any());
+            then(pendingItemRepository)
+                    .should(never())
+                    .findByProjectIdAndSourceTypeAndSourceId(any(), any(), any());
         }
 
         @Test
@@ -309,8 +368,9 @@ class PendingItemServiceTest {
         void saveVectorThenUpsert_벡터저장성공_upsert호출() {
             // Given
             PendingItemCreateDto dto = buildDto(PendingItemStatus.PENDING);
-            given(pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(Optional.empty());
 
             // When

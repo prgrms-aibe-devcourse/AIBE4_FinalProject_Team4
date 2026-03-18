@@ -1,9 +1,8 @@
 package kr.java.documind.global.config;
 
 import java.util.List;
-
-import kr.java.documind.domain.patchnote.config.TokenRagProperties;
 import kr.java.documind.domain.archive.rag.DuplicateRemovalPostProcessor;
+import kr.java.documind.domain.patchnote.config.TokenRagProperties;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;

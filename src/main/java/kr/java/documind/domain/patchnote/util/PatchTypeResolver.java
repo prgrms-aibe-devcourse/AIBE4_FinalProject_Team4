@@ -13,8 +13,8 @@ public class PatchTypeResolver {
         }
         return switch (issueType) {
             case BUG, CRASH, DATA_INCONSISTENCY, SECURITY, PAYMENT, UNKNOWN -> PatchType.FIX;
-            case PERFORMANCE, NETWORK, BALANCE, UX                  -> PatchType.CHANGE;
-            case DEPENDENCY, CONFIGURATION                          -> PatchType.MAINTENANCE;
+            case PERFORMANCE, NETWORK, BALANCE, UX -> PatchType.CHANGE;
+            case DEPENDENCY, CONFIGURATION -> PatchType.MAINTENANCE;
         };
     }
 }
