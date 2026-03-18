@@ -151,8 +151,6 @@ public class IssueGroupingService {
                 .occurrenceCount(1)
                 .firstOccurredAt(gameLog.getOccurredAt())
                 .lastOccurredAt(gameLog.getOccurredAt())
-                .createdAt(now)
-                .updatedAt(now)
                 .build();
     }
 
