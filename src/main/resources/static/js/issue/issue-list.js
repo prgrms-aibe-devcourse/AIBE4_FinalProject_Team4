@@ -888,12 +888,13 @@ function getSeverityBorderColor(severity) {
 }
 
 function getQualityBadge(severityScore) {
+    // 품질 점수: 높을수록 좋음 (초록색), 낮을수록 나쁨 (빨간색)
     if (severityScore >= 80) {
-        return '<span class="badge-severity-high">높음</span>';
+        return '<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">높음</span>';
     } else if (severityScore >= 50) {
-        return '<span class="badge-severity-medium">보통</span>';
+        return '<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">보통</span>';
     } else {
-        return '<span class="badge-severity-low">낮음</span>';
+        return '<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">낮음</span>';
     }
 }
 
