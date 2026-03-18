@@ -12,24 +12,24 @@
     <!-- 검색 + 새 파일 업로드 -->
     <div class="flex items-center justify-between mb-6">
         <div class="relative w-96">
-            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <svg class="w-5 h-5 text-docu-secondary absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <input type="text" id="searchInput" placeholder="파일 또는 그룹명 검색"
-                   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                   class="form-input pl-10">
         </div>
-        <button id="btnNewDocument" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+        <button id="btnNewDocument" class="btn-primary">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             새 파일 업로드
         </button>
     </div>
 
     <!-- 그룹 목록 테이블 -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="card-base overflow-hidden">
         <!-- 테이블 헤더 -->
-        <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-sm font-medium text-gray-500">
-            <div class="col-span-5">그룹명</div>
+        <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-surface-sub border-b border-divider text-sm font-medium text-docu-secondary">
+            <div class="col-span-4">그룹명</div>
             <div class="col-span-2 text-center">카테고리</div>
             <div class="col-span-2 text-center">최신 버전</div>
-            <div class="col-span-1 text-center">파일 수</div>
+            <div class="col-span-2 text-center">파일 수</div>
             <div class="col-span-2"></div>
         </div>
 
@@ -37,16 +37,16 @@
         <div id="groupList"></div>
 
         <!-- 데이터 없음 -->
-        <div id="emptyState" class="hidden py-16 text-center text-gray-400 text-sm">
+        <div id="emptyState" class="hidden py-16 text-center text-docu-secondary text-sm">
             등록된 문서가 없습니다. 새 파일을 업로드해 주세요.
         </div>
     </div>
 
     <!-- 페이지네이션 + 임베딩 토스트 -->
     <div class="flex items-center justify-between mt-6">
-        <div id="pageInfo" class="text-sm text-gray-500"></div>
+        <div id="pageInfo" class="text-sm text-docu-secondary"></div>
         <div class="flex items-center gap-3">
-            <div id="embeddingToast" class="hidden rounded-lg border px-3 py-1.5 flex items-center gap-2 transition-all">
+            <div id="embeddingToast" class="hidden rounded-docu-btn border px-3 py-1.5 flex items-center gap-2 transition-all">
                 <span id="embeddingToastIcon"></span>
                 <span id="embeddingToastMessage" class="text-sm font-medium"></span>
             </div>
@@ -60,49 +60,54 @@
     <!-- ==================== 새 파일 업로드 모달 ==================== -->
     <div id="uploadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/40" onclick="closeModal('uploadModal')"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div class="relative card-modal w-full max-w-lg max-h-[90vh] flex flex-col">
             <!-- 헤더 -->
-            <div class="flex items-center justify-between px-8 pt-8 pb-4">
-                <h2 class="text-xl font-bold text-gray-900">새 파일 업로드</h2>
-                <button onclick="closeModal('uploadModal')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <div class="flex items-center justify-between px-6 py-5 border-b border-divider bg-surface-sub rounded-t-docu-modal">
+                <h2 class="text-h2 text-docu-ink">새 파일 업로드</h2>
+                <button onclick="closeModal('uploadModal')" class="text-docu-secondary hover:text-docu-ink transition-colors rounded-docu-btn focus-ring">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
             <!-- 본문 -->
-            <div class="flex-1 overflow-y-auto px-8 pb-4">
-                <div id="uploadError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+            <div class="flex-1 overflow-y-auto px-6 py-5">
+                <div id="uploadError" class="hidden mb-4 p-3 bg-docu-danger-light border border-docu-danger rounded-docu-btn text-sm text-docu-danger"></div>
                 <!-- 그룹명 -->
                 <div class="mb-5">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">그룹명 <span class="text-red-500">*</span></label>
+                    <label class="form-label mb-2">그룹명 <span class="text-docu-danger">*</span></label>
                     <input type="text" id="uploadGroupName" placeholder="그룹명을 입력하세요"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                           class="form-input">
                 </div>
                 <!-- 카테고리 -->
                 <div class="mb-5">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">카테고리 <span class="text-red-500">*</span></label>
-                    <select id="uploadCategory"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none bg-white">
-                        <option value="기획서">기획서</option>
-                        <option value="기술문서">기술문서</option>
-                        <option value="디자인">디자인</option>
-                        <option value="보고서">보고서</option>
-                        <option value="기타">기타</option>
-                    </select>
+                    <label class="form-label mb-2">카테고리 <span class="text-docu-danger">*</span></label>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <button type="button" onclick="selectCategory(this, 'uploadCategory')"
+                                class="px-4 py-1.5 text-sm rounded-full border border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary transition-all cursor-pointer select-none category-chip">기획서</button>
+                        <button type="button" onclick="selectCategory(this, 'uploadCategory')"
+                                class="px-4 py-1.5 text-sm rounded-full border border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary transition-all cursor-pointer select-none category-chip">보고서</button>
+                        <button type="button" onclick="selectCategory(this, 'uploadCategory')"
+                                class="px-4 py-1.5 text-sm rounded-full border border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary transition-all cursor-pointer select-none category-chip">기술문서</button>
+                        <button type="button" onclick="selectCategory(this, 'uploadCategory')"
+                                class="px-4 py-1.5 text-sm rounded-full border border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary transition-all cursor-pointer select-none category-chip">기타</button>
+                    </div>
+                    <input type="text" id="uploadCategory"
+                           placeholder="또는 직접 입력하세요"
+                           class="form-input">
                 </div>
                 <!-- 버전 -->
                 <div class="mb-5">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">버전 <span class="text-red-500">*</span> <span class="text-gray-400 font-normal">(예: 1.0.0)</span></label>
+                    <label class="form-label mb-2">버전 <span class="text-docu-danger">*</span> <span class="text-docu-secondary font-normal">(예: 1.0.0)</span></label>
                     <div class="flex items-center gap-2">
                         <input type="number" id="uploadMajor" value="1" min="0" max="999"
-                               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
-                        <span class="text-gray-400 text-lg font-bold">.</span>
+                               class="form-input text-center">
+                        <span class="text-docu-secondary text-lg font-bold">.</span>
                         <input type="number" id="uploadMinor" value="0" min="0" max="999"
-                               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
-                        <span class="text-gray-400 text-lg font-bold">.</span>
+                               class="form-input text-center">
+                        <span class="text-docu-secondary text-lg font-bold">.</span>
                         <input type="number" id="uploadPatch" value="0" min="0" max="999"
-                               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                               class="form-input text-center">
                     </div>
-                    <div class="flex text-xs text-gray-400 mt-1">
+                    <div class="flex text-xs text-docu-secondary mt-1">
                         <span class="flex-1 text-center">Major</span>
                         <span class="w-4"></span>
                         <span class="flex-1 text-center">Minor</span>
@@ -112,35 +117,35 @@
                 </div>
                 <!-- 파일 업로드 -->
                 <div class="mb-5">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">파일 업로드 <span class="text-red-500">*</span></label>
+                    <label class="form-label mb-2">파일 업로드 <span class="text-docu-danger">*</span></label>
                     <div id="uploadDropZone"
-                         class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/30 transition"
+                         class="border-2 border-dashed border-divider rounded-docu-card p-8 text-center cursor-pointer hover:border-docu-primary hover:bg-docu-primary-light/30 transition"
                          onclick="document.getElementById('uploadFile').click()">
-                        <svg class="w-10 h-10 text-sky-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                        <p class="text-sm font-medium text-gray-700">파일을 드래그하거나 클릭하여 업로드</p>
-                        <p class="text-xs text-gray-400 mt-1">최대 20MB / PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, JPG, PNG</p>
+                        <svg class="w-10 h-10 text-docu-primary mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <p class="text-sm font-medium text-docu-ink">파일을 드래그하거나 클릭하여 업로드</p>
+                        <p class="text-xs text-docu-secondary mt-1">최대 20MB / PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, JPG, PNG</p>
                     </div>
-                    <div id="uploadFileInfo" class="hidden mt-3 flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span id="uploadFileName" class="text-sm text-gray-700 truncate"></span>
-                        <button onclick="clearUploadFile()" class="text-gray-400 hover:text-red-500">
+                    <div id="uploadFileInfo" class="hidden mt-3 flex items-center justify-between p-3 bg-surface-sub rounded-docu-btn">
+                        <span id="uploadFileName" class="text-sm text-docu-ink truncate"></span>
+                        <button onclick="clearUploadFile()" class="text-docu-secondary hover:text-docu-danger transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
                     <input type="file" id="uploadFile" class="hidden" onchange="onUploadFileSelected(this)">
                 </div>
                 <!-- 패치노트에서 제외 -->
-                <div class="mb-2 flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                    <input type="checkbox" id="uploadIsProcessed" class="mt-0.5 w-4 h-4 rounded border-gray-300 text-sky-500 focus:ring-sky-500">
+                <div class="mb-2 flex items-start gap-3 p-4 bg-surface-sub rounded-docu-btn">
+                    <input type="checkbox" id="uploadIsProcessed" class="mt-0.5 w-4 h-4 rounded border-divider text-docu-primary focus:ring-docu-primary">
                     <div>
-                        <label for="uploadIsProcessed" class="text-sm font-semibold text-gray-800 cursor-pointer">패치노트에서 제외</label>
-                        <p class="text-xs text-gray-500 mt-0.5">해당 문서는 패치노트의 <span class="text-sky-500 font-medium">[업데이트 피드]</span>에 반영되지 않습니다.</p>
+                        <label for="uploadIsProcessed" class="text-sm font-semibold text-docu-ink cursor-pointer">패치노트에서 제외</label>
+                        <p class="text-xs text-docu-secondary mt-0.5">해당 문서는 패치노트의 <span class="text-docu-primary font-medium">[업데이트 피드]</span>에 반영되지 않습니다.</p>
                     </div>
                 </div>
             </div>
             <!-- 하단 버튼 -->
-            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-gray-200">
-                <button onclick="closeModal('uploadModal')" class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800">취소</button>
-                <button onclick="submitUpload()" class="px-8 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg">업로드</button>
+            <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-divider bg-surface-sub rounded-b-docu-modal">
+                <button onclick="closeModal('uploadModal')" class="btn-ghost">취소</button>
+                <button onclick="submitUpload()" class="btn-primary">업로드</button>
             </div>
         </div>
     </div>
@@ -148,44 +153,44 @@
     <!-- ==================== 새 버전 업로드 모달 ==================== -->
     <div id="newVersionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/40" onclick="closeModal('newVersionModal')"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div class="relative card-modal w-full max-w-lg max-h-[90vh] flex flex-col">
             <!-- 헤더 -->
-            <div class="flex items-center justify-between px-8 pt-8 pb-4">
-                <h2 class="text-xl font-bold text-gray-900">새 버전 업로드</h2>
-                <button onclick="closeModal('newVersionModal')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <div class="flex items-center justify-between px-6 py-5 border-b border-divider bg-surface-sub rounded-t-docu-modal">
+                <h2 class="text-h2 text-docu-ink">새 버전 업로드</h2>
+                <button onclick="closeModal('newVersionModal')" class="text-docu-secondary hover:text-docu-ink transition-colors rounded-docu-btn focus-ring">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
             <!-- 본문 -->
-            <div class="flex-1 overflow-y-auto px-8 pb-4">
-                <div id="newVersionError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+            <div class="flex-1 overflow-y-auto px-6 py-5">
+                <div id="newVersionError" class="hidden mb-4 p-3 bg-docu-danger-light border border-docu-danger rounded-docu-btn text-sm text-docu-danger"></div>
                 <input type="hidden" id="newVersionGroupId">
                 <!-- 그룹명 (비활성화) -->
                 <div class="mb-5">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">그룹명 <span class="text-red-500">*</span></label>
+                    <label class="form-label mb-2">그룹명 <span class="text-docu-danger">*</span></label>
                     <input type="text" id="newVersionGroupName" disabled
-                           class="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500">
+                           class="form-input form-disabled">
                 </div>
                 <!-- 카테고리 (비활성화) -->
                 <div class="mb-5">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">카테고리 <span class="text-red-500">*</span></label>
+                    <label class="form-label mb-2">카테고리 <span class="text-docu-danger">*</span></label>
                     <input type="text" id="newVersionCategory" disabled
-                           class="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500">
+                           class="form-input form-disabled">
                 </div>
                 <!-- 버전 -->
                 <div class="mb-5">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">버전 <span class="text-red-500">*</span> <span id="newVersionLatestHint" class="text-gray-400 font-normal">(최신버전: 1.0.0)</span></label>
+                    <label class="form-label mb-2">버전 <span class="text-docu-danger">*</span> <span id="newVersionLatestHint" class="text-docu-secondary font-normal">(최신버전: 1.0.0)</span></label>
                     <div class="flex items-center gap-2">
                         <input type="number" id="newVersionMajor" value="1" min="0" max="999"
-                               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
-                        <span class="text-gray-400 text-lg font-bold">.</span>
+                               class="form-input text-center">
+                        <span class="text-docu-secondary text-lg font-bold">.</span>
                         <input type="number" id="newVersionMinor" value="0" min="0" max="999"
-                               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
-                        <span class="text-gray-400 text-lg font-bold">.</span>
+                               class="form-input text-center">
+                        <span class="text-docu-secondary text-lg font-bold">.</span>
                         <input type="number" id="newVersionPatch" value="0" min="0" max="999"
-                               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                               class="form-input text-center">
                     </div>
-                    <div class="flex text-xs text-gray-400 mt-1">
+                    <div class="flex text-xs text-docu-secondary mt-1">
                         <span class="flex-1 text-center">Major</span>
                         <span class="w-4"></span>
                         <span class="flex-1 text-center">Minor</span>
@@ -195,35 +200,35 @@
                 </div>
                 <!-- 파일 업로드 -->
                 <div class="mb-5">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">파일 업로드 <span class="text-red-500">*</span></label>
+                    <label class="form-label mb-2">파일 업로드 <span class="text-docu-danger">*</span></label>
                     <div id="newVersionDropZone"
-                         class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/30 transition"
+                         class="border-2 border-dashed border-divider rounded-docu-card p-8 text-center cursor-pointer hover:border-docu-primary hover:bg-docu-primary-light/30 transition"
                          onclick="document.getElementById('newVersionFile').click()">
-                        <svg class="w-10 h-10 text-sky-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                        <p class="text-sm font-medium text-gray-700">파일을 드래그하거나 클릭하여 업로드</p>
-                        <p class="text-xs text-gray-400 mt-1">최대 20MB / PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, JPG, PNG</p>
+                        <svg class="w-10 h-10 text-docu-primary mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <p class="text-sm font-medium text-docu-ink">파일을 드래그하거나 클릭하여 업로드</p>
+                        <p class="text-xs text-docu-secondary mt-1">최대 20MB / PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, JPG, PNG</p>
                     </div>
-                    <div id="newVersionFileInfo" class="hidden mt-3 flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span id="newVersionFileName" class="text-sm text-gray-700 truncate"></span>
-                        <button onclick="clearNewVersionFile()" class="text-gray-400 hover:text-red-500">
+                    <div id="newVersionFileInfo" class="hidden mt-3 flex items-center justify-between p-3 bg-surface-sub rounded-docu-btn">
+                        <span id="newVersionFileName" class="text-sm text-docu-ink truncate"></span>
+                        <button onclick="clearNewVersionFile()" class="text-docu-secondary hover:text-docu-danger transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
                     <input type="file" id="newVersionFile" class="hidden" onchange="onNewVersionFileSelected(this)">
                 </div>
                 <!-- 패치노트에서 제외 -->
-                <div class="mb-2 flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                    <input type="checkbox" id="newVersionIsProcessed" class="mt-0.5 w-4 h-4 rounded border-gray-300 text-sky-500 focus:ring-sky-500">
+                <div class="mb-2 flex items-start gap-3 p-4 bg-surface-sub rounded-docu-btn">
+                    <input type="checkbox" id="newVersionIsProcessed" class="mt-0.5 w-4 h-4 rounded border-divider text-docu-primary focus:ring-docu-primary">
                     <div>
-                        <label for="newVersionIsProcessed" class="text-sm font-semibold text-gray-800 cursor-pointer">패치노트에서 제외</label>
-                        <p class="text-xs text-gray-500 mt-0.5">해당 문서는 패치노트의 <span class="text-sky-500 font-medium">[업데이트 피드]</span>에 반영되지 않습니다.</p>
+                        <label for="newVersionIsProcessed" class="text-sm font-semibold text-docu-ink cursor-pointer">패치노트에서 제외</label>
+                        <p class="text-xs text-docu-secondary mt-0.5">해당 문서는 패치노트의 <span class="text-docu-primary font-medium">[업데이트 피드]</span>에 반영되지 않습니다.</p>
                     </div>
                 </div>
             </div>
             <!-- 하단 버튼 -->
-            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-gray-200">
-                <button onclick="closeModal('newVersionModal')" class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800">취소</button>
-                <button onclick="submitNewVersion()" class="px-8 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg">업로드</button>
+            <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-divider bg-surface-sub rounded-b-docu-modal">
+                <button onclick="closeModal('newVersionModal')" class="btn-ghost">취소</button>
+                <button onclick="submitNewVersion()" class="btn-primary">업로드</button>
             </div>
         </div>
     </div>

@@ -13,6 +13,7 @@ const currentDoc = {
 
 document.addEventListener('DOMContentLoaded', () => {
     setupDropZone('editDropZone', 'editFile');
+    convertLocalDateTimes();
 
     // 임베딩 진행중이면 SSE 구독
     const embeddingStatus = document.getElementById('docEmbeddingStatus').value;
@@ -20,6 +21,39 @@ document.addEventListener('DOMContentLoaded', () => {
         subscribeEmbeddingStatus();
     }
 });
+
+// ==================== UTC → 로컬 시간 변환 ====================
+
+function convertLocalDateTimes() {
+    document.querySelectorAll('.local-datetime').forEach(el => {
+        const utc = el.dataset.utc;
+        el.textContent = utc ? formatLocalDateTime(utc) : '-';
+    });
+    document.querySelectorAll('.local-date').forEach(el => {
+        const utc = el.dataset.utc;
+        el.textContent = utc ? formatLocalDate(utc) : '-';
+    });
+}
+
+function formatLocalDateTime(utcStr) {
+    const dt = new Date(utcStr);
+    if (isNaN(dt.getTime())) return '-';
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    const h = String(dt.getHours()).padStart(2, '0');
+    const min = String(dt.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d} ${h}:${min}`;
+}
+
+function formatLocalDate(utcStr) {
+    const dt = new Date(utcStr);
+    if (isNaN(dt.getTime())) return '-';
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
 
 // ==================== 파일 수정 ====================
 
@@ -104,6 +138,8 @@ async function confirmDelete() {
             closeModal('deleteModal');
             window.location.href = `/projects/${projectId}/groups`;
             return;
+        } else {
+            alert(result.error?.message || '문서 삭제에 실패했습니다.');
         }
     } catch (e) {
         alert('문서 삭제에 실패했습니다.');
@@ -119,17 +155,17 @@ document.getElementById('btnDownload').addEventListener('click', () => {
 });
 
 document.getElementById('btnChat').addEventListener('click', () => {
-    // TODO: 채팅 페이지로 이동
+    window.location.href = `/projects/${projectId}/chatbot`;
 });
 
 // ==================== 임베딩 SSE ====================
 
 const EMBEDDING_STATUS_MAP = {
-    NONE:       { classes: 'font-medium text-gray-400', label: '-' },
-    PENDING:    { classes: 'font-medium text-gray-500', label: '대기' },
-    PROCESSING: { classes: 'font-medium text-blue-600', label: '진행중' },
-    SUCCESS:    { classes: 'font-medium text-green-600', label: '성공' },
-    FAILED:     { classes: 'font-medium text-red-600', label: '실패' },
+    NONE:       { classes: 'font-medium text-docu-secondary', label: '-' },
+    PENDING:    { classes: 'font-medium text-docu-secondary', label: '대기' },
+    PROCESSING: { classes: 'font-medium text-docu-primary', label: '진행중' },
+    SUCCESS:    { classes: 'font-medium text-docu-success', label: '성공' },
+    FAILED:     { classes: 'font-medium text-docu-danger', label: '실패' },
 };
 
 function subscribeEmbeddingStatus() {

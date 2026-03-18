@@ -18,9 +18,9 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     목록으로
                 </a>
-                <span class="text-gray-300">&gt;</span>
+                <span class="text-docu-secondary">&gt;</span>
                 <span class="text-docu-secondary">파일 목록</span>
-                <span class="text-gray-300">&gt;</span>
+                <span class="text-docu-secondary">&gt;</span>
                 <span class="text-docu-ink font-medium">파일 상세</span>
             </div>
             <div class="flex items-center gap-2">
@@ -35,8 +35,9 @@
             <!-- 좌측: 문서 미리보기 -->
             <div class="flex-1">
                 <!-- PDF 미리보기 -->
-                <iframe th:if="${document.extension == 'pdf'}"
-                        th:src="@{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
+                <iframe id="pdfPreview"
+                        th:if="${document.extension == 'pdf'}"
+                        th:src="${page != null} ? @{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})} + '#page=' + ${page} : @{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
                         class="w-full rounded-docu-card border border-divider min-h-[600px] bg-surface-card"
                         style="height: calc(100vh - 200px);">
                 </iframe>
@@ -105,13 +106,13 @@
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-docu-secondary">처음 업로드일시</dt>
-                            <dd class="text-docu-ink font-medium"
-                                th:text="${#temporals.format(document.uploadedAt, 'yyyy-MM-dd HH:mm')}">-</dd>
+                            <dd class="text-docu-ink font-medium local-datetime"
+                                th:data-utc="${document.uploadedAt}">-</dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-docu-secondary">마지막 수정일시</dt>
-                            <dd class="text-docu-ink font-medium"
-                                th:text="${document.reuploadedAt != null ? #temporals.format(document.reuploadedAt, 'yyyy-MM-dd HH:mm') : '-'}">-</dd>
+                            <dd class="text-docu-ink font-medium local-datetime"
+                                th:data-utc="${document.reuploadedAt}">-</dd>
                         </div>
                     </dl>
                 </div>
@@ -130,11 +131,11 @@
                         <a th:each="ver : ${document.versions}"
                            th:href="@{/projects/{pid}/documents/{docId}(pid=${publicId}, docId=${ver.documentId})}"
                            th:classappend="${ver.documentId == document.documentId} ? 'ring-2 ring-docu-primary' : ''"
-                           class="block p-3 rounded-docu-btn border border-divider hover:border-docu-primary hover:bg-blue-50 transition">
+                           class="block p-3 rounded-docu-btn border border-divider hover:border-docu-primary hover:bg-docu-primary-light transition">
                             <div class="flex items-center justify-between mb-1">
                                 <span class="text-sm font-medium text-docu-ink" th:text="${ver.version}"></span>
-                                <span class="text-xs text-docu-secondary"
-                                      th:text="${#temporals.format(ver.uploadedAt, 'yyyy-MM-dd')}"></span>
+                                <span class="text-xs text-docu-secondary local-date"
+                                      th:data-utc="${ver.uploadedAt}"></span>
                             </div>
                             <div class="text-xs text-docu-secondary truncate" th:text="${ver.documentName + '.' + ver.extension}"></div>
                         </a>

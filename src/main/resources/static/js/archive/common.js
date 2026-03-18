@@ -62,14 +62,14 @@ function setupDropZone(zoneId, fileInputId) {
 
     zone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        zone.classList.add('border-sky-400', 'bg-sky-50/30');
+        zone.classList.add('border-docu-primary', 'bg-docu-primary-light/30');
     });
     zone.addEventListener('dragleave', () => {
-        zone.classList.remove('border-sky-400', 'bg-sky-50/30');
+        zone.classList.remove('border-docu-primary', 'bg-docu-primary-light/30');
     });
     zone.addEventListener('drop', (e) => {
         e.preventDefault();
-        zone.classList.remove('border-sky-400', 'bg-sky-50/30');
+        zone.classList.remove('border-docu-primary', 'bg-docu-primary-light/30');
         const fileInput = document.getElementById(fileInputId);
         if (e.dataTransfer.files.length > 0) {
             fileInput.files = e.dataTransfer.files;
@@ -102,4 +102,21 @@ function clearEditFile() {
     document.getElementById('editFile').value = '';
     document.getElementById('editFileInfo').classList.add('hidden');
     document.getElementById('editDropZone').classList.remove('hidden');
+}
+
+// ==================== 카테고리 칩 선택 ====================
+
+const CHIP_INACTIVE = ['border-divider', 'text-docu-secondary', 'bg-surface-card'];
+const CHIP_ACTIVE = ['border-docu-primary', 'bg-docu-primary', 'text-white', 'font-medium', 'shadow-sm'];
+
+function selectCategory(chipEl, inputId) {
+    const input = document.getElementById(inputId);
+    const container = chipEl.closest('.flex.flex-wrap');
+    container.querySelectorAll('.category-chip').forEach(btn => {
+        btn.classList.remove(...CHIP_ACTIVE);
+        btn.classList.add(...CHIP_INACTIVE);
+    });
+    chipEl.classList.remove(...CHIP_INACTIVE);
+    chipEl.classList.add(...CHIP_ACTIVE);
+    input.value = chipEl.textContent.trim();
 }
