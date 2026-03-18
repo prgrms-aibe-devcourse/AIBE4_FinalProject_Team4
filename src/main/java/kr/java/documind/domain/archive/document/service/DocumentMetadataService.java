@@ -1,5 +1,7 @@
 package kr.java.documind.domain.archive.document.service;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentFileStorage;
@@ -211,7 +213,7 @@ public class DocumentMetadataService {
                                 storedFile.storedKey(),
                                 isProcessed,
                                 EmbeddingStatus.NONE,
-                                java.time.OffsetDateTime.now()));
+                                OffsetDateTime.now(ZoneOffset.UTC)));
 
         documentVectorEventPublisher.createEvent(projectId, documentMetadata);
 
