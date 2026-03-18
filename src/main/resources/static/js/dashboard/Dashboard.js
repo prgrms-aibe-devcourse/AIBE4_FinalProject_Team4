@@ -186,21 +186,31 @@ document.addEventListener('alpine:init', () => {
 
             const { from, to } = resolveTimeRange(this.globalTimeRange);
             const query = widget.query || {};
+
+            const cleanSelects = (query.selects || []).map(({ _id, ...rest }) => {
+                const isAgg = rest.aggregation && rest.aggregation !== '';
+                // JSONB 필드 집계 시 별칭(Alias) 누락에 의한 PSQLException 방지
+                const safeAlias = isAgg && !rest.alias ? `${rest.aggregation.toLowerCase()}_${rest.column.replace(/\./g, '_')}` : rest.alias;
+                return {
+                    ...rest,
+                    aggregation: isAgg ? rest.aggregation : null,
+                    alias: safeAlias || ''
+                };
+            });
+
             const overriddenQuery = {
                 ...query,
                 from,
                 to,
-                selects: (query.selects || []).map(({ _id, ...rest }) => ({
-                    ...rest,
-                    aggregation: rest.aggregation === '' ? null : rest.aggregation
-                })),
+                selects: cleanSelects,
                 wheres: (query.wheres || []).map(({ _id, ...rest }) => rest),
                 whereLogic: query.whereLogic || 'AND',
                 groupBy: (query.groupBy || []).filter(g => g),
-                orderBy: query.orderBy || { column: null, direction: 'DESC' },
                 limit: query.limit || 50,
                 offset: 0,
             };
+
+            overriddenQuery.orderBy = this.getDefaultOrderBy(overriddenQuery);
 
             try {
                 const res = await callApi(
@@ -545,29 +555,66 @@ document.addEventListener('alpine:init', () => {
             this.renderModalPreview();
         },
 
+        getDefaultOrderBy(query) {
+            if (query.orderBy && query.orderBy.column) {
+                return query.orderBy;
+            }
+
+            if (query.groupBy && query.groupBy.length > 0) {
+                const metric = query.selects.find(s => s.aggregation && s.aggregation !== '');
+                const defaultCol = metric ? (metric.alias || metric.column) : query.groupBy[0];
+                return { column: defaultCol, direction: query.orderBy?.direction || 'DESC' };
+            }
+
+            return { column: null, direction: query.orderBy?.direction || 'DESC' };
+        },
+
         // ── Step 1: 쿼리 미리보기 ─────────────────────────────────────────────
         async previewQuery() {
             this.modal.isPreviewLoading = true;
             this.modal.error = null;
             this.modal.queryResult = null;
 
-            const { from, to } = resolveTimeRange(this.globalTimeRange);
             const q = this.modal.draftWidget.query;
+            const groupBy = (q.groupBy || []).filter(g => g);
+            const selects = q.selects || [];
+
+            if (groupBy.length > 0) {
+                const selectColumns = selects.map(s => s.column);
+                const missingDimension = groupBy.find(g => !selectColumns.includes(g));
+
+                if (missingDimension) {
+                    this.modal.error = `GROUP BY에 지정된 '${missingDimension}' 컬럼을 SELECT 항목(집계 없음)에도 추가해주세요.`;
+                    this.modal.isPreviewLoading = false;
+                    return; // API 호출을 중단하고 즉시 반환
+                }
+            }
+
+            const { from, to } = resolveTimeRange(this.globalTimeRange);
+
+            const cleanSelects = selects.map(({ _id, ...rest }) => {
+                const isAgg = rest.aggregation && rest.aggregation !== '';
+                const safeAlias = isAgg && !rest.alias ? `${rest.aggregation.toLowerCase()}_${rest.column.replace(/\./g, '_')}` : rest.alias;
+                return {
+                    ...rest,
+                    aggregation: isAgg ? rest.aggregation : null,
+                    alias: safeAlias || ''
+                };
+            });
+
             const payload = {
                 from,
                 to,
                 timeField: q.timeField || 'occurred_at',
-                selects: (q.selects || []).map(({ _id, ...rest }) => ({
-                    ...rest,
-                    aggregation: rest.aggregation === '' ? null : rest.aggregation
-                })),
+                selects: cleanSelects,
                 wheres: (q.wheres || []).map(({ _id, ...rest }) => rest),
                 whereLogic: q.whereLogic || 'AND',
-                groupBy: (q.groupBy || []).filter(g => g),
-                orderBy: q.orderBy || { column: null, direction: 'DESC' },
+                groupBy: groupBy,
                 limit: q.limit || 100,
                 offset: 0,
             };
+
+            payload.orderBy = this.getDefaultOrderBy(payload);
 
             try {
                 const res = await callApi(
@@ -647,22 +694,29 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            const cleanSelects = (widget.query.selects || []).map(({ _id, ...rest }) => {
+                const isAgg = rest.aggregation && rest.aggregation !== '';
+                const safeAlias = isAgg && !rest.alias ? `${rest.aggregation.toLowerCase()}_${rest.column.replace(/\./g, '_')}` : rest.alias;
+                return {
+                    ...rest,
+                    aggregation: isAgg ? rest.aggregation : null,
+                    alias: safeAlias || ''
+                };
+            });
+
             const cleanQuery = {
                 ...widget.query,
-                selects: (widget.query.selects || []).map(({ _id, ...rest }) => ({
-                    ...rest,
-                    // 빈 문자열("")을 null로 변환하여 백엔드 AggregationFunction Enum 바인딩 오류 해결
-                    aggregation: rest.aggregation === "" ? null : rest.aggregation
-                })),
+                selects: cleanSelects,
                 wheres: (widget.query.wheres || []).map(({ _id, ...rest }) => rest),
                 groupBy: (widget.query.groupBy || []).filter(g => g),
             };
 
-            // 백엔드 Dry-run 검증 (기존 동일)
+            cleanQuery.orderBy = this.getDefaultOrderBy(cleanQuery);
+
             this.modal.isPreviewLoading = true;
             this.modal.error = null;
             try {
-                const body = {
+                const payload = {
                     id: widget.id,
                     title: widget.title,
                     type: widget.type,
@@ -670,10 +724,15 @@ document.addEventListener('alpine:init', () => {
                     query: cleanQuery,
                     visualization: widget.visualization,
                 };
+
                 const res = await callApi(
                     `/api/projects/${this.publicId}/dashboard/widgets/validate`,
-                    { method: 'POST', body: JSON.stringify(body) }
+                    {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    }
                 );
+
                 if (!res.success) {
                     this.modal.error = res.error?.message || '위젯 설정이 올바르지 않습니다.';
                     return;
@@ -685,19 +744,14 @@ document.addEventListener('alpine:init', () => {
                 this.modal.isPreviewLoading = false;
             }
 
-            // DB 저장 규격에 맞춰 _id 필드 제거
             widget.query = cleanQuery;
 
-            // [Architect's Fix] 반응성 보장 (Reactivity)
             if (this.modal.isEdit) {
                 const index = this.widgets.findIndex(w => w.id === widget.id);
                 if (index !== -1) {
-                    // 직접 할당(this.widgets[index] = widget) 대신 splice를 사용하여
-                    // Proxy가 배열의 변경을 완벽하게 추적하고 DOM을 업데이트하도록 강제합니다.
                     this.widgets.splice(index, 1, widget);
                 }
             } else {
-                // 신규 생성 시 레이아웃 자동 배치
                 const maxY = this.widgets.reduce(
                     (max, w) => Math.max(max, (w.layout?.y || 1) + (w.layout?.h || 4)),
                     1
@@ -708,12 +762,12 @@ document.addEventListener('alpine:init', () => {
 
             this.isDirty = true;
 
-            // 모달 닫고 해당 위젯만 재조회
             this.closeModal();
             if (this._modalChartInstance) {
                 this._modalChartInstance.dispose();
                 this._modalChartInstance = null;
             }
+
             this.$nextTick(() => this.executeWidget(widget));
         },
 

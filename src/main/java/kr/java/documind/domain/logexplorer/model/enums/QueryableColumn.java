@@ -17,7 +17,10 @@ public enum QueryableColumn {
     TRACE_ID("trace_id", "string", false),
     SPAN_ID("span_id", "string", false),
     ATTRIBUTES("attributes", "jsonb", true),
-    RESOURCE("resource", "jsonb", true);
+    RESOURCE("resource", "jsonb", true),
+
+    // 동적 별칭(Alias) 지원을 위한 가상 컬럼
+    VIRTUAL_ALIAS("virtual_alias", "alias", false);
 
     private static final java.util.regex.Pattern JSONB_SEGMENT_PATTERN =
             java.util.regex.Pattern.compile("^[a-zA-Z0-9_]{1,64}$");
@@ -48,8 +51,19 @@ public enum QueryableColumn {
             throw new InvalidQueryException("컬럼명이 비어있습니다.");
         }
         String baseName = columnRef.contains(".") ? columnRef.split("\\.")[0] : columnRef;
-        return fromDbName(baseName)
-                .orElseThrow(() -> new InvalidQueryException("허용되지 않는 컬럼: " + baseName));
+
+        Optional<QueryableColumn> matchedColumn = fromDbName(baseName);
+        if (matchedColumn.isPresent()) {
+            return matchedColumn.get();
+        }
+
+        // 물리 컬럼이 아니더라도, SQL Injection 방어용 정규식을 통과하고 점(.)이 없는 단일 문자열이라면,
+        // 이를 프론트엔드가 보낸 '안전한 별칭'으로 간주하고 가상 컬럼(VIRTUAL_ALIAS)으로 우회 통과시킴
+        if (!columnRef.contains(".") && ALIAS_PATTERN.matcher(columnRef).matches()) {
+            return VIRTUAL_ALIAS;
+        }
+
+        throw new InvalidQueryException("허용되지 않는 컬럼: " + baseName);
     }
 
     /**
