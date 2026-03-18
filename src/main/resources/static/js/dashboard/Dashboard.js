@@ -34,7 +34,7 @@ document.addEventListener('alpine:init', () => {
             open: false,
             step: 1,
             isEdit: false,
-            draftWidget: null,
+            draftWidget: { query: { selects: [], wheres: [], groupBy: [] }, visualization: { yAxis: [] } },
             queryResult: null,
             isPreviewLoading: false,
             error: null,
@@ -190,7 +190,10 @@ document.addEventListener('alpine:init', () => {
                 ...query,
                 from,
                 to,
-                selects: (query.selects || []).map(({ _id, ...rest }) => rest),
+                selects: (query.selects || []).map(({ _id, ...rest }) => ({
+                    ...rest,
+                    aggregation: rest.aggregation === '' ? null : rest.aggregation
+                })),
                 wheres: (query.wheres || []).map(({ _id, ...rest }) => rest),
                 whereLogic: query.whereLogic || 'AND',
                 groupBy: (query.groupBy || []).filter(g => g),
@@ -554,7 +557,10 @@ document.addEventListener('alpine:init', () => {
                 from,
                 to,
                 timeField: q.timeField || 'occurred_at',
-                selects: (q.selects || []).map(({ _id, ...rest }) => rest),
+                selects: (q.selects || []).map(({ _id, ...rest }) => ({
+                    ...rest,
+                    aggregation: rest.aggregation === '' ? null : rest.aggregation
+                })),
                 wheres: (q.wheres || []).map(({ _id, ...rest }) => rest),
                 whereLogic: q.whereLogic || 'AND',
                 groupBy: (q.groupBy || []).filter(g => g),
@@ -610,11 +616,21 @@ document.addEventListener('alpine:init', () => {
             const target = this.widgets.find(w => w.id === widgetId);
             if (!target) return;
 
+            const draft = JSON.parse(JSON.stringify(target));
+
+            // [Architect's Fix] UI 렌더링용 임시 고유 키(_id) 복구
+            // DB에 저장될 때 제거되었던 _id를 다시 주입하지 않으면 x-for 루프에서
+            // 중복 키(undefined) 에러가 발생하여 컴포넌트 전체가 멈춰버립니다.
+            if (draft.query) {
+                if (draft.query.selects) draft.query.selects.forEach((s, i) => s._id = Date.now() + 's' + i);
+                if (draft.query.wheres) draft.query.wheres.forEach((w, i) => w._id = Date.now() + 'w' + i);
+            }
+
             this.modal = {
                 open: true,
                 step: 1,
                 isEdit: true,
-                draftWidget: JSON.parse(JSON.stringify(target)),
+                draftWidget: draft,
                 queryResult: null,
                 isPreviewLoading: false,
                 error: null,
@@ -631,7 +647,18 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            // 백엔드 Dry-run 검증
+            const cleanQuery = {
+                ...widget.query,
+                selects: (widget.query.selects || []).map(({ _id, ...rest }) => ({
+                    ...rest,
+                    // 빈 문자열("")을 null로 변환하여 백엔드 AggregationFunction Enum 바인딩 오류 해결
+                    aggregation: rest.aggregation === "" ? null : rest.aggregation
+                })),
+                wheres: (widget.query.wheres || []).map(({ _id, ...rest }) => rest),
+                groupBy: (widget.query.groupBy || []).filter(g => g),
+            };
+
+            // 백엔드 Dry-run 검증 (기존 동일)
             this.modal.isPreviewLoading = true;
             this.modal.error = null;
             try {
@@ -640,12 +667,7 @@ document.addEventListener('alpine:init', () => {
                     title: widget.title,
                     type: widget.type,
                     layout: widget.layout,
-                    query: {
-                        ...widget.query,
-                        selects: (widget.query.selects || []).map(({ _id, ...rest }) => rest),
-                        wheres: (widget.query.wheres || []).map(({ _id, ...rest }) => rest),
-                        groupBy: (widget.query.groupBy || []).filter(g => g),
-                    },
+                    query: cleanQuery,
                     visualization: widget.visualization,
                 };
                 const res = await callApi(
@@ -663,24 +685,30 @@ document.addEventListener('alpine:init', () => {
                 this.modal.isPreviewLoading = false;
             }
 
-            // 레이아웃 자동 배치 (간단히 마지막 행 아래에 추가)
-            const maxY = this.widgets.reduce(
-                (max, w) => Math.max(max, (w.layout?.y || 1) + (w.layout?.h || 4)),
-                1
-            );
-            widget.layout = { ...widget.layout, x: 1, y: maxY };
+            // DB 저장 규격에 맞춰 _id 필드 제거
+            widget.query = cleanQuery;
 
-            // _id 내부 필드 제거
-            widget.query = {
-                ...widget.query,
-                selects: (widget.query.selects || []).map(({ _id, ...rest }) => rest),
-                wheres: (widget.query.wheres || []).map(({ _id, ...rest }) => rest),
-            };
+            // [Architect's Fix] 반응성 보장 (Reactivity)
+            if (this.modal.isEdit) {
+                const index = this.widgets.findIndex(w => w.id === widget.id);
+                if (index !== -1) {
+                    // 직접 할당(this.widgets[index] = widget) 대신 splice를 사용하여
+                    // Proxy가 배열의 변경을 완벽하게 추적하고 DOM을 업데이트하도록 강제합니다.
+                    this.widgets.splice(index, 1, widget);
+                }
+            } else {
+                // 신규 생성 시 레이아웃 자동 배치
+                const maxY = this.widgets.reduce(
+                    (max, w) => Math.max(max, (w.layout?.y || 1) + (w.layout?.h || 4)),
+                    1
+                );
+                widget.layout = { ...widget.layout, x: 1, y: maxY };
+                this.widgets.push(widget);
+            }
 
-            this.widgets.push(widget);
             this.isDirty = true;
 
-            // 모달 닫고 새 위젯 실행
+            // 모달 닫고 해당 위젯만 재조회
             this.closeModal();
             if (this._modalChartInstance) {
                 this._modalChartInstance.dispose();

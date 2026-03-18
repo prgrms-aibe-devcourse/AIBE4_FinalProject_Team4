@@ -74,6 +74,13 @@
                 <button class="btn-primary btn-sm" @click="openCreateViewModal()">
                     + 새 뷰
                 </button>
+
+                <!-- 뷰 삭제 -->
+                <button class="btn-secondary btn-sm text-docu-danger border-docu-danger hover:bg-docu-danger-light transition-colors"
+                        x-show="currentView"
+                        @click="deleteView()">
+                    삭제
+                </button>
             </div>
         </div>
 
@@ -127,6 +134,12 @@
                             <div class="flex items-center gap-1">
                                 <span x-show="widgetLoading[widget.id]"
                                       class="text-xs text-docu-secondary">로딩...</span>
+                                <button x-show="editMode"
+                                        class="btn-icon w-6 h-6"
+                                        title="위젯 수정"
+                                        @click="editWidget(widget.id)">
+                                    <span class="text-xs">✎</span>
+                                </button>
                                 <button x-show="editMode"
                                         class="btn-icon w-6 h-6"
                                         title="위젯 삭제"
