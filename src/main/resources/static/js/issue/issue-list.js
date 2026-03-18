@@ -143,7 +143,7 @@ function renderRecommendationList(recommendations) {
                     <p class="text-xs text-docu-secondary">${formatDateTime(rec.lastOccurredAt)}</p>
                 </div>
                 <div class="col-span-1 text-center">
-                    ${getQualityBadge(rec.severityScore)}
+                    ${getQualityBadge(rec.fingerprintQuality)}
                 </div>
                 <div class="col-span-2 text-center flex items-center justify-center gap-2">
                     <button onclick="event.stopPropagation(); openRecommendationDetail(${rec.id})"
@@ -887,15 +887,46 @@ function getSeverityBorderColor(severity) {
     return borderMap[severity] || 'border-divider';
 }
 
-function getQualityBadge(severityScore) {
-    // 품질 점수: 높을수록 좋음 (초록색), 낮을수록 나쁨 (빨간색)
-    if (severityScore >= 80) {
-        return '<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">높음</span>';
-    } else if (severityScore >= 50) {
-        return '<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">보통</span>';
-    } else {
-        return '<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">낮음</span>';
+function getQualityBadge(fingerprintQuality) {
+    if (!fingerprintQuality) {
+        return '<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">알 수 없음</span>';
     }
+
+    // FingerprintQuality enum 기반
+    const qualityMap = {
+        'HIGH': {
+            label: '높음',
+            class: 'bg-green-100 text-green-800',
+            needsReview: false
+        },
+        'MEDIUM': {
+            label: '보통',
+            class: 'bg-blue-100 text-blue-800',
+            needsReview: false
+        },
+        'LOW': {
+            label: '낮음',
+            class: 'bg-yellow-100 text-yellow-800',
+            needsReview: true
+        },
+        'VERY_LOW': {
+            label: '매우 낮음',
+            class: 'bg-orange-100 text-orange-800',
+            needsReview: true
+        },
+        'FALLBACK': {
+            label: '최소',
+            class: 'bg-red-100 text-red-800',
+            needsReview: true
+        }
+    };
+
+    const config = qualityMap[fingerprintQuality] || qualityMap['FALLBACK'];
+    const reviewBadge = config.needsReview
+        ? '<span class="ml-1 text-[10px] text-orange-600" title="수동 검토 필요">⚠️</span>'
+        : '';
+
+    return `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${config.class}">${config.label}${reviewBadge}</span>`;
 }
 
 function getPriorityBadge(priority) {
