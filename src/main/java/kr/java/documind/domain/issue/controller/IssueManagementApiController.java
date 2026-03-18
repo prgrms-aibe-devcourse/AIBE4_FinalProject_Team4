@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import kr.java.documind.domain.issue.model.dto.request.IssueAssignRequest;
+import kr.java.documind.domain.issue.model.dto.request.IssuePriorityUpdateRequest;
 import kr.java.documind.domain.issue.model.dto.request.IssueStatusUpdateRequest;
 import kr.java.documind.domain.issue.model.dto.response.AffectedPlayerResponse;
 import kr.java.documind.domain.issue.model.dto.response.AssigneeInfo;
@@ -179,6 +180,30 @@ public class IssueManagementApiController {
                 request.shouldIncludeInPatchNote());
 
         return ResponseEntity.ok(ApiResponse.success("이슈 상태가 변경되었습니다."));
+    }
+
+    /**
+     * 이슈 우선순위 변경
+     *
+     * @param ctx 프로젝트 컨텍스트
+     * @param issueId 이슈 ID
+     * @param request 변경할 우선순위
+     * @param authMember 현재 로그인한 사용자 (변경자)
+     * @return 성공 메시지
+     */
+    @Operation(summary = "이슈 우선순위 변경", description = "이슈의 우선순위를 변경하고 변경 이력을 기록합니다.")
+    @PutMapping("/{issueId}/priority")
+    public ResponseEntity<ApiResponse<Void>> updateIssuePriority(
+            @CurrentProject ProjectRequestContext ctx,
+            @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
+                    Long issueId,
+            @Valid @RequestBody IssuePriorityUpdateRequest request,
+            @AuthenticationPrincipal CustomUserDetails authMember) {
+
+        issueManagementService.updateIssuePriority(
+                issueId, ctx.projectId(), request.priority(), authMember.getMemberId());
+
+        return ResponseEntity.ok(ApiResponse.success("우선순위가 변경되었습니다."));
     }
 
     /**
