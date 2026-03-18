@@ -14,6 +14,7 @@ import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
+import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
@@ -44,6 +45,7 @@ public class IssueCommentService {
     private final IssueRepository issueRepository;
     private final MemberRepository memberRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final IssueHistoryService issueHistoryService;
 
     /**
      * 댓글 생성
@@ -84,11 +86,14 @@ public class IssueCommentService {
                 authorId,
                 validatedMentionIds.size());
 
-        // 5. (향후) 이벤트 발행 - 알림 발송
+        // 5. 타임라인 기록 저장
+        issueHistoryService.saveCommentAdded(issueId, authorId, issueComment.getContent());
+
+        // 6. (향후) 이벤트 발행 - 알림 발송
         // eventPublisher.publish(new CommentCreatedEvent(comment.getId(), issueId, authorId,
         // validatedMentionIds));
 
-        // 6. 응답 생성
+        // 7. 응답 생성
         return buildCommentResponse(issueComment);
     }
 

@@ -76,6 +76,20 @@ public class IssueHistoryService {
     }
 
     /**
+     * 댓글 작성 이력 저장
+     *
+     * @param issueId 이슈 ID
+     * @param authorId 작성자 멤버 ID
+     * @param commentContent 댓글 내용
+     * @return 저장된 이력
+     */
+    @Transactional
+    public IssueHistory saveCommentAdded(Long issueId, UUID authorId, String commentContent) {
+        IssueHistory history = IssueHistory.ofCommentAdded(issueId, authorId, commentContent);
+        return issueHistoryRepository.save(history);
+    }
+
+    /**
      * 특정 이슈의 모든 변경 이력 조회 (최신순)
      *
      * @param issueId 이슈 ID
