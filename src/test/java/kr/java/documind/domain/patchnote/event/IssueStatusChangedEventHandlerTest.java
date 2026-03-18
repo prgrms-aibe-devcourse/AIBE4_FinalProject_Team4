@@ -25,7 +25,8 @@ import kr.java.documind.domain.patchnote.model.dto.IssueSummaryResult;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.domain.patchnote.service.IssueChunkingService;
-import kr.java.documind.domain.patchnote.service.PendingItemService;
+import kr.java.documind.domain.patchnote.service.PendingItemRollbackService;
+import kr.java.documind.domain.patchnote.service.PendingItemUpsertService;
 import kr.java.documind.domain.patchnote.util.PatchTypeResolver;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.util.ChoseongUtil;
@@ -52,7 +53,8 @@ class IssueStatusChangedEventHandlerTest {
     @Mock private EmbeddingModelClient embeddingModelClient;
     @Mock private VectorStoreManager vectorStoreManager;
     @Mock private IssueSummaryGenerator issueSummaryGenerator;
-    @Mock private PendingItemService pendingItemService;
+    @Mock private PendingItemUpsertService pendingItemUpsertService;
+    @Mock private PendingItemRollbackService pendingItemRollbackService;
     @Mock private PatchTypeResolver patchTypeResolver;
     @Mock private ChoseongUtil choseongUtil;
     @Mock private ApplicationEventPublisher eventPublisher;
@@ -207,7 +209,7 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
         }
 
         @Test
@@ -222,7 +224,7 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
         }
 
         @Test
@@ -251,7 +253,7 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("성공 흐름: excludeFromPatchNote=false → 이벤트 status=PENDING")
         void handleIssueResolved_excludeFromPatchNote_false_PENDING상태로생성() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -267,7 +269,7 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("성공 흐름: excludeFromPatchNote=true → 이벤트 status=EXCLUDED")
         void handleIssueResolved_excludeFromPatchNote_true_EXCLUDED상태로생성() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             IssueStatusChangedEvent event = resolvedEvent(true);
 
@@ -283,7 +285,7 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("성공 흐름: saveVectorThenUpsert 완료 후 IssuePendingItemCreatedEvent 1회 발행")
         void handleIssueResolved_성공시_IssuePendingItemCreatedEvent발행() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -309,14 +311,14 @@ class IssueStatusChangedEventHandlerTest {
                             false,
                             ACTOR_ID,
                             null);
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
 
             // When (NPE 없이 완료)
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
         }
     }
 
@@ -332,10 +334,10 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("실패 전파: saveVectorThenUpsert RuntimeException → 예외 전파, 성공 이벤트 미발행")
         void handleIssueResolved_벡터저장실패시_RuntimeException전파_성공이벤트미발행() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             willThrow(new RuntimeException("벡터 저장 실패"))
-                    .given(pendingItemService)
+                    .given(pendingItemUpsertService)
                     .saveVectorThenUpsert(any(), any(), any(), any());
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -349,10 +351,10 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("실패 전파: PendingItemUpsertFailedException → 그대로 전파")
         void handleIssueResolved_PendingItemUpsertFailedException_전파() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             willThrow(new PendingItemUpsertFailedException(ISSUE_ID))
-                    .given(pendingItemService)
+                    .given(pendingItemUpsertService)
                     .saveVectorThenUpsert(any(), any(), any(), any());
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -388,7 +390,7 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueRollback(event);
 
             // Then
-            then(pendingItemService).should(never()).deleteForRollback(any(), any(), any());
+            then(pendingItemRollbackService).should(never()).deleteForRollback(any(), any(), any());
         }
 
         @Test
@@ -409,7 +411,7 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueRollback(event);
 
             // Then
-            then(pendingItemService).should(never()).deleteForRollback(any(), any(), any());
+            then(pendingItemRollbackService).should(never()).deleteForRollback(any(), any(), any());
         }
 
         @Test
@@ -417,7 +419,7 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_deleteForRollback_true반환시_벡터삭제호출() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.IN_PROGRESS);
-            given(pendingItemService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(pendingItemRollbackService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(true);
 
             // When
@@ -432,7 +434,7 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_deleteForRollback_false반환시_벡터삭제미호출() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.TODO);
-            given(pendingItemService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(pendingItemRollbackService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(false);
 
             // When
@@ -448,7 +450,7 @@ class IssueStatusChangedEventHandlerTest {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.IN_PROGRESS);
             willThrow(new RuntimeException("DB 오류"))
-                    .given(pendingItemService)
+                    .given(pendingItemRollbackService)
                     .deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE);
 
             // When & Then (예외 전파 없음)
@@ -460,7 +462,7 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_pendingItem없음_벡터삭제미호출() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.TODO);
-            given(pendingItemService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(pendingItemRollbackService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(false);
 
             // When
@@ -473,6 +475,43 @@ class IssueStatusChangedEventHandlerTest {
 
     // ──────────────────────────────────────────────────────────────────────────
     // handleIssueDeleted()
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("handleIssueDeleted()")
+    class HandleIssueDeleted {
+
+        @Test
+        @DisplayName("이슈 삭제: markSourceDeleted 정확한 인자로 호출")
+        void handleIssueDeleted_markSourceDeleted_호출() {
+            // Given
+            IssueDeletedEvent event =
+                    new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
+
+            // When
+            handler.handleIssueDeleted(event);
+
+            // Then
+            then(pendingItemRollbackService)
+                    .should()
+                    .markSourceDeleted(PROJECT_ID, ISSUE_ID, SourceType.ISSUE);
+        }
+
+        @Test
+        @DisplayName("이슈 삭제 예외 삼킴: markSourceDeleted 예외 발생 → 전파되지 않음")
+        void handleIssueDeleted_예외발생시_삼킴() {
+            // Given
+            IssueDeletedEvent event =
+                    new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
+            willThrow(new RuntimeException("DB 오류"))
+                    .given(pendingItemRollbackService)
+                    .markSourceDeleted(PROJECT_ID, ISSUE_ID, SourceType.ISSUE);
+
+            // When & Then (예외 전파 없음)
+            handler.handleIssueDeleted(event);
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // 프로젝트 격리 검증
     // ──────────────────────────────────────────────────────────────────────────
@@ -499,7 +538,7 @@ class IssueStatusChangedEventHandlerTest {
                     Issue.builder()
                             .projectId(otherProjectId)
                             .title("다른 프로젝트 이슈")
-                            .description("충분한 설명 텍스트입니다")
+                            .description("충분한 설명: 이슈 내용입니다")
                             .fingerprint("fp-other")
                             .build();
             ReflectionTestUtils.setField(issue, "id", ISSUE_ID);
@@ -536,7 +575,7 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("중복 이벤트: 동일 이슈 RESOLVED 이벤트 2회 수신 → saveVectorThenUpsert 2회 호출")
         void handleIssueResolved_중복이벤트_saveVectorThenUpsert2회호출() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -545,7 +584,7 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then — upsert 내부에서 기존 항목 refresh 처리
-            then(pendingItemService)
+            then(pendingItemUpsertService)
                     .should(times(2))
                     .saveVectorThenUpsert(any(), any(), any(), any());
         }

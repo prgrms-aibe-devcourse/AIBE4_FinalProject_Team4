@@ -1,6 +1,6 @@
 package kr.java.documind.domain.archive.document.event;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.vector.event.EmbeddingStatusEvent;
@@ -27,17 +27,23 @@ public class EmbeddingStatusUpdateListener {
         documentMetadataManager.updateEmbeddingStatusIfExists(event.sourceId(), event.status());
 
         if (event.status() == EmbeddingStatus.SUCCESS) {
-            publishDocumentEmbeddedEvent(event.sourceId());
+            publishDocumentEmbeddedEvent(event.sourceId(), event.excludeFromPatchNote());
         }
     }
 
-    private void publishDocumentEmbeddedEvent(Long sourceId) {
+    private void publishDocumentEmbeddedEvent(Long sourceId, boolean excludeFromPatchNote) {
         documentMetadataManager
                 .findById(sourceId)
                 .ifPresent(
                         metadata -> {
                             DocumentGroup group = metadata.getDocumentGroup();
                             boolean isNewDocument = metadata.getReuploadedAt() == null;
+
+                            // 이 버전이 업로드된 시각: 재업로드면 reuploadedAt, 신규면 uploadedAt
+                            OffsetDateTime sourceCreatedAt =
+                                    metadata.getReuploadedAt() != null
+                                            ? metadata.getReuploadedAt()
+                                            : metadata.getUploadedAt();
 
                             eventPublisher.publishEvent(
                                     new DocumentEmbeddedEvent(
@@ -47,12 +53,14 @@ public class EmbeddingStatusUpdateListener {
                                             group.getGroupName(),
                                             group.getCategory(),
                                             isNewDocument,
-                                            Instant.now()));
+                                            excludeFromPatchNote,
+                                            sourceCreatedAt));
 
                             log.debug(
-                                    "[EmbeddingStatus] DocumentEmbeddedEvent 발행 - sourceId: {}, isNew: {}",
+                                    "[EmbeddingStatus] DocumentEmbeddedEvent 발행 - sourceId: {}, isNew: {}, exclude: {}",
                                     sourceId,
-                                    isNewDocument);
+                                    isNewDocument,
+                                    excludeFromPatchNote);
                         });
     }
 }

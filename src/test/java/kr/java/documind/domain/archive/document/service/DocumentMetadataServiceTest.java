@@ -209,7 +209,7 @@ class DocumentMetadataServiceTest {
         void uploadDocumentWithNewGroup_ValidRequest_CreatesGroupAndMetadata() {
             // Given
             MultipartFile file = mockFile("testDoc.pdf");
-            DocumentUploadRequest request = new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, null);
+            DocumentUploadRequest request = new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, true);
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
@@ -230,6 +230,7 @@ class DocumentMetadataServiceTest {
             assertThat(result.documentName()).isEqualTo("testDoc");
             then(documentGroupManager).should().validateGroupNameUniqueness(projectId, "개발", "그룹A");
             then(documentGroupManager).should().save(any(DocumentGroup.class));
+            then(documentVectorEventPublisher).should().createEvent(eq(projectId), eq(metadata), eq(true));
         }
 
         @Test
@@ -300,7 +301,7 @@ class DocumentMetadataServiceTest {
             // Given
             MultipartFile file = mockFile("testDoc.pdf");
             NewVersionDocumentUploadRequest request =
-                    new NewVersionDocumentUploadRequest(2, 0, 0, null);
+                    new NewVersionDocumentUploadRequest(2, 0, 0, false);
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
@@ -323,6 +324,7 @@ class DocumentMetadataServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.documentName()).isEqualTo("testDoc");
+            then(documentVectorEventPublisher).should().createEvent(eq(projectId), eq(metadata), eq(false));
         }
 
         @Test
@@ -459,7 +461,7 @@ class DocumentMetadataServiceTest {
 
             // Then
             assertThat(metadata.getStoredKey()).isEqualTo("stored/new-key");
-            then(documentVectorEventPublisher).should().replaceEvent(eq(projectId), eq(metadata));
+            then(documentVectorEventPublisher).should().replaceEvent(eq(projectId), eq(metadata), eq(false));
         }
 
         @Test
@@ -506,6 +508,7 @@ class DocumentMetadataServiceTest {
             assertThat(metadata.getMinorVersion()).isEqualTo(1);
             assertThat(metadata.isProcessed()).isTrue();
             assertThat(metadata.getStoredKey()).isEqualTo("stored/new-key");
+            then(documentVectorEventPublisher).should().replaceEvent(eq(projectId), eq(metadata), eq(true));
         }
 
         @Test
@@ -619,7 +622,7 @@ class DocumentMetadataServiceTest {
 
             // Then
             then(documentFileStorage).should().deleteOnCommit("stored/key");
-            then(documentVectorEventPublisher).should().deleteEvent(metadata.getId());
+            then(documentVectorEventPublisher).should().deleteEvent(projectId, metadata.getId());
             then(documentMetadataManager).should().delete(metadata);
             then(documentGroupManager).should(never()).delete(any());
         }

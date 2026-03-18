@@ -1,7 +1,6 @@
 package kr.java.documind.domain.patchnote.service;
 
 import java.util.List;
-import java.util.UUID;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException;
 import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateDto;
@@ -19,21 +18,37 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * PendingItem 적재 및 재시도 복구를 담당한다.
+ *
+ * <ul>
+ *   <li>{@link #saveVectorThenUpsert} — 벡터 저장 → pending_item upsert 순서 보장
+ *   <li>{@link #upsertPendingItem} — {@code @Retryable} 적용 upsert (최대 3회)
+ *   <li>{@link #recoverUpsert} — 3회 실패 후 고아 벡터 정리 및 예외 전파
+ * </ul>
+ */
 @Slf4j
 @Service
-public class PendingItemService {
+public class PendingItemUpsertService {
 
     private final PendingItemRepository pendingItemRepository;
     private final VectorStoreManager vectorStoreManager;
 
-    @Lazy @Autowired private PendingItemService self;
+    /** self-invocation으로 @Retryable AOP 프록시를 경유하기 위한 자기 참조 */
+    @Lazy @Autowired private PendingItemUpsertService self;
 
-    public PendingItemService(
+    public PendingItemUpsertService(
             PendingItemRepository pendingItemRepository, VectorStoreManager vectorStoreManager) {
         this.pendingItemRepository = pendingItemRepository;
         this.vectorStoreManager = vectorStoreManager;
     }
 
+    /**
+     * 벡터 저장 후 pending_item을 upsert한다.
+     *
+     * <p>벡터 저장(RDBMS 트랜잭션 미참여)이 실패하면 예외를 전파하고 pending_item은 적재하지 않는다.
+     * upsert는 self-call로 AOP 프록시(@Retryable)를 경유한다.
+     */
     public void saveVectorThenUpsert(
             Long sourceId,
             List<Document> chunks,
@@ -46,6 +61,12 @@ public class PendingItemService {
         self.upsertPendingItem(dto);
     }
 
+    /**
+     * pending_item을 upsert한다.
+     *
+     * <p>기존 항목이 있으면 {@code refresh}로 갱신하고, 없으면 신규 생성한다.
+     * {@code @Retryable}로 {@link DataAccessException} 발생 시 최대 3회 재시도한다.
+     */
     @Retryable(
             retryFor = DataAccessException.class,
             maxAttempts = 3,
@@ -90,6 +111,13 @@ public class PendingItemService {
                         });
     }
 
+    /**
+     * {@link #upsertPendingItem} 3회 재시도 모두 실패 시 호출된다.
+     *
+     * <p>ISSUE 타입은 패치노트 도메인이 벡터를 직접 소유하므로 고아 벡터를 정리한다.
+     * DOCUMENT 타입은 벡터가 EtlService 소유이므로 정리하지 않는다.
+     * 정리 성공 여부와 무관하게 {@link PendingItemUpsertFailedException}을 전파한다.
+     */
     @Recover
     public void recoverUpsert(DataAccessException e, PendingItemCreateDto dto) {
         log.error(
@@ -117,39 +145,5 @@ public class PendingItemService {
         }
         // 호출 측이 PENDING_ITEM_UPSERT_FAILED 알림 이벤트를 발행할 수 있도록 예외를 전파한다.
         throw new PendingItemUpsertFailedException(dto.sourceId());
-    }
-
-    @Transactional
-    public boolean deleteForRollback(UUID projectId, Long sourceId, SourceType sourceType) {
-        return pendingItemRepository
-                .findByProjectIdAndSourceTypeAndSourceId(projectId, sourceType, sourceId)
-                .map(
-                        item -> {
-                            if (item.isCompleted()) {
-                                // 이미 패치노트에 사용된 항목 — 원본 삭제 플래그만 처리
-                                item.markSourceDeleted();
-                                log.debug(
-                                        "[PendingItem] COMPLETED 항목 sourceDeleted 처리 - sourceId: {}, sourceType: {}",
-                                        sourceId,
-                                        sourceType);
-                                return false; // 벡터 삭제 불필요
-                            } else {
-                                // PENDING / EXCLUDED → hard delete
-                                pendingItemRepository.delete(item);
-                                log.debug(
-                                        "[PendingItem] {} 항목 hard delete - sourceId: {}, sourceType: {}",
-                                        item.getStatus(),
-                                        sourceId,
-                                        sourceType);
-                                return true; // 벡터도 삭제 필요
-                            }
-                        })
-                .orElse(false); // 항목 없음
-    }
-
-    @Transactional
-    public void markSourceDeleted(UUID projectId, Long sourceId, SourceType sourceType) {
-        pendingItemRepository.markSourceDeleted(projectId, sourceType, sourceId);
-        log.debug("[PendingItem] 원본 삭제 처리 - sourceId: {}, sourceType: {}", sourceId, sourceType);
     }
 }

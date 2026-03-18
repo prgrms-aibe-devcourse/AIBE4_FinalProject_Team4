@@ -48,7 +48,7 @@ public class EtlService {
         return embeddingStatusSseManager.register(sourceId, currentStatus);
     }
 
-    public void process(UUID projectId, Long sourceId, String storedKey) {
+    public void process(UUID projectId, Long sourceId, String storedKey, boolean excludeFromPatchNote) {
         Path tempFilePath = null;
         try {
             changeStatus(sourceId, EmbeddingStatus.PROCESSING);
@@ -69,7 +69,7 @@ public class EtlService {
             List<float[]> embeddings = embeddingModelClient.embed(texts);
             vectorStoreManager.insertChunks(sourceId, chunks, embeddings);
 
-            changeStatus(sourceId, EmbeddingStatus.SUCCESS);
+            changeStatus(sourceId, EmbeddingStatus.SUCCESS, excludeFromPatchNote);
         } catch (Exception e) {
             log.error("[ETL] 벡터화 실패 - sourceId: {}", sourceId, e);
             cleanupVectors(sourceId);
@@ -94,6 +94,11 @@ public class EtlService {
 
     private void changeStatus(Long sourceId, EmbeddingStatus status) {
         eventPublisher.publishEvent(new EmbeddingStatusEvent(sourceId, status));
+        embeddingStatusSseManager.send(sourceId, status);
+    }
+
+    private void changeStatus(Long sourceId, EmbeddingStatus status, boolean excludeFromPatchNote) {
+        eventPublisher.publishEvent(new EmbeddingStatusEvent(sourceId, status, excludeFromPatchNote));
         embeddingStatusSseManager.send(sourceId, status);
     }
 

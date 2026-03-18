@@ -34,13 +34,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("PendingItemService 단위 테스트")
-class PendingItemServiceTest {
+@DisplayName("PendingItemUpsertService 단위 테스트")
+class PendingItemUpsertServiceTest {
 
     @Mock private PendingItemRepository pendingItemRepository;
     @Mock private VectorStoreManager vectorStoreManager;
 
-    @InjectMocks private PendingItemService pendingItemService;
+    @InjectMocks private PendingItemUpsertService pendingItemUpsertService;
 
     private static final UUID PROJECT_ID = UUID.randomUUID();
     private static final Long SOURCE_ID = 42L;
@@ -49,7 +49,7 @@ class PendingItemServiceTest {
     @BeforeEach
     void injectSelf() {
         // @Lazy @Autowired self 필드는 단위 테스트에서 수동 주입
-        ReflectionTestUtils.setField(pendingItemService, "self", pendingItemService);
+        ReflectionTestUtils.setField(pendingItemUpsertService, "self", pendingItemUpsertService);
     }
 
     private PendingItemCreateDto buildDto(PendingItemStatus status) {
@@ -80,7 +80,7 @@ class PendingItemServiceTest {
                     .willReturn(Optional.empty());
 
             // When
-            pendingItemService.upsertPendingItem(dto);
+            pendingItemUpsertService.upsertPendingItem(dto);
 
             // Then
             then(pendingItemRepository).should().save(any(PendingItem.class));
@@ -108,7 +108,7 @@ class PendingItemServiceTest {
                     .willReturn(Optional.of(existing));
 
             // When
-            pendingItemService.upsertPendingItem(dto);
+            pendingItemUpsertService.upsertPendingItem(dto);
 
             // Then — title이 갱신되어야 하고, save는 호출되지 않음 (dirty checking)
             assertThat(existing.getTitle()).isEqualTo("패치노트 제목");
@@ -137,7 +137,7 @@ class PendingItemServiceTest {
                     .willReturn(Optional.of(excluded));
 
             // When
-            pendingItemService.upsertPendingItem(dto);
+            pendingItemUpsertService.upsertPendingItem(dto);
 
             // Then — title 갱신, status는 EXCLUDED 유지
             assertThat(excluded.getTitle()).isEqualTo("패치노트 제목");
@@ -167,7 +167,7 @@ class PendingItemServiceTest {
                     .willReturn(Optional.of(completed));
 
             // When
-            pendingItemService.upsertPendingItem(dto);
+            pendingItemUpsertService.upsertPendingItem(dto);
 
             // Then — 제목은 갱신, COMPLETED 상태 유지
             assertThat(completed.getTitle()).isEqualTo("패치노트 제목");
@@ -187,9 +187,9 @@ class PendingItemServiceTest {
             DataAccessException cause = new DataIntegrityViolationException("DB 오류");
 
             // When & Then
-            assertThatThrownBy(() -> pendingItemService.recoverUpsert(cause, dto))
+            assertThatThrownBy(() -> pendingItemUpsertService.recoverUpsert(cause, dto))
                     .isInstanceOf(PendingItemUpsertFailedException.class);
-            then(vectorStoreManager).should().deleteBySourceId(SOURCE_ID);
+            then(vectorStoreManager).should().deleteBySourceId(SOURCE_ID, SourceType.ISSUE);
         }
 
         @Test
@@ -200,142 +200,11 @@ class PendingItemServiceTest {
             DataAccessException cause = new DataIntegrityViolationException("DB 오류");
             willThrow(new RuntimeException("벡터 삭제 실패"))
                     .given(vectorStoreManager)
-                    .deleteBySourceId(SOURCE_ID);
+                    .deleteBySourceId(SOURCE_ID, SourceType.ISSUE);
 
             // When & Then
-            assertThatThrownBy(() -> pendingItemService.recoverUpsert(cause, dto))
+            assertThatThrownBy(() -> pendingItemUpsertService.recoverUpsert(cause, dto))
                     .isInstanceOf(PendingItemUpsertFailedException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("deleteForRollback()")
-    class DeleteForRollback {
-
-        @Test
-        @DisplayName("롤백: PENDING 항목 → hard delete, true 반환")
-        void deleteForRollback_PENDING항목_hardDelete후true반환() {
-            // Given
-            PendingItem item =
-                    PendingItem.create(
-                            PROJECT_ID,
-                            SOURCE_ID,
-                            SourceType.ISSUE,
-                            "제목",
-                            "요약",
-                            "ㅈㅇ",
-                            PatchType.FIX,
-                            PendingItemStatus.PENDING,
-                            NOW);
-            given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
-                    .willReturn(Optional.of(item));
-
-            // When
-            boolean result =
-                    pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
-
-            // Then
-            assertThat(result).isTrue();
-            then(pendingItemRepository).should().delete(item);
-        }
-
-        @Test
-        @DisplayName("롤백: EXCLUDED 항목 → hard delete, true 반환")
-        void deleteForRollback_EXCLUDED항목_hardDelete후true반환() {
-            // Given
-            PendingItem item =
-                    PendingItem.create(
-                            PROJECT_ID,
-                            SOURCE_ID,
-                            SourceType.ISSUE,
-                            "제목",
-                            "요약",
-                            "ㅈㅇ",
-                            PatchType.FIX,
-                            PendingItemStatus.EXCLUDED,
-                            NOW);
-            given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
-                    .willReturn(Optional.of(item));
-
-            // When
-            boolean result =
-                    pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
-
-            // Then
-            assertThat(result).isTrue();
-            then(pendingItemRepository).should().delete(item);
-        }
-
-        @Test
-        @DisplayName("롤백: COMPLETED 항목 → sourceDeleted 처리, false 반환")
-        void deleteForRollback_COMPLETED항목_sourceDeleted처리후false반환() {
-            // Given
-            PendingItem item =
-                    PendingItem.create(
-                            PROJECT_ID,
-                            SOURCE_ID,
-                            SourceType.ISSUE,
-                            "제목",
-                            "요약",
-                            "ㅈㅇ",
-                            PatchType.FIX,
-                            PendingItemStatus.PENDING,
-                            NOW);
-            item.complete(); // PENDING → COMPLETED
-            given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
-                    .willReturn(Optional.of(item));
-
-            // When
-            boolean result =
-                    pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
-
-            // Then
-            assertThat(result).isFalse();
-            assertThat(item.isSourceDeleted()).isTrue();
-            then(pendingItemRepository).should(never()).delete(any());
-        }
-
-        @Test
-        @DisplayName("롤백: 항목 없음 → false 반환, delete 미호출")
-        void deleteForRollback_항목없음_false반환() {
-            // Given
-            given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
-                    .willReturn(Optional.empty());
-
-            // When
-            boolean result =
-                    pendingItemService.deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
-
-            // Then
-            assertThat(result).isFalse();
-            then(pendingItemRepository).should(never()).delete(any());
-        }
-    }
-
-    @Nested
-    @DisplayName("markSourceDeleted()")
-    class MarkSourceDeleted {
-
-        @Test
-        @DisplayName("원본 삭제 처리: repository.markSourceDeleted 호출")
-        void markSourceDeleted_호출시_repository메서드호출() {
-            // Given — void 메서드, 별도 stubbing 불필요
-
-            // When
-            pendingItemService.markSourceDeleted(PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
-
-            // Then
-            then(pendingItemRepository)
-                    .should()
-                    .markSourceDeleted(PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
         }
     }
 
@@ -355,7 +224,7 @@ class PendingItemServiceTest {
             // When & Then
             assertThatThrownBy(
                             () ->
-                                    pendingItemService.saveVectorThenUpsert(
+                                    pendingItemUpsertService.saveVectorThenUpsert(
                                             SOURCE_ID, List.of(), List.of(), dto))
                     .isInstanceOf(RuntimeException.class);
             then(pendingItemRepository)
@@ -374,7 +243,7 @@ class PendingItemServiceTest {
                     .willReturn(Optional.empty());
 
             // When
-            pendingItemService.saveVectorThenUpsert(SOURCE_ID, List.of(), List.of(), dto);
+            pendingItemUpsertService.saveVectorThenUpsert(SOURCE_ID, List.of(), List.of(), dto);
 
             // Then
             then(vectorStoreManager).should().insertChunks(SOURCE_ID, List.of(), List.of());

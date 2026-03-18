@@ -19,8 +19,14 @@ public class AsyncConfig implements AsyncConfigurer {
     private static final int QUEUE_CAPACITY = 100;
     private static final String THREAD_NAME_PREFIX = "DocuMind-Async-";
 
-    @Override
-    public Executor getAsyncExecutor() {
+    /**
+     * 애플리케이션 전역 비동기 스레드 풀.
+     *
+     * <p>{@code @Async} 기본 실행자로 사용되며, {@code CompletableFuture.runAsync(task, taskExecutor)}
+     * 형태로 직접 주입하여 사용할 수도 있다.
+     */
+    @org.springframework.context.annotation.Bean("taskExecutor")
+    public Executor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CORE_POOL_SIZE); // 기본 유지 스레드 수
         executor.setMaxPoolSize(MAX_POOL_SIZE); // 큐 초과 시 최대 확장 스레드 수
@@ -29,6 +35,11 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setTaskDecorator(new MdcTaskDecorator()); // MDC 컨텍스트 전달
         executor.initialize();
         return executor;
+    }
+
+    @Override
+    public Executor getAsyncExecutor() {
+        return taskExecutor();
     }
 
     @Override

@@ -1,20 +1,21 @@
 package kr.java.documind.domain.patchnote.event;
 
-import java.time.ZoneOffset;
 import java.util.List;
 import kr.java.documind.domain.archive.vector.model.repository.VectorStoreRepository;
-import kr.java.documind.domain.patchnote.infrastructure.DocumentPatchTypeClassifier;
+import kr.java.documind.domain.patchnote.exception.DocumentEmbeddingEmptyException;
 import kr.java.documind.domain.patchnote.infrastructure.DocumentSummaryGenerator;
 import kr.java.documind.domain.patchnote.model.dto.DocumentSummaryResult;
 import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateDto;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.domain.patchnote.service.DocumentMeaningfulnessService;
-import kr.java.documind.domain.patchnote.service.PendingItemService;
+import kr.java.documind.domain.patchnote.service.PendingItemUpsertService;
+import kr.java.documind.domain.patchnote.util.PatchTypeResolver;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.util.ChoseongUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -34,9 +35,15 @@ import org.springframework.transaction.event.TransactionalEventListener;
  *   <li>pending_item DB upsert (문서 벡터는 EtlService 담당 — DB 저장만 수행)
  * </ol>
  *
- * <p>LLM 실패 시 {@link DocumentSummaryGenerator} 내부 fallback으로 문서명을 title/summary로 사용한다. pending_item
- * DB upsert 최종 실패 시 {@code PendingItemUpsertFailedException}이 전파되어 {@code
- * CustomAsyncExceptionHandler}가 처리한다.
+ * <p>LLM 실패 시 {@link DocumentSummaryGenerator} 내부 fallback으로 문서명을 title/summary로 사용한다.
+ *
+ * <ul>
+ *   <li>벡터 청크 없음 → {@link DocumentEmbeddingEmptyException} throw → CustomAsyncExceptionHandler
+ *       경고 알림
+ *   <li>pending_item 최종 저장 실패 → {@code PendingItemUpsertFailedException} throw → 관리자 알림
+ *   <li>기타 예외 → 그대로 전파 → CustomAsyncExceptionHandler 관리자 알림
+ *   <li>성공 → {@link DocumentPendingItemCreatedEvent} 발행 → alarm-toast + 헤더 배지
+ * </ul>
  */
 @Slf4j
 @Component
@@ -49,9 +56,10 @@ public class DocumentVectorStatusChangedEventListener {
     private final VectorStoreRepository vectorStoreRepository;
     private final DocumentMeaningfulnessService meaningfulnessService;
     private final DocumentSummaryGenerator documentSummaryGenerator;
-    private final DocumentPatchTypeClassifier patchTypeClassifier;
-    private final PendingItemService pendingItemService;
+    private final PatchTypeResolver patchTypeResolver;
+    private final PendingItemUpsertService pendingItemUpsertService;
     private final ChoseongUtil choseongUtil;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 문서 임베딩 완료 시 pending_item을 적재한다.
@@ -63,15 +71,22 @@ public class DocumentVectorStatusChangedEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(DocumentEmbeddedEvent event) {
         log.info(
-                "[PatchNote] 문서 임베딩 완료 감지 - sourceId: {}, projectId: {}, isNew: {}",
+                "[PatchNote] 문서 임베딩 완료 감지 - sourceId: {}, projectId: {}, isNew: {}, exclude: {}",
                 event.sourceId(),
                 event.projectId(),
-                event.isNewDocument());
+                event.isNewDocument(),
+                event.excludeFromPatchNote());
 
         // 1. 벡터 스토어에서 문서 청크 조회 (LLM 입력 + 유의미성 판단용)
         List<String> chunks =
                 vectorStoreRepository.findContentsBySourceId(
                         event.sourceId(), SourceType.DOCUMENT, CHUNK_RETRIEVAL_LIMIT);
+
+        if (chunks.isEmpty()) {
+            // EtlService가 빈 청크는 FAILED 처리하지만, 극히 드문 경우 조회 시점에 청크가 없을 수 있음
+            throw new DocumentEmbeddingEmptyException(event.sourceId());
+        }
+
         String currentText = String.join("\n", chunks);
 
         // 2. 유의미성 검증
@@ -89,12 +104,19 @@ public class DocumentVectorStatusChangedEventListener {
                         event.documentName(), event.documentGroupName(), event.category(), chunks);
 
         // 4. PatchType 분류 (LLM 응답의 category 문자열 → PatchType enum)
-        PatchType patchType = patchTypeClassifier.classify(summaryResult.categoryFromLlm());
+        PatchType patchType = patchTypeResolver.resolveFromLlmCategory(summaryResult.categoryFromLlm());
 
         // 5. 초성 추출 (검색용)
         String choseong = choseongUtil.extract(summaryResult.title());
 
         // 6. DTO 조립
+        //    excludeFromPatchNote=true이면 EXCLUDED로 적재 (이슈와 동일 전략)
+        //    LLM 추출 및 pending_item 저장은 exclude 여부와 관계없이 항상 수행
+        PendingItemStatus status =
+                event.excludeFromPatchNote()
+                        ? PendingItemStatus.EXCLUDED
+                        : PendingItemStatus.PENDING;
+
         PendingItemCreateDto dto =
                 new PendingItemCreateDto(
                         event.projectId(),
@@ -104,18 +126,35 @@ public class DocumentVectorStatusChangedEventListener {
                         summaryResult.summary(),
                         choseong,
                         patchType,
-                        PendingItemStatus.PENDING,
-                        event.occurredAt().atOffset(ZoneOffset.UTC));
+                        status,
+                        event.sourceCreatedAt());
 
         // 7. DB upsert (문서 벡터는 EtlService가 담당 — 여기서는 pending_item DB 저장만 수행)
         //    @Retryable 3회 적용. 최종 실패 시 PendingItemUpsertFailedException throw
-        pendingItemService.upsertPendingItem(dto);
+        pendingItemUpsertService.upsertPendingItem(dto);
+
+        // 8. 벡터 메타데이터에 affects_player 기록 (reranking 필터용)
+        //    LLM이 isUserFacing=false로 판단한 문서는 유저 향 쿼리 reranking 시 후순위로 처리된다.
+        //    upsert 성공 이후 best-effort로 수행하며, 실패 시 경고 로그만 남기고 진행한다.
+        try {
+            vectorStoreRepository.updateAffectsPlayerBySourceId(
+                    event.sourceId(), SourceType.DOCUMENT, summaryResult.affectsPlayer());
+        } catch (Exception e) {
+            log.warn(
+                    "[PatchNote] affects_player 메타데이터 업데이트 실패 (reranking 영향 없음) - sourceId: {}",
+                    event.sourceId(),
+                    e);
+        }
 
         log.info(
-                "[PatchNote] 문서 pending_item 적재 완료 - sourceId: {}, patchType: {}",
+                "[PatchNote] 문서 pending_item 적재 완료 - sourceId: {}, patchType: {}, status: {}",
                 event.sourceId(),
-                patchType);
+                patchType,
+                status);
 
-        // TODO: 성공 알림 이벤트 발행 (alarm-toast + 헤더 배지) — 알림 서비스 구현 후 연동
+        // 성공 이벤트 발행 — 알림 도메인이 구독하여 alarm-toast + 헤더 배지 전달
+        eventPublisher.publishEvent(
+                new DocumentPendingItemCreatedEvent(
+                        event.sourceId(), event.projectId(), dto.title(), status));
     }
 }

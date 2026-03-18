@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.patchnote.model.entity.PendingItem;
+import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.global.enums.SourceType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -19,7 +20,7 @@ public interface PendingItemRepository
     Optional<PendingItem> findByProjectIdAndSourceTypeAndSourceId(
             UUID projectId, SourceType sourceType, Long sourceId);
 
-    // RAG pre-filter
+    // RAG pre-filter — ID 목록 기반 활성 항목 조회
     @Query(
             """
             SELECT p FROM PendingItem p
@@ -29,6 +30,17 @@ public interface PendingItemRepository
             """)
     List<PendingItem> findAllByProjectIdAndIdInAndNotDeleted(
             @Param("projectId") UUID projectId, @Param("ids") List<Long> ids);
+
+    // 초안 생성용 — 프로젝트의 PENDING 상태 항목 전체 조회 (원본 삭제 포함, sourceDeleted 필터는 서비스에서)
+    @Query(
+            """
+            SELECT p FROM PendingItem p
+            WHERE p.projectId = :projectId
+              AND p.status    = :status
+            ORDER BY p.sourceCreatedAt DESC
+            """)
+    List<PendingItem> findByProjectIdAndStatus(
+            @Param("projectId") UUID projectId, @Param("status") PendingItemStatus status);
 
     // 상태 일괄 변경
     @Modifying

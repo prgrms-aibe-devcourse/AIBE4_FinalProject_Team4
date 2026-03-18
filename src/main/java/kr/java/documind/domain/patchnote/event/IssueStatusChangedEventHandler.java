@@ -16,7 +16,8 @@ import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateDto;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.domain.patchnote.service.IssueChunkingService;
-import kr.java.documind.domain.patchnote.service.PendingItemService;
+import kr.java.documind.domain.patchnote.service.PendingItemRollbackService;
+import kr.java.documind.domain.patchnote.service.PendingItemUpsertService;
 import kr.java.documind.domain.patchnote.util.PatchTypeResolver;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.util.ChoseongUtil;
@@ -42,7 +43,8 @@ public class IssueStatusChangedEventHandler {
     private final EmbeddingModelClient embeddingModelClient;
     private final VectorStoreManager vectorStoreManager;
     private final IssueSummaryGenerator issueSummaryGenerator;
-    private final PendingItemService pendingItemService;
+    private final PendingItemUpsertService pendingItemUpsertService;
+    private final PendingItemRollbackService pendingItemRollbackService;
     private final PatchTypeResolver patchTypeResolver;
     private final ChoseongUtil choseongUtil;
     private final ApplicationEventPublisher eventPublisher;
@@ -129,10 +131,10 @@ public class IssueStatusChangedEventHandler {
                         status,
                         sourceCreatedAt);
 
-        // 12. 벡터 저장 → pending_item upsert (PendingItemService가 순서 보장 + @Retryable 적용)
+        // 12. 벡터 저장 → pending_item upsert (PendingItemUpsertService가 순서 보장 + @Retryable 적용)
         //     실패 예외 전파: PendingItemUpsertFailedException | Exception
         //     → CustomAsyncExceptionHandler가 타입별로 관리자 알림 발행
-        pendingItemService.saveVectorThenUpsert(issue.getId(), chunks, embeddings, dto);
+        pendingItemUpsertService.saveVectorThenUpsert(issue.getId(), chunks, embeddings, dto);
 
         log.info(
                 "[PatchNote] pending_item 적재 완료 - issueId: {}, status: {}",
@@ -162,7 +164,7 @@ public class IssueStatusChangedEventHandler {
 
         try {
             boolean shouldDeleteVectors =
-                    pendingItemService.deleteForRollback(
+                    pendingItemRollbackService.deleteForRollback(
                             event.projectId(), event.issueId(), SourceType.ISSUE);
 
             if (shouldDeleteVectors) {
@@ -179,6 +181,25 @@ public class IssueStatusChangedEventHandler {
 
         } catch (Exception e) {
             log.error("[PatchNote] 이슈 롤백 처리 중 예외 발생 - issueId: {}", event.issueId(), e);
+        }
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleIssueDeleted(IssueDeletedEvent event) {
+        log.info(
+                "[PatchNote] 이슈 삭제 감지 - issueId: {}, projectId: {}",
+                event.issueId(),
+                event.projectId());
+        try {
+            pendingItemRollbackService.markSourceDeleted(
+                    event.projectId(), event.issueId(), SourceType.ISSUE);
+            log.info(
+                    "[PatchNote] 이슈 삭제 완료 — pending_item sourceDeleted 처리. issueId: {}",
+                    event.issueId());
+        } catch (Exception e) {
+            log.error(
+                    "[PatchNote] 이슈 삭제 처리 중 예외 발생 - issueId: {}", event.issueId(), e);
         }
     }
 

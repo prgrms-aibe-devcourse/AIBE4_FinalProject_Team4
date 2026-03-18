@@ -100,13 +100,16 @@ public class DocumentSummaryGenerator {
             String title = node.path("title").asText("").trim();
             String summary = node.path("summary").asText("").trim();
             String categoryFromLlm = node.path("category").asText("").trim().toUpperCase();
+            // isUserFacing 미존재/파싱 불가 시 true(보수적 fallback)로 처리
+            boolean affectsPlayer =
+                    !node.has("isUserFacing") || node.path("isUserFacing").asBoolean(true);
 
             if (title.isBlank()) title = documentName;
             if (summary.isBlank()) summary = documentName;
             if (categoryFromLlm.isBlank())
                 categoryFromLlm = (fallbackCategory != null) ? fallbackCategory.toUpperCase() : "";
 
-            return new DocumentSummaryResult(title, summary, categoryFromLlm);
+            return new DocumentSummaryResult(title, summary, categoryFromLlm, affectsPlayer);
 
         } catch (Exception e) {
             log.warn(
@@ -124,6 +127,7 @@ public class DocumentSummaryGenerator {
 
     private DocumentSummaryResult fallback(String documentName, String category) {
         String safeCategory = (category != null) ? category.toUpperCase() : "";
-        return new DocumentSummaryResult(documentName, documentName, safeCategory);
+        // LLM 실패 시 affectsPlayer=true로 보수적 처리 (reranking 시 누락 방지)
+        return new DocumentSummaryResult(documentName, documentName, safeCategory, true);
     }
 }

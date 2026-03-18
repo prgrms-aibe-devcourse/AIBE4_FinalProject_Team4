@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/service-layout}">
+
+<head>
+    <title>패치노트 작성</title>
+</head>
+
+<body>
+<th:block layout:fragment="content">
+
+    <section class="space-y-6">
+
+        <!-- ── 탭 네비게이션 ── -->
+        <div class="flex border-b border-divider">
+            <a th:href="@{/projects/{publicId}/patch-note(publicId=${publicId})}"
+               class="px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors border-transparent text-docu-secondary hover:text-docu-ink">
+                저장된 패치노트
+            </a>
+            <a th:href="@{/projects/{publicId}/patch-note/pending-items(publicId=${publicId})}"
+               class="px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors border-docu-primary text-docu-primary"
+               aria-current="page">
+                패치노트 작성
+            </a>
+        </div>
+
+        <!-- ── 페이지 헤더 ── -->
+        <div>
+            <div th:replace="~{common/fragments/ui-components :: breadcrumb('패치노트 작성')}"></div>
+            <h1 class="text-h1 text-docu-ink mt-3">패치노트 작성</h1>
+            <p class="text-sm text-docu-secondary mt-1">
+                피드에서 반영할 항목을 선택하고 설정을 입력한 후 초안을 생성하세요.
+            </p>
+        </div>
+
+        <!-- ── 2-컬럼 레이아웃 ── -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- ════════════════════════════════
+                 왼쪽: 업데이트 피드 (7칸)
+            ════════════════════════════════ -->
+            <div class="lg:col-span-7 space-y-4">
+
+                <!-- 필터 바 + 제외 항목 탐색기 버튼 -->
+                <div class="card-base card-shadow p-4">
+                    <div class="flex flex-wrap items-center gap-3">
+
+                        <!-- 키워드 검색 -->
+                        <div class="relative flex-1 min-w-[160px]">
+                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-docu-tertiary pointer-events-none"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input id="keywordInput"
+                                   type="search"
+                                   placeholder="제목, 요약으로 검색"
+                                   class="form-input pl-9 w-full"
+                                   aria-label="키워드 검색"/>
+                        </div>
+
+                        <!-- 소스 타입 필터 -->
+                        <select id="sourceTypeFilter" class="form-select w-28" aria-label="소스 타입 필터">
+                            <option value="">소스 전체</option>
+                            <option value="DOCUMENT">문서</option>
+                            <option value="ISSUE">이슈</option>
+                        </select>
+
+                        <!-- 패치 분류 필터 -->
+                        <select id="patchTypeFilter" class="form-select w-32" aria-label="패치 분류 필터">
+                            <option value="">분류 전체</option>
+                            <option value="NEW">신규기능</option>
+                            <option value="CHANGE">변경사항</option>
+                            <option value="FIX">버그수정</option>
+                            <option value="MAINTENANCE">유지보수</option>
+                        </select>
+
+                        <!-- 제외된 항목 탐색기 버튼 -->
+                        <button onclick="openExcludedExplorer()"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium
+                                       rounded border border-divider text-docu-secondary
+                                       hover:border-docu-primary hover:text-docu-primary transition-colors whitespace-nowrap"
+                                aria-label="제외된 항목 탐색기 열기">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M12 4v16m8-8H4"/>
+                            </svg>
+                            제외된 항목 찾기
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- 피드 목록 -->
+                <div class="card-base card-shadow">
+
+                    <!-- 모드 탭 -->
+                    <div class="flex items-center gap-0 border-b border-divider px-4">
+                        <button id="tab-PENDING"
+                                onclick="switchMode('PENDING')"
+                                class="mode-tab px-5 py-3 text-sm font-medium border-b-2 transition-colors border-docu-primary text-docu-primary"
+                                aria-current="page">
+                            대기 중
+                        </button>
+                        <button id="tab-EXCLUDED"
+                                onclick="switchMode('EXCLUDED')"
+                                class="mode-tab px-5 py-3 text-sm font-medium border-b-2 transition-colors border-transparent text-docu-secondary hover:text-docu-ink">
+                            제외됨
+                        </button>
+                        <button id="tab-COMPLETED"
+                                onclick="switchMode('COMPLETED')"
+                                class="mode-tab px-5 py-3 text-sm font-medium border-b-2 transition-colors border-transparent text-docu-secondary hover:text-docu-ink">
+                            완료됨
+                        </button>
+                        <span id="feedCount" class="ml-auto mr-2 text-xs text-docu-tertiary"></span>
+                    </div>
+
+                    <!-- 테이블 헤더 -->
+                    <div class="grid grid-cols-12 gap-3 px-4 py-3 bg-surface-subtle border-b border-divider
+                                text-xs font-semibold text-docu-secondary uppercase tracking-wide">
+                        <div class="col-span-1 flex justify-center">
+                            <span class="sr-only">선택</span>
+                        </div>
+                        <div class="col-span-4">항목</div>
+                        <div class="col-span-2 text-center">소스</div>
+                        <div class="col-span-2 text-center">분류</div>
+                        <div class="col-span-2 text-center">생성일</div>
+                        <div class="col-span-1 text-right">작업</div>
+                    </div>
+
+                    <!-- 로딩 스켈레톤 -->
+                    <div id="feedLoading" class="py-16 text-center text-docu-secondary text-sm">
+                        <svg class="w-6 h-6 mx-auto mb-2 animate-spin text-docu-primary" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                        </svg>
+                        <p>불러오는 중...</p>
+                    </div>
+
+                    <!-- 피드 아이템 목록 (JS 렌더링) -->
+                    <div id="feedList" class="hidden divide-y divide-divider"></div>
+
+                    <!-- 빈 상태 -->
+                    <div id="feedEmpty" class="hidden py-16 text-center text-docu-secondary text-sm">
+                        <svg class="w-14 h-14 mx-auto mb-4 text-docu-tertiary" fill="none" stroke="currentColor"
+                             viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
+                                     a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 8.414V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p id="feedEmptyMessage" class="font-medium text-docu-ink mb-1">항목이 없습니다.</p>
+                        <p class="text-xs">필터 조건을 조정하거나 다른 모드를 선택해 보세요.</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════
+                 오른쪽: 패치노트 설정 (5칸)
+            ════════════════════════════════ -->
+            <div class="lg:col-span-5">
+                <div class="card-base card-shadow p-6 sticky top-24 space-y-5">
+
+                    <!-- 설정 패널 헤더 -->
+                    <div>
+                        <h2 class="text-base font-bold text-docu-ink">패치노트 설정</h2>
+                        <p class="text-xs text-docu-secondary mt-0.5">버전과 설정을 입력 후 초안을 생성합니다.</p>
+                    </div>
+
+                    <!-- 선택 항목 표시 -->
+                    <div class="flex items-center gap-2 p-3 bg-surface-subtle rounded-lg">
+                        <svg class="w-4 h-4 text-docu-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        <span class="text-xs text-docu-secondary">선택된 항목:
+                            <span id="selectedCountDisplay" class="font-semibold text-docu-ink">0개</span>
+                        </span>
+                    </div>
+
+                    <!-- 패치노트 제목 -->
+                    <div class="space-y-1.5">
+                        <label for="draftTitleInput"
+                               class="block text-xs font-semibold text-docu-secondary">
+                            패치노트 제목
+                            <span class="text-red-500 ml-0.5" aria-hidden="true">*</span>
+                        </label>
+                        <input id="draftTitleInput"
+                               type="text"
+                               placeholder="예: v1.2.0 업데이트"
+                               class="form-input w-full"
+                               maxlength="255"
+                               aria-required="true"
+                               aria-describedby="draftTitleError"/>
+                        <p id="draftTitleError" class="hidden text-xs text-red-500" role="alert"></p>
+                    </div>
+
+                    <!-- 버전 입력 -->
+                    <div class="space-y-1.5">
+                        <label for="versionInput"
+                               class="block text-xs font-semibold text-docu-secondary">
+                            버전
+                            <span class="text-red-500 ml-0.5" aria-hidden="true">*</span>
+                        </label>
+                        <input id="versionInput"
+                               type="text"
+                               placeholder="예: v1.2.0"
+                               class="form-input w-full"
+                               aria-required="true"
+                               aria-describedby="versionError"/>
+                        <p id="versionError" class="hidden text-xs text-red-500" role="alert"></p>
+                        <p class="text-xs text-docu-tertiary">v{major}.{minor}.{patch} 형식으로 입력하세요.</p>
+                    </div>
+
+                    <!-- 템플릿 (선택) -->
+                    <div class="space-y-1.5">
+                        <label for="templateInput"
+                               class="block text-xs font-semibold text-docu-secondary">
+                            템플릿 <span class="text-docu-tertiary font-normal">(선택)</span>
+                        </label>
+                        <textarea id="templateInput"
+                                  rows="3"
+                                  placeholder="패치노트 작성 양식이 있다면 입력하세요&#10;예: ## 신규 기능&#10;## 버그 수정"
+                                  class="form-textarea w-full text-xs resize-y"
+                                  aria-label="패치노트 템플릿 (선택)"></textarea>
+                    </div>
+
+                    <!-- 추가 프롬프트 (선택) -->
+                    <div class="space-y-1.5">
+                        <label for="additionalPromptInput"
+                               class="block text-xs font-semibold text-docu-secondary">
+                            추가 프롬프트 <span class="text-docu-tertiary font-normal">(선택)</span>
+                        </label>
+                        <textarea id="additionalPromptInput"
+                                  rows="2"
+                                  placeholder="AI에게 추가로 전달할 지침을 입력하세요&#10;예: 결제 관련 이슈를 강조해 주세요."
+                                  class="form-textarea w-full text-xs resize-y"
+                                  aria-label="추가 프롬프트 (선택)"></textarea>
+                    </div>
+
+                    <!-- 구분선 -->
+                    <div class="border-t border-divider"></div>
+
+                    <!-- 초안 생성 버튼 -->
+                    <button id="generateBtn"
+                            onclick="startGeneration()"
+                            class="btn-primary w-full flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        초안 생성하기
+                    </button>
+
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- 페이지 메타 (JS 참조용) -->
+    <input type="hidden" id="publicId" th:value="${publicId}"/>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         항목 상세 모달
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="detailModal"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+         role="dialog" aria-modal="true" aria-labelledby="detailModalTitle"
+         onclick="if(event.target===this) closeDetailModal()">
+        <div class="card-modal w-full max-w-xl max-h-[85vh] flex flex-col">
+
+            <!-- 헤더 -->
+            <div class="flex items-start justify-between px-8 pt-8 pb-4 border-b border-divider">
+                <div class="flex-1 min-w-0 pr-4">
+                    <div id="detailBadges" class="flex items-center gap-2 mb-2"></div>
+                    <h2 id="detailModalTitle"
+                        class="text-xl font-bold text-docu-ink leading-snug break-words"></h2>
+                </div>
+                <button onclick="closeDetailModal()"
+                        class="flex-shrink-0 text-docu-secondary hover:text-docu-ink"
+                        aria-label="닫기">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 본문 -->
+            <div class="flex-1 overflow-y-auto px-8 py-6 space-y-5">
+
+                <!-- 원본 삭제 경고 배너 -->
+                <div id="detailDeletedBanner"
+                     class="hidden flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>원본 소스가 삭제되어 원본 페이지로 이동할 수 없습니다.</span>
+                </div>
+
+                <!-- 요약 -->
+                <div>
+                    <p class="text-xs font-semibold text-docu-secondary uppercase tracking-wide mb-1">요약</p>
+                    <p id="detailSummary" class="text-sm text-docu-ink leading-relaxed"></p>
+                </div>
+
+                <!-- 메타 정보 그리드 -->
+                <div class="grid grid-cols-2 gap-4 p-4 bg-surface-subtle rounded-lg">
+                    <div>
+                        <p class="text-xs font-semibold text-docu-secondary mb-1">소스 타입</p>
+                        <p id="detailSourceType" class="text-sm text-docu-ink font-medium"></p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-docu-secondary mb-1">패치 분류</p>
+                        <p id="detailPatchType" class="text-sm text-docu-ink font-medium"></p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-docu-secondary mb-1">상태</p>
+                        <p id="detailStatus" class="text-sm text-docu-ink font-medium"></p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-docu-secondary mb-1">원본 생성일</p>
+                        <p id="detailCreatedAt" class="text-sm text-docu-ink font-medium"></p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 하단 버튼 -->
+            <div class="flex items-center justify-between px-8 py-5 border-t border-divider bg-surface-subtle">
+
+                <!-- 원본 보기 링크 -->
+                <a id="detailSourceLink"
+                   href="#"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="inline-flex items-center gap-1.5 text-sm text-docu-primary hover:underline"
+                   aria-label="원본 소스 보기">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    원본 보기
+                </a>
+                <span id="detailSourceLinkDisabled"
+                      class="hidden inline-flex items-center gap-1.5 text-sm text-docu-tertiary cursor-not-allowed"
+                      title="원본이 삭제되어 이동할 수 없습니다.">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    원본 보기 (삭제됨)
+                </span>
+
+                <div class="flex items-center gap-3">
+                    <button id="detailExcludeBtn"
+                            onclick="detailExclude()"
+                            class="hidden btn-secondary">
+                        제외
+                    </button>
+                    <button id="detailRestoreBtn"
+                            onclick="detailRestore()"
+                            class="hidden btn-secondary">
+                        복원
+                    </button>
+                    <button onclick="closeDetailModal()" class="btn-secondary">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         제외 확인 모달
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="excludeModal"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+         role="dialog" aria-modal="true" aria-labelledby="excludeModalTitle"
+         onclick="if(event.target===this) closeExcludeModal()">
+        <div class="card-modal w-full max-w-md">
+
+            <!-- 헤더 -->
+            <div class="flex items-center justify-between px-8 pt-8 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center" aria-hidden="true">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667
+                                     1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <h2 id="excludeModalTitle" class="text-xl font-bold text-docu-ink">피드에서 제외</h2>
+                </div>
+                <button onclick="closeExcludeModal()" class="text-docu-secondary hover:text-docu-ink"
+                        aria-label="닫기">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 본문 -->
+            <div class="px-8 pb-4">
+                <p class="text-sm text-docu-secondary mb-3">
+                    이 항목을 패치노트 피드에서 제외하시겠습니까?
+                </p>
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p class="text-xs text-amber-800">
+                        제외된 항목은 패치노트 생성 시 포함되지 않습니다.
+                        <strong>제외됨</strong> 탭에서 언제든지 복원할 수 있습니다.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 하단 버튼 -->
+            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                <button onclick="closeExcludeModal()" class="btn-secondary">취소</button>
+                <button onclick="confirmExclude()" class="btn-danger">제외</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         제외된 항목 탐색기 모달
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="explorerModal"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+         role="dialog" aria-modal="true" aria-labelledby="explorerModalTitle"
+         onclick="if(event.target===this) closeExcludedExplorer()">
+        <div class="card-modal w-full max-w-2xl max-h-[85vh] flex flex-col">
+
+            <!-- 헤더 -->
+            <div class="flex items-center justify-between px-8 pt-8 pb-4 border-b border-divider">
+                <h2 id="explorerModalTitle" class="text-xl font-bold text-docu-ink">제외된 항목 탐색기</h2>
+                <button onclick="closeExcludedExplorer()"
+                        class="text-docu-secondary hover:text-docu-ink" aria-label="닫기">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 탭 (EXCLUDED / COMPLETED) -->
+            <div class="flex border-b border-divider px-4">
+                <button id="explorer-tab-EXCLUDED"
+                        onclick="switchExplorerMode('EXCLUDED')"
+                        class="explorer-tab px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors border-docu-primary text-docu-primary"
+                        aria-current="page">
+                    제외됨
+                </button>
+                <button id="explorer-tab-COMPLETED"
+                        onclick="switchExplorerMode('COMPLETED')"
+                        class="explorer-tab px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors border-transparent text-docu-secondary hover:text-docu-ink">
+                    완료됨
+                </button>
+                <span id="explorerCount" class="ml-auto self-center text-xs text-docu-tertiary mr-2"></span>
+            </div>
+
+            <!-- 탐색기 목록 -->
+            <div class="flex-1 overflow-y-auto">
+                <div id="explorerLoading" class="py-12 text-center text-docu-secondary text-sm">
+                    <svg class="w-5 h-5 mx-auto mb-2 animate-spin text-docu-primary" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    <p>불러오는 중...</p>
+                </div>
+                <div id="explorerList" class="hidden divide-y divide-divider"></div>
+                <div id="explorerEmpty" class="hidden py-12 text-center text-docu-secondary text-sm">
+                    <p class="font-medium text-docu-ink">항목이 없습니다.</p>
+                </div>
+            </div>
+
+            <!-- 하단 버튼 -->
+            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                <button onclick="closeExcludedExplorer()" class="btn-secondary">닫기</button>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+
+<th:block layout:fragment="scripts">
+    <script th:src="@{/js/patchnote/pending-item-feed.js}"></script>
+</th:block>
+</body>
+</html>

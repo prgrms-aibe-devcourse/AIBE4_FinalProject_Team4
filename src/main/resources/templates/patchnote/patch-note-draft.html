@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/service-layout}">
+
+<head>
+    <title>패치노트 생성 결과</title>
+</head>
+
+<body>
+<th:block layout:fragment="content">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         AI 처리 오버레이 (progress 이벤트 동안 표시)
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="processingOverlay"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+         role="status" aria-live="polite">
+        <div class="card-base p-10 w-full max-w-md text-center space-y-6">
+
+            <!-- 아이콘 + 스피너 -->
+            <div class="relative w-20 h-20 mx-auto">
+                <div class="absolute inset-0 rounded-full border-4 border-docu-primary/20"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-t-docu-primary animate-spin"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-docu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 단계 제목 -->
+            <div>
+                <p id="overlayStepTitle" class="text-lg font-bold text-docu-ink">초안 생성 준비 중...</p>
+                <p id="overlayStepDesc" class="text-sm text-docu-secondary mt-1">잠시만 기다려 주세요.</p>
+            </div>
+
+            <!-- 진행 바 -->
+            <div class="w-full bg-surface-subtle rounded-full h-2">
+                <div id="overlayProgressBar"
+                     class="bg-docu-primary h-2 rounded-full transition-all duration-700 ease-out"
+                     style="width: 10%"
+                     role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100">
+                </div>
+            </div>
+
+            <!-- 단계 표시 -->
+            <div class="flex items-center justify-center gap-6 text-xs text-docu-tertiary">
+                <div id="step1" class="flex items-center gap-1.5">
+                    <div class="w-5 h-5 rounded-full border-2 border-docu-tertiary flex items-center justify-center">
+                        <span class="step-num">1</span>
+                    </div>
+                    <span>문서 검색</span>
+                </div>
+                <div class="w-8 h-px bg-divider"></div>
+                <div id="step2" class="flex items-center gap-1.5">
+                    <div class="w-5 h-5 rounded-full border-2 border-docu-tertiary flex items-center justify-center">
+                        <span class="step-num">2</span>
+                    </div>
+                    <span>초안 생성</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         에러 오버레이 (오류 발생 시 표시)
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="errorOverlay"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+         role="alert">
+        <div class="card-base p-10 w-full max-w-md text-center space-y-5">
+            <div class="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center" aria-hidden="true">
+                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-lg font-bold text-docu-ink mb-1">초안 생성 실패</p>
+                <p id="errorMessage" class="text-sm text-docu-secondary"></p>
+            </div>
+            <div class="flex justify-center gap-3">
+                <button onclick="goToList()" class="btn-secondary">목록으로</button>
+                <button onclick="retryGeneration()" class="btn-primary">다시 생성하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         페이지 본문
+    ══════════════════════════════════════════════════════════════ -->
+    <section class="space-y-6">
+
+        <!-- ── 페이지 헤더 ── -->
+        <div class="flex items-start justify-between">
+            <div>
+                <!-- 브레드크럼 (← 패치노트 목록) -->
+                <button onclick="handleBackNavigation()"
+                        class="inline-flex items-center gap-1.5 text-sm text-docu-secondary hover:text-docu-ink mb-3 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    패치노트 목록
+                </button>
+                <div th:replace="~{common/fragments/ui-components :: breadcrumb('패치노트 생성 결과')}"></div>
+                <h1 class="text-h1 text-docu-ink mt-3">생성 결과 리포트</h1>
+                <p class="text-sm text-docu-secondary mt-1">
+                    AI가 생성한 패치노트 초안입니다. 내용을 확인하고 저장하세요.
+                </p>
+            </div>
+
+            <!-- 우측 버튼 -->
+            <div class="flex items-center gap-3 flex-shrink-0 ml-6 mt-1">
+                <button id="copyBtn"
+                        onclick="copyDraftContent()"
+                        disabled
+                        class="inline-flex items-center gap-2 btn-secondary disabled:opacity-40 disabled:cursor-not-allowed">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    복사하기
+                </button>
+                <button id="saveBtn"
+                        onclick="openSaveConfirmModal()"
+                        disabled
+                        class="inline-flex items-center gap-2 btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                    </svg>
+                    저장하기
+                </button>
+            </div>
+        </div>
+
+        <!-- ── 본문 2-컬럼 ── -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- 왼쪽: 생성된 초안 -->
+            <div class="lg:col-span-8">
+                <div class="card-base card-shadow">
+
+                    <!-- 카드 헤더 -->
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
+                        <h2 class="text-sm font-semibold text-docu-ink">생성된 패치노트 초안</h2>
+                        <div id="streamingBadge"
+                             class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                                    text-xs font-medium bg-emerald-100 text-emerald-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            생성 중
+                        </div>
+                    </div>
+
+                    <!-- 초안 본문 (markdown) -->
+                    <div class="px-6 py-6 min-h-[400px]">
+                        <div id="draftContent"
+                             class="prose prose-sm max-w-none
+                                    prose-headings:text-docu-ink prose-headings:font-bold
+                                    prose-p:text-docu-secondary prose-li:text-docu-secondary
+                                    prose-strong:text-docu-ink prose-code:text-docu-primary
+                                    prose-h2:text-base prose-h3:text-sm">
+                        </div>
+                        <!-- 커서 (스트리밍 중) -->
+                        <span id="streamCursor"
+                              class="hidden inline-block w-0.5 h-4 bg-docu-primary align-middle animate-pulse ml-0.5"
+                              aria-hidden="true"></span>
+                    </div>
+
+                    <!-- 카드 푸터 -->
+                    <div class="flex items-center justify-between px-6 py-3 border-t border-divider
+                                bg-surface-subtle text-xs text-docu-tertiary">
+                        <span id="wordCountBadge"></span>
+                        <span id="generatedAtBadge"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 반영된 출처 목록 -->
+            <div class="lg:col-span-4">
+                <div class="card-base card-shadow sticky top-24">
+
+                    <!-- 헤더 -->
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-divider">
+                        <h2 class="text-sm font-semibold text-docu-ink">반영된 출처</h2>
+                        <span id="sourceCountBadge"
+                              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                     bg-surface-subtle text-docu-secondary">
+                            0건
+                        </span>
+                    </div>
+
+                    <!-- 출처 목록 (JS 렌더링) -->
+                    <div id="sourceList"
+                         class="divide-y divide-divider max-h-[500px] overflow-y-auto">
+                    </div>
+
+                    <!-- 출처 없음 -->
+                    <div id="sourceEmpty"
+                         class="px-5 py-8 text-center text-xs text-docu-tertiary">
+                        출처 정보를 수집 중입니다...
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- 페이지 메타 -->
+    <input type="hidden" id="publicId" th:value="${publicId}"/>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         버전 중복 모달
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="versionDuplicateModal"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+         role="dialog" aria-modal="true" aria-labelledby="versionDuplicateTitle">
+        <div class="card-modal w-full max-w-md">
+            <div class="flex items-center gap-3 px-8 pt-8 pb-4">
+                <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center" aria-hidden="true">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h2 id="versionDuplicateTitle" class="text-xl font-bold text-docu-ink">버전 중복</h2>
+            </div>
+            <div class="px-8 pb-4">
+                <p id="versionDuplicateMessage" class="text-sm text-docu-secondary"></p>
+            </div>
+            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                <button onclick="closeVersionDuplicateModal()" class="btn-secondary">취소</button>
+                <button onclick="goToList()" class="btn-secondary">기존 목록 보기</button>
+                <button onclick="overwriteAndRegenerate()" class="btn-danger">새 버전으로 덮어쓰기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         컨텍스트 초과 경고 모달
+         (context_overflow SSE 이벤트 수신 시 표시 — 생성은 계속 진행 중)
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="contextOverflowModal"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+         role="dialog" aria-modal="true" aria-labelledby="contextOverflowTitle">
+        <div class="card-modal w-full max-w-lg">
+            <div class="flex items-center gap-3 px-8 pt-8 pb-4">
+                <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0" aria-hidden="true">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h2 id="contextOverflowTitle" class="text-xl font-bold text-docu-ink">참조 문서 초과</h2>
+            </div>
+            <div class="px-8 pb-2 space-y-3">
+                <p class="text-sm text-docu-secondary">
+                    선택한 항목의 참조 문서가 권장 용량을 초과했습니다.
+                </p>
+                <!-- 사용량 표시 바 -->
+                <div class="bg-surface-subtle rounded-lg p-4 space-y-2">
+                    <div class="flex justify-between text-xs text-docu-secondary">
+                        <span>현재 사용량</span>
+                        <span id="contextOverflowPercent" class="font-semibold text-amber-600">--%</span>
+                    </div>
+                    <div class="w-full bg-divider rounded-full h-2">
+                        <div id="contextOverflowBar"
+                             class="bg-amber-500 h-2 rounded-full transition-all duration-500"
+                             style="width: 0%">
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-docu-tertiary">권장: 100% 이하 · 초과 시 일부 참조 문서가 자동으로 생략될 수 있습니다.</p>
+                </div>
+                <p class="text-sm text-docu-secondary">
+                    중요도가 낮은 항목을 제외하거나, 현재 상태로 계속 생성하시겠습니까?
+                </p>
+            </div>
+            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                <button onclick="goToPendingItems()" class="btn-secondary">항목 제외하기</button>
+                <button onclick="closeContextOverflowModal()" class="btn-primary">요약 모드로 계속</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         저장 확인 모달
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="saveConfirmModal"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+         role="dialog" aria-modal="true" aria-labelledby="saveConfirmTitle"
+         onclick="if(event.target===this) closeSaveConfirmModal()">
+        <div class="card-modal w-full max-w-md">
+            <div class="px-8 pt-8 pb-4">
+                <h2 id="saveConfirmTitle" class="text-xl font-bold text-docu-ink mb-2">패치노트 저장</h2>
+                <p class="text-sm text-docu-secondary">현재 초안을 패치노트로 저장하시겠습니까?</p>
+                <div id="saveConfirmMeta" class="mt-3 p-3 bg-surface-subtle rounded-lg text-xs text-docu-secondary space-y-1"></div>
+            </div>
+            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                <button onclick="closeSaveConfirmModal()" class="btn-secondary">취소</button>
+                <button id="saveConfirmBtn" onclick="savePatchNote()" class="btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         이탈 확인 모달 (저장 전 페이지 이동 시)
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="leaveConfirmModal"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+         role="dialog" aria-modal="true" aria-labelledby="leaveConfirmTitle">
+        <div class="card-modal w-full max-w-md">
+            <div class="px-8 pt-8 pb-4">
+                <h2 id="leaveConfirmTitle" class="text-xl font-bold text-docu-ink mb-2">페이지 이동</h2>
+                <p class="text-sm text-docu-secondary">생성된 초안이 저장되지 않았습니다. 페이지를 이동하시겠습니까?</p>
+            </div>
+            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                <button onclick="closeLeaveConfirmModal()" class="btn-secondary">머물기</button>
+                <button id="leaveConfirmBtn" class="btn-danger">이동</button>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+
+<th:block layout:fragment="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script th:src="@{/js/patchnote/patch-note-draft.js}"></script>
+</th:block>
+</body>
+</html>

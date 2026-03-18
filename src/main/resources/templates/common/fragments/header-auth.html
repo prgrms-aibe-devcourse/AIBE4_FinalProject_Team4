@@ -3,7 +3,7 @@
 <body>
 
 <header th:fragment="header-auth"
-        class="fixed top-0 left-0 right-0 z-50 h-header bg-surface-card border-b border-divider
+        class="fixed top-0 left-0 right-0 z-50 h-header bg-surface-sidebar border-b border-divider
                flex items-center justify-between px-4 sm:px-6"
         role="banner">
     <a href="/member/dashboard"
@@ -19,7 +19,7 @@
 <div th:fragment="user-bar"
      th:with="hasLogo=${showLogoInBar != null and showLogoInBar}"
      th:classappend="${hasLogo} ? 'justify-between' : 'justify-end'"
-     class="h-header bg-surface-card border-b border-divider
+     class="h-header bg-surface-sidebar border-b border-divider
             flex items-center px-4 sm:px-6 shrink-0"
      role="region"
      aria-label="사용자 정보 바">
@@ -186,7 +186,7 @@
             aria-controls="logout-modal"
             aria-label="로그아웃"
             class="inline-flex items-center gap-1.5 px-3 py-2
-                   border-2 border-docu-ink bg-surface-base text-sm font-bold text-docu-ink
+                   border-2 border-docu-ink bg-surface-card text-sm font-bold text-docu-ink
                    shadow-docu-sm transition-transform
                    hover:bg-white
                    active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
