@@ -52,9 +52,8 @@ class S3FileStoreTest {
     class Save {
 
         @Test
-        @DisplayName("PDF 파일 저장 시 UUID 기반 저장키를 반환한다")
-        void returnsUuidBasedKey() throws IOException {
-            // PDF 매직 바이트 (%PDF-1.4)
+        @DisplayName("PDF 파일 저장 시 FileStoreResult를 반환한다")
+        void returnsFileStoreResult() throws IOException {
             byte[] pdfBytes = {0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34};
 
             MultipartFile file = mock(MultipartFile.class);
@@ -65,15 +64,16 @@ class S3FileStoreTest {
                     .willReturn(new ByteArrayInputStream(pdfBytes))
                     .willReturn(new ByteArrayInputStream(pdfBytes));
 
-            String storedKey = s3FileStore.save(file);
+            FileStoreResult result = s3FileStore.save(file);
 
-            assertThat(storedKey).matches("[a-f0-9\\-]+\\.pdf");
+            assertThat(result.storedKey()).matches("[a-f0-9\\-]+\\.pdf");
+            assertThat(result.extension()).isEqualTo("pdf");
 
             then(s3Template)
                     .should()
                     .upload(
                             eq(BUCKET),
-                            eq(storedKey),
+                            eq(result.storedKey()),
                             any(InputStream.class),
                             any(ObjectMetadata.class));
         }
@@ -91,9 +91,16 @@ class S3FileStoreTest {
         }
 
         @Test
+        @DisplayName("null 파일이면 BadRequestException을 던진다")
+        void throwsExceptionWhenFileIsNull() {
+            assertThatThrownBy(() -> s3FileStore.save(null))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("비어 있습니다");
+        }
+
+        @Test
         @DisplayName("허용되지 않는 파일 형식이면 BadRequestException을 던진다")
         void throwsExceptionWhenMimeTypeNotAllowed() throws IOException {
-            // ELF 바이너리 매직 바이트 (허용되지 않는 형식)
             byte[] elfBytes = {0x7F, 0x45, 0x4C, 0x46};
 
             MultipartFile file = mock(MultipartFile.class);
@@ -105,6 +112,59 @@ class S3FileStoreTest {
             assertThatThrownBy(() -> s3FileStore.save(file))
                     .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("허용되지 않는 파일 형식");
+        }
+
+        @Test
+        @DisplayName("파일 스트림 처리 중 IOException이 발생하면 StorageException을 던진다")
+        void throwsStorageExceptionOnIOException() throws IOException {
+            byte[] pdfBytes = {0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34};
+
+            MultipartFile file = mock(MultipartFile.class);
+            given(file.isEmpty()).willReturn(false);
+            given(file.getSize()).willReturn((long) pdfBytes.length);
+            given(file.getOriginalFilename()).willReturn("document.pdf");
+            given(file.getInputStream())
+                    .willReturn(new ByteArrayInputStream(pdfBytes))
+                    .willThrow(new IOException("stream error"));
+
+            assertThatThrownBy(() -> s3FileStore.save(file))
+                    .isInstanceOf(StorageException.class)
+                    .hasMessageContaining("파일 스트림 처리 중 오류");
+        }
+
+        @Test
+        @DisplayName("S3 업로드 실패 시 StorageException을 던진다")
+        void throwsStorageExceptionOnS3UploadFailure() throws IOException {
+            byte[] pdfBytes = {0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34};
+
+            MultipartFile file = mock(MultipartFile.class);
+            given(file.isEmpty()).willReturn(false);
+            given(file.getSize()).willReturn((long) pdfBytes.length);
+            given(file.getOriginalFilename()).willReturn("document.pdf");
+            given(file.getInputStream())
+                    .willReturn(new ByteArrayInputStream(pdfBytes))
+                    .willReturn(new ByteArrayInputStream(pdfBytes));
+
+            given(s3Template.upload(eq(BUCKET), any(String.class), any(InputStream.class),
+                    any(ObjectMetadata.class)))
+                    .willThrow(new RuntimeException("S3 upload failed"));
+
+            assertThatThrownBy(() -> s3FileStore.save(file))
+                    .isInstanceOf(StorageException.class)
+                    .hasMessageContaining("S3 파일 업로드에 실패");
+        }
+
+        @Test
+        @DisplayName("파일 형식 감지 중 IOException이 발생하면 StorageException을 던진다")
+        void throwsStorageExceptionOnContentTypeDetectionFailure() throws IOException {
+            MultipartFile file = mock(MultipartFile.class);
+            given(file.isEmpty()).willReturn(false);
+            given(file.getSize()).willReturn(100L);
+            given(file.getInputStream()).willThrow(new IOException("read error"));
+
+            assertThatThrownBy(() -> s3FileStore.save(file))
+                    .isInstanceOf(StorageException.class)
+                    .hasMessageContaining("파일 형식 감지에 실패");
         }
     }
 
