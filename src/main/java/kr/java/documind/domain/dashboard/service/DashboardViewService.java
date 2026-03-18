@@ -99,6 +99,10 @@ public class DashboardViewService {
         dashboardViewRepository.delete(view);
     }
 
+    public void validateSingleWidget(WidgetConfig widget) {
+        visualizationValidator.validate(widget);
+    }
+
     // ── Validation helpers ────────────────────────────────────────────────────
 
     private void validateViewLimit(UUID projectId) {

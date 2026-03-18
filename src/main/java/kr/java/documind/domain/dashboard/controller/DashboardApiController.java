@@ -8,6 +8,7 @@ import java.util.UUID;
 import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.dashboard.model.dto.request.DashboardViewCreateRequest;
 import kr.java.documind.domain.dashboard.model.dto.request.DashboardViewUpdateRequest;
+import kr.java.documind.domain.dashboard.model.dto.request.WidgetConfig;
 import kr.java.documind.domain.dashboard.model.dto.response.DashboardPresetResponse;
 import kr.java.documind.domain.dashboard.model.dto.response.DashboardViewResponse;
 import kr.java.documind.domain.dashboard.model.dto.response.DashboardViewSummaryResponse;
@@ -84,6 +85,15 @@ public class DashboardApiController {
     public ResponseEntity<ApiResponse<Void>> deleteView(
             @CurrentProject ProjectRequestContext ctx, @PathVariable UUID viewId) {
         dashboardViewService.deleteView(ctx.projectId(), viewId);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "위젯 설정 검증 (Dry-run)")
+    @RequireProjectMember
+    @PostMapping("/{publicId}/dashboard/widgets/validate")
+    public ResponseEntity<ApiResponse<Void>> validateWidget(
+            @CurrentProject ProjectRequestContext ctx, @RequestBody WidgetConfig widget) {
+        dashboardViewService.validateSingleWidget(widget);
         return ResponseEntity.ok(ApiResponse.success());
     }
 

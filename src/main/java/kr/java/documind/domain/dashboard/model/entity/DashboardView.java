@@ -1,6 +1,5 @@
 package kr.java.documind.domain.dashboard.model.entity;
 
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,7 +15,8 @@ import kr.java.documind.global.entity.UuidBaseEntity;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "dashboard_view")
@@ -37,8 +37,8 @@ public class DashboardView extends UuidBaseEntity {
     @Column(length = 500)
     private String description;
 
-    @Type(JsonType.class)
-    @Column(name = "layout_config", columnDefinition = "jsonb", nullable = false)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
     private List<WidgetConfig> layoutConfig = new ArrayList<>();
 
     @Column(name = "global_time_range", nullable = false, length = 20)
@@ -58,6 +58,11 @@ public class DashboardView extends UuidBaseEntity {
             List<WidgetConfig> layoutConfig,
             String globalTimeRange,
             Integer refreshIntervalMs) {
+
+        if (layoutConfig != null && layoutConfig.size() > 10) {
+            throw new IllegalArgumentException("뷰당 위젯은 최대 10개까지만 허용됩니다.");
+        }
+
         DashboardView view = new DashboardView();
         view.project = project;
         view.createdBy = createdBy;
@@ -76,6 +81,10 @@ public class DashboardView extends UuidBaseEntity {
             List<WidgetConfig> layoutConfig,
             String globalTimeRange,
             Integer refreshIntervalMs) {
+        if (layoutConfig != null && layoutConfig.size() > 10) {
+            throw new IllegalArgumentException("뷰당 위젯은 최대 10개까지만 허용됩니다.");
+        }
+
         if (name != null && !name.isBlank()) {
             this.name = name;
         }

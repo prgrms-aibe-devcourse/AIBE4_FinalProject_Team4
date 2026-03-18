@@ -33,6 +33,7 @@ document.addEventListener('alpine:init', () => {
         modal: {
             open: false,
             step: 1,
+            isEdit: false,
             draftWidget: null,
             queryResult: null,
             isPreviewLoading: false,
@@ -144,6 +145,38 @@ document.addEventListener('alpine:init', () => {
             }
             this.stopRefresh();
             await this.loadView(viewId);
+        },
+
+        // ── 뷰 삭제 ──────────────────────────────────────────────
+        async deleteView() {
+            if (!this.currentView) return;
+
+            if (!confirm(`'${this.currentView.name}' 대시보드를 정말 삭제하시겠습니까?`)) {
+                return;
+            }
+
+            try {
+                const res = await callApi(
+                    `/api/projects/${this.publicId}/dashboard/views/${this.currentView.id}`,
+                    { method: 'DELETE' }
+                );
+
+                if (res.success) {
+                    window.showTopToast?.('대시보드가 삭제되었습니다.', 'success');
+
+                    this.currentView = null;
+                    this.widgets = [];
+                    this.isDirty = false;
+                    this.editMode = false;
+                    this.stopRefresh();
+
+                    await this.loadViews();
+                } else {
+                    window.showTopToast?.(res.error?.message || '삭제 실패', 'danger');
+                }
+            } catch (e) {
+                window.showTopToast?.('삭제 중 오류가 발생했습니다.', 'danger');
+            }
         },
 
         // ── 위젯 쿼리 실행 ─────────────────────────────────────────────────────
@@ -433,6 +466,7 @@ document.addEventListener('alpine:init', () => {
             this.modal = {
                 open: true,
                 step: 1,
+                isEdit: false,
                 draftWidget: {
                     id: 'w-' + Date.now(),
                     title: '',
@@ -572,12 +606,61 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ── Step 2: 위젯 확정 ─────────────────────────────────────────────────
-        confirmWidget() {
+        async editWidget(widgetId) {
+            const target = this.widgets.find(w => w.id === widgetId);
+            if (!target) return;
+
+            this.modal = {
+                open: true,
+                step: 1,
+                isEdit: true,
+                draftWidget: JSON.parse(JSON.stringify(target)),
+                queryResult: null,
+                isPreviewLoading: false,
+                error: null,
+            };
+
+            await this.previewQuery();
+        },
+
+        async confirmWidget() {
             const widget = { ...this.modal.draftWidget };
 
             if (!widget.title.trim()) {
                 this.modal.error = '위젯 제목을 입력하세요.';
                 return;
+            }
+
+            // 백엔드 Dry-run 검증
+            this.modal.isPreviewLoading = true;
+            this.modal.error = null;
+            try {
+                const body = {
+                    id: widget.id,
+                    title: widget.title,
+                    type: widget.type,
+                    layout: widget.layout,
+                    query: {
+                        ...widget.query,
+                        selects: (widget.query.selects || []).map(({ _id, ...rest }) => rest),
+                        wheres: (widget.query.wheres || []).map(({ _id, ...rest }) => rest),
+                        groupBy: (widget.query.groupBy || []).filter(g => g),
+                    },
+                    visualization: widget.visualization,
+                };
+                const res = await callApi(
+                    `/api/projects/${this.publicId}/dashboard/widgets/validate`,
+                    { method: 'POST', body: JSON.stringify(body) }
+                );
+                if (!res.success) {
+                    this.modal.error = res.error?.message || '위젯 설정이 올바르지 않습니다.';
+                    return;
+                }
+            } catch (e) {
+                this.modal.error = e.message || '검증 중 오류가 발생했습니다.';
+                return;
+            } finally {
+                this.modal.isPreviewLoading = false;
             }
 
             // 레이아웃 자동 배치 (간단히 마지막 행 아래에 추가)
