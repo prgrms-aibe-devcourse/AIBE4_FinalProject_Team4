@@ -8,7 +8,8 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -219,7 +220,7 @@ class InvitationServiceTest {
                             inviter,
                             targetEmail,
                             ProjectRole.MEMBER,
-                            LocalDateTime.now().plusHours(24));
+                            OffsetDateTime.now(ZoneOffset.UTC).plusHours(24));
 
             given(projectRepository.findByPublicId(publicId)).willReturn(Optional.of(project));
             given(memberService.getMember(inviterMemberId)).willReturn(inviter);
@@ -335,7 +336,7 @@ class InvitationServiceTest {
                             inviter,
                             "target@example.com",
                             ProjectRole.MEMBER,
-                            LocalDateTime.now().minusHours(1));
+                            OffsetDateTime.now(ZoneOffset.UTC).minusHours(1));
             ReflectionTestUtils.setField(invitation, "id", invitationId);
 
             stubRedisForToken(rawToken, invitationId);
@@ -373,7 +374,7 @@ class InvitationServiceTest {
                             inviter,
                             targetEmail,
                             targetRole,
-                            LocalDateTime.now().plusHours(24));
+                            OffsetDateTime.now(ZoneOffset.UTC).plusHours(24));
             UUID invitationId = UUID.randomUUID();
             ReflectionTestUtils.setField(invitation, "id", invitationId);
 
@@ -584,7 +585,7 @@ class InvitationServiceTest {
                             inviter,
                             targetEmail,
                             ProjectRole.MEMBER,
-                            LocalDateTime.now().plusHours(24));
+                            OffsetDateTime.now(ZoneOffset.UTC).plusHours(24));
             ReflectionTestUtils.setField(invitation, "id", invitationId);
 
             Member member = createMember(targetEmail, GlobalRole.EMPLOYEE);

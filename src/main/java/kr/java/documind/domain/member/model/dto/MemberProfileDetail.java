@@ -1,5 +1,6 @@
 package kr.java.documind.domain.member.model.dto;
 
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.domain.member.model.entity.Company;
@@ -24,7 +25,11 @@ public record MemberProfileDetail(
         boolean isAdmin = member.getGlobalRole() == GlobalRole.ADMIN;
 
         String formattedDate =
-                member.getCreatedAt() != null ? member.getCreatedAt().format(DATE_FMT) : null;
+                member.getCreatedAt() != null
+                        ? member.getCreatedAt()
+                                .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
+                                .format(DATE_FMT)
+                        : null;
 
         return new MemberProfileDetail(
                 member.getName(),

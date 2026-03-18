@@ -16,6 +16,7 @@ import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClien
 import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingStatusSseManager;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
+import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.StorageException;
 import kr.java.documind.global.storage.FileStore;
 import lombok.RequiredArgsConstructor;
@@ -87,6 +88,7 @@ public class EtlService {
             metadata.put("source_id", sourceId);
             metadata.put("chunk_index", i);
             metadata.put("total_chunks", totalChunks);
+            metadata.put("source_type", "DOCUMENT");
         }
     }
 
@@ -96,7 +98,7 @@ public class EtlService {
     }
 
     private void cleanupVectors(Long sourceId) {
-        vectorStoreManager.deleteBySourceId(sourceId);
+        vectorStoreManager.deleteBySourceId(sourceId, SourceType.DOCUMENT);
     }
 
     private Path createTempFile(String storedKey) {

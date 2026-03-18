@@ -7,11 +7,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-/**
- * 이슈 해결 이벤트 리스너
- *
- * <p>이슈가 RESOLVED 상태로 변경되면 AI 패치노트 생성을 트리거
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor

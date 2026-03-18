@@ -17,7 +17,9 @@ services:
 
   # Database (PostgreSQL + PGVector)
   postgres:
-    image: pgvector/pgvector:pg16
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     container_name: documind-postgres
     env_file: .env
     ports:
@@ -28,6 +30,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
 
   # Redis
   redis:
