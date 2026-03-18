@@ -23,6 +23,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ReferenceExtractor {
 
+    private static final int LOG_TEXT_MAX_LENGTH = 200;
+
     private final DocumentMetadataManager documentMetadataManager;
 
     public List<ReferenceResponse> extract(ChatClientResponse response) {
@@ -74,7 +76,9 @@ public class ReferenceExtractor {
                     sourceId,
                     pageNumber,
                     chunkText.length(),
-                    chunkText.length() > 200 ? chunkText.substring(0, 200) + "..." : chunkText);
+                    chunkText.length() > LOG_TEXT_MAX_LENGTH
+                            ? chunkText.substring(0, LOG_TEXT_MAX_LENGTH) + "..."
+                            : chunkText);
 
             references.add(
                     new ReferenceResponse(
