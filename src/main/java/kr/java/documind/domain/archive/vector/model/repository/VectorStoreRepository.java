@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.StorageException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
@@ -22,10 +23,10 @@ public class VectorStoreRepository {
                     + " VALUES (?, ?, ?::jsonb, ?::vector)";
 
     private static final String DELETE_BY_SOURCE_ID_SQL =
-            "DELETE FROM vector_store WHERE source_id = ?";
+            "DELETE FROM vector_store WHERE source_id = ? AND metadata->>'source_type' = ?";
 
     private static final String FIND_CONTENTS_BY_SOURCE_ID_SQL =
-            "SELECT content FROM vector_store WHERE source_id = ?"
+            "SELECT content FROM vector_store WHERE source_id = ? AND metadata->>'source_type' = ?"
                     + " ORDER BY COALESCE((metadata->>'chunk_index')::int, 0) LIMIT ?";
 
     private final JdbcTemplate jdbcTemplate;
@@ -55,13 +56,17 @@ public class VectorStoreRepository {
                 });
     }
 
-    public void deleteBySourceId(Long sourceId) {
-        jdbcTemplate.update(DELETE_BY_SOURCE_ID_SQL, sourceId);
+    public void deleteBySourceId(Long sourceId, SourceType sourceType) {
+        jdbcTemplate.update(DELETE_BY_SOURCE_ID_SQL, sourceId, sourceType.name());
     }
 
-    public List<String> findContentsBySourceId(Long sourceId, int limit) {
+    public List<String> findContentsBySourceId(Long sourceId, SourceType sourceType, int limit) {
         return jdbcTemplate.queryForList(
-                FIND_CONTENTS_BY_SOURCE_ID_SQL, String.class, sourceId, limit);
+                FIND_CONTENTS_BY_SOURCE_ID_SQL,
+                String.class,
+                sourceId,
+                sourceType.name(),
+                limit);
     }
 
     private String toJsonb(Map<String, Object> metadata) {

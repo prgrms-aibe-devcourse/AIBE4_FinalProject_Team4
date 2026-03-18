@@ -71,7 +71,7 @@ public class DocumentVectorStatusChangedEventListener {
         // 1. 벡터 스토어에서 문서 청크 조회 (LLM 입력 + 유의미성 판단용)
         List<String> chunks =
                 vectorStoreRepository.findContentsBySourceId(
-                        event.sourceId(), CHUNK_RETRIEVAL_LIMIT);
+                        event.sourceId(), SourceType.DOCUMENT, CHUNK_RETRIEVAL_LIMIT);
         String currentText = String.join("\n", chunks);
 
         // 2. 유의미성 검증

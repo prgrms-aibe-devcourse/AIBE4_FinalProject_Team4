@@ -35,7 +35,9 @@ public class DocumentMeaningfulnessService {
 
         double diffRatio = computeDiffRatio(currentText, previousText);
         if (diffRatio >= TRIVIAL_DIFF_RATIO_THRESHOLD) {
-            log.debug("[Meaningfulness] diff ratio {:.1f}% ≥ 2% → meaningful", diffRatio * 100);
+            log.debug(
+                    "[Meaningfulness] diff ratio {}% ≥ 2% → meaningful",
+                    String.format("%.1f", diffRatio * 100));
             return true;
         }
 
@@ -49,7 +51,9 @@ public class DocumentMeaningfulnessService {
             return true;
         }
 
-        log.info("[Meaningfulness] 변경 경미 → trivial. diffRatio={:.2f}%", diffRatio * 100);
+        log.info(
+                "[Meaningfulness] 변경 경미 → trivial. diffRatio={}%",
+                String.format("%.2f", diffRatio * 100));
         return false;
     }
 

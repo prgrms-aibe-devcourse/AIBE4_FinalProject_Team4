@@ -100,7 +100,7 @@ public class PendingItemService {
         if (dto.sourceType() == SourceType.ISSUE) {
             // ISSUE: 패치노트 도메인이 벡터를 직접 소유 → 고아 벡터 정리
             try {
-                vectorStoreManager.deleteBySourceId(dto.sourceId());
+                vectorStoreManager.deleteBySourceId(dto.sourceId(), SourceType.ISSUE);
                 log.info("[PendingItem] 고아 벡터 정리 완료. sourceId: {}", dto.sourceId());
             } catch (Exception deleteEx) {
                 log.error(

@@ -166,7 +166,7 @@ public class IssueStatusChangedEventHandler {
                             event.projectId(), event.issueId(), SourceType.ISSUE);
 
             if (shouldDeleteVectors) {
-                vectorStoreManager.deleteBySourceId(event.issueId());
+                vectorStoreManager.deleteBySourceId(event.issueId(), SourceType.ISSUE);
                 log.info(
                         "[PatchNote] 이슈 롤백 완료 — 벡터 + pending_item 삭제. issueId: {}",
                         event.issueId());

@@ -2,6 +2,7 @@ package kr.java.documind.domain.archive.vector.infrastructure;
 
 import java.util.List;
 import kr.java.documind.domain.archive.vector.model.repository.VectorStoreRepository;
+import kr.java.documind.global.enums.SourceType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
@@ -20,11 +21,11 @@ public class VectorStoreManager {
         vectorStoreRepository.insertChunks(sourceId, chunks, embeddings);
     }
 
-    public void deleteBySourceId(Long sourceId) {
+    public void deleteBySourceId(Long sourceId, SourceType sourceType) {
         try {
-            vectorStoreRepository.deleteBySourceId(sourceId);
+            vectorStoreRepository.deleteBySourceId(sourceId, sourceType);
         } catch (Exception e) {
-            log.error("[Vector] 벡터 삭제 실패 - sourceId: {}", sourceId, e);
+            log.error("[Vector] 벡터 삭제 실패 - sourceId: {}, sourceType: {}", sourceId, sourceType, e);
         }
     }
 }

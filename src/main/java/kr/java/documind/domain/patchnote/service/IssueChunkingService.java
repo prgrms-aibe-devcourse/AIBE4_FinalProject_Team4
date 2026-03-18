@@ -53,13 +53,15 @@ public class IssueChunkingService {
 
     private void appendCommentDrafts(IssueChunkingSource source, List<IssueChunkDraft> drafts) {
 
+        int sourceIndex = 0;
         int commentIndex = 0;
         for (IssueCommentChunkSource comment : source.comments()) {
-            if (!heuristicAnalyzer.hasMeaningfulComment(comment)) {
-                continue;
+            if (heuristicAnalyzer.hasMeaningfulComment(comment)) {
+                drafts.add(
+                        IssueChunkDraft.comment(
+                                comment.commentId(), sourceIndex, commentIndex++));
             }
-
-            drafts.add(IssueChunkDraft.comment(comment.commentId(), commentIndex++));
+            sourceIndex++;
         }
     }
 

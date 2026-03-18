@@ -5,6 +5,7 @@ import kr.java.documind.domain.archive.document.event.DocumentVectorDeleteEvent;
 import kr.java.documind.domain.archive.document.event.DocumentVectorReplaceEvent;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.archive.vector.service.EtlService;
+import kr.java.documind.global.enums.SourceType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -27,13 +28,13 @@ public class DocumentVectorEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleVectorReplace(DocumentVectorReplaceEvent event) {
-        vectorStoreManager.deleteBySourceId(event.sourceId());
+        vectorStoreManager.deleteBySourceId(event.sourceId(), SourceType.DOCUMENT);
         etlService.process(event.projectId(), event.sourceId(), event.storedKey());
     }
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleVectorDelete(DocumentVectorDeleteEvent event) {
-        vectorStoreManager.deleteBySourceId(event.sourceId());
+        vectorStoreManager.deleteBySourceId(event.sourceId(), SourceType.DOCUMENT);
     }
 }

@@ -82,7 +82,7 @@ public class IssueChunkDocumentBuilder {
         sb.append("이 문서는 게임 이슈 관련 댓글입니다.");
         sb.append("\n이슈 제목: ").append(defaultString(source.title(), "제목 없음"));
 
-        IssueCommentChunkSource comment = source.comments().get(draft.commentIndex());
+        IssueCommentChunkSource comment = source.comments().get(draft.sourceIndex());
 
         sb.append("\n댓글 내용: ").append(defaultString(comment.content(), ""));
 
