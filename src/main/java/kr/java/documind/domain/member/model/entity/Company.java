@@ -50,12 +50,10 @@ public class Company extends BaseEntity {
         }
     }
 
-    /** 운영자가 회사 가입 신청을 승인한다. updatedAt 은 @LastModifiedDate 로 자동 갱신된다. */
     public void approve() {
         this.status = CompanyStatus.APPROVED;
     }
 
-    /** 운영자가 회사 가입 신청을 거부(정지)한다. updatedAt 은 @LastModifiedDate 로 자동 갱신된다. */
     public void reject() {
         this.status = CompanyStatus.SUSPENDED;
     }

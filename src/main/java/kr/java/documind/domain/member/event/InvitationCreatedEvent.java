@@ -1,6 +1,6 @@
 package kr.java.documind.domain.member.event;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record InvitationCreatedEvent(
@@ -9,4 +9,4 @@ public record InvitationCreatedEvent(
         String projectName,
         String targetEmail,
         String rawToken,
-        LocalDateTime expiresAt) {}
+        OffsetDateTime expiresAt) {}

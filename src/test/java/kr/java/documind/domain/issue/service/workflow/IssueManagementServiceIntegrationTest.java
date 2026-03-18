@@ -6,15 +6,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import kr.java.documind.domain.issue.event.IssueResolvedEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.entity.IssueHistory;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
+import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.IssueType;
 import kr.java.documind.domain.issue.model.repository.IssueHistoryRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
+import kr.java.documind.domain.patchnote.event.IssueStatusChangedEvent;
 import kr.java.documind.global.exception.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -74,7 +75,7 @@ class IssueManagementServiceIntegrationTest {
                         .fingerprint("test-fingerprint-" + System.currentTimeMillis())
                         .issueType(IssueType.BUG)
                         .status(IssueStatus.TODO)
-                        .priority("P2")
+                        .priority(IssuePriority.valueOf("P2"))
                         .severity(IssueSeverity.MEDIUM)
                         .severityScore(50)
                         .errorType(ErrorType.NULL_POINTER)
@@ -284,8 +285,8 @@ class IssueManagementServiceIntegrationTest {
     class EventPublishingTest {
 
         @Test
-        @DisplayName("RESOLVED 상태로 변경 시 IssueResolvedEvent 발행됨")
-        void issueResolvedEventPublished() {
+        @DisplayName("RESOLVED 상태로 변경 시 IssueStatusChangedEvent 발행됨")
+        void issueStatusChangedEventPublished() {
             // given
             testIssue.changeStatus(IssueStatus.IN_PROGRESS);
             issueRepository.save(testIssue);
@@ -298,27 +299,28 @@ class IssueManagementServiceIntegrationTest {
 
             // then
             long eventCount =
-                    applicationEvents.stream(IssueResolvedEvent.class)
+                    applicationEvents.stream(IssueStatusChangedEvent.class)
                             .filter(event -> event.issueId().equals(issueId))
                             .count();
 
             assertThat(eventCount).isEqualTo(1);
 
-            IssueResolvedEvent publishedEvent =
-                    applicationEvents.stream(IssueResolvedEvent.class)
+            IssueStatusChangedEvent publishedEvent =
+                    applicationEvents.stream(IssueStatusChangedEvent.class)
                             .filter(event -> event.issueId().equals(issueId))
                             .findFirst()
                             .orElseThrow();
 
             assertThat(publishedEvent.issueId()).isEqualTo(issueId);
             assertThat(publishedEvent.projectId()).isEqualTo(testProjectId);
-            assertThat(publishedEvent.title()).isEqualTo(testIssue.getTitle());
-            assertThat(publishedEvent.resolvedBy()).isEqualTo(testModifierId);
+            assertThat(publishedEvent.newStatus()).isEqualTo(IssueStatus.RESOLVED);
+            assertThat(publishedEvent.actorId())
+                    .isEqualTo(testModifierId); // modifierId() -> actorId()
         }
 
         @Test
-        @DisplayName("패치노트 미포함 시 이벤트 발행되지 않음")
-        void eventNotPublishedWhenNotIncludedInPatchNote() {
+        @DisplayName("패치노트 미포함 시에도 이벤트는 발행되지만 excludeFromPatchNote가 true임")
+        void eventPublishedWithExcludeFlagWhenNotIncludedInPatchNote() {
             // given
             testIssue.changeStatus(IssueStatus.IN_PROGRESS);
             issueRepository.save(testIssue);
@@ -335,17 +337,18 @@ class IssueManagementServiceIntegrationTest {
                     false); // false
 
             // then
-            long eventCount =
-                    applicationEvents.stream(IssueResolvedEvent.class)
+            IssueStatusChangedEvent publishedEvent =
+                    applicationEvents.stream(IssueStatusChangedEvent.class)
                             .filter(event -> event.issueId().equals(issueId))
-                            .count();
+                            .findFirst()
+                            .orElseThrow();
 
-            assertThat(eventCount).isZero();
+            assertThat(publishedEvent.excludeFromPatchNote()).isTrue();
         }
 
         @Test
-        @DisplayName("다른 상태로 변경 시 IssueResolvedEvent 발행되지 않음")
-        void eventNotPublishedForNonResolvedStatus() {
+        @DisplayName("다른 상태로 변경 시에도 IssueStatusChangedEvent 발행됨")
+        void eventPublishedForNonResolvedStatus() {
             // given
             Long issueId = testIssue.getId();
 
@@ -355,11 +358,11 @@ class IssueManagementServiceIntegrationTest {
 
             // then
             long eventCount =
-                    applicationEvents.stream(IssueResolvedEvent.class)
+                    applicationEvents.stream(IssueStatusChangedEvent.class)
                             .filter(event -> event.issueId().equals(issueId))
                             .count();
 
-            assertThat(eventCount).isZero();
+            assertThat(eventCount).isEqualTo(1);
         }
     }
 

@@ -24,10 +24,10 @@ public abstract class UuidBaseEntity {
     private UUID id;
 
     @CreatedDate
-    @Column(updatable = false, name = "created_at")
+    @Column(updatable = false, name = "created_at", columnDefinition = "TIMESTAMPTZ")
     private OffsetDateTime createdAt;
 
     @LastModifiedDate
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", columnDefinition = "TIMESTAMPTZ")
     private OffsetDateTime updatedAt;
 }
