@@ -3,6 +3,7 @@ package kr.java.documind.domain.issue.service.workflow;
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.IssueHistory;
+import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import kr.java.documind.domain.issue.model.repository.IssueHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -65,7 +66,10 @@ public class IssueHistoryService {
      */
     @Transactional
     public IssueHistory savePriorityChange(
-            Long issueId, UUID modifierId, String beforePriority, String afterPriority) {
+            Long issueId,
+            UUID modifierId,
+            IssuePriority beforePriority,
+            IssuePriority afterPriority) {
         IssueHistory history =
                 IssueHistory.ofPriorityChange(issueId, modifierId, beforePriority, afterPriority);
         return issueHistoryRepository.save(history);

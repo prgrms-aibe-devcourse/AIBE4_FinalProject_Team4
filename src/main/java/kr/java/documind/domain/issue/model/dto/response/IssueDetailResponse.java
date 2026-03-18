@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.ErrorType;
+import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.IssueType;
@@ -26,7 +27,7 @@ public record IssueDetailResponse(
         @Schema(description = "핑거프린트", example = "a1b2c3d4e5f6...") String fingerprint,
         @Schema(description = "이슈 유형", example = "BUG") IssueType issueType,
         @Schema(description = "상태", example = "IN_PROGRESS") IssueStatus status,
-        @Schema(description = "우선순위", example = "P1") String priority,
+        @Schema(description = "우선순위", example = "P2") IssuePriority priority,
         @Schema(description = "심각도", example = "HIGH") IssueSeverity severity,
         @Schema(description = "심각도 점수", example = "85") Integer severityScore,
         @Schema(description = "에러 타입", example = "NULL_POINTER") ErrorType errorType,

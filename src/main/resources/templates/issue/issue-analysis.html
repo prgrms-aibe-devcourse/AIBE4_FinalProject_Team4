@@ -1,309 +1,357 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{common/layout/default}"
-      th:with="activeMenu='issue'" lang="ko">
+      layout:decorate="~{common/layout/service-layout}">
+
 <head>
     <title>이슈 상세 분석</title>
 </head>
+
 <body>
-<main layout:fragment="content" class="flex-1 p-8">
+<th:block layout:fragment="content">
 
-    <!-- 상단 헤더 + 네비게이션 -->
-    <div class="mb-6">
-        <div class="flex items-center gap-2 text-sm text-gray-500 mb-4">
-            <a id="breadcrumbBackLink" th:href="@{/projects/{publicId}/issues(publicId=${publicId})}" class="hover:text-indigo-600">이슈</a>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
-            <span id="issueIdBreadcrumb" class="text-gray-900 font-medium">이슈 #<span th:text="${issueId}"></span></span>
+    <section class="space-y-6">
+        <!-- 상단 헤더 -->
+        <div>
+            <!-- Breadcrumb (동적 링크 업데이트 필요) -->
+            <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-sm text-docu-secondary flex-wrap">
+                <a id="breadcrumbBackLink"
+                   th:href="@{/projects/{publicId}/issues(publicId=${publicId})}"
+                   class="nav-link-base hover:text-docu-ink">이슈</a>
+                <span aria-hidden="true">/</span>
+                <span id="issueIdBreadcrumb" class="font-semibold text-docu-ink">
+                    이슈 #<span th:text="${issueId}"></span>
+                </span>
+            </nav>
+
+            <!-- 이슈 헤더 -->
+            <div class="flex items-start justify-between mt-3">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span id="statusBadge"></span>
+                        <span class="text-xs text-docu-tertiary">ID: <span th:text="${issueId}"></span></span>
+                    </div>
+                    <h1 id="issueTitle" class="text-h1 text-docu-ink mb-2"></h1>
+                    <p id="sourceLocation" class="text-sm text-docu-secondary font-mono"></p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="shareIssue()" class="btn-secondary">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                        </svg>
+                        공유
+                    </button>
+                    <button onclick="openStatusModal()" class="btn-primary">
+                        상태 변경
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <!-- 이슈 헤더 -->
-        <div class="flex items-start justify-between mb-6">
-            <div class="flex-1">
-                <div class="flex items-center gap-3 mb-2">
-                    <span id="statusBadge"></span>
-                    <span class="text-xs text-gray-400">ID: <span th:text="${issueId}"></span></span>
-                </div>
-                <h1 id="issueTitle" class="text-2xl font-bold text-gray-900 mb-2"></h1>
-                <p id="sourceLocation" class="text-sm text-gray-600 font-mono"></p>
-            </div>
-            <div class="flex items-center gap-3">
-                <button onclick="shareIssue()" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors">
-                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
-                    </svg>
-                    공유
-                </button>
-                <button onclick="openStatusModal()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
-                    상태 변경
-                </button>
-            </div>
-        </div>
-    </div>
+        <!-- 메인 레이아웃 (3:1 비율) -->
+        <div class="grid grid-cols-4 gap-6">
+            <!-- 왼쪽 메인 영역 (3/4) -->
+            <div class="col-span-3 space-y-6">
 
-    <!-- 메인 레이아웃 (3:1 비율) -->
-    <div class="grid grid-cols-4 gap-6">
-        <!-- 왼쪽 메인 영역 (3/4) -->
-        <div class="col-span-3 space-y-6">
+                <!-- Overview 섹션 -->
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- 심각도 분석 -->
+                    <div class="card-base card-shadow p-widget-p">
+                        <h2 class="text-lg font-bold text-docu-ink mb-4">심각도 분석</h2>
+                        <div id="severityAnalysis"></div>
+                    </div>
 
-            <!-- Overview 섹션 -->
-            <div class="grid grid-cols-2 gap-6">
-                <!-- 심각도 분석 -->
-                <div class="bg-white rounded-xl border border-gray-200 p-6">
-                    <h2 class="text-lg font-bold text-gray-900 mb-4">심각도 분석</h2>
-                    <div id="severityAnalysis"></div>
-                </div>
-
-                <!-- 그룹핑 정보 -->
-                <div class="bg-white rounded-xl border border-gray-200 p-6">
-                    <h2 class="text-lg font-bold text-gray-900 mb-4">그룹핑 정보</h2>
-                    <div id="groupingInfo"></div>
-                </div>
-            </div>
-
-            <!-- 발생 추이 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-bold text-gray-900">발생 추이</h2>
-                    <div class="flex items-center gap-2">
-                        <button onclick="setTimeRange('7d')" data-range="7d" class="time-range-btn px-3 py-1.5 text-xs font-medium rounded-lg border-indigo-600 text-indigo-600">7일</button>
-                        <button onclick="setTimeRange('30d')" data-range="30d" class="time-range-btn px-3 py-1.5 text-xs font-medium rounded-lg border-transparent text-gray-500">30일</button>
-                        <button onclick="setTimeRange('all')" data-range="all" class="time-range-btn px-3 py-1.5 text-xs font-medium rounded-lg border-transparent text-gray-500">전체</button>
+                    <!-- 그룹핑 정보 -->
+                    <div class="card-base card-shadow p-widget-p">
+                        <h2 class="text-lg font-bold text-docu-ink mb-4">그룹핑 정보</h2>
+                        <div id="groupingInfo"></div>
                     </div>
                 </div>
-                <div id="occurrenceTrend" class="h-64">
-                    <!-- 차트가 여기에 렌더링됩니다 (Chart.js 사용) -->
-                    <canvas id="trendChart"></canvas>
-                </div>
-            </div>
 
-            <!-- 분포 분석 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 class="text-lg font-bold text-gray-900 mb-4">분포 분석</h2>
-                <div id="distributionAnalysis">
-                    <!-- 분포 분석 차트가 여기에 렌더링됩니다 -->
-                </div>
-            </div>
-
-            <!-- 발생 맥락 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 class="text-lg font-bold text-gray-900 mb-4">📋 발생 맥락</h2>
-                <div id="issueContext">
-                    <!-- 맥락 정보가 여기에 렌더링됩니다 -->
-                    <p class="text-sm text-gray-400">맥락 정보를 불러오는 중...</p>
-                </div>
-            </div>
-
-            <!-- 근본 원인 분석 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 class="text-lg font-bold text-gray-900 mb-4">🔍 근본 원인 분석</h2>
-                <div id="rootCauseAnalysis">
-                    <!-- 근본 원인 분석 결과가 여기에 렌더링됩니다 -->
-                </div>
-            </div>
-
-            <!-- 로그 상세 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 class="text-lg font-bold text-gray-900 mb-4">로그 상세</h2>
-                <div id="logDetails">
-                    <!-- 스택트레이스 및 아카이브 내용 -->
-                </div>
-            </div>
-
-            <!-- 영향 받은 플레이어 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 class="text-lg font-bold text-gray-900 mb-4">영향 받은 플레이어</h2>
-                <div id="affectedPlayers">
-                    <!-- Phase 4에서 구현 -->
-                    <div class="text-center text-gray-400 text-sm py-8">
-                        플레이어 데이터를 불러오는 중...
+                <!-- 발생 추이 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-docu-ink">발생 추이</h2>
+                        <div class="flex items-center gap-2">
+                            <button onclick="setTimeRange('7d')" data-range="7d" class="time-range-btn px-3 py-1.5 text-xs font-medium rounded-lg border-docu-primary text-docu-primary">7일</button>
+                            <button onclick="setTimeRange('30d')" data-range="30d" class="time-range-btn px-3 py-1.5 text-xs font-medium rounded-lg border-transparent text-docu-secondary">30일</button>
+                            <button onclick="setTimeRange('all')" data-range="all" class="time-range-btn px-3 py-1.5 text-xs font-medium rounded-lg border-transparent text-docu-secondary">전체</button>
+                        </div>
+                    </div>
+                    <div id="occurrenceTrend" class="h-64">
+                        <!-- 차트가 여기에 렌더링됩니다 (Chart.js 사용) -->
+                        <canvas id="trendChart"></canvas>
                     </div>
                 </div>
+
+                <!-- 분포 분석 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <h2 class="text-lg font-bold text-docu-ink mb-4">분포 분석</h2>
+                    <div id="distributionAnalysis">
+                        <!-- 분포 분석 차트가 여기에 렌더링됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 발생 맥락 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <h2 class="text-lg font-bold text-docu-ink mb-4">📋 발생 맥락</h2>
+                    <div id="issueContext">
+                        <!-- 맥락 정보가 여기에 렌더링됩니다 -->
+                        <p class="text-sm text-docu-tertiary">맥락 정보를 불러오는 중...</p>
+                    </div>
+                </div>
+
+                <!-- 근본 원인 분석 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <h2 class="text-lg font-bold text-docu-ink mb-4">🔍 근본 원인 분석</h2>
+                    <div id="rootCauseAnalysis">
+                        <!-- 근본 원인 분석 결과가 여기에 렌더링됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 로그 상세 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <h2 class="text-lg font-bold text-docu-ink mb-4">로그 상세</h2>
+                    <div id="logDetails">
+                        <!-- 스택트레이스 및 아카이브 내용 -->
+                    </div>
+                </div>
+
+                <!-- 영향 받은 플레이어 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <h2 class="text-lg font-bold text-docu-ink mb-4">영향 받은 플레이어</h2>
+                    <div id="affectedPlayers">
+                        <!-- Phase 4에서 구현 -->
+                        <div class="text-center text-docu-tertiary text-sm py-8">
+                            플레이어 데이터를 불러오는 중...
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-        </div>
+            <!-- 오른쪽 사이드바 (1/4) -->
+            <div class="col-span-1 space-y-6">
 
-        <!-- 오른쪽 사이드바 (1/4) -->
-        <div class="col-span-1 space-y-6">
+                <!-- 메타 정보 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <h3 class="text-sm font-bold text-docu-ink mb-4">메타 정보</h3>
+                    <div id="metaInfo" class="space-y-3 text-sm">
+                        <!-- 담당자 -->
+                        <div>
+                            <label class="block text-xs font-semibold text-docu-secondary mb-2">담당자</label>
 
-            <!-- 메타 정보 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 class="text-sm font-bold text-gray-900 mb-4">메타 정보</h3>
-                <div id="metaInfo" class="space-y-3 text-sm">
-                    <!-- 담당자 -->
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-2">담당자</label>
-
-                        <!-- 표시 모드 -->
-                        <div id="assigneeDisplay" class="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors" onclick="enterAssigneeEditMode()">
-                            <div id="assigneeInfo" class="flex items-center gap-2">
-                                <!-- 담당자 정보가 여기에 렌더링됩니다 -->
-                                <div class="flex items-center gap-2 text-gray-400 text-xs">
-                                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                        </svg>
+                            <!-- 표시 모드 -->
+                            <div id="assigneeDisplay" class="cursor-pointer hover:bg-surface-hover p-2 rounded-lg transition-colors" onclick="enterAssigneeEditMode()">
+                                <div id="assigneeInfo" class="flex items-center gap-2">
+                                    <!-- 담당자 정보가 여기에 렌더링됩니다 -->
+                                    <div class="flex items-center gap-2 text-docu-tertiary text-xs">
+                                        <div class="w-8 h-8 bg-surface-tertiary rounded-full flex items-center justify-center text-docu-secondary">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                            </svg>
+                                        </div>
+                                        <span>담당자 없음</span>
                                     </div>
-                                    <span>담당자 없음</span>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- 편집 모드 -->
-                        <div id="assigneeEdit" class="hidden">
-                            <select id="assigneeSelect" class="w-full px-3 py-2 mb-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                <option value="">선택하세요</option>
-                            </select>
-                            <div class="flex gap-2">
-                                <button onclick="saveAssigneeChange()" class="flex-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors">
-                                    ✓ 저장
-                                </button>
-                                <button onclick="cancelAssigneeEdit()" class="flex-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded transition-colors">
-                                    ✕ 취소
-                                </button>
+                            <!-- 편집 모드 -->
+                            <div id="assigneeEdit" class="hidden">
+                                <select id="assigneeSelect" class="form-select mb-2">
+                                    <option value="">선택하세요</option>
+                                </select>
+                                <div class="flex gap-2">
+                                    <button onclick="saveAssigneeChange()" class="flex-1 btn-primary text-xs py-1.5">
+                                        ✓ 저장
+                                    </button>
+                                    <button onclick="cancelAssigneeEdit()" class="flex-1 btn-secondary text-xs py-1.5">
+                                        ✕ 취소
+                                    </button>
+                                </div>
+                                <div id="assigneeEditError" class="hidden mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600"></div>
                             </div>
-                            <div id="assigneeEditError" class="hidden mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600"></div>
+                        </div>
+
+                        <!-- 우선순위 -->
+                        <div>
+                            <label class="block text-xs font-semibold text-docu-secondary mb-2">우선순위</label>
+
+                            <!-- 표시 모드 -->
+                            <div id="priorityDisplay" class="cursor-pointer hover:bg-surface-hover p-2 rounded-lg transition-colors" onclick="enterPriorityEditMode()">
+                                <div id="priorityInfo" class="text-docu-ink">
+                                    <span class="text-xs text-docu-tertiary">미설정</span>
+                                </div>
+                            </div>
+
+                            <!-- 편집 모드 -->
+                            <div id="priorityEdit" class="hidden">
+                                <select id="prioritySelect" class="form-select mb-2">
+                                    <option value="">선택하세요</option>
+                                    <option value="P1">P1 긴급</option>
+                                    <option value="P2">P2 높음</option>
+                                    <option value="P3">P3 보통</option>
+                                    <option value="P4">P4 낮음</option>
+                                </select>
+                                <div class="flex gap-2">
+                                    <button onclick="savePriorityChange()" class="flex-1 btn-primary text-xs py-1.5">
+                                        ✓ 저장
+                                    </button>
+                                    <button onclick="cancelPriorityEdit()" class="flex-1 btn-secondary text-xs py-1.5">
+                                        ✕ 취소
+                                    </button>
+                                </div>
+                                <div id="priorityEditError" class="hidden mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-docu-secondary mb-1">발생 횟수</label>
+                            <p id="occurrenceCount" class="text-docu-ink font-medium">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-docu-secondary mb-1">최초 발생</label>
+                            <p id="firstOccurred" class="text-xs text-docu-secondary">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-docu-secondary mb-1">최근 발생</label>
+                            <p id="lastOccurred" class="text-xs text-docu-secondary">-</p>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">우선순위</label>
-                        <p id="priorityInfo" class="text-gray-900">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">발생 횟수</label>
-                        <p id="occurrenceCount" class="text-gray-900 font-medium">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">최초 발생</label>
-                        <p id="firstOccurred" class="text-xs text-gray-600">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">최근 발생</label>
-                        <p id="lastOccurred" class="text-xs text-gray-600">-</p>
+                </div>
+
+                <!-- 관련 이슈 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <h3 class="text-sm font-bold text-docu-ink mb-4">관련 이슈</h3>
+                    <div id="relatedIssues" class="space-y-2">
+                        <!-- 유사 이슈 목록 -->
                     </div>
                 </div>
-            </div>
 
-            <!-- 관련 이슈 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 class="text-sm font-bold text-gray-900 mb-4">관련 이슈</h3>
-                <div id="relatedIssues" class="space-y-2">
-                    <!-- 유사 이슈 목록 -->
-                </div>
-            </div>
-
-            <!-- 변경 이력 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 class="text-sm font-bold text-gray-900 mb-4">변경 이력</h3>
-                <div id="timeline" class="space-y-4">
-                    <!-- Timeline items -->
-                </div>
-            </div>
-
-            <!-- 댓글 섹션 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 class="text-sm font-bold text-gray-900 mb-4">댓글 <span id="commentCount" class="text-gray-400">(0)</span></h3>
-
-                <!-- 댓글 목록 -->
-                <div id="commentList" class="space-y-4 mb-4">
-                    <p class="text-xs text-gray-400 text-center py-4">댓글이 없습니다.</p>
+                <!-- 변경 이력 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <h3 class="text-sm font-bold text-docu-ink mb-4">변경 이력</h3>
+                    <div id="timeline" class="space-y-4">
+                        <!-- Timeline items -->
+                    </div>
                 </div>
 
-                <!-- 페이지네이션 -->
-                <div id="commentPagination" class="hidden flex items-center justify-center gap-2 mb-4">
-                    <button onclick="loadComments(currentPage - 1)" id="prevPage" class="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                        이전
-                    </button>
-                    <span id="pageInfo" class="text-xs text-gray-600"></span>
-                    <button onclick="loadComments(currentPage + 1)" id="nextPage" class="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                        다음
-                    </button>
-                </div>
-
-                <!-- 댓글 작성 폼 -->
-                <div class="relative">
-                    <textarea id="commentInput" placeholder="댓글을 입력하세요... (@닉네임으로 멘션 가능)"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                <!-- 내부 댓글 -->
+                <div class="card-base card-shadow p-widget-p">
+                    <h3 class="text-sm font-bold text-docu-ink mb-4">내부 댓글</h3>
+                    <div id="comments" class="space-y-3 mb-4">
+                        <p class="text-xs text-docu-tertiary">댓글이 없습니다.</p>
+                    </div>
+                    <textarea id="newComment" placeholder="댓글을 입력하세요..."
+                              class="form-textarea resize-none"
                               rows="3"></textarea>
+                    <button onclick="submitComment()" class="mt-2 w-full btn-primary">
+                        댓글 작성
+                    </button>
+                </div>
 
-                    <!-- 멘션 자동완성 드롭다운 -->
-                    <div id="mentionDropdown" class="hidden absolute bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10 w-full mt-1">
-                        <!-- 멤버 목록이 여기에 렌더링됩니다 -->
+            </div>
+        </div>
+
+        <!-- 페이지 메타 정보 (JS에서 사용) -->
+        <input type="hidden" id="publicId" th:value="${publicId}">
+        <input type="hidden" id="projectId" th:value="${projectId}">
+        <input type="hidden" id="issueId" th:value="${issueId}">
+
+        <!-- ==================== 상태 변경 모달 ==================== -->
+        <div id="statusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+            <div class="absolute inset-0 bg-black/40" onclick="closeModal('statusModal')"></div>
+            <div class="card-modal w-full max-w-md">
+                <div class="flex items-center justify-between px-8 pt-8 pb-4">
+                    <h2 class="text-xl font-bold text-docu-ink">상태 변경</h2>
+                    <button onclick="closeModal('statusModal')" class="text-docu-tertiary hover:text-docu-secondary">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="px-8 pb-4">
+                    <div id="statusError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold text-docu-ink mb-2">변경할 상태 <span class="text-red-500">*</span></label>
+                        <select id="newStatus" class="form-select">
+                            <option value="">선택하세요</option>
+                            <option value="TODO">대기중</option>
+                            <option value="IN_PROGRESS">처리중</option>
+                            <option value="RESOLVED">해결됨</option>
+                        </select>
                     </div>
 
-                    <div class="flex items-center justify-between mt-2">
-                        <span id="mentionedMembersPreview" class="text-xs text-gray-500"></span>
-                        <button onclick="submitComment()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
-                            댓글 작성
-                        </button>
+                    <!-- 해결됨 선택 시 표시되는 옵션 -->
+                    <div id="resolvedOptions" class="hidden space-y-4">
+                        <!-- 해결 방법 설명 -->
+                        <div>
+                            <label class="block text-sm font-semibold text-docu-ink mb-2">해결 방법 (선택)</label>
+                            <textarea id="resolutionNote" rows="4"
+                                      class="form-textarea resize-none"
+                                      placeholder="이슈를 어떻게 해결했는지 설명하세요 (선택사항)"></textarea>
+                            <p class="text-xs text-docu-secondary mt-1">예: 사용자 프로필 조회 전 null 체크 로직 추가</p>
+                        </div>
+
+                        <!-- 패치노트 포함 옵션 -->
+                        <div class="flex items-start gap-3 p-4 bg-surface-secondary border border-divider rounded-lg">
+                            <input type="checkbox" id="shouldIncludeInPatchNote" class="mt-0.5 w-4 h-4 rounded border-divider text-docu-primary focus:ring-docu-primary">
+                            <div class="flex-1">
+                                <label for="shouldIncludeInPatchNote" class="text-sm font-semibold text-docu-ink cursor-pointer">패치노트에 포함</label>
+                                <p class="text-xs text-docu-secondary mt-0.5">해결된 이슈를 패치노트에 반영합니다.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                    <button onclick="closeModal('statusModal')" class="btn-secondary">취소</button>
+                    <button onclick="submitStatusChange()" class="btn-primary">변경</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 댓글 섹션 -->
+        <div class="card-base card-shadow p-widget-p">
+            <h3 class="text-h3 text-docu-ink mb-4">댓글 <span id="commentCount" class="text-docu-tertiary">(0)</span></h3>
+
+            <!-- 댓글 목록 -->
+            <div id="commentList" class="space-y-4 mb-4">
+                <p class="text-sm text-docu-tertiary text-center py-4">댓글이 없습니다.</p>
             </div>
 
-        </div>
-    </div>
-
-    <!-- 페이지 메타 정보 (JS에서 사용) -->
-    <input type="hidden" id="publicId" th:value="${publicId}">
-    <input type="hidden" id="projectId" th:value="${projectId}">
-    <input type="hidden" id="issueId" th:value="${issueId}">
-    <script th:inline="javascript">
-        window.currentMemberId = /*[[${#authentication.principal.memberId}]]*/ null;
-    </script>
-
-    <!-- ==================== 상태 변경 모달 ==================== -->
-    <div id="statusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/40" onclick="closeModal('statusModal')"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div class="flex items-center justify-between px-8 pt-8 pb-4">
-                <h2 class="text-xl font-bold text-gray-900">상태 변경</h2>
-                <button onclick="closeModal('statusModal')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <!-- 페이지네이션 -->
+            <div id="commentPagination" class="hidden flex items-center justify-center gap-2 mb-4">
+                <button onclick="loadComments(currentPage - 1)" id="prevPage" class="btn-secondary text-xs px-3 py-1">
+                    이전
+                </button>
+                <span id="pageInfo" class="text-sm text-docu-secondary"></span>
+                <button onclick="loadComments(currentPage + 1)" id="nextPage" class="btn-secondary text-xs px-3 py-1">
+                    다음
                 </button>
             </div>
-            <div class="px-8 pb-4">
-                <div id="statusError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
-                <div class="mb-5">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">변경할 상태 <span class="text-red-500">*</span></label>
-                    <select id="newStatus" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                        <option value="">선택하세요</option>
-                        <option value="TODO">대기중</option>
-                        <option value="IN_PROGRESS">처리중</option>
-                        <option value="RESOLVED">해결됨</option>
-                    </select>
+
+            <!-- 댓글 작성 폼 -->
+            <div class="relative">
+                <textarea id="commentInput" placeholder="댓글을 입력하세요... (@닉네임으로 멘션 가능)"
+                          class="form-input w-full resize-none"
+                          rows="3"></textarea>
+
+                <!-- 멘션 자동완성 드롭다운 -->
+                <div id="mentionDropdown" class="hidden absolute bg-surface-card border border-divider rounded-lg shadow-docu-card max-h-48 overflow-y-auto z-10 w-full mt-1">
+                    <!-- 멤버 목록이 여기에 렌더링됩니다 -->
                 </div>
 
-                <!-- 해결됨 선택 시 표시되는 옵션 -->
-                <div id="resolvedOptions" class="hidden space-y-4">
-                    <!-- 해결 방법 설명 -->
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">해결 방법 (선택)</label>
-                        <textarea id="resolutionNote" rows="4"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                                  placeholder="이슈를 어떻게 해결했는지 설명하세요 (선택사항)"></textarea>
-                        <p class="text-xs text-gray-500 mt-1">예: 사용자 프로필 조회 전 null 체크 로직 추가</p>
-                    </div>
-
-                    <!-- 패치노트 포함 옵션 -->
-                    <div class="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                        <input type="checkbox" id="shouldIncludeInPatchNote" class="mt-0.5 w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                        <div class="flex-1">
-                            <label for="shouldIncludeInPatchNote" class="text-sm font-semibold text-gray-800 cursor-pointer">패치노트에 포함</label>
-                            <p class="text-xs text-gray-500 mt-0.5">해결된 이슈를 패치노트에 반영합니다.</p>
-                        </div>
-                    </div>
+                <div class="flex items-center justify-between mt-2">
+                    <span id="mentionedMembersPreview" class="text-sm text-docu-tertiary"></span>
+                    <button onclick="submitComment()" class="btn-primary">
+                        댓글 작성
+                    </button>
                 </div>
-            </div>
-            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-gray-200">
-                <button onclick="closeModal('statusModal')" class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800">취소</button>
-                <button onclick="submitStatusChange()" class="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg">변경</button>
             </div>
         </div>
-    </div>
 
-</main>
+    </section>
+
+</th:block>
 
 <th:block layout:fragment="scripts">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

@@ -130,6 +130,7 @@ public class IssueRecommendationApiController {
                 request.assigneeId(),
                 request.title(),
                 request.description(),
+                request.priority(),
                 authMember.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success("추천 이슈가 승인되어 이슈로 생성되었습니다."));

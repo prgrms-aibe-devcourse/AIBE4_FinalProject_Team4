@@ -347,7 +347,12 @@ function renderRecommendationDetail(rec, members) {
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-3">심각도</label>
                 <div class="grid grid-cols-2 gap-2">
-                    ${['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(level => {
+                    ${[
+                        { level: 'CRITICAL', label: 'P1 긴급' },
+                        { level: 'HIGH', label: 'P2 높음' },
+                        { level: 'MEDIUM', label: 'P3 보통' },
+                        { level: 'LOW', label: 'P4 낮음' }
+                    ].map(({ level, label }) => {
                         const isActive = rec.severity === level;
                         const colors = {
                             CRITICAL: 'bg-red-500 text-white',
@@ -355,7 +360,7 @@ function renderRecommendationDetail(rec, members) {
                             MEDIUM: 'bg-yellow-500 text-white',
                             LOW: 'bg-gray-400 text-white'
                         };
-                        return `<div class="px-3 py-2 ${isActive ? colors[level] : 'bg-gray-100 text-gray-400'} rounded-lg text-center text-sm font-medium">${level}</div>`;
+                        return `<div class="px-3 py-2 ${isActive ? colors[level] : 'bg-gray-100 text-gray-400'} rounded-lg text-center text-sm font-medium">${label}</div>`;
                     }).join('')}
                 </div>
                 <p class="text-xs text-gray-500 mt-2">심각도 점수: ${rec.severityScore}점</p>
@@ -374,6 +379,21 @@ function renderRecommendationDetail(rec, members) {
                 </select>
                 <p class="text-xs text-gray-500 mt-2">
                     💡 이슈 생성 시 선택한 담당자에게 알림이 전송됩니다
+                </p>
+            </div>
+
+            <!-- 우선순위 선택 -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-3">우선순위 <span class="text-red-500">*</span></label>
+                <select id="prioritySelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <option value="">선택하세요</option>
+                    <option value="P1">P1 긴급</option>
+                    <option value="P2">P2 높음</option>
+                    <option value="P3">P3 보통</option>
+                    <option value="P4">P4 낮음</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-2">
+                    💡 비즈니스 중요도에 따라 우선순위를 지정하세요
                 </p>
             </div>
 
@@ -410,7 +430,7 @@ async function approveRecommendation(recommendationId) {
         });
 
         if (body.success) {
-            alert('추천이 승인되어 이슈로 생성되었습니다.');
+            showTopToast('추천이 승인되어 이슈로 생성되었습니다.', 'success');
             loadRecommendationList();
         } else {
             showError(body.error?.message || '승인에 실패했습니다.');
@@ -430,6 +450,10 @@ async function approveFromDetail() {
     const assigneeSelect = document.getElementById('assigneeSelect');
     const selectedAssigneeId = assigneeSelect ? assigneeSelect.value : null;
 
+    // 선택된 우선순위 가져오기
+    const prioritySelect = document.getElementById('prioritySelect');
+    const selectedPriority = prioritySelect ? prioritySelect.value : null;
+
     // 수정된 제목과 설명 가져오기
     const title = document.getElementById('editIssueTitle')?.value?.trim();
     const description = document.getElementById('editIssueDescription')?.value?.trim();
@@ -441,19 +465,27 @@ async function approveFromDetail() {
         return;
     }
 
+    // 우선순위 필수 검증
+    if (!selectedPriority) {
+        showError('우선순위를 선택하세요.');
+        document.getElementById('prioritySelect')?.focus();
+        return;
+    }
+
     try {
         const body = await callApi(`/api/projects/${currentProjectId}/issue-recommendations/${currentRecommendationId}/approve`, {
             method: 'POST',
             body: JSON.stringify({
                 assigneeId: selectedAssigneeId,
                 title: title,
-                description: description
+                description: description,
+                priority: selectedPriority
             })
         });
 
         if (body.success) {
             closeModal('recommendationDetailModal');
-            alert('추천이 승인되어 이슈로 생성되었습니다.');
+            showTopToast('추천이 승인되어 이슈로 생성되었습니다.', 'success');
             loadRecommendationList();
         } else {
             showError(body.error?.message || '승인에 실패했습니다.');
@@ -484,7 +516,7 @@ async function confirmReject() {
 
         if (body.success) {
             closeModal('rejectConfirmModal');
-            alert('추천이 거부되었습니다.');
+            showTopToast('추천이 거부되었습니다.', 'success');
             loadRecommendationList();
         } else {
             showError(body.error?.message || '거부에 실패했습니다.');
@@ -557,7 +589,7 @@ function renderIssueList(issues) {
         <div class="mx-4 my-3 p-4 bg-white border-l-4 ${borderColor} rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
              onclick="openIssueDetail(${issue.id})">
             <div class="grid grid-cols-12 gap-4 items-center">
-                <div class="col-span-4">
+                <div class="col-span-3">
                     <p class="text-sm font-semibold text-gray-900 mb-1">${issue.title}</p>
                     <div class="flex items-center gap-2 text-xs text-gray-500">
                         <span>ID: ${issue.id}</span>
@@ -570,6 +602,9 @@ function renderIssueList(issues) {
                 </div>
                 <div class="col-span-2 text-center">
                     ${getSeverityBadge(issue.severity, issue.severityScore)}
+                </div>
+                <div class="col-span-1 text-center">
+                    ${getPriorityBadge(issue.priority)}
                 </div>
                 <div class="col-span-1 text-center">
                     <span class="text-sm font-medium text-gray-700">${issue.occurrenceCount}회</span>
@@ -724,7 +759,7 @@ async function submitAssign() {
         if (body.success) {
             closeModal('assignModal');
             loadIssueList();
-            alert('담당자가 지정되었습니다.');
+            showTopToast('담당자가 지정되었습니다.', 'success');
         } else {
             errorEl.textContent = body.error?.message || '담당자 지정에 실패했습니다.';
             errorEl.classList.remove('hidden');
@@ -768,7 +803,7 @@ async function submitStatusChange() {
         if (body.success) {
             closeModal('statusModal');
             loadIssueList();
-            alert('이슈 상태가 변경되었습니다.');
+            showTopToast('이슈 상태가 변경되었습니다.', 'success');
         } else {
             errorEl.textContent = body.error?.message || '상태 변경에 실패했습니다.';
             errorEl.classList.remove('hidden');
@@ -868,6 +903,21 @@ function getQualityBadge(severityScore) {
     }
 }
 
+function getPriorityBadge(priority) {
+    if (!priority) {
+        return '<span class="text-xs text-gray-400">미설정</span>';
+    }
+
+    const priorityMap = {
+        P1: { label: 'P1 긴급', color: 'bg-red-100 text-red-700' },
+        P2: { label: 'P2 높음', color: 'bg-orange-100 text-orange-700' },
+        P3: { label: 'P3 보통', color: 'bg-yellow-100 text-yellow-700' },
+        P4: { label: 'P4 낮음', color: 'bg-gray-100 text-gray-700' }
+    };
+    const { label, color } = priorityMap[priority] || { label: priority, color: 'bg-gray-100 text-gray-700' };
+    return `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
+}
+
 function showError(message) {
-    alert(message);
+    showTopToast(message, 'danger');
 }

@@ -9,7 +9,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import kr.java.documind.domain.auth.model.enums.GlobalRole;
 import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
@@ -64,8 +65,8 @@ public class Member extends UuidBaseEntity {
     @Column(name = "account_status", nullable = false, length = 20)
     private AccountStatus accountStatus;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    @Column(name = "deleted_at", columnDefinition = "TIMESTAMPTZ")
+    private OffsetDateTime deletedAt;
 
     public static Member createByOAuth(
             String email,
@@ -112,7 +113,7 @@ public class Member extends UuidBaseEntity {
 
     public void softDelete() {
         this.accountStatus = AccountStatus.DELETED;
-        this.deletedAt = LocalDateTime.now();
+        this.deletedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     public boolean isActive() {

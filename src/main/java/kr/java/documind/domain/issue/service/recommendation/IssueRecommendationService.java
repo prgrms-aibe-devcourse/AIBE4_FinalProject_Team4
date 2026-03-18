@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.dto.response.SimilarityResult;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
@@ -81,6 +82,7 @@ public class IssueRecommendationService {
      * @param assigneeId 담당자 ID (프로젝트 멤버)
      * @param title 이슈 제목 (수정된 제목, null이면 기존 제목 유지)
      * @param description 이슈 설명 (수정된 설명, null이면 기존 설명 유지)
+     * @param priority 우선순위 (P1/P2/P3/P4)
      * @param modifierId 승인한 사용자 ID
      */
     @Transactional
@@ -90,6 +92,7 @@ public class IssueRecommendationService {
             UUID assigneeId,
             String title,
             String description,
+            IssuePriority priority,
             UUID modifierId) {
         Issue issue = getRecommendationDetail(issueId, projectId);
 
@@ -113,12 +116,18 @@ public class IssueRecommendationService {
             issue.assignTo(assigneeId);
         }
 
+        // 우선순위 설정
+        if (priority != null) {
+            issue.setPriority(priority);
+        }
+
         issue.approve(); // RECOMMENDED → TODO
 
         log.info(
-                "Issue recommendation approved. issueId={}, assigneeId={}, modifierId={}, fingerprint={}, titleUpdated={}, descriptionUpdated={}",
+                "Issue recommendation approved. issueId={}, assigneeId={}, priority={}, modifierId={}, fingerprint={}, titleUpdated={}, descriptionUpdated={}",
                 issueId,
                 assigneeId,
+                priority,
                 modifierId,
                 issue.getFingerprint(),
                 title != null,

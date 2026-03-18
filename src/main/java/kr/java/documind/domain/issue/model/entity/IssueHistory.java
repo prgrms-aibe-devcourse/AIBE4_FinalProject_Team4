@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -109,13 +110,16 @@ public class IssueHistory {
      * @return 이력 객체
      */
     public static IssueHistory ofPriorityChange(
-            Long issueId, UUID modifierId, String beforePriority, String afterPriority) {
+            Long issueId,
+            UUID modifierId,
+            IssuePriority beforePriority,
+            IssuePriority afterPriority) {
         return IssueHistory.builder()
                 .issueId(issueId)
                 .modifierId(modifierId)
                 .fieldName("PRIORITY")
-                .beforeValue(beforePriority)
-                .afterValue(afterPriority)
+                .beforeValue(beforePriority != null ? beforePriority.toString() : null)
+                .afterValue(afterPriority != null ? afterPriority.toString() : null)
                 .build();
     }
 }
