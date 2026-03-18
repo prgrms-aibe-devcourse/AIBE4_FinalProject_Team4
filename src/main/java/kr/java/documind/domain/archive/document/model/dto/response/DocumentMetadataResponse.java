@@ -1,6 +1,6 @@
 package kr.java.documind.domain.archive.document.model.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 
@@ -11,8 +11,8 @@ public record DocumentMetadataResponse(
         String version,
         boolean isProcessed,
         EmbeddingStatus embeddingStatus,
-        LocalDateTime uploadedAt,
-        LocalDateTime reuploadedAt) {
+        OffsetDateTime uploadedAt,
+        OffsetDateTime reuploadedAt) {
 
     public static DocumentMetadataResponse from(DocumentMetadata metadata) {
         return new DocumentMetadataResponse(

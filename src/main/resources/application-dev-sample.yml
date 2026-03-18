@@ -74,6 +74,15 @@ spring:
           model: openai/text-embedding-3-large
           dimensions: 1536 # 3072 → 1536 차원 축소 (HNSW 인덱스 최대 2000)
 
+    # Spring AI 재시도 설정 (임베딩·채팅 공통)
+    retry:
+      max-attempts: 5
+      backoff:
+        initial-interval: 20000
+        multiplier: 2
+        max-interval: 120000
+      on-http-codes: 429
+
     vectorstore:
       pgvector:
         initialize-schema: false

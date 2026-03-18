@@ -64,7 +64,8 @@ public class VectorStoreRepository {
     }
 
     private String toVectorString(float[] embedding) {
-        StringBuilder sb = new StringBuilder("[");
+        StringBuilder sb = new StringBuilder(embedding.length * 10);
+        sb.append('[');
         for (int i = 0; i < embedding.length; i++) {
             if (i > 0) {
                 sb.append(",");

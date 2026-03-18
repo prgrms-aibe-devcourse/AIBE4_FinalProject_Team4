@@ -53,13 +53,12 @@ public class ChatbotService {
         String filterExpression = buildFilterExpression(projectId, request);
         if (filterExpression == null) {
             return Flux.just(
-                    chatSseConverter.errorEvent("검색 대상 문서가 없습니다."), chatSseConverter.doneEvent(""));
+                    chatSseConverter.errorEvent("검색 대상 문서가 없습니다."), chatSseConverter.doneEvent());
         }
 
-        // 2. 스코프 설명 & 모델 결정 & 시스템 메시지
-        String scopeDescription = buildScopeDescription(request);
+        // 2. 모델 결정 & 시스템 메시지
         ResolvedChatModel resolved = chatModelResolver.resolve(request.modelAlias());
-        String systemMessage = buildSystemMessage(scopeDescription, request.userSystemMessage());
+        String systemMessage = buildSystemMessage(request.userSystemMessage());
 
         // 3. 참조문서 추출 상태 (null이면 아직 미추출)
         AtomicReference<List<ReferenceResponse>> refsHolder = new AtomicReference<>(null);
@@ -108,7 +107,7 @@ public class ChatbotService {
                             if (refEvent != null) {
                                 events.add(refEvent);
                             }
-                            events.add(chatSseConverter.doneEvent(scopeDescription));
+                            events.add(chatSseConverter.doneEvent());
                             return Flux.fromIterable(events);
                         });
 
@@ -151,20 +150,10 @@ public class ChatbotService {
                 projectId, request.categoryName());
     }
 
-    private String buildScopeDescription(ChatRequest request) {
-        if (request.groupName() != null) {
-            return "그룹: " + request.groupName();
-        }
-        if (request.categoryName() != null) {
-            return "카테고리: " + request.categoryName();
-        }
-        return "전체 문서";
-    }
-
-    private String buildSystemMessage(String scopeDescription, String userSystemMessage) {
+    private String buildSystemMessage(String userSystemMessage) {
         String template = readTemplate();
-        return template.replace("{scopeDescription}", scopeDescription)
-                .replace("{userSystemMessage}", userSystemMessage != null ? userSystemMessage : "");
+        return template.replace(
+                "{userSystemMessage}", userSystemMessage != null ? userSystemMessage : "");
     }
 
     private String readTemplate() {

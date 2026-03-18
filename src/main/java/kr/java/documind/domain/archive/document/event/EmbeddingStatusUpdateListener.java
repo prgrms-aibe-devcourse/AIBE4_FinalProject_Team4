@@ -1,7 +1,7 @@
 package kr.java.documind.domain.archive.document.event;
 
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
-import kr.java.documind.domain.archive.vector.model.event.EmbeddingStatusEvent;
+import kr.java.documind.domain.archive.vector.event.EmbeddingStatusEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
