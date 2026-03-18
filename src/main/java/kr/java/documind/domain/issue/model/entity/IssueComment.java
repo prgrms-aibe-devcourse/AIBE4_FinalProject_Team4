@@ -3,14 +3,10 @@ package kr.java.documind.domain.issue.model.entity;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import kr.java.documind.global.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,11 +25,7 @@ import org.hibernate.annotations.Type;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class IssueComment {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class IssueComment extends BaseEntity {
 
     @Column(name = "issue_id", nullable = false)
     private Long issueId;
@@ -55,12 +47,6 @@ public class IssueComment {
     @Column(name = "mentioned_member_ids", columnDefinition = "jsonb")
     private List<UUID> mentionedMemberIds;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
-
     /**
      * 댓글 생성 (정적 팩토리 메서드)
      *
@@ -72,14 +58,11 @@ public class IssueComment {
      */
     public static IssueComment create(
             Long issueId, UUID memberId, String content, List<UUID> mentionedMemberIds) {
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         return IssueComment.builder()
                 .issueId(issueId)
                 .memberId(memberId)
                 .content(content)
                 .mentionedMemberIds(mentionedMemberIds)
-                .createdAt(now)
-                .updatedAt(now)
                 .build();
     }
 
@@ -92,6 +75,5 @@ public class IssueComment {
     public void updateContent(String newContent, List<UUID> newMentionedMemberIds) {
         this.content = newContent;
         this.mentionedMemberIds = newMentionedMemberIds;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 }
