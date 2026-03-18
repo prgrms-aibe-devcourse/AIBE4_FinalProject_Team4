@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import kr.java.documind.domain.chatbot.infrastructure.ChatModelResolver;
 import kr.java.documind.domain.chatbot.model.vo.ResolvedChatModel;
 import kr.java.documind.domain.patchnote.model.dto.DocumentSummaryResult;
@@ -81,7 +82,7 @@ public class DocumentSummaryGenerator {
         sb.append("내용:\n");
 
         int remaining = CONTENT_CHAR_LIMIT;
-        for (String chunk : chunks) {
+        for (String chunk : chunks.stream().filter(Objects::nonNull).toList()) {
             if (remaining <= 0) break;
             String part = chunk.length() > remaining ? chunk.substring(0, remaining) : chunk;
             sb.append(part).append('\n');
