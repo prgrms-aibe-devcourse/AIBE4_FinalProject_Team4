@@ -9,6 +9,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentGroupManager;
@@ -63,7 +64,7 @@ class DocumentGroupServiceTest {
                 "stored/key",
                 false,
                 EmbeddingStatus.NONE,
-                OffsetDateTime.now());
+                OffsetDateTime.now(ZoneOffset.UTC));
     }
 
     @Nested
@@ -166,6 +167,36 @@ class DocumentGroupServiceTest {
         }
 
         @Test
+        @DisplayName("공백 포함 입력 시 trim 처리 후 변경")
+        void updateGroupName_InputWithWhitespace_TrimsAndUpdates() {
+            // Given
+            DocumentGroup group = createGroup("개발", "기존그룹");
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
+
+            // When
+            documentGroupService.updateGroupName(projectId, groupId, "  새그룹  ");
+
+            // Then
+            assertThat(group.getGroupName()).isEqualTo("새그룹");
+        }
+
+        @Test
+        @DisplayName("공백만 있는 입력이 trim 후 기존 이름과 동일하면 ConflictException")
+        void updateGroupName_WhitespaceAroundSameName_ThrowsConflictException() {
+            // Given
+            DocumentGroup group = createGroup("개발", "기존그룹");
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
+
+            // When & Then
+            assertThatThrownBy(
+                            () ->
+                                    documentGroupService.updateGroupName(
+                                            projectId, groupId, "  기존그룹  "))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessageContaining("동일");
+        }
+
+        @Test
         @DisplayName("같은 카테고리 내 중복 이름 시 ConflictException")
         void updateGroupName_DuplicateNameInCategory_ThrowsConflictException() {
             // Given
@@ -216,6 +247,36 @@ class DocumentGroupServiceTest {
             then(documentGroupManager)
                     .should(never())
                     .validateGroupNameUniqueness(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("공백 포함 입력 시 trim 처리 후 변경")
+        void updateCategory_InputWithWhitespace_TrimsAndUpdates() {
+            // Given
+            DocumentGroup group = createGroup("개발", "그룹A");
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
+
+            // When
+            documentGroupService.updateCategory(projectId, groupId, "  운영  ");
+
+            // Then
+            assertThat(group.getCategory()).isEqualTo("운영");
+        }
+
+        @Test
+        @DisplayName("공백만 있는 입력이 trim 후 기존 카테고리와 동일하면 ConflictException")
+        void updateCategory_WhitespaceAroundSameCategory_ThrowsConflictException() {
+            // Given
+            DocumentGroup group = createGroup("개발", "그룹A");
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
+
+            // When & Then
+            assertThatThrownBy(
+                            () ->
+                                    documentGroupService.updateCategory(
+                                            projectId, groupId, "  개발  "))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessageContaining("동일");
         }
 
         @Test
