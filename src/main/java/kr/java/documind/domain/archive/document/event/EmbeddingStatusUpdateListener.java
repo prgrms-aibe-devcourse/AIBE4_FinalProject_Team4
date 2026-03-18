@@ -2,10 +2,9 @@ package kr.java.documind.domain.archive.document.event;
 
 import java.time.Instant;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
-import kr.java.documind.domain.archive.vector.event.EmbeddingStatusEvent;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
+import kr.java.documind.domain.archive.vector.event.EmbeddingStatusEvent;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
-import kr.java.documind.domain.archive.vector.model.event.EmbeddingStatusEvent;
 import kr.java.documind.domain.patchnote.event.DocumentEmbeddedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

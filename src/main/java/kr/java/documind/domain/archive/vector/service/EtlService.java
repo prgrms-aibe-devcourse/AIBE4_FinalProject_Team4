@@ -87,6 +87,7 @@ public class EtlService {
             metadata.put("source_id", sourceId);
             metadata.put("chunk_index", i);
             metadata.put("total_chunks", totalChunks);
+            metadata.put("source_type", "DOCUMENT");
         }
     }
 

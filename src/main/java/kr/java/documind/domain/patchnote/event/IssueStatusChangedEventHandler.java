@@ -47,18 +47,6 @@ public class IssueStatusChangedEventHandler {
     private final ChoseongUtil choseongUtil;
     private final ApplicationEventPublisher eventPublisher;
 
-    /**
-     * 이슈 RESOLVED 전환 시 pending_item을 적재한다.
-     *
-     * <p>실패 시 예외를 throw하여 {@code CustomAsyncExceptionHandler}로 전파한다.
-     *
-     * <ul>
-     *   <li>{@link IssueInsufficientInfoException} — 정보 부족 (담당자 경고 top-toast)
-     *   <li>{@link kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException}
-     *       — pending_item 최종 저장 실패 (관리자 알림 top-toast)
-     *   <li>기타 {@link Exception} — vector 저장·청킹·임베딩 실패 (관리자 알림 top-toast)
-     * </ul>
-     */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleIssueResolved(IssueStatusChangedEvent event) {
@@ -193,24 +181,6 @@ public class IssueStatusChangedEventHandler {
 
         } catch (Exception e) {
             log.error("[PatchNote] 이슈 롤백 처리 중 예외 발생 - issueId: {}", event.issueId(), e);
-        }
-    }
-
-    @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleIssueDeleted(IssueDeletedEvent event) {
-        log.info(
-                "[PatchNote] 이슈 삭제 감지 - issueId: {}, projectId: {}",
-                event.issueId(),
-                event.projectId());
-
-        try {
-            pendingItemService.markSourceDeleted(
-                    event.projectId(), event.issueId(), SourceType.ISSUE);
-            log.info(
-                    "[PatchNote] 이슈 삭제 처리 완료 — sourceDeleted 플래그 설정. issueId: {}", event.issueId());
-        } catch (Exception e) {
-            log.error("[PatchNote] 이슈 삭제 처리 중 예외 발생 - issueId: {}", event.issueId(), e);
         }
     }
 
