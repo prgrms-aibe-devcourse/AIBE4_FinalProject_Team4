@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ==================== 댓글 목록 조회 ====================
 async function loadComments(page = 0) {
-    const projectId = document.getElementById('projectId').value;
+    const projectId = document.getElementById('publicId').value;
     const issueId = document.getElementById('issueId').value;
 
     try {
@@ -104,7 +104,7 @@ function renderCommentItem(comment) {
 
 // ==================== 댓글 작성 ====================
 async function submitComment() {
-    const projectId = document.getElementById('projectId').value;
+    const projectId = document.getElementById('publicId').value;
     const issueId = document.getElementById('issueId').value;
     const input = document.getElementById('commentInput');
     const content = input.value.trim();
@@ -170,7 +170,7 @@ async function editComment(commentId) {
 }
 
 async function saveCommentEdit(commentId, button) {
-    const projectId = document.getElementById('projectId').value;
+    const projectId = document.getElementById('publicId').value;
     const issueId = document.getElementById('issueId').value;
     const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
     const textarea = commentElement.querySelector('textarea');
@@ -219,7 +219,7 @@ async function deleteComment(commentId) {
         return;
     }
 
-    const projectId = document.getElementById('projectId').value;
+    const projectId = document.getElementById('publicId').value;
     const issueId = document.getElementById('issueId').value;
 
     try {
@@ -295,7 +295,7 @@ async function searchMembers(query) {
         return;
     }
 
-    const projectId = document.getElementById('projectId').value;
+    const projectId = document.getElementById('publicId').value;
 
     try {
         const response = await callApi(
@@ -439,7 +439,7 @@ function extractMentions(content) {
 async function resolveMentionsToIds(nicknames) {
     if (nicknames.length === 0) return [];
 
-    const projectId = document.getElementById('projectId').value;
+    const projectId = document.getElementById('publicId').value;
     const memberIds = [];
 
     for (const nickname of nicknames) {
