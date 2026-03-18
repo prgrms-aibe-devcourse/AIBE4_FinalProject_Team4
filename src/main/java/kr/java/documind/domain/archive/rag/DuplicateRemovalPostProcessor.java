@@ -12,6 +12,8 @@ import org.springframework.ai.rag.postretrieval.document.DocumentPostProcessor;
 @Slf4j
 public class DuplicateRemovalPostProcessor implements DocumentPostProcessor {
 
+    private static final String SOURCE_ID_KEY = "source_id";
+
     @Override
     public List<Document> process(Query query, List<Document> documents) {
         Set<String> seenIds = new LinkedHashSet<>();
@@ -27,7 +29,7 @@ public class DuplicateRemovalPostProcessor implements DocumentPostProcessor {
 
         int removed = documents.size() - deduplicated.size();
         if (removed > 0) {
-            log.info(
+            log.debug(
                     "[PostProcessor] 중복 청크 {} 건 제거 ({} → {})",
                     removed,
                     documents.size(),
@@ -69,8 +71,8 @@ public class DuplicateRemovalPostProcessor implements DocumentPostProcessor {
     }
 
     private boolean sameSource(Document a, Document b) {
-        Object sourceA = a.getMetadata().get("source_id");
-        Object sourceB = b.getMetadata().get("source_id");
+        Object sourceA = a.getMetadata().get(SOURCE_ID_KEY);
+        Object sourceB = b.getMetadata().get(SOURCE_ID_KEY);
         if (sourceA == null || sourceB == null) return false;
         return String.valueOf(sourceA).equals(String.valueOf(sourceB));
     }
