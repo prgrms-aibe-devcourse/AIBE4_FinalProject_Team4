@@ -62,11 +62,7 @@ public class VectorStoreRepository {
 
     public List<String> findContentsBySourceId(Long sourceId, SourceType sourceType, int limit) {
         return jdbcTemplate.queryForList(
-                FIND_CONTENTS_BY_SOURCE_ID_SQL,
-                String.class,
-                sourceId,
-                sourceType.name(),
-                limit);
+                FIND_CONTENTS_BY_SOURCE_ID_SQL, String.class, sourceId, sourceType.name(), limit);
     }
 
     private String toJsonb(Map<String, Object> metadata) {

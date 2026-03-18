@@ -1,6 +1,7 @@
 package kr.java.documind.domain.patchnote.model.dto;
 
-public record IssueChunkDraft(String chunkRole, Long commentId, Integer sourceIndex, Integer commentIndex) {
+public record IssueChunkDraft(
+        String chunkRole, Long commentId, Integer sourceIndex, Integer commentIndex) {
 
     public static IssueChunkDraft background() {
         return new IssueChunkDraft("background", null, null, null);

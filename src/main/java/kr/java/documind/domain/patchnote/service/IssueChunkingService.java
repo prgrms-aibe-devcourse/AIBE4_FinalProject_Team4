@@ -58,8 +58,7 @@ public class IssueChunkingService {
         for (IssueCommentChunkSource comment : source.comments()) {
             if (heuristicAnalyzer.hasMeaningfulComment(comment)) {
                 drafts.add(
-                        IssueChunkDraft.comment(
-                                comment.commentId(), sourceIndex, commentIndex++));
+                        IssueChunkDraft.comment(comment.commentId(), sourceIndex, commentIndex++));
             }
             sourceIndex++;
         }
