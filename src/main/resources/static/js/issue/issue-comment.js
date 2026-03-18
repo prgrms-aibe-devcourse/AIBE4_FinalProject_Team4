@@ -13,6 +13,8 @@ let totalPages = 0;
 let mentionedMembers = []; // {memberId, nickname}
 let currentMentionQuery = '';
 let mentionStartPos = -1;
+let selectedMemberIndex = -1; // 드롭다운에서 선택된 멤버 인덱스 (화살표 키 네비게이션용)
+let currentMemberList = []; // 현재 드롭다운에 표시된 멤버 목록
 
 // ==================== 페이지 로드 ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -275,7 +277,10 @@ function handleInputChange(e) {
     }
 
     // @ 없으면 드롭다운 닫기
-    document.getElementById('mentionDropdown').classList.add('hidden');
+    const dropdown = document.getElementById('mentionDropdown');
+    dropdown.classList.add('hidden');
+    selectedMemberIndex = -1;
+    currentMemberList = [];
 }
 
 function handleKeyDown(e) {
@@ -284,7 +289,31 @@ function handleKeyDown(e) {
     if (!dropdown.classList.contains('hidden')) {
         if (e.key === 'Escape') {
             dropdown.classList.add('hidden');
+            selectedMemberIndex = -1;
             e.preventDefault();
+        } else if (e.key === 'ArrowDown') {
+            // 아래 화살표 - 다음 멤버 선택
+            e.preventDefault();
+            if (currentMemberList.length > 0) {
+                selectedMemberIndex = (selectedMemberIndex + 1) % currentMemberList.length;
+                updateSelectedItem();
+            }
+        } else if (e.key === 'ArrowUp') {
+            // 위 화살표 - 이전 멤버 선택
+            e.preventDefault();
+            if (currentMemberList.length > 0) {
+                selectedMemberIndex = selectedMemberIndex <= 0
+                    ? currentMemberList.length - 1
+                    : selectedMemberIndex - 1;
+                updateSelectedItem();
+            }
+        } else if (e.key === 'Enter') {
+            // Enter - 선택된 멤버 삽입
+            e.preventDefault();
+            if (selectedMemberIndex >= 0 && selectedMemberIndex < currentMemberList.length) {
+                const member = currentMemberList[selectedMemberIndex];
+                selectMention(member.memberId, member.nickname);
+            }
         }
     }
 }
@@ -304,6 +333,7 @@ async function searchMembers(query) {
         );
 
         if (response.success) {
+            updateDropdownPosition();
             renderMentionDropdown(response.data);
         }
     } catch (error) {
@@ -311,25 +341,96 @@ async function searchMembers(query) {
     }
 }
 
+/**
+ * 커서 위치에 맞춰 드롭다운 위치 계산
+ */
+function updateDropdownPosition() {
+    const input = document.getElementById('commentInput');
+    const dropdown = document.getElementById('mentionDropdown');
+    const computedStyle = window.getComputedStyle(input);
+
+    // @ 위치까지의 텍스트
+    const textBeforeCursor = input.value.substring(0, mentionStartPos);
+    const lines = textBeforeCursor.split('\n');
+    const currentLineIndex = lines.length - 1;
+
+    // 줄 높이 계산
+    const lineHeight = parseInt(computedStyle.lineHeight) || parseInt(computedStyle.fontSize) * 1.5;
+    const paddingTop = parseInt(computedStyle.paddingTop) || 0;
+
+    // Y 좌표: (줄 번호 * 줄 높이) + padding - 스크롤
+    const top = (currentLineIndex * lineHeight) + paddingTop + lineHeight + 4 - input.scrollTop;
+
+    // X 좌표: 왼쪽 padding
+    const left = parseInt(computedStyle.paddingLeft) || 0;
+
+    // 너비: 350px 또는 textarea 너비 중 작은 값
+    const paddingRight = parseInt(computedStyle.paddingRight) || 0;
+    const maxAvailableWidth = input.offsetWidth - left - paddingRight;
+    const width = Math.min(350, maxAvailableWidth);
+
+    dropdown.style.top = top + 'px';
+    dropdown.style.left = left + 'px';
+    dropdown.style.width = width + 'px';
+}
+
 function renderMentionDropdown(members) {
     const dropdown = document.getElementById('mentionDropdown');
 
     if (members.length === 0) {
         dropdown.classList.add('hidden');
+        currentMemberList = [];
+        selectedMemberIndex = -1;
         return;
     }
 
-    dropdown.innerHTML = members.map(member => `
-        <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-             onclick="selectMention('${member.memberId}', '${escapeHtml(member.nickname)}')">
-            <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-xs text-gray-600">
-                ${member.nickname.charAt(0)}
+    currentMemberList = members;
+    selectedMemberIndex = 0; // 첫 번째 항목 자동 선택
+
+    dropdown.innerHTML = members.map((member, index) => {
+        const profileImageUrl = member.profileImageUrl;
+        const nickname = escapeHtml(member.nickname);
+        const initial = member.nickname.charAt(0).toUpperCase();
+
+        // 프로필 이미지 또는 이니셜 아바타
+        const avatarHtml = profileImageUrl
+            ? `<img src="${escapeHtml(profileImageUrl)}" alt="${nickname}"
+                    class="w-8 h-8 object-cover rounded-md border border-gray-200">`
+            : `<div class="w-8 h-8 bg-docu-primary rounded-md flex items-center justify-center border border-gray-200">
+                   <span class="text-white text-sm font-semibold">${initial}</span>
+               </div>`;
+
+        return `
+            <div class="mention-item px-3 py-2 cursor-pointer flex items-center gap-3 transition-colors duration-150 hover:bg-gray-50 rounded-md mx-1 ${index === 0 ? 'bg-indigo-50' : ''}"
+                 data-index="${index}"
+                 onclick="selectMention('${member.memberId}', '${nickname}')">
+                ${avatarHtml}
+                <div class="flex flex-col min-w-0">
+                    <span class="text-sm font-medium text-gray-900 truncate">${nickname}</span>
+                </div>
             </div>
-            <span class="text-sm text-gray-900">${escapeHtml(member.nickname)}</span>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     dropdown.classList.remove('hidden');
+}
+
+/**
+ * 드롭다운에서 선택된 항목 시각적 업데이트
+ */
+function updateSelectedItem() {
+    const dropdown = document.getElementById('mentionDropdown');
+    const items = dropdown.querySelectorAll('.mention-item');
+
+    items.forEach((item, index) => {
+        if (index === selectedMemberIndex) {
+            item.classList.add('bg-indigo-50');
+            // 스크롤하여 선택된 항목 보이도록
+            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+            item.classList.remove('bg-indigo-50');
+        }
+    });
 }
 
 function selectMention(memberId, nickname) {
@@ -350,8 +451,10 @@ function selectMention(memberId, nickname) {
         updateMentionedMembersPreview();
     }
 
-    // 드롭다운 닫기
+    // 드롭다운 닫기 및 상태 리셋
     document.getElementById('mentionDropdown').classList.add('hidden');
+    selectedMemberIndex = -1;
+    currentMemberList = [];
     input.focus();
 }
 
