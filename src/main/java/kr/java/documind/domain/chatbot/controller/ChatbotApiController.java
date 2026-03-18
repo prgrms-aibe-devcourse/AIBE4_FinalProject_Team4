@@ -7,6 +7,7 @@ import kr.java.documind.domain.chatbot.model.dto.request.ChatRequest;
 import kr.java.documind.domain.chatbot.service.ChatbotMetaService;
 import kr.java.documind.domain.chatbot.service.ChatbotService;
 import kr.java.documind.global.annotation.ProjectId;
+import kr.java.documind.global.annotation.RequireProjectMember;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +30,14 @@ public class ChatbotApiController {
     private final ChatbotMetaService chatbotMetaService;
 
     @GetMapping("/scopes/groups")
+    @RequireProjectMember
     public ApiResponse<List<String>> getGroupNames(@ProjectId UUID projectId) {
         List<String> groupNames = chatbotMetaService.getGroupNames(projectId);
         return ApiResponse.success(groupNames);
     }
 
     @GetMapping("/scopes/categories")
+    @RequireProjectMember
     public ApiResponse<List<String>> getCategoryNames(@ProjectId UUID projectId) {
         List<String> categoryNames = chatbotMetaService.getCategoryNames(projectId);
         return ApiResponse.success(categoryNames);

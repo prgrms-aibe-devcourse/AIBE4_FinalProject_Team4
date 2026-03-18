@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 @RequireProjectMember
-@RequiredArgsConstructor
 @ProjectPage(ServiceMenu.DOCUMENTS)
+@RequiredArgsConstructor
 public class DocumentViewController {
 
     private final DocumentMetadataService documentMetadataService;
