@@ -57,7 +57,7 @@ async function loadIssueDetail() {
     try {
         // 이슈 상세 정보와 프로젝트 멤버 목록을 병렬로 로드
         const [issueBody, membersBody] = await Promise.all([
-            callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}`, {
+            callApi(`/api/projects/${currentPublicId}/issues/${currentIssueId}`, {
                 method: 'GET'
             }),
             callApi(`/api/projects/${currentPublicId}/members`, {
@@ -132,10 +132,10 @@ function renderSeverityAnalysis(issue) {
     const container = document.getElementById('severityAnalysis');
 
     const severityColors = {
-        CRITICAL: { bg: 'bg-red-500', text: 'text-red-600' },
-        HIGH: { bg: 'bg-orange-500', text: 'text-orange-600' },
-        MEDIUM: { bg: 'bg-yellow-500', text: 'text-yellow-600' },
-        LOW: { bg: 'bg-gray-400', text: 'text-gray-600' }
+        CRITICAL: { bg: 'bg-docu-danger', text: 'text-docu-danger' },
+        HIGH: { bg: 'bg-docu-warning', text: 'text-docu-warning' },
+        MEDIUM: { bg: 'bg-docu-warning', text: 'text-docu-warning' },
+        LOW: { bg: 'bg-surface-sub', text: 'text-docu-secondary' }
     };
 
     const color = severityColors[issue.severity] || severityColors.LOW;
@@ -144,22 +144,22 @@ function renderSeverityAnalysis(issue) {
         <div class="flex items-center gap-4 mb-4">
             <div class="flex-1">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm font-medium text-gray-600">${issue.severity}</span>
+                    <span class="text-sm font-medium text-docu-secondary">${issue.severity}</span>
                     <span class="text-2xl font-bold ${color.text}">${issue.severityScore}점</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="w-full bg-surface-sub rounded-full h-3">
                     <div class="${color.bg} h-3 rounded-full" style="width: ${issue.severityScore}%"></div>
                 </div>
             </div>
         </div>
         <div class="grid grid-cols-2 gap-3 text-sm">
-            <div class="p-3 bg-gray-50 rounded-lg">
-                <p class="text-xs text-gray-500 mb-1">발생 대비</p>
-                <p class="font-semibold text-gray-900">+${Math.floor(Math.random() * 50)}%</p>
+            <div class="p-3 bg-surface-secondary rounded-lg">
+                <p class="text-xs text-docu-secondary mb-1">발생 대비</p>
+                <p class="font-semibold text-docu-ink">+${Math.floor(Math.random() * 50)}%</p>
             </div>
-            <div class="p-3 bg-gray-50 rounded-lg">
-                <p class="text-xs text-gray-500 mb-1">영향 플레이어</p>
-                <p class="font-semibold text-gray-900">${Math.floor(issue.occurrenceCount * 0.7)}명</p>
+            <div class="p-3 bg-surface-secondary rounded-lg">
+                <p class="text-xs text-docu-secondary mb-1">영향 플레이어</p>
+                <p class="font-semibold text-docu-ink">${Math.floor(issue.occurrenceCount * 0.7)}명</p>
             </div>
         </div>
     `;
@@ -171,22 +171,22 @@ function renderGroupingInfo(issue) {
     container.innerHTML = `
         <div class="space-y-3 text-sm">
             <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">에러 분류</label>
-                <p class="text-gray-900">Fingerprint</p>
-                <p class="text-xs text-gray-500 font-mono mt-1">${issue.fingerprint ? issue.fingerprint.substring(0, 16) + '...' : 'N/A'}</p>
+                <label class="block text-xs font-semibold text-docu-secondary mb-1">에러 분류</label>
+                <p class="text-docu-ink">Fingerprint</p>
+                <p class="text-xs text-docu-secondary font-mono mt-1">${issue.fingerprint ? issue.fingerprint.substring(0, 16) + '...' : 'N/A'}</p>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">에러 타입</label>
-                <p class="text-gray-900">${issue.errorType || 'UNKNOWN'}</p>
+                <label class="block text-xs font-semibold text-docu-secondary mb-1">에러 타입</label>
+                <p class="text-docu-ink">${issue.errorType || 'UNKNOWN'}</p>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">스택트레이스</label>
-                <p class="text-gray-600">${issue.stackKey ? '분석 완료' : 'N/A'}</p>
+                <label class="block text-xs font-semibold text-docu-secondary mb-1">스택트레이스</label>
+                <p class="text-docu-secondary">${issue.stackKey ? '분석 완료' : 'N/A'}</p>
             </div>
             ${issue.similarityResults && issue.similarityResults.length > 0 ? `
             <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">유사 이슈</label>
-                <p class="text-gray-900">${issue.similarityResults.length}건 발견</p>
+                <label class="block text-xs font-semibold text-docu-secondary mb-1">유사 이슈</label>
+                <p class="text-docu-ink">${issue.similarityResults.length}건 발견</p>
             </div>
             ` : ''}
         </div>
@@ -201,7 +201,7 @@ async function renderOccurrenceTrend(issue) {
     try {
         // 실제 API에서 데이터 가져오기
         const body = await callApi(
-            `/api/projects/${currentProjectId}/issues/${currentIssueId}/trend?days=${getDaysFromRange(currentTimeRange)}`,
+            `/api/projects/${currentPublicId}/issues/${currentIssueId}/trend?days=${getDaysFromRange(currentTimeRange)}`,
             { method: 'GET' }
         );
 
@@ -272,17 +272,17 @@ async function setTimeRange(range) {
     // 버튼 스타일 업데이트
     document.querySelectorAll('.time-range-btn').forEach(btn => {
         if (btn.dataset.range === range) {
-            btn.classList.add('border-indigo-600', 'text-indigo-600');
-            btn.classList.remove('border-transparent', 'text-gray-500');
+            btn.classList.add('border-docu-primary', 'text-docu-primary');
+            btn.classList.remove('border-transparent', 'text-docu-secondary');
         } else {
-            btn.classList.remove('border-indigo-600', 'text-indigo-600');
-            btn.classList.add('border-transparent', 'text-gray-500');
+            btn.classList.remove('border-docu-primary', 'text-docu-primary');
+            btn.classList.add('border-transparent', 'text-docu-secondary');
         }
     });
 
     // 차트 재렌더링 (실제 API에서 새 데이터 가져오기)
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${currentIssueId}`, {
             method: 'GET'
         });
 
@@ -311,12 +311,12 @@ async function renderDistributionAnalysis(issue) {
     const container = document.getElementById('distributionAnalysis');
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/distribution`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${currentIssueId}/distribution`, {
             method: 'GET'
         });
 
         if (!body.success || !body.data) {
-            container.innerHTML = '<p class="text-sm text-gray-400">분포 분석 데이터를 불러올 수 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary">분포 분석 데이터를 불러올 수 없습니다.</p>';
             return;
         }
 
@@ -326,7 +326,7 @@ async function renderDistributionAnalysis(issue) {
         if ((!distributionData.os || distributionData.os.length === 0) &&
             (!distributionData.version || distributionData.version.length === 0) &&
             (!distributionData.device || distributionData.device.length === 0)) {
-            container.innerHTML = '<p class="text-sm text-gray-400">분포 분석 데이터가 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary">분포 분석 데이터가 없습니다.</p>';
             return;
         }
 
@@ -335,16 +335,16 @@ async function renderDistributionAnalysis(issue) {
                 <!-- OS 분포 -->
                 ${distributionData.os && distributionData.os.length > 0 ? `
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">운영체제</h3>
+                    <h3 class="text-sm font-semibold text-docu-ink mb-3">운영체제</h3>
                     <div class="space-y-2">
                         ${distributionData.os.map(item => `
                             <div>
                                 <div class="flex items-center justify-between text-sm mb-1">
-                                    <span class="text-gray-600">${item.name}</span>
-                                    <span class="font-medium text-gray-900">${item.count}회 (${item.percentage}%)</span>
+                                    <span class="text-docu-secondary">${item.name}</span>
+                                    <span class="font-medium text-docu-ink">${item.count}회 (${item.percentage}%)</span>
                                 </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-indigo-600 h-2 rounded-full" style="width: ${item.percentage}%"></div>
+                                <div class="w-full bg-surface-sub rounded-full h-2">
+                                    <div class="bg-docu-primary h-2 rounded-full" style="width: ${item.percentage}%"></div>
                                 </div>
                             </div>
                         `).join('')}
@@ -355,16 +355,16 @@ async function renderDistributionAnalysis(issue) {
                 <!-- 버전 분포 -->
                 ${distributionData.version && distributionData.version.length > 0 ? `
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">앱 버전</h3>
+                    <h3 class="text-sm font-semibold text-docu-ink mb-3">앱 버전</h3>
                     <div class="space-y-2">
                         ${distributionData.version.map(item => `
                             <div>
                                 <div class="flex items-center justify-between text-sm mb-1">
-                                    <span class="text-gray-600">${item.name}</span>
-                                    <span class="font-medium text-gray-900">${item.count}회 (${item.percentage}%)</span>
+                                    <span class="text-docu-secondary">${item.name}</span>
+                                    <span class="font-medium text-docu-ink">${item.count}회 (${item.percentage}%)</span>
                                 </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-green-600 h-2 rounded-full" style="width: ${item.percentage}%"></div>
+                                <div class="w-full bg-surface-sub rounded-full h-2">
+                                    <div class="bg-docu-success h-2 rounded-full" style="width: ${item.percentage}%"></div>
                                 </div>
                             </div>
                         `).join('')}
@@ -375,16 +375,16 @@ async function renderDistributionAnalysis(issue) {
                 <!-- 디바이스 분포 -->
                 ${distributionData.device && distributionData.device.length > 0 ? `
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">디바이스</h3>
+                    <h3 class="text-sm font-semibold text-docu-ink mb-3">디바이스</h3>
                     <div class="space-y-2">
                         ${distributionData.device.map(item => `
                             <div>
                                 <div class="flex items-center justify-between text-sm mb-1">
-                                    <span class="text-gray-600">${item.name}</span>
-                                    <span class="font-medium text-gray-900">${item.count}회 (${item.percentage}%)</span>
+                                    <span class="text-docu-secondary">${item.name}</span>
+                                    <span class="font-medium text-docu-ink">${item.count}회 (${item.percentage}%)</span>
                                 </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-orange-600 h-2 rounded-full" style="width: ${item.percentage}%"></div>
+                                <div class="w-full bg-surface-sub rounded-full h-2">
+                                    <div class="bg-docu-warning h-2 rounded-full" style="width: ${item.percentage}%"></div>
                                 </div>
                             </div>
                         `).join('')}
@@ -394,7 +394,7 @@ async function renderDistributionAnalysis(issue) {
             </div>
         `;
     } catch (err) {
-        container.innerHTML = `<p class="text-sm text-red-500">분포 분석 중 오류 발생: ${err.message}</p>`;
+        container.innerHTML = `<p class="text-sm text-docu-danger">분포 분석 중 오류 발생: ${err.message}</p>`;
     }
 }
 
@@ -406,12 +406,12 @@ async function renderRootCauseAnalysis(issue) {
     const container = document.getElementById('rootCauseAnalysis');
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/root-cause`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${currentIssueId}/root-cause`, {
             method: 'GET'
         });
 
         if (!body.success || !body.data) {
-            container.innerHTML = '<p class="text-sm text-gray-400">근본 원인 분석 데이터를 불러올 수 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary">근본 원인 분석 데이터를 불러올 수 없습니다.</p>';
             return;
         }
 
@@ -428,17 +428,17 @@ async function renderRootCauseAnalysis(issue) {
         container.innerHTML = `
             <div class="space-y-6">
                 <!-- 에러 타입 -->
-                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div class="p-4 bg-surface-secondary border border-divider rounded-lg">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="text-2xl">⚠️</span>
                         <div>
-                            <h3 class="text-sm font-semibold text-red-900">${rca.errorType}</h3>
-                            <p class="text-xs text-red-700">${rca.errorDescription}</p>
+                            <h3 class="text-sm font-semibold text-docu-ink">${rca.errorType}</h3>
+                            <p class="text-xs text-docu-danger">${rca.errorDescription}</p>
                         </div>
                     </div>
                     ${rca.hotspot !== 'N/A' ? `
-                        <div class="mt-2 flex items-center gap-2 text-xs text-red-800">
-                            <span class="font-mono bg-red-100 px-2 py-1 rounded">${rca.hotspot}</span>
+                        <div class="mt-2 flex items-center gap-2 text-xs text-docu-ink">
+                            <span class="font-mono bg-surface-secondary px-2 py-1 rounded">${rca.hotspot}</span>
                         </div>
                     ` : ''}
                 </div>
@@ -446,12 +446,12 @@ async function renderRootCauseAnalysis(issue) {
                 <!-- 발견된 패턴 -->
                 ${rca.patterns && rca.patterns.length > 0 ? `
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">📊 발생 패턴</h3>
+                    <h3 class="text-sm font-semibold text-docu-ink mb-3">📊 발생 패턴</h3>
                     <div class="space-y-2">
                         ${rca.patterns.map(pattern => `
-                            <div class="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex items-start gap-2 p-3 bg-surface-secondary border border-divider rounded-lg">
                                 <span class="text-lg">${patternIcons[pattern.type] || '📌'}</span>
-                                <p class="text-sm text-blue-900 flex-1">${pattern.description}</p>
+                                <p class="text-sm text-docu-ink flex-1">${pattern.description}</p>
                             </div>
                         `).join('')}
                     </div>
@@ -460,14 +460,14 @@ async function renderRootCauseAnalysis(issue) {
 
                 <!-- 가능한 원인 -->
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🔍 가능한 원인</h3>
+                    <h3 class="text-sm font-semibold text-docu-ink mb-3">🔍 가능한 원인</h3>
                     <ul class="space-y-2">
                         ${rca.possibleCauses.map((cause, index) => `
-                            <li class="flex items-start gap-2 text-sm text-gray-700">
-                                <span class="flex-shrink-0 w-5 h-5 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xs font-medium">
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 w-5 h-5 bg-surface-secondary text-docu-warning rounded-full flex items-center justify-center text-xs font-medium">
                                     ${index + 1}
                                 </span>
-                                <span class="flex-1">${cause}</span>
+                                <span class="flex-1 text-sm text-docu-ink">${cause}</span>
                             </li>
                         `).join('')}
                     </ul>
@@ -475,14 +475,14 @@ async function renderRootCauseAnalysis(issue) {
 
                 <!-- 권장 해결책 -->
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">💡 권장 해결책</h3>
+                    <h3 class="text-sm font-semibold text-docu-ink mb-3">💡 권장 해결책</h3>
                     <ul class="space-y-2">
                         ${rca.solutions.map((solution, index) => `
-                            <li class="flex items-start gap-2 text-sm text-gray-700">
-                                <span class="flex-shrink-0 w-5 h-5 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-medium">
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 w-5 h-5 bg-docu-success-light text-docu-success rounded-full flex items-center justify-center text-xs font-medium">
                                     ${index + 1}
                                 </span>
-                                <span class="flex-1 font-mono text-xs bg-gray-50 p-2 rounded">${solution}</span>
+                                <span class="flex-1 text-sm text-docu-ink bg-surface-secondary p-2 rounded">${solution}</span>
                             </li>
                         `).join('')}
                     </ul>
@@ -490,12 +490,12 @@ async function renderRootCauseAnalysis(issue) {
 
                 <!-- 유사 해결 사례 -->
                 ${rca.similarResolution ? `
-                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <h3 class="text-sm font-semibold text-green-900 mb-2">✅ 유사 해결 사례</h3>
-                    <div class="text-sm text-green-800">
+                <div class="p-4 bg-surface-secondary border border-divider rounded-lg">
+                    <h3 class="text-sm font-semibold text-docu-ink mb-2">✅ 유사 해결 사례</h3>
+                    <div class="text-sm text-docu-ink">
                         <p class="font-medium">
                             <a href="/projects/${currentPublicId}/issues/${rca.similarResolution.issueId}/analysis"
-                               class="text-green-700 hover:text-green-900 underline">
+                               class="text-docu-success hover:text-docu-ink underline">
                                 #${rca.similarResolution.issueId} ${rca.similarResolution.issueTitle}
                             </a>
                         </p>
@@ -506,7 +506,7 @@ async function renderRootCauseAnalysis(issue) {
             </div>
         `;
     } catch (err) {
-        container.innerHTML = `<p class="text-sm text-red-500">근본 원인 분석 중 오류 발생: ${err.message}</p>`;
+        container.innerHTML = `<p class="text-sm text-docu-danger">근본 원인 분석 중 오류 발생: ${err.message}</p>`;
     }
 }
 
@@ -518,12 +518,12 @@ async function renderIssueContext(issue) {
     const container = document.getElementById('issueContext');
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/context`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${currentIssueId}/context`, {
             method: 'GET'
         });
 
         if (!body.success || !body.data) {
-            container.innerHTML = '<p class="text-sm text-gray-400">맥락 정보를 불러올 수 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary">맥락 정보를 불러올 수 없습니다.</p>';
             return;
         }
 
@@ -535,24 +535,24 @@ async function renderIssueContext(issue) {
                 <!-- 가장 빈번한 환경 -->
                 ${mostFrequentEnvironment ? `
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">💻 가장 빈번한 환경</h3>
-                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 class="text-sm font-semibold text-docu-ink mb-3">💻 가장 빈번한 환경</h3>
+                    <div class="p-4 bg-surface-secondary border border-divider rounded-lg">
                         <div class="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <span class="text-gray-600">OS:</span>
-                                <span class="ml-2 font-medium text-gray-900">${mostFrequentEnvironment.os}</span>
+                                <span class="text-docu-secondary">OS:</span>
+                                <span class="ml-2 font-medium text-docu-ink">${mostFrequentEnvironment.os}</span>
                             </div>
                             <div>
-                                <span class="text-gray-600">디바이스:</span>
-                                <span class="ml-2 font-medium text-gray-900">${mostFrequentEnvironment.device}</span>
+                                <span class="text-docu-secondary">디바이스:</span>
+                                <span class="ml-2 font-medium text-docu-ink">${mostFrequentEnvironment.device}</span>
                             </div>
                             <div>
-                                <span class="text-gray-600">앱 버전:</span>
-                                <span class="ml-2 font-medium text-gray-900">${mostFrequentEnvironment.appVersion}</span>
+                                <span class="text-docu-secondary">앱 버전:</span>
+                                <span class="ml-2 font-medium text-docu-ink">${mostFrequentEnvironment.appVersion}</span>
                             </div>
                             <div>
-                                <span class="text-gray-600">발생 비율:</span>
-                                <span class="ml-2 font-medium text-indigo-600">${mostFrequentEnvironment.percentage}%</span>
+                                <span class="text-docu-secondary">발생 비율:</span>
+                                <span class="ml-2 font-medium text-docu-primary">${mostFrequentEnvironment.percentage}%</span>
                             </div>
                         </div>
                     </div>
@@ -562,35 +562,35 @@ async function renderIssueContext(issue) {
                 <!-- 게임 상태 예시 -->
                 ${gameStateExample && (gameStateExample.playerLevel || gameStateExample.currentStage || gameStateExample.currency) ? `
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🎮 게임 상태 예시</h3>
-                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h3 class="text-sm font-semibold text-docu-ink mb-3">🎮 게임 상태 예시</h3>
+                    <div class="p-4 bg-surface-secondary border border-divider rounded-lg">
                         <div class="grid grid-cols-2 gap-3 text-sm">
                             ${gameStateExample.playerLevel ? `
                             <div>
-                                <span class="text-gray-600">플레이어 레벨:</span>
-                                <span class="ml-2 font-medium text-gray-900">${gameStateExample.playerLevel}</span>
+                                <span class="text-docu-secondary">플레이어 레벨:</span>
+                                <span class="ml-2 font-medium text-docu-ink">${gameStateExample.playerLevel}</span>
                             </div>
                             ` : ''}
                             ${gameStateExample.currentStage ? `
                             <div>
-                                <span class="text-gray-600">현재 스테이지:</span>
-                                <span class="ml-2 font-medium text-gray-900">${gameStateExample.currentStage}</span>
+                                <span class="text-docu-secondary">현재 스테이지:</span>
+                                <span class="ml-2 font-medium text-docu-ink">${gameStateExample.currentStage}</span>
                             </div>
                             ` : ''}
                             ${gameStateExample.currency ? `
                             <div>
-                                <span class="text-gray-600">보유 재화:</span>
-                                <span class="ml-2 font-medium text-gray-900">${gameStateExample.currency}</span>
+                                <span class="text-docu-secondary">보유 재화:</span>
+                                <span class="ml-2 font-medium text-docu-ink">${gameStateExample.currency}</span>
                             </div>
                             ` : ''}
                         </div>
                         ${gameStateExample.additionalState && Object.keys(gameStateExample.additionalState).length > 0 ? `
-                        <div class="mt-3 pt-3 border-t border-green-300">
-                            <p class="text-xs font-semibold text-gray-600 mb-2">기타 상태:</p>
+                        <div class="mt-3 pt-3 border-t border-divider">
+                            <p class="text-xs font-semibold text-docu-secondary mb-2">기타 상태:</p>
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 ${Object.entries(gameStateExample.additionalState).slice(0, 6).map(([key, value]) => `
-                                    <div class="text-gray-700">
-                                        <span class="text-gray-500">${key}:</span>
+                                    <div class="text-docu-ink">
+                                        <span class="text-docu-secondary">${key}:</span>
                                         <span class="ml-1">${JSON.stringify(value)}</span>
                                     </div>
                                 `).join('')}
@@ -604,15 +604,15 @@ async function renderIssueContext(issue) {
                 <!-- 공통 속성 -->
                 ${commonAttributes && Object.keys(commonAttributes).length > 0 ? `
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🔗 공통 속성 (반복 패턴)</h3>
-                    <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                    <h3 class="text-sm font-semibold text-docu-ink mb-3">🔗 공통 속성 (반복 패턴)</h3>
+                    <div class="p-4 bg-surface-secondary border border-divider rounded-lg">
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             ${Object.entries(commonAttributes).map(([key, value]) => `
                                 <div class="flex items-start gap-2">
-                                    <span class="text-purple-600">▪</span>
+                                    <span class="text-docu-primary">▪</span>
                                     <div class="flex-1">
-                                        <span class="font-medium text-gray-700">${key}:</span>
-                                        <span class="ml-1 text-gray-600">${value}</span>
+                                        <span class="font-medium text-docu-ink">${key}:</span>
+                                        <span class="ml-1 text-docu-secondary">${value}</span>
                                     </div>
                                 </div>
                             `).join('')}
@@ -622,12 +622,12 @@ async function renderIssueContext(issue) {
                 ` : ''}
 
                 ${!mostFrequentEnvironment && !gameStateExample && (!commonAttributes || Object.keys(commonAttributes).length === 0) ? `
-                <p class="text-sm text-gray-400 text-center py-4">맥락 정보가 없습니다.</p>
+                <p class="text-sm text-docu-tertiary text-center py-4">맥락 정보가 없습니다.</p>
                 ` : ''}
             </div>
         `;
     } catch (err) {
-        container.innerHTML = `<p class="text-sm text-red-500">맥락 정보를 불러오는 중 오류 발생: ${err.message}</p>`;
+        container.innerHTML = `<p class="text-sm text-docu-danger">맥락 정보를 불러오는 중 오류 발생: ${err.message}</p>`;
     }
 }
 
@@ -644,20 +644,20 @@ function renderLogDetails(issue) {
     container.innerHTML = `
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">스택트레이스</label>
+                <label class="block text-sm font-semibold text-docu-ink mb-2">스택트레이스</label>
                 <pre class="p-4 bg-gray-900 text-gray-100 rounded-lg text-xs font-mono overflow-x-auto">${stackTrace}</pre>
             </div>
             ${issue.description ? `
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">설명</label>
-                <p class="text-sm text-gray-700">${issue.description}</p>
+                <label class="block text-sm font-semibold text-docu-ink mb-2">설명</label>
+                <p class="text-sm text-docu-ink">${issue.description}</p>
             </div>
             ` : ''}
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">전체 아카이브</label>
+                <label class="block text-sm font-semibold text-docu-ink mb-2">전체 아카이브</label>
                 <details class="cursor-pointer">
-                    <summary class="text-sm text-indigo-600 hover:text-indigo-700">상세 로그 펼치기</summary>
-                    <pre class="mt-2 p-4 bg-gray-50 rounded-lg text-xs text-gray-700 overflow-x-auto">${issue.title}</pre>
+                    <summary class="text-sm text-docu-primary hover:text-docu-primary">상세 로그 펼치기</summary>
+                    <pre class="mt-2 p-4 bg-surface-secondary rounded-lg text-sm font-mono text-docu-ink overflow-x-auto">${issue.title}</pre>
                 </details>
             </div>
         </div>
@@ -680,12 +680,12 @@ async function loadAffectedPlayers(page) {
 
     try {
         const body = await callApi(
-            `/api/projects/${currentProjectId}/issues/${currentIssueId}/affected-players?page=${page}&size=${affectedPlayersPageSize}`,
+            `/api/projects/${currentPublicId}/issues/${currentIssueId}/affected-players?page=${page}&size=${affectedPlayersPageSize}`,
             { method: 'GET' }
         );
 
         if (!body.success) {
-            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">플레이어 데이터를 불러올 수 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary text-center py-8">플레이어 데이터를 불러올 수 없습니다.</p>';
             return;
         }
 
@@ -693,7 +693,7 @@ async function loadAffectedPlayers(page) {
         const players = data.content;
 
         if (players.length === 0) {
-            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">영향받은 플레이어가 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary text-center py-8">영향받은 플레이어가 없습니다.</p>';
             return;
         }
 
@@ -702,7 +702,7 @@ async function loadAffectedPlayers(page) {
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="border-b border-gray-200 text-gray-500 text-xs">
+                        <tr class="border-b border-divider text-docu-secondary text-xs">
                             <th class="text-left py-3 px-4 font-medium">플레이어 ID</th>
                             <th class="text-center py-3 px-4 font-medium">발생 횟수</th>
                             <th class="text-center py-3 px-4 font-medium">최초 발생</th>
@@ -711,19 +711,19 @@ async function loadAffectedPlayers(page) {
                     </thead>
                     <tbody>
                         ${players.map(player => `
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                            <tr class="border-b border-divider hover:bg-surface-secondary transition-colors">
                                 <td class="py-3 px-4">
-                                    <span class="font-mono text-gray-900">${player.userId}</span>
+                                    <span class="font-mono text-docu-ink">${player.userId}</span>
                                 </td>
                                 <td class="py-3 px-4 text-center">
-                                    <span class="inline-block px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
+                                    <span class="inline-block px-2 py-1 bg-docu-primary-light text-docu-primary rounded text-xs font-medium">
                                         ${player.occurrenceCount}회
                                     </span>
                                 </td>
-                                <td class="py-3 px-4 text-center text-gray-600 text-xs">
+                                <td class="py-3 px-4 text-center text-docu-secondary text-xs">
                                     ${formatDateTime(player.firstOccurredAt)}
                                 </td>
-                                <td class="py-3 px-4 text-center text-gray-600 text-xs">
+                                <td class="py-3 px-4 text-center text-docu-secondary text-xs">
                                     ${formatTimeAgo(player.lastOccurredAt)}
                                 </td>
                             </tr>
@@ -734,19 +734,19 @@ async function loadAffectedPlayers(page) {
 
             <!-- 페이지네이션 -->
             ${data.totalPages > 1 ? `
-                <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                    <p class="text-xs text-gray-500">
+                <div class="flex items-center justify-between mt-4 pt-4 border-t border-divider">
+                    <p class="text-xs text-docu-secondary">
                         총 ${data.totalElements}명의 플레이어 (${data.number + 1} / ${data.totalPages} 페이지)
                     </p>
                     <div class="flex gap-2">
                         <button onclick="loadAffectedPlayers(${page - 1})"
                                 ${!data.first ? '' : 'disabled'}
-                                class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="px-3 py-1.5 text-xs border border-divider rounded hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed">
                             이전
                         </button>
                         <button onclick="loadAffectedPlayers(${page + 1})"
                                 ${!data.last ? '' : 'disabled'}
-                                class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="px-3 py-1.5 text-xs border border-divider rounded hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed">
                             다음
                         </button>
                     </div>
@@ -756,7 +756,7 @@ async function loadAffectedPlayers(page) {
 
         affectedPlayersPage = page;
     } catch (err) {
-        container.innerHTML = `<p class="text-sm text-red-500 text-center py-8">플레이어 데이터 로드 중 오류 발생: ${err.message}</p>`;
+        container.innerHTML = `<p class="text-sm text-docu-danger text-center py-8">플레이어 데이터 로드 중 오류 발생: ${err.message}</p>`;
     }
 }
 
@@ -773,20 +773,20 @@ function renderMetaInfo(issue) {
     if (currentAssignee) {
         const profileImage = currentAssignee.profileImageUrl
             ? `<img src="${currentAssignee.profileImageUrl}" alt="${currentAssignee.nickname}" class="w-8 h-8 rounded-full object-cover">`
-            : `<div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                   <span class="text-indigo-600 text-xs font-medium">${currentAssignee.nickname.charAt(0)}</span>
+            : `<div class="w-8 h-8 bg-docu-primary-light rounded-full flex items-center justify-center">
+                   <span class="text-docu-primary text-xs font-medium">${currentAssignee.nickname.charAt(0)}</span>
                </div>`;
 
         assigneeInfo.innerHTML = `
             <div class="flex items-center gap-2">
                 ${profileImage}
-                <span class="text-gray-900 text-sm font-medium">${currentAssignee.nickname}</span>
+                <span class="text-docu-ink text-sm font-medium">${currentAssignee.nickname}</span>
             </div>
         `;
     } else {
         assigneeInfo.innerHTML = `
-            <div class="flex items-center gap-2 text-gray-400 text-xs">
-                <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
+            <div class="flex items-center gap-2 text-docu-tertiary text-xs">
+                <div class="w-8 h-8 bg-surface-sub rounded-full flex items-center justify-center text-docu-secondary">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                     </svg>
@@ -801,15 +801,15 @@ function renderMetaInfo(issue) {
     priorityInfoEl.dataset.priority = issue.priority || '';
     if (issue.priority) {
         const priorityMap = {
-            P1: { label: 'P1 긴급', color: 'bg-red-100 text-red-700' },
-            P2: { label: 'P2 높음', color: 'bg-orange-100 text-orange-700' },
+            P1: { label: 'P1 긴급', color: 'bg-surface-secondary text-docu-danger' },
+            P2: { label: 'P2 높음', color: 'bg-surface-secondary text-orange-700' },
             P3: { label: 'P3 보통', color: 'bg-yellow-100 text-yellow-700' },
-            P4: { label: 'P4 낮음', color: 'bg-gray-100 text-gray-700' }
+            P4: { label: 'P4 낮음', color: 'bg-gray-100 text-docu-ink' }
         };
-        const { label, color } = priorityMap[issue.priority] || { label: issue.priority, color: 'bg-gray-100 text-gray-700' };
+        const { label, color } = priorityMap[issue.priority] || { label: issue.priority, color: 'bg-gray-100 text-docu-ink' };
         priorityInfoEl.innerHTML = `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
     } else {
-        priorityInfoEl.innerHTML = '<span class="text-xs text-gray-400">미설정</span>';
+        priorityInfoEl.innerHTML = '<span class="text-xs text-docu-tertiary">미설정</span>';
     }
 
     document.getElementById('occurrenceCount').textContent = `${issue.occurrenceCount}회`;
@@ -827,16 +827,16 @@ function renderRelatedIssues(issue) {
     if (issue.similarityResults && issue.similarityResults.length > 0) {
         container.innerHTML = issue.similarityResults.map(result => `
             <a href="/projects/${currentPublicId}/issues/${result.matchedIssueId}/analysis"
-               class="block p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+               class="block p-3 bg-surface-secondary hover:bg-surface-hover rounded-lg transition-colors">
                 <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-medium text-gray-900">#${result.matchedIssueId}</span>
-                    <span class="text-xs text-indigo-600">${result.similarity.toFixed(0)}%</span>
+                    <span class="text-xs font-medium text-docu-ink">#${result.matchedIssueId}</span>
+                    <span class="text-xs text-docu-primary">${result.similarity.toFixed(0)}%</span>
                 </div>
-                <p class="text-xs text-gray-600 truncate">${result.matchedIssueTitle}</p>
+                <p class="text-xs text-docu-secondary truncate">${result.matchedIssueTitle}</p>
             </a>
         `).join('');
     } else {
-        container.innerHTML = '<p class="text-xs text-gray-400">유사한 이슈가 없습니다.</p>';
+        container.innerHTML = '<p class="text-xs text-docu-tertiary">유사한 이슈가 없습니다.</p>';
     }
 }
 
@@ -849,12 +849,12 @@ async function renderTimeline(issue) {
 
     try {
         // 이력 API 호출
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/histories`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${currentIssueId}/histories`, {
             method: 'GET'
         });
 
         if (!body.success) {
-            container.innerHTML = '<p class="text-sm text-gray-400">변경 이력을 불러올 수 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary">변경 이력을 불러올 수 없습니다.</p>';
             return;
         }
 
@@ -913,37 +913,43 @@ async function renderTimeline(issue) {
 
         // 렌더링
         if (events.length === 0) {
-            container.innerHTML = '<p class="text-sm text-gray-400">변경 이력이 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary">변경 이력이 없습니다.</p>';
             return;
         }
 
-        container.innerHTML = events.map(event => {
-            const iconSvg = getTimelineIcon(event.icon);
+        container.innerHTML = events.map((event, index) => {
+            const isLast = index === events.length - 1;
+            const isSystem = event.user === 'System';
             return `
-                <div class="flex gap-3 mb-4">
-                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                        ${iconSvg}
+                <div class="flex gap-3">
+                    <div class="flex flex-col items-center shrink-0">
+                        <div class="${isSystem
+                            ? 'w-2 h-2 border-2 border-divider bg-surface-sub mt-0.5'
+                            : 'w-2 h-2 border-2 border-docu-primary bg-surface-card mt-0.5'}"></div>
+                        ${!isLast ? '<div class="w-px flex-1 bg-divider mt-1"></div>' : ''}
                     </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">${event.user}</p>
-                        <p class="text-xs text-gray-600">${event.action}</p>
-                        <p class="text-xs text-gray-400 mt-1">${formatTimeAgo(event.time)}</p>
+                    <div class="${!isLast ? 'flex-1 pb-2' : 'flex-1'}">
+                        <div class="flex items-center justify-between mb-0.5 gap-4">
+                            <span class="${isSystem ? 'text-xs font-semibold text-gray-500' : 'text-xs font-semibold text-docu-ink'}">${event.user}</span>
+                            <span class="text-[10px] text-gray-400">${formatTimeAgo(event.time)}</span>
+                        </div>
+                        <p class="text-xs text-gray-500">${event.action}</p>
                     </div>
                 </div>
             `;
         }).join('');
     } catch (err) {
-        container.innerHTML = `<p class="text-sm text-red-500">변경 이력 로드 중 오류 발생: ${err.message}</p>`;
+        container.innerHTML = `<p class="text-sm text-docu-danger">변경 이력 로드 중 오류 발생: ${err.message}</p>`;
     }
 }
 
 function getTimelineIcon(iconType) {
     const icons = {
-        plus: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>',
-        status: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
-        user: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>',
-        priority: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/></svg>',
-        edit: '<svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
+        plus: '<svg class="w-4 h-4 text-docu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>',
+        status: '<svg class="w-4 h-4 text-docu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        user: '<svg class="w-4 h-4 text-docu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>',
+        priority: '<svg class="w-4 h-4 text-docu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/></svg>',
+        edit: '<svg class="w-4 h-4 text-docu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
     };
     return icons[iconType] || icons.edit;
 }
@@ -1017,7 +1023,7 @@ async function saveAssigneeChange() {
     }
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/assignee`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${currentIssueId}/assignee`, {
             method: 'PUT',
             body: JSON.stringify({ assigneeId: selectedAssigneeId })
         });
@@ -1080,7 +1086,7 @@ async function savePriorityChange() {
     }
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/priority`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${currentIssueId}/priority`, {
             method: 'PUT',
             body: JSON.stringify({ priority: selectedPriority })
         });
@@ -1152,7 +1158,7 @@ async function submitStatusChange() {
     }
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${currentIssueId}/status`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${currentIssueId}/status`, {
             method: 'PUT',
             body: JSON.stringify({
                 status,
@@ -1182,11 +1188,11 @@ async function submitStatusChange() {
 function getStatusBadge(status) {
     const statusMap = {
         RECOMMENDED: { label: '추천 대기', color: 'bg-blue-100 text-blue-700' },
-        TODO: { label: '대기중', color: 'bg-gray-100 text-gray-700' },
+        TODO: { label: '대기중', color: 'bg-gray-100 text-docu-ink' },
         IN_PROGRESS: { label: '처리중', color: 'bg-blue-100 text-blue-700' },
-        RESOLVED: { label: '해결됨', color: 'bg-green-100 text-green-700' }
+        RESOLVED: { label: '해결됨', color: 'bg-docu-success-light text-docu-success' }
     };
-    const { label, color } = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
+    const { label, color } = statusMap[status] || { label: status, color: 'bg-gray-100 text-docu-ink' };
     return `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
 }
 

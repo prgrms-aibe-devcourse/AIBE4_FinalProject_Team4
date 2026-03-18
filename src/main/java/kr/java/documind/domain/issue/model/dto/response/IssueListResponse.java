@@ -26,6 +26,7 @@ public record IssueListResponse(
         @Schema(description = "심각도", example = "HIGH") IssueSeverity severity,
         @Schema(description = "심각도 점수", example = "85") Integer severityScore,
         @Schema(description = "담당자 ID") UUID assigneeId,
+        @Schema(description = "담당자 정보") AssigneeInfo assignee,
         @Schema(description = "발생 횟수", example = "42") Integer occurrenceCount,
         @Schema(description = "최초 발생 시각", example = "2024-03-11T10:00:00Z")
                 OffsetDateTime firstOccurredAt,
@@ -51,6 +52,33 @@ public record IssueListResponse(
                 issue.getSeverity(),
                 issue.getSeverityScore(),
                 issue.getAssigneeId(),
+                null,
+                issue.getOccurrenceCount(),
+                issue.getFirstOccurredAt(),
+                issue.getLastOccurredAt(),
+                issue.getCreatedAt(),
+                issue.getUpdatedAt());
+    }
+
+    /**
+     * Entity → DTO 변환 (담당자 정보 포함)
+     *
+     * @param issue Issue 엔티티
+     * @param assignee 담당자 정보
+     * @return IssueListResponse
+     */
+    public static IssueListResponse from(Issue issue, AssigneeInfo assignee) {
+        return new IssueListResponse(
+                issue.getId(),
+                issue.getTitle(),
+                issue.getIssueType(),
+                issue.getErrorType(),
+                issue.getStatus(),
+                issue.getPriority(),
+                issue.getSeverity(),
+                issue.getSeverityScore(),
+                issue.getAssigneeId(),
+                assignee,
                 issue.getOccurrenceCount(),
                 issue.getFirstOccurredAt(),
                 issue.getLastOccurredAt(),
