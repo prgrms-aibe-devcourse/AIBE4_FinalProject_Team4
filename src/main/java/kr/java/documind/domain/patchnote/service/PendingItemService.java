@@ -93,16 +93,27 @@ public class PendingItemService {
     @Recover
     public void recoverUpsert(DataAccessException e, PendingItemCreateDto dto) {
         log.error(
-                "[PendingItem] upsert 3회 재시도 모두 실패 — 고아 벡터 정리. sourceId: {}, sourceType: {}",
+                "[PendingItem] upsert 3회 재시도 모두 실패 — sourceId: {}, sourceType: {}",
                 dto.sourceId(),
                 dto.sourceType(),
                 e);
-        try {
-            vectorStoreManager.deleteBySourceId(dto.sourceId());
-            log.info("[PendingItem] 고아 벡터 정리 완료. sourceId: {}", dto.sourceId());
-        } catch (Exception deleteEx) {
-            log.error(
-                    "[PendingItem] 고아 벡터 정리 실패 — 수동 확인 필요. sourceId: {}", dto.sourceId(), deleteEx);
+        if (dto.sourceType() == SourceType.ISSUE) {
+            // ISSUE: 패치노트 도메인이 벡터를 직접 소유 → 고아 벡터 정리
+            try {
+                vectorStoreManager.deleteBySourceId(dto.sourceId());
+                log.info("[PendingItem] 고아 벡터 정리 완료. sourceId: {}", dto.sourceId());
+            } catch (Exception deleteEx) {
+                log.error(
+                        "[PendingItem] 고아 벡터 정리 실패 — 수동 확인 필요. sourceId: {}",
+                        dto.sourceId(),
+                        deleteEx);
+            }
+        } else {
+            // DOCUMENT 등: 벡터는 EtlService 소유 — 정리하지 않음
+            log.warn(
+                    "[PendingItem] {} 타입 upsert 실패 — 벡터는 EtlService 소유이므로 유지됨. sourceId: {}",
+                    dto.sourceType(),
+                    dto.sourceId());
         }
         // 호출 측이 PENDING_ITEM_UPSERT_FAILED 알림 이벤트를 발행할 수 있도록 예외를 전파한다.
         throw new PendingItemUpsertFailedException(dto.sourceId());

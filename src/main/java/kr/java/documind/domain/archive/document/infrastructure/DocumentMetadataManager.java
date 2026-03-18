@@ -3,6 +3,7 @@ package kr.java.documind.domain.archive.document.infrastructure;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -77,5 +78,16 @@ public class DocumentMetadataManager {
         documentMetadataRepository
                 .findById(sourceId)
                 .ifPresent(m -> m.changeEmbeddingStatus(status));
+    }
+
+    /**
+     * sourceId로 DocumentMetadata를 조회한다 (DocumentGroup 지연 로딩 포함).
+     *
+     * <p>임베딩 완료 이벤트 발행 시 문서 컨텍스트를 조회하는 데 사용된다.
+     *
+     * @param sourceId DomainSource.id
+     */
+    public Optional<DocumentMetadata> findById(Long sourceId) {
+        return documentMetadataRepository.findById(sourceId);
     }
 }

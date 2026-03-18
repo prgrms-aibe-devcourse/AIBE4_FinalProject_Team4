@@ -24,6 +24,10 @@ public class VectorStoreRepository {
     private static final String DELETE_BY_SOURCE_ID_SQL =
             "DELETE FROM vector_store WHERE source_id = ?";
 
+    private static final String FIND_CONTENTS_BY_SOURCE_ID_SQL =
+            "SELECT content FROM vector_store WHERE source_id = ?"
+                    + " ORDER BY COALESCE((metadata->>'chunk_index')::int, 0) LIMIT ?";
+
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
@@ -53,6 +57,11 @@ public class VectorStoreRepository {
 
     public void deleteBySourceId(Long sourceId) {
         jdbcTemplate.update(DELETE_BY_SOURCE_ID_SQL, sourceId);
+    }
+
+    public List<String> findContentsBySourceId(Long sourceId, int limit) {
+        return jdbcTemplate.queryForList(
+                FIND_CONTENTS_BY_SOURCE_ID_SQL, String.class, sourceId, limit);
     }
 
     private String toJsonb(Map<String, Object> metadata) {
