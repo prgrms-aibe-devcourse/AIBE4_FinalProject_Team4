@@ -106,4 +106,22 @@ public class IssueHistory extends BaseEntity {
                 .afterValue(afterPriority != null ? afterPriority.toString() : null)
                 .build();
     }
+
+    /**
+     * 댓글 작성 이력 생성
+     *
+     * @param issueId 이슈 ID
+     * @param authorId 작성자 ID
+     * @param commentContent 댓글 내용
+     * @return 이력 객체
+     */
+    public static IssueHistory ofCommentAdded(Long issueId, UUID authorId, String commentContent) {
+        return IssueHistory.builder()
+                .issueId(issueId)
+                .modifierId(authorId)
+                .fieldName("COMMENT")
+                .beforeValue(null)
+                .afterValue(commentContent)
+                .build();
+    }
 }

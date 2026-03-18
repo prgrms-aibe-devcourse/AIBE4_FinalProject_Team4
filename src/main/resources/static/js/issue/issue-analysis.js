@@ -854,7 +854,7 @@ async function renderTimeline(issue) {
         });
 
         if (!body.success) {
-            container.innerHTML = '<p class="text-sm text-docu-tertiary">변경 이력을 불러올 수 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary">타임라인을 불러올 수 없습니다.</p>';
             return;
         }
 
@@ -895,6 +895,10 @@ async function renderTimeline(issue) {
                     action = `우선순위를 "${history.beforeValue || '없음'}"에서 "${history.afterValue}"(으)로 변경`;
                     icon = 'priority';
                     break;
+                case 'COMMENT':
+                    action = history.afterValue;
+                    icon = 'comment';
+                    break;
                 default:
                     action = `${history.fieldName}을(를) 변경`;
                     icon = 'edit';
@@ -913,7 +917,7 @@ async function renderTimeline(issue) {
 
         // 렌더링
         if (events.length === 0) {
-            container.innerHTML = '<p class="text-sm text-docu-tertiary">변경 이력이 없습니다.</p>';
+            container.innerHTML = '<p class="text-sm text-docu-tertiary">타임라인이 없습니다.</p>';
             return;
         }
 
