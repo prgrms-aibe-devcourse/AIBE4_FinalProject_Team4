@@ -3,10 +3,12 @@ package kr.java.documind.domain.archive.vector.infrastructure;
 import java.util.List;
 import kr.java.documind.domain.archive.vector.model.repository.VectorStoreRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class VectorStoreManager {
@@ -19,6 +21,10 @@ public class VectorStoreManager {
     }
 
     public void deleteBySourceId(Long sourceId) {
-        vectorStoreRepository.deleteBySourceId(sourceId);
+        try {
+            vectorStoreRepository.deleteBySourceId(sourceId);
+        } catch (Exception e) {
+            log.error("[Vector] 벡터 삭제 실패 - sourceId: {}", sourceId, e);
+        }
     }
 }

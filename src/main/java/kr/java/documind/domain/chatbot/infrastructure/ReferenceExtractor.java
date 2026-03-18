@@ -12,11 +12,13 @@ import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataM
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.chatbot.model.dto.response.ReferenceResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ReferenceExtractor {
@@ -66,6 +68,13 @@ public class ReferenceExtractor {
 
             Integer pageNumber = parseMetadata(doc, "page_number", Integer::parseInt);
             String chunkText = doc.getText() != null ? doc.getText() : "";
+
+            log.debug(
+                    "[Reference] sourceId={}, page={}, textLength={}, text={}",
+                    sourceId,
+                    pageNumber,
+                    chunkText.length(),
+                    chunkText.length() > 200 ? chunkText.substring(0, 200) + "..." : chunkText);
 
             references.add(
                     new ReferenceResponse(

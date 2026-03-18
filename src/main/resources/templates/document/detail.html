@@ -1,180 +1,177 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{common/layout/default}"
-      th:with="activeMenu='archive'" lang="ko">
+      layout:decorate="~{common/layout/service-layout}">
 <head>
     <title>문서 상세</title>
 </head>
 <body>
-<main layout:fragment="content" class="flex-1 p-8">
+<th:block layout:fragment="content">
 
-    <!-- 브레드크럼 + 액션 버튼 -->
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-2 text-sm">
-            <a th:href="@{/projects/{pid}/groups(pid=${publicId})}"
-               class="text-gray-500 hover:text-indigo-600 flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                목록으로
-            </a>
-            <span class="text-gray-300">&gt;</span>
-            <span class="text-gray-500">파일 목록</span>
-            <span class="text-gray-300">&gt;</span>
-            <span class="text-gray-800 font-medium">파일 상세</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <button id="btnEdit" class="border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg text-sm font-medium">
-                수정
-            </button>
-            <button id="btnDelete" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                삭제
-            </button>
-        </div>
-    </div>
-
-    <!-- 메인 레이아웃: 미리보기 + 사이드 정보 -->
-    <div class="flex gap-6">
-
-        <!-- 좌측: 문서 미리보기 -->
-        <div class="flex-1">
-            <!-- PDF 미리보기 -->
-            <iframe id="pdfPreview"
-                    th:src="@{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
-                    class="w-full bg-white rounded-xl border border-gray-200 min-h-[600px]"
-                    style="height: calc(100vh - 180px);">
-            </iframe>
-            <!-- 이미지 미리보기 -->
-            <div id="imagePreview" class="hidden bg-white rounded-xl border border-gray-200 flex items-center justify-center"
-                 style="height: calc(100vh - 180px);">
-                <img th:src="@{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
-                     th:alt="${document.documentName}"
-                     class="max-w-full max-h-full object-contain rounded-xl">
-            </div>
-            <!-- 미리보기 불가 시 폴백 -->
-            <div id="previewFallback" class="hidden bg-white rounded-xl border-2 border-dashed border-gray-300 min-h-[600px] flex flex-col items-center justify-center text-gray-400">
-                <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <p class="text-gray-600 font-medium mb-1"
-                   th:text="${document.documentName + '.' + document.extension}"></p>
-                <p class="text-sm">이 파일 형식은 미리보기를 지원하지 않습니다.</p>
-                <a th:href="@{/api/projects/{pid}/documents/{docId}/download(pid=${publicId}, docId=${documentId})}"
-                   class="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg">
-                    원본 다운로드
+    <section class="space-y-6">
+        <!-- 브레드크럼 + 액션 버튼 -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-sm">
+                <a th:href="@{/projects/{pid}/groups(pid=${publicId})}"
+                   class="text-docu-secondary hover:text-docu-primary flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    목록으로
                 </a>
+                <span class="text-gray-300">&gt;</span>
+                <span class="text-docu-secondary">파일 목록</span>
+                <span class="text-gray-300">&gt;</span>
+                <span class="text-docu-ink font-medium">파일 상세</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="btnEdit" class="btn-secondary">수정</button>
+                <button id="btnDelete" class="btn-danger">삭제</button>
             </div>
         </div>
 
-        <!-- 우측: 파일 정보 + 버전 목록 -->
-        <div class="w-80 flex-shrink-0">
+        <!-- 메인 레이아웃: 미리보기 + 사이드 정보 -->
+        <div class="flex gap-6">
 
-            <!-- 파일 정보 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                <h3 class="text-base font-semibold text-gray-800 flex items-center gap-2 mb-5">
-                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    파일 정보
-                </h3>
-                <dl class="space-y-4 text-sm">
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">그룹명</dt>
-                        <dd class="text-gray-800 font-medium"
-                            th:text="${document.groupName}">-</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">카테고리</dt>
-                        <dd class="text-gray-800 font-medium"
-                            th:text="${document.category}">-</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">파일명</dt>
-                        <dd class="text-gray-800 font-medium text-right max-w-[180px] truncate"
-                            th:title="${document.documentName + '.' + document.extension}"
-                            th:text="${document.documentName + '.' + document.extension}">-</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">버전</dt>
-                        <dd class="text-gray-800 font-medium"
-                            th:text="${document.version}">-</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">패치노트 반영</dt>
-                        <dd th:class="${document.isProcessed} ? 'font-medium text-gray-400' : 'font-medium text-green-600'"
-                            th:text="${document.isProcessed} ? 'X' : 'O'">-</dd>
-                    </div>
-                    <div class="flex justify-between" th:switch="${document.embeddingStatus.name()}">
-                        <dt class="text-gray-500">임베딩</dt>
-                        <dd id="embeddingStatusBadge" th:case="'SUCCESS'" class="font-medium text-green-600">성공</dd>
-                        <dd id="embeddingStatusBadge" th:case="'FAILED'" class="font-medium text-red-600">실패</dd>
-                        <dd id="embeddingStatusBadge" th:case="'PROCESSING'" class="font-medium text-blue-600">진행중</dd>
-                        <dd id="embeddingStatusBadge" th:case="'PENDING'" class="font-medium text-gray-500">대기</dd>
-                        <dd id="embeddingStatusBadge" th:case="*" class="font-medium text-gray-400">-</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">처음 업로드일시</dt>
-                        <dd class="text-gray-800 font-medium"
-                            th:text="${#temporals.format(document.uploadedAt, 'yyyy-MM-dd HH:mm')}">-</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">마지막 수정일시</dt>
-                        <dd class="text-gray-800 font-medium"
-                            th:text="${document.reuploadedAt != null ? #temporals.format(document.reuploadedAt, 'yyyy-MM-dd HH:mm') : '-'}">-</dd>
-                    </div>
-                </dl>
-            </div>
-
-            <!-- 버전 목록 -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-base font-semibold text-gray-800 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        버전 목록
-                    </h3>
-                    <span id="versionCount" class="text-sm text-gray-400"
-                          th:text="'총 ' + ${#lists.size(document.versions)} + '개'">총 0개</span>
+            <!-- 좌측: 문서 미리보기 -->
+            <div class="flex-1">
+                <!-- PDF 미리보기 -->
+                <iframe th:if="${document.extension == 'pdf'}"
+                        th:src="@{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
+                        class="w-full rounded-docu-card border border-divider min-h-[600px] bg-surface-card"
+                        style="height: calc(100vh - 200px);">
+                </iframe>
+                <!-- 이미지 미리보기 -->
+                <div th:if="${document.extension == 'jpg' or document.extension == 'jpeg' or document.extension == 'png'}"
+                     class="rounded-docu-card border border-divider flex items-center justify-center bg-surface-card"
+                     style="height: calc(100vh - 200px);">
+                    <img th:src="@{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
+                         th:alt="${document.documentName}"
+                         class="max-w-full max-h-full object-contain rounded-docu-card">
                 </div>
-                <div id="versionList" class="space-y-3">
-                    <a th:each="ver : ${document.versions}"
-                       th:href="@{/projects/{pid}/documents/{docId}(pid=${publicId}, docId=${ver.documentId})}"
-                       th:classappend="${ver.documentId == document.documentId} ? 'ring-2 ring-indigo-500' : ''"
-                       class="block p-3 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-sm font-medium text-gray-800" th:text="${ver.version}"></span>
-                            <span class="text-xs text-gray-400"
-                                  th:text="${#temporals.format(ver.uploadedAt, 'yyyy-MM-dd')}"></span>
-                        </div>
-                        <div class="text-xs text-gray-500 truncate" th:text="${ver.documentName + '.' + ver.extension}"></div>
+                <!-- 미리보기 불가 시 폴백 -->
+                <div th:unless="${document.extension == 'pdf' or document.extension == 'jpg' or document.extension == 'jpeg' or document.extension == 'png'}"
+                     class="rounded-docu-card border-2 border-dashed border-divider min-h-[600px] flex flex-col items-center justify-center text-docu-secondary bg-surface-card">
+                    <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <p class="text-docu-ink font-medium mb-1"
+                       th:text="${document.documentName + '.' + document.extension}"></p>
+                    <p class="text-sm">이 파일 형식은 미리보기를 지원하지 않습니다.</p>
+                    <a th:href="@{/api/projects/{pid}/documents/{docId}/download(pid=${publicId}, docId=${documentId})}"
+                       class="mt-4 btn-primary">
+                        원본 다운로드
                     </a>
                 </div>
             </div>
 
-            <!-- 하단 액션 버튼 -->
-            <div class="flex gap-3">
-                <button id="btnDownload" class="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-100 py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    원본 다운로드
-                </button>
-                <button id="btnChat" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-                    이 파일로 채팅
-                </button>
+            <!-- 우측: 파일 정보 + 버전 목록 -->
+            <div class="w-80 flex-shrink-0 space-y-6">
+
+                <!-- 파일 정보 -->
+                <div class="card-base card-shadow p-6">
+                    <h3 class="text-base font-semibold text-docu-ink flex items-center gap-2 mb-5">
+                        <svg class="w-5 h-5 text-docu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        파일 정보
+                    </h3>
+                    <dl class="space-y-4 text-sm">
+                        <div class="flex justify-between">
+                            <dt class="text-docu-secondary">그룹명</dt>
+                            <dd class="text-docu-ink font-medium" th:text="${document.groupName}">-</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-docu-secondary">카테고리</dt>
+                            <dd class="text-docu-ink font-medium" th:text="${document.category}">-</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-docu-secondary">파일명</dt>
+                            <dd class="text-docu-ink font-medium text-right max-w-[180px] truncate"
+                                th:title="${document.documentName + '.' + document.extension}"
+                                th:text="${document.documentName + '.' + document.extension}">-</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-docu-secondary">버전</dt>
+                            <dd class="text-docu-ink font-medium" th:text="${document.version}">-</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-docu-secondary">패치노트 반영</dt>
+                            <dd th:class="${document.isProcessed} ? 'font-medium text-docu-secondary' : 'font-medium text-docu-success'"
+                                th:text="${document.isProcessed} ? 'X' : 'O'">-</dd>
+                        </div>
+                        <div class="flex justify-between" th:switch="${document.embeddingStatus.name()}">
+                            <dt class="text-docu-secondary">임베딩</dt>
+                            <dd id="embeddingStatusBadge" th:case="'SUCCESS'" class="font-medium text-docu-success">성공</dd>
+                            <dd id="embeddingStatusBadge" th:case="'FAILED'" class="font-medium text-docu-danger">실패</dd>
+                            <dd id="embeddingStatusBadge" th:case="'PROCESSING'" class="font-medium text-docu-primary">진행중</dd>
+                            <dd id="embeddingStatusBadge" th:case="'PENDING'" class="font-medium text-docu-secondary">대기</dd>
+                            <dd id="embeddingStatusBadge" th:case="*" class="font-medium text-docu-secondary">-</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-docu-secondary">처음 업로드일시</dt>
+                            <dd class="text-docu-ink font-medium"
+                                th:text="${#temporals.format(document.uploadedAt, 'yyyy-MM-dd HH:mm')}">-</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-docu-secondary">마지막 수정일시</dt>
+                            <dd class="text-docu-ink font-medium"
+                                th:text="${document.reuploadedAt != null ? #temporals.format(document.reuploadedAt, 'yyyy-MM-dd HH:mm') : '-'}">-</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- 버전 목록 -->
+                <div class="card-base card-shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-semibold text-docu-ink flex items-center gap-2">
+                            <svg class="w-5 h-5 text-docu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            버전 목록
+                        </h3>
+                        <span id="versionCount" class="text-sm text-docu-secondary"
+                              th:text="'총 ' + ${#lists.size(document.versions)} + '개'">총 0개</span>
+                    </div>
+                    <div id="versionList" class="space-y-3">
+                        <a th:each="ver : ${document.versions}"
+                           th:href="@{/projects/{pid}/documents/{docId}(pid=${publicId}, docId=${ver.documentId})}"
+                           th:classappend="${ver.documentId == document.documentId} ? 'ring-2 ring-docu-primary' : ''"
+                           class="block p-3 rounded-docu-btn border border-divider hover:border-docu-primary hover:bg-blue-50 transition">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-sm font-medium text-docu-ink" th:text="${ver.version}"></span>
+                                <span class="text-xs text-docu-secondary"
+                                      th:text="${#temporals.format(ver.uploadedAt, 'yyyy-MM-dd')}"></span>
+                            </div>
+                            <div class="text-xs text-docu-secondary truncate" th:text="${ver.documentName + '.' + ver.extension}"></div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 하단 액션 버튼 -->
+                <div class="flex gap-3">
+                    <button id="btnDownload" class="flex-1 btn-secondary py-3 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        원본 다운로드
+                    </button>
+                    <button id="btnChat" class="flex-1 btn-primary py-3 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                        이 파일로 채팅
+                    </button>
+                </div>
+
             </div>
-
         </div>
-    </div>
 
-    <!-- JS에서 사용할 데이터 -->
-    <input type="hidden" id="projectId" th:value="${publicId}">
-    <input type="hidden" id="documentId" th:value="${documentId}">
-    <input type="hidden" id="docName" th:value="${document.documentName}">
-    <input type="hidden" id="docExtension" th:value="${document.extension}">
-    <input type="hidden" id="docVersion" th:value="${document.version}">
-    <input type="hidden" id="docGroupName" th:value="${document.groupName}">
-    <input type="hidden" id="docCategory" th:value="${document.category}">
-    <input type="hidden" id="docIsProcessed" th:value="${document.isProcessed}">
-    <input type="hidden" id="docEmbeddingStatus" th:value="${document.embeddingStatus.name()}">
+        <!-- JS에서 사용할 데이터 -->
+        <input type="hidden" id="projectId" th:value="${publicId}">
+        <input type="hidden" id="documentId" th:value="${documentId}">
+        <input type="hidden" id="docName" th:value="${document.documentName}">
+        <input type="hidden" id="docExtension" th:value="${document.extension}">
+        <input type="hidden" id="docVersion" th:value="${document.version}">
+        <input type="hidden" id="docGroupName" th:value="${document.groupName}">
+        <input type="hidden" id="docCategory" th:value="${document.category}">
+        <input type="hidden" id="docIsProcessed" th:value="${document.isProcessed}">
+        <input type="hidden" id="docEmbeddingStatus" th:value="${document.embeddingStatus.name()}">
 
-    <div th:replace="~{document/fragments/modals :: editModal}"></div>
-    <div th:replace="~{document/fragments/modals :: deleteModal}"></div>
+        <div th:replace="~{document/fragments/modals :: editModal}"></div>
+        <div th:replace="~{document/fragments/modals :: deleteModal}"></div>
+    </section>
 
-</main>
+</th:block>
 
 <th:block layout:fragment="scripts">
     <script th:src="@{/js/archive/common.js}"></script>

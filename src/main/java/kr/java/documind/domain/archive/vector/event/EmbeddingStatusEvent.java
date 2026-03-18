@@ -1,4 +1,4 @@
-package kr.java.documind.domain.archive.vector.model.event;
+package kr.java.documind.domain.archive.vector.event;
 
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 

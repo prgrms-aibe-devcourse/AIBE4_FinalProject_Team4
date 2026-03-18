@@ -28,9 +28,11 @@ public class EmbeddingStatusSseManager {
         emitter.onTimeout(() -> emitters.remove(sourceId, emitter));
         emitter.onError(e -> emitters.remove(sourceId, emitter));
 
-        if (currentStatus != EmbeddingStatus.NONE) {
-            send(sourceId, currentStatus);
+        if (currentStatus == EmbeddingStatus.NONE) {
+            emitter.complete();
+            return emitter;
         }
+        send(sourceId, currentStatus);
 
         return emitter;
     }

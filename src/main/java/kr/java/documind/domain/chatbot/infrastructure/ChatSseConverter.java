@@ -38,8 +38,8 @@ public class ChatSseConverter {
         return createEvent("error", message);
     }
 
-    public ServerSentEvent<String> doneEvent(String scopeDescription) {
-        return createEvent("done", scopeDescription);
+    public ServerSentEvent<String> doneEvent() {
+        return createEvent("done", "");
     }
 
     private Optional<String> extractText(ChatClientResponse response) {

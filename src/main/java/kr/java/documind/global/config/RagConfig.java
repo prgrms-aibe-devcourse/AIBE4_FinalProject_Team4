@@ -1,9 +1,11 @@
 package kr.java.documind.global.config;
 
 import java.util.List;
+import kr.java.documind.domain.archive.rag.DuplicateRemovalPostProcessor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.context.annotation.Bean;
@@ -33,11 +35,25 @@ public class RagConfig {
     }
 
     @Bean
-    public RetrievalAugmentationAdvisor retrievalAugmentationAdvisor(
+    public DuplicateRemovalPostProcessor duplicateRemovalPostProcessor() {
+        return new DuplicateRemovalPostProcessor();
+    }
+
+    @Bean
+    public DocumentRetriever deduplicatingRetriever(
             VectorStoreDocumentRetriever documentRetriever,
-            ContextualQueryAugmenter queryAugmenter) {
+            DuplicateRemovalPostProcessor duplicateRemovalPostProcessor) {
+        return query -> {
+            List<Document> docs = documentRetriever.retrieve(query);
+            return duplicateRemovalPostProcessor.process(query, docs);
+        };
+    }
+
+    @Bean
+    public RetrievalAugmentationAdvisor retrievalAugmentationAdvisor(
+            DocumentRetriever deduplicatingRetriever, ContextualQueryAugmenter queryAugmenter) {
         return RetrievalAugmentationAdvisor.builder()
-                .documentRetriever(documentRetriever)
+                .documentRetriever(deduplicatingRetriever)
                 .queryAugmenter(queryAugmenter)
                 .build();
     }
