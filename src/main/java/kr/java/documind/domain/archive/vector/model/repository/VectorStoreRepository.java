@@ -44,7 +44,7 @@ public class VectorStoreRepository {
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
                         Document chunk = chunks.get(i);
                         ps.setLong(1, sourceId);
-                        ps.setString(2, chunk.getText());
+                        ps.setString(2, chunk.getText() != null ? chunk.getText() : "");
                         ps.setString(3, toJsonb(chunk.getMetadata()));
                         ps.setString(4, toVectorString(embeddings.get(i)));
                     }
