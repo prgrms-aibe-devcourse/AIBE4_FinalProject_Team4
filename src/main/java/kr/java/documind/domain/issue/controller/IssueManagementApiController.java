@@ -82,17 +82,21 @@ public class IssueManagementApiController {
 
         List<Issue> issues = issueManagementService.getIssueList(projectId, status);
 
-        List<IssueListResponse> response = issues.stream()
-                .map(issue -> {
-                    AssigneeInfo assignee = null;
-                    if (issue.getAssigneeId() != null) {
-                        assignee = memberRepository.findById(issue.getAssigneeId())
-                                .map(AssigneeInfo::from)
-                                .orElse(null);
-                    }
-                    return IssueListResponse.from(issue, assignee);
-                })
-                .toList();
+        List<IssueListResponse> response =
+                issues.stream()
+                        .map(
+                                issue -> {
+                                    AssigneeInfo assignee = null;
+                                    if (issue.getAssigneeId() != null) {
+                                        assignee =
+                                                memberRepository
+                                                        .findById(issue.getAssigneeId())
+                                                        .map(AssigneeInfo::from)
+                                                        .orElse(null);
+                                    }
+                                    return IssueListResponse.from(issue, assignee);
+                                })
+                        .toList();
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
