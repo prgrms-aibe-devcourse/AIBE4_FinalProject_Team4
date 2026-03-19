@@ -33,6 +33,7 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
                 .where(
                         projectIdEq(projectId), // 동적 쿼리 처리
                         receiverIdEq(receiverId),
+                        n.isIgnored.isFalse(),
                         cursorIdLt(cursorId),
                         sourceTypeEq(sourceType, ds))
                 .orderBy(n.id.desc())
