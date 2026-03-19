@@ -268,6 +268,9 @@ public class IssueManagementApiController {
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
+        // 프로젝트 소유권 검증
+        issueManagementService.getIssueDetail(issueId, ctx.projectId());
+
         DistributionDataResponse distribution =
                 distributionAnalysisService.getDistributionData(issueId);
 
@@ -291,6 +294,9 @@ public class IssueManagementApiController {
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId,
             @PageableDefault(size = 20) Pageable pageable) {
+
+        // 프로젝트 소유권 검증
+        issueManagementService.getIssueDetail(issueId, ctx.projectId());
 
         Page<AffectedPlayerResponse> affectedPlayers =
                 affectedPlayersService.getAffectedPlayers(issueId, pageable);
@@ -318,6 +324,9 @@ public class IssueManagementApiController {
                     @RequestParam(defaultValue = "7")
                     int days) {
 
+        // 프로젝트 소유권 검증
+        issueManagementService.getIssueDetail(issueId, ctx.projectId());
+
         List<OccurrenceTrendResponse> trend =
                 occurrenceTrendService.getOccurrenceTrend(issueId, days);
 
@@ -337,6 +346,9 @@ public class IssueManagementApiController {
             @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
+
+        // 프로젝트 소유권 검증
+        issueManagementService.getIssueDetail(issueId, ctx.projectId());
 
         RootCauseAnalysisResponse analysis = rootCauseAnalysisService.analyze(issueId);
 
@@ -360,6 +372,9 @@ public class IssueManagementApiController {
                     @Parameter(description = "이슈 ID", example = "101", required = true)
                             @PathVariable
                             Long issueId) {
+
+        // 프로젝트 소유권 검증
+        issueManagementService.getIssueDetail(issueId, ctx.projectId());
 
         kr.java.documind.domain.issue.model.dto.response.IssueContextResponse context =
                 issueContextService.getIssueContext(issueId);

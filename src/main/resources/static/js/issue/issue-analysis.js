@@ -884,23 +884,23 @@ async function renderTimeline(issue) {
 
             switch (history.fieldName) {
                 case 'STATUS':
-                    action = `상태를 "${escapeHtml(history.beforeValue) || '없음'}"에서 "${escapeHtml(history.afterValue)}"(으)로 변경`;
+                    action = `상태를 "${history.beforeValue || '없음'}"에서 "${history.afterValue}"(으)로 변경`;
                     icon = 'status';
                     break;
                 case 'ASSIGNEE':
                     const beforeMember = projectMembers.find(m => m.memberId === history.beforeValue);
                     const afterMember = projectMembers.find(m => m.memberId === history.afterValue);
-                    const beforeName = beforeMember ? escapeHtml(beforeMember.nickname) : '미할당';
-                    const afterName = afterMember ? escapeHtml(afterMember.nickname) : '미할당';
+                    const beforeName = beforeMember ? beforeMember.nickname : '미할당';
+                    const afterName = afterMember ? afterMember.nickname : '미할당';
                     action = `담당자를 "${beforeName}"에서 "${afterName}"(으)로 변경`;
                     icon = 'user';
                     break;
                 case 'PRIORITY':
-                    action = `우선순위를 "${escapeHtml(history.beforeValue) || '없음'}"에서 "${escapeHtml(history.afterValue)}"(으)로 변경`;
+                    action = `우선순위를 "${history.beforeValue || '없음'}"에서 "${history.afterValue}"(으)로 변경`;
                     icon = 'priority';
                     break;
                 case 'COMMENT':
-                    action = escapeHtml(history.afterValue);
+                    action = history.afterValue;  // textContent 사용으로 escapeHtml 불필요
                     icon = 'comment';
                     break;
                 default:
@@ -919,33 +919,72 @@ async function renderTimeline(issue) {
         // 최신 순 정렬
         events.sort((a, b) => new Date(b.time) - new Date(a.time));
 
-        // 렌더링
+        // 렌더링 (DOM 노드 방식으로 XSS 방지)
         if (events.length === 0) {
-            container.innerHTML = '<p class="text-sm text-docu-tertiary">타임라인이 없습니다.</p>';
+            const emptyP = document.createElement('p');
+            emptyP.className = 'text-sm text-docu-tertiary';
+            emptyP.textContent = '타임라인이 없습니다.';
+            container.appendChild(emptyP);
             return;
         }
 
-        container.innerHTML = events.map((event, index) => {
+        container.innerHTML = '';  // 초기화
+        events.forEach((event, index) => {
             const isLast = index === events.length - 1;
             const isSystem = event.user === 'System';
-            return `
-                <div class="flex gap-3">
-                    <div class="flex flex-col items-center shrink-0">
-                        <div class="${isSystem
-                            ? 'w-2 h-2 border-2 border-divider bg-surface-sub mt-0.5'
-                            : 'w-2 h-2 border-2 border-docu-primary bg-surface-card mt-0.5'}"></div>
-                        ${!isLast ? '<div class="w-px flex-1 bg-divider mt-1"></div>' : ''}
-                    </div>
-                    <div class="${!isLast ? 'flex-1 pb-2' : 'flex-1'}">
-                        <div class="flex items-center justify-between mb-0.5 gap-4">
-                            <span class="${isSystem ? 'text-xs font-semibold text-docu-secondary' : 'text-xs font-semibold text-docu-ink'}">${event.user}</span>
-                            <span class="text-[10px] text-docu-tertiary">${formatTimeAgo(event.time)}</span>
-                        </div>
-                        <p class="text-xs text-docu-secondary">${event.action}</p>
-                    </div>
-                </div>
-            `;
-        }).join('');
+
+            // 최상위 컨테이너
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'flex gap-3';
+
+            // 타임라인 인디케이터
+            const indicatorDiv = document.createElement('div');
+            indicatorDiv.className = 'flex flex-col items-center shrink-0';
+
+            const dot = document.createElement('div');
+            dot.className = isSystem
+                ? 'w-2 h-2 border-2 border-divider bg-surface-sub mt-0.5'
+                : 'w-2 h-2 border-2 border-docu-primary bg-surface-card mt-0.5';
+            indicatorDiv.appendChild(dot);
+
+            if (!isLast) {
+                const line = document.createElement('div');
+                line.className = 'w-px flex-1 bg-divider mt-1';
+                indicatorDiv.appendChild(line);
+            }
+
+            // 이벤트 내용
+            const contentDiv = document.createElement('div');
+            contentDiv.className = isLast ? 'flex-1' : 'flex-1 pb-2';
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'flex items-center justify-between mb-0.5 gap-4';
+
+            const userSpan = document.createElement('span');
+            userSpan.className = isSystem
+                ? 'text-xs font-semibold text-docu-secondary'
+                : 'text-xs font-semibold text-docu-ink';
+            userSpan.textContent = event.user;  // textContent로 XSS 방지
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'text-[10px] text-docu-tertiary';
+            timeSpan.textContent = formatTimeAgo(event.time);
+
+            headerDiv.appendChild(userSpan);
+            headerDiv.appendChild(timeSpan);
+
+            const actionP = document.createElement('p');
+            actionP.className = 'text-xs text-docu-secondary';
+            actionP.textContent = event.action;  // textContent로 XSS 방지 (escapeHtml 불필요)
+
+            contentDiv.appendChild(headerDiv);
+            contentDiv.appendChild(actionP);
+
+            eventDiv.appendChild(indicatorDiv);
+            eventDiv.appendChild(contentDiv);
+
+            container.appendChild(eventDiv);
+        });
     } catch (err) {
         container.innerHTML = `<p class="text-sm text-docu-danger">변경 이력 로드 중 오류 발생: ${err.message}</p>`;
     }
