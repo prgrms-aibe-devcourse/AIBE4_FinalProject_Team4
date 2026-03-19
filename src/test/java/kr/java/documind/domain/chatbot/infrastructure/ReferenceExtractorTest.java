@@ -25,11 +25,9 @@ import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 @ExtendWith(MockitoExtension.class)
 class ReferenceExtractorTest {
 
-    @Mock
-    private DocumentMetadataManager documentMetadataManager;
+    @Mock private DocumentMetadataManager documentMetadataManager;
 
-    @InjectMocks
-    private ReferenceExtractor referenceExtractor;
+    @InjectMocks private ReferenceExtractor referenceExtractor;
 
     private Document createDocument(Long sourceId, Integer pageNumber, String text) {
         Map<String, Object> metadata = new java.util.HashMap<>();
@@ -44,8 +42,7 @@ class ReferenceExtractorTest {
 
     private ChatClientResponse createResponseWithDocs(List<Document> docs) {
         ChatClientResponse response = mock(ChatClientResponse.class);
-        Map<String, Object> context =
-                Map.of(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT, docs);
+        Map<String, Object> context = Map.of(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT, docs);
         given(response.context()).willReturn(context);
         return response;
     }
@@ -156,8 +153,7 @@ class ReferenceExtractorTest {
             Document doc = createDocument(999L, 1, "텍스트");
             ChatClientResponse response = createResponseWithDocs(List.of(doc));
 
-            given(documentMetadataManager.findMapByIds(Set.of(999L)))
-                    .willReturn(Map.of());
+            given(documentMetadataManager.findMapByIds(Set.of(999L))).willReturn(Map.of());
 
             List<ReferenceResponse> result = referenceExtractor.extract(response);
 

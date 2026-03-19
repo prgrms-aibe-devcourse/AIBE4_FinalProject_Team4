@@ -41,7 +41,8 @@ public class ChatbotViewController {
             DocumentMetadata doc =
                     documentMetadataManager.getByIdAndProjectId(documentId, project.projectId());
             model.addAttribute("fixedDocumentId", documentId);
-            model.addAttribute("fixedDocumentName", doc.getDocumentName() + "." + doc.getExtension());
+            model.addAttribute(
+                    "fixedDocumentName", doc.getDocumentName() + "." + doc.getExtension());
             model.addAttribute("fixedDocumentExtension", doc.getExtension());
         }
 

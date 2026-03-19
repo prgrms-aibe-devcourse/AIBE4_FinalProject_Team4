@@ -145,8 +145,12 @@ class S3FileStoreTest {
                     .willReturn(new ByteArrayInputStream(pdfBytes))
                     .willReturn(new ByteArrayInputStream(pdfBytes));
 
-            given(s3Template.upload(eq(BUCKET), any(String.class), any(InputStream.class),
-                    any(ObjectMetadata.class)))
+            given(
+                            s3Template.upload(
+                                    eq(BUCKET),
+                                    any(String.class),
+                                    any(InputStream.class),
+                                    any(ObjectMetadata.class)))
                     .willThrow(new RuntimeException("S3 upload failed"));
 
             assertThatThrownBy(() -> s3FileStore.save(file))

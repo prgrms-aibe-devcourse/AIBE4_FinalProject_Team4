@@ -157,9 +157,7 @@ class DocumentMetadataServiceTest {
 
             // When & Then
             assertThatThrownBy(
-                            () ->
-                                    documentMetadataService.getEmbeddingStatus(
-                                            projectId, documentId))
+                            () -> documentMetadataService.getEmbeddingStatus(projectId, documentId))
                     .isInstanceOf(NotFoundException.class);
         }
     }
@@ -197,9 +195,7 @@ class DocumentMetadataServiceTest {
 
             // When & Then
             assertThatThrownBy(
-                            () ->
-                                    documentMetadataService.downloadDocument(
-                                            projectId, documentId))
+                            () -> documentMetadataService.downloadDocument(projectId, documentId))
                     .isInstanceOf(NotFoundException.class);
         }
     }

@@ -272,9 +272,7 @@ class DocumentGroupServiceTest {
 
             // When & Then
             assertThatThrownBy(
-                            () ->
-                                    documentGroupService.updateCategory(
-                                            projectId, groupId, "  개발  "))
+                            () -> documentGroupService.updateCategory(projectId, groupId, "  개발  "))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("동일");
         }

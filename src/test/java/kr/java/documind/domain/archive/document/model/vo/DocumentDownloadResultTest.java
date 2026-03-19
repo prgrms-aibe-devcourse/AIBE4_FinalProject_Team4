@@ -85,8 +85,7 @@ class DocumentDownloadResultTest {
             DocumentDownloadResult result = DocumentDownloadResult.of(resource, metadata);
 
             assertThat(result.contentType())
-                    .isEqualTo(
-                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                    .isEqualTo("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         }
 
         @Test

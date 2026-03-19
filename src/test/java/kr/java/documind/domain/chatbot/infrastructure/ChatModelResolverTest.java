@@ -36,7 +36,8 @@ class ChatModelResolverTest {
     }
 
     private ChatModelInfo googleModel(String alias, String modelId) {
-        return new ChatModelInfo(ChatProvider.GOOGLE_GENAI, modelId, alias, "Google " + alias, false);
+        return new ChatModelInfo(
+                ChatProvider.GOOGLE_GENAI, modelId, alias, "Google " + alias, false);
     }
 
     private ChatModelInfo ollamaModel(String alias, String modelId) {
@@ -50,9 +51,9 @@ class ChatModelResolverTest {
         @Test
         @DisplayName("alias로 모델을 선택하면 해당 ChatModel이 반환된다")
         void resolve_WithAlias_ReturnsMatchingModel() {
-            SupportedChatModels supported = new SupportedChatModels(
-                    "gpt-4o",
-                    List.of(openAiModel("gpt-4o", "gpt-4o", false)));
+            SupportedChatModels supported =
+                    new SupportedChatModels(
+                            "gpt-4o", List.of(openAiModel("gpt-4o", "gpt-4o", false)));
             ChatModelResolver resolver = createResolver(supported);
 
             ResolvedChatModel result = resolver.resolve("gpt-4o");
@@ -63,9 +64,9 @@ class ChatModelResolverTest {
         @Test
         @DisplayName("alias가 null이면 기본 모델이 선택된다")
         void resolve_NullAlias_UsesDefault() {
-            SupportedChatModels supported = new SupportedChatModels(
-                    "gpt-4o",
-                    List.of(openAiModel("gpt-4o", "gpt-4o", false)));
+            SupportedChatModels supported =
+                    new SupportedChatModels(
+                            "gpt-4o", List.of(openAiModel("gpt-4o", "gpt-4o", false)));
             ChatModelResolver resolver = createResolver(supported);
 
             ResolvedChatModel result = resolver.resolve(null);
@@ -76,9 +77,9 @@ class ChatModelResolverTest {
         @Test
         @DisplayName("alias가 빈 문자열이면 기본 모델이 선택된다")
         void resolve_BlankAlias_UsesDefault() {
-            SupportedChatModels supported = new SupportedChatModels(
-                    "gpt-4o",
-                    List.of(openAiModel("gpt-4o", "gpt-4o", false)));
+            SupportedChatModels supported =
+                    new SupportedChatModels(
+                            "gpt-4o", List.of(openAiModel("gpt-4o", "gpt-4o", false)));
             ChatModelResolver resolver = createResolver(supported);
 
             ResolvedChatModel result = resolver.resolve("  ");
@@ -89,9 +90,9 @@ class ChatModelResolverTest {
         @Test
         @DisplayName("지원하지 않는 alias이면 BadRequestException이 발생한다")
         void resolve_UnsupportedAlias_ThrowsBadRequest() {
-            SupportedChatModels supported = new SupportedChatModels(
-                    "gpt-4o",
-                    List.of(openAiModel("gpt-4o", "gpt-4o", false)));
+            SupportedChatModels supported =
+                    new SupportedChatModels(
+                            "gpt-4o", List.of(openAiModel("gpt-4o", "gpt-4o", false)));
             ChatModelResolver resolver = createResolver(supported);
 
             assertThatThrownBy(() -> resolver.resolve("unknown-model"))
@@ -101,9 +102,8 @@ class ChatModelResolverTest {
         @Test
         @DisplayName("Google 모델을 선택하면 GoogleGenAiChatModel이 반환된다")
         void resolve_GoogleProvider_ReturnsGoogleModel() {
-            SupportedChatModels supported = new SupportedChatModels(
-                    "gemini",
-                    List.of(googleModel("gemini", "gemini-pro")));
+            SupportedChatModels supported =
+                    new SupportedChatModels("gemini", List.of(googleModel("gemini", "gemini-pro")));
             ChatModelResolver resolver = createResolver(supported);
 
             ResolvedChatModel result = resolver.resolve("gemini");
@@ -114,9 +114,8 @@ class ChatModelResolverTest {
         @Test
         @DisplayName("Ollama 모델을 선택하면 OllamaChatModel이 반환된다")
         void resolve_OllamaProvider_ReturnsOllamaModel() {
-            SupportedChatModels supported = new SupportedChatModels(
-                    "llama",
-                    List.of(ollamaModel("llama", "llama3")));
+            SupportedChatModels supported =
+                    new SupportedChatModels("llama", List.of(ollamaModel("llama", "llama3")));
             ChatModelResolver resolver = createResolver(supported);
 
             ResolvedChatModel result = resolver.resolve("llama");
@@ -132,9 +131,8 @@ class ChatModelResolverTest {
         @Test
         @DisplayName("OpenAI reasoning 모델이면 temperature가 1.0으로 설정된다")
         void resolve_OpenAiReasoning_SetsTemperature() {
-            SupportedChatModels supported = new SupportedChatModels(
-                    "o1",
-                    List.of(openAiModel("o1", "o1", true)));
+            SupportedChatModels supported =
+                    new SupportedChatModels("o1", List.of(openAiModel("o1", "o1", true)));
             ChatModelResolver resolver = createResolver(supported);
 
             ResolvedChatModel result = resolver.resolve("o1");
@@ -147,9 +145,9 @@ class ChatModelResolverTest {
         @Test
         @DisplayName("OpenAI 일반 모델이면 temperature가 설정되지 않는다")
         void resolve_OpenAiNonReasoning_NoTemperature() {
-            SupportedChatModels supported = new SupportedChatModels(
-                    "gpt-4o",
-                    List.of(openAiModel("gpt-4o", "gpt-4o", false)));
+            SupportedChatModels supported =
+                    new SupportedChatModels(
+                            "gpt-4o", List.of(openAiModel("gpt-4o", "gpt-4o", false)));
             ChatModelResolver resolver = createResolver(supported);
 
             ResolvedChatModel result = resolver.resolve("gpt-4o");
@@ -167,11 +165,10 @@ class ChatModelResolverTest {
         @Test
         @DisplayName("Ollama가 null이면 InternalServerException이 발생한다")
         void resolve_OllamaDisabled_ThrowsInternalServer() {
-            SupportedChatModels supported = new SupportedChatModels(
-                    "llama",
-                    List.of(ollamaModel("llama", "llama3")));
-            ChatModelResolver resolver = new ChatModelResolver(
-                    null, openAiChatModel, googleGenAiChatModel, supported);
+            SupportedChatModels supported =
+                    new SupportedChatModels("llama", List.of(ollamaModel("llama", "llama3")));
+            ChatModelResolver resolver =
+                    new ChatModelResolver(null, openAiChatModel, googleGenAiChatModel, supported);
 
             assertThatThrownBy(() -> resolver.resolve("llama"))
                     .isInstanceOf(InternalServerException.class);
