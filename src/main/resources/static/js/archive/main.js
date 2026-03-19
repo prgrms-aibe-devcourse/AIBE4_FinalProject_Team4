@@ -80,7 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function resetUploadModal() {
     document.getElementById('uploadGroupName').value = '';
-    document.getElementById('uploadCategory').selectedIndex = 0;
+    document.getElementById('uploadCategory').value = '';
+    document.querySelectorAll('#uploadModal .category-chip').forEach(btn => {
+        btn.classList.remove(...CHIP_ACTIVE);
+        btn.classList.add(...CHIP_INACTIVE);
+    });
     document.getElementById('uploadMajor').value = '1';
     document.getElementById('uploadMinor').value = '0';
     document.getElementById('uploadPatch').value = '0';
@@ -117,6 +121,7 @@ async function submitUpload() {
     const fileInput = document.getElementById('uploadFile');
 
     if (!groupName) { showModalError('uploadError', '그룹명을 입력해주세요.'); return; }
+    if (!category || !category.trim()) { showModalError('uploadError', '카테고리를 선택하거나 입력해주세요.'); return; }
     if (!fileInput.files.length) { showModalError('uploadError', '파일을 선택해주세요.'); return; }
 
     const requestData = { groupName, category, majorVersion, minorVersion, patchVersion, isProcessed };
