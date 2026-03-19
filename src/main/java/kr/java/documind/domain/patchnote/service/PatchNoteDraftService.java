@@ -97,8 +97,14 @@ public class PatchNoteDraftService {
         emitter.onError(e -> aborted.set(true));
 
         // AsyncConfig에 등록된 커스텀 ThreadPoolTaskExecutor 사용 (ForkJoinPool 사용 금지)
-        CompletableFuture.runAsync(
-                () -> generateDraft(emitter, projectId, items, request, aborted), taskExecutor);
+        try {
+            CompletableFuture.runAsync(
+                    () -> generateDraft(emitter, projectId, items, request, aborted), taskExecutor);
+        } catch (Exception e) {
+            activeGenerations.remove(projectId);
+            sendError(emitter, "초안 생성을 시작할 수 없습니다: " + e.getMessage());
+            completeQuietly(emitter);
+        }
 
         return emitter;
     }

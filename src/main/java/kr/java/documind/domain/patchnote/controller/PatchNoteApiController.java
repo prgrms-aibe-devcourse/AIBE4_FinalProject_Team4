@@ -80,7 +80,7 @@ public class PatchNoteApiController {
             description = "패치노트를 soft delete합니다. 이미 삭제된 항목에 대해서는 404를 반환합니다.")
     @PatchNoteSwaggerDocs.DeletePatchNoteDocs
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deletePatchNote(
+    public ResponseEntity<ApiResponse<String>> deletePatchNote(
             @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "패치노트 ID", example = "1", required = true) @PathVariable
                     Long id) {

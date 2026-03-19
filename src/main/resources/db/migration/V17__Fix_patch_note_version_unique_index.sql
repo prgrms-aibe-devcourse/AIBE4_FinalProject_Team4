@@ -7,7 +7,7 @@
 -- soft delete된 버전과 새 버전이 공존할 수 있다.
 
 ALTER TABLE patch_note
-    DROP CONSTRAINT uk_patch_note_project_version;
+    DROP CONSTRAINT IF EXISTS uk_patch_note_project_version;
 
 CREATE UNIQUE INDEX uk_patch_note_project_version
     ON patch_note (project_id, major_version, minor_version, patch_version)

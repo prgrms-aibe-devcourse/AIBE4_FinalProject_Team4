@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import kr.java.documind.domain.patchnote.model.dto.ItemQuery;
 import kr.java.documind.domain.patchnote.model.dto.VectorChunkResult;
 import lombok.RequiredArgsConstructor;
@@ -342,8 +343,8 @@ public class HybridVectorSearchRepositoryCustom {
         if (tokens.isEmpty()) {
             return "TRUE";
         }
-        return tokens.stream()
-                .map((ignored) -> "content LIKE :tok" + tokens.indexOf(ignored))
+        return IntStream.range(0, tokens.size())
+                .mapToObj(i -> "content LIKE :tok" + i)
                 .collect(Collectors.joining(" OR "));
     }
 

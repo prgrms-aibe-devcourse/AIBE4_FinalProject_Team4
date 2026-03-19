@@ -102,7 +102,7 @@ public class PendingItemApiController {
                             + "이미 EXCLUDED이거나 COMPLETED인 항목에는 400을 반환합니다.")
     @PendingItemSwaggerDocs.ExcludeItemDocs
     @PatchMapping("/{itemId}/exclude")
-    public ResponseEntity<ApiResponse<Void>> excludeItem(
+    public ResponseEntity<ApiResponse<String>> excludeItem(
             @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "PendingItem ID", example = "42", required = true)
                     @PathVariable
@@ -119,7 +119,7 @@ public class PendingItemApiController {
                             + "EXCLUDED 상태가 아닌 항목에는 400을 반환합니다.")
     @PendingItemSwaggerDocs.RestoreItemDocs
     @PatchMapping("/{itemId}/restore")
-    public ResponseEntity<ApiResponse<Void>> restoreItem(
+    public ResponseEntity<ApiResponse<String>> restoreItem(
             @CurrentProject ProjectRequestContext ctx,
             @Parameter(description = "PendingItem ID", example = "42", required = true)
                     @PathVariable
