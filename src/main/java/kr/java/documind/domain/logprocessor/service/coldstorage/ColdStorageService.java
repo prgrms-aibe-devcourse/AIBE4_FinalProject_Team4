@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +59,7 @@ public class ColdStorageService {
             Pattern.compile("^game_log_\\d{4}_w(0[1-9]|[1-4][0-9]|5[0-3])$");
 
     /**
-     * 파티션을 Cold Storage(S3)로 아카이빙
+     * 파티션을 Cold Storage(S3)로 아카이빙 (프로젝트별로 분리)
      *
      * <p><b>접근 제한:</b> 스케줄러 전용 (외부 호출 금지)
      *
@@ -64,9 +67,11 @@ public class ColdStorageService {
      *
      * <p><b>경고:</b> tableName은 내부에서 생성된 값만 사용 가능. 외부 입력 금지!
      *
+     * <p><b>Multi-tenancy:</b> 각 프로젝트의 데이터를 회사별/프로젝트별로 분리하여 S3에 저장
+     *
      * @param tableName 파티션 테이블 이름 (예: game_log_2024_w10)
      * @param weekStartDate 주 시작 날짜
-     * @return 업로드된 S3 URI
+     * @return 업로드된 S3 URI 목록 (프로젝트별로 하나씩)
      * @throws IOException 파일 I/O 오류
      * @throws IllegalArgumentException 잘못된 테이블명 (SQL 인젝션 시도 등)
      */
@@ -77,25 +82,78 @@ public class ColdStorageService {
         // SQL 인젝션 방지: 테이블명 검증
         validatePartitionTableName(tableName);
 
-        // 1. 고유한 임시 디렉토리 생성 (동시 실행 방지)
-        Path uniqueTempDir = createUniqueTempDirectory(tableName);
+        // 1. 파티션에서 고유한 project_id 목록 조회
+        List<UUID> projectIds = postgresExporter.getDistinctProjectIds(tableName);
+        log.info("[ColdStorage] Found {} projects in partition {}", projectIds.size(), tableName);
+
+        if (projectIds.isEmpty()) {
+            log.warn("[ColdStorage] No data found in partition {}, skipping archive", tableName);
+            return "No data to archive";
+        }
+
+        // 2. 각 프로젝트별로 아카이빙
+        List<String> s3Uris = new ArrayList<>();
+
+        for (UUID projectId : projectIds) {
+            try {
+                String s3Uri = archiveProjectData(tableName, projectId, weekStartDate);
+                s3Uris.add(s3Uri);
+            } catch (Exception e) {
+                log.error(
+                        "[ColdStorage] Failed to archive project {} from partition {}",
+                        projectId,
+                        tableName,
+                        e);
+                // 한 프로젝트 실패해도 다른 프로젝트는 계속 처리
+            }
+        }
+
+        log.info(
+                "[ColdStorage] Successfully archived {} out of {} projects from {}",
+                s3Uris.size(),
+                projectIds.size(),
+                tableName);
+
+        return String.join(", ", s3Uris);
+    }
+
+    /**
+     * 특정 프로젝트의 데이터를 S3로 아카이빙
+     *
+     * @param tableName 파티션 테이블 이름
+     * @param projectId 프로젝트 ID
+     * @param weekStartDate 주 시작 날짜
+     * @return S3 URI
+     * @throws IOException 파일 I/O 오류
+     */
+    private String archiveProjectData(String tableName, UUID projectId, LocalDate weekStartDate)
+            throws IOException {
+        log.info("[ColdStorage] Archiving project {} from {}", projectId, tableName);
+
+        // 1. company_id 조회
+        Long companyId = postgresExporter.getCompanyIdForProject(projectId);
+
+        // 2. 고유한 임시 디렉토리 생성
+        Path uniqueTempDir = createUniqueTempDirectory(tableName + "_" + projectId);
 
         try {
-            // 2. PostgreSQL → CSV export
-            File csvFile = exportPartitionToCsv(tableName, uniqueTempDir);
+            // 3. PostgreSQL → CSV export (프로젝트별)
+            File csvFile = exportProjectToCsv(tableName, projectId, uniqueTempDir);
 
-            // 3. CSV → Parquet 변환
-            File parquetFile = convertCsvToParquet(csvFile, tableName, uniqueTempDir);
+            // 4. CSV → Parquet 변환
+            File parquetFile =
+                    convertCsvToParquet(csvFile, "game_log_" + projectId, uniqueTempDir);
 
-            // 4. Parquet → S3 업로드
-            String s3Uri = uploadParquetToS3(parquetFile, tableName, weekStartDate);
+            // 5. Parquet → S3 업로드
+            String s3Uri =
+                    uploadParquetToS3(parquetFile, companyId, projectId, weekStartDate);
 
-            log.info("[ColdStorage] Successfully archived {} to {}", tableName, s3Uri);
+            log.info("[ColdStorage] Successfully archived project {} to {}", projectId, s3Uri);
 
             return s3Uri;
 
         } finally {
-            // 5. 임시 파일 정리 (해당 아카이빙 작업의 파일만)
+            // 6. 임시 파일 정리
             cleanupTempDirectory(uniqueTempDir);
         }
     }
@@ -119,22 +177,27 @@ public class ColdStorageService {
     }
 
     /**
-     * PostgreSQL 파티션 → CSV export
+     * PostgreSQL 파티션에서 특정 프로젝트 데이터만 CSV로 export
      *
      * @param tableName 파티션 테이블 이름
+     * @param projectId 프로젝트 ID
      * @param tempDirPath 임시 디렉토리
      * @return CSV 파일
      */
-    private File exportPartitionToCsv(String tableName, Path tempDirPath) throws IOException {
-        log.info("[ColdStorage] Exporting {} to CSV...", tableName);
+    private File exportProjectToCsv(String tableName, UUID projectId, Path tempDirPath)
+            throws IOException {
+        log.info("[ColdStorage] Exporting {} (project: {}) to CSV...", tableName, projectId);
 
-        File csvFile = tempDirPath.resolve(tableName + ".csv").toFile();
+        File csvFile = tempDirPath.resolve(tableName + "_" + projectId + ".csv").toFile();
 
-        // PostgreSQL COPY TO를 사용하여 CSV export
-        postgresExporter.exportTableToCsv(tableName, csvFile);
+        // PostgreSQL COPY TO를 사용하여 프로젝트별 CSV export
+        postgresExporter.exportTableToCsvByProject(tableName, projectId, csvFile);
 
         long fileSizeMB = csvFile.length() / (1024 * 1024);
-        log.info("[ColdStorage] CSV export completed: {} ({} MB)", csvFile.getName(), fileSizeMB);
+        log.info(
+                "[ColdStorage] CSV export completed: {} ({} MB)",
+                csvFile.getName(),
+                fileSizeMB);
 
         return csvFile;
     }
@@ -176,24 +239,32 @@ public class ColdStorageService {
     }
 
     /**
-     * Parquet → S3 업로드
+     * Parquet → S3 업로드 (Multi-tenancy 지원)
+     *
+     * <p>S3 경로: {s3Prefix}/{companyId}/{projectId}/year=YYYY/week=WW/game_log.parquet
      *
      * @param parquetFile Parquet 파일
-     * @param tableName 테이블 이름
+     * @param companyId 회사 ID
+     * @param projectId 프로젝트 ID
      * @param weekStartDate 주 시작 날짜
      * @return S3 URI
      */
-    private String uploadParquetToS3(File parquetFile, String tableName, LocalDate weekStartDate) {
-        log.info("[ColdStorage] Uploading Parquet to S3...");
+    private String uploadParquetToS3(
+            File parquetFile, Long companyId, UUID projectId, LocalDate weekStartDate) {
+        log.info(
+                "[ColdStorage] Uploading Parquet to S3 (company: {}, project: {})...",
+                companyId,
+                projectId);
 
-        // S3 키 생성: cold-storage/game-logs/year=2024/week=10/game_log_2024_w10.parquet
+        // S3 키 생성: cold-storage/game-logs/{companyId}/{projectId}/year=2026/week=11/game_log.parquet
         // ISO week-based year 사용 (연말/연초 경계 처리)
         int year = weekStartDate.get(java.time.temporal.IsoFields.WEEK_BASED_YEAR);
         int weekNumber = weekStartDate.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR);
 
         String s3Key =
                 String.format(
-                        "%s/year=%d/week=%02d/%s.parquet", s3Prefix, year, weekNumber, tableName);
+                        "%s/%d/%s/year=%d/week=%02d/game_log.parquet",
+                        s3Prefix, companyId, projectId, year, weekNumber);
 
         // S3 업로드
         PutObjectRequest putRequest =
@@ -203,9 +274,13 @@ public class ColdStorageService {
                         .contentType("application/octet-stream")
                         .metadata(
                                 java.util.Map.of(
-                                        "table-name", tableName,
+                                        "company-id", companyId.toString(),
+                                        "project-id", projectId.toString(),
                                         "week-start-date", weekStartDate.toString(),
-                                        "archived-at", java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toString()))
+                                        "archived-at",
+                                                java.time.OffsetDateTime.now(
+                                                                java.time.ZoneOffset.UTC)
+                                                        .toString()))
                         .build();
 
         s3Client.putObject(putRequest, parquetFile.toPath());
