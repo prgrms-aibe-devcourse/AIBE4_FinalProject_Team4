@@ -21,6 +21,11 @@ public class StackFrameFilter {
     private static final Pattern FRAME_PATTERN =
             Pattern.compile("at\\s+([a-zA-Z0-9_.]+)\\.([a-zA-Z0-9_<>$]+)\\(([^:)]+):?(\\d+)?\\)");
 
+    // Unity 스택 트레이스 프레임 파싱 패턴
+    // 예: "PlayerInventory.AddItem (Item item) (at Assets/Scripts/PlayerInventory.cs:45)"
+    private static final Pattern UNITY_FRAME_PATTERN =
+            Pattern.compile("([a-zA-Z0-9_]+)\\.([a-zA-Z0-9_<>$]+)\\s+\\([^)]*\\)\\s+\\(at\\s+([^:)]+):?(\\d+)?\\)");
+
     // 애플리케이션 프레임 패턴 (프로젝트별 수정 필요)
     private static final List<String> APP_PACKAGE_PREFIXES =
             List.of(
@@ -59,21 +64,33 @@ public class StackFrameFilter {
         String[] lines = stackTrace.split("\\r?\\n");
 
         for (String line : lines) {
-            Matcher matcher = FRAME_PATTERN.matcher(line.trim());
-            if (!matcher.find()) {
+            String trimmedLine = line.trim();
+
+            // Java 스타일 프레임 시도
+            Matcher matcher = FRAME_PATTERN.matcher(trimmedLine);
+            if (matcher.find()) {
+                String packageName = matcher.group(1);
+
+                // 라이브러리 프레임 제외
+                if (!isLibraryFrame(packageName) && isAppFrame(packageName)) {
+                    String normalizedFrame = normalizeFrame(matcher);
+                    appFrames.add(normalizedFrame);
+                }
                 continue;
             }
 
-            String packageName = matcher.group(1);
+            // Unity 스타일 프레임 시도
+            Matcher unityMatcher = UNITY_FRAME_PATTERN.matcher(trimmedLine);
+            if (unityMatcher.find()) {
+                String className = unityMatcher.group(1);
 
-            // 라이브러리 프레임 제외
-            if (isLibraryFrame(packageName)) {
-                continue;
-            }
+                // Unity 엔진 프레임 제외 (UnityEngine.으로 시작)
+                if (className.startsWith("UnityEngine") || className.startsWith("UnityEditor")) {
+                    continue;
+                }
 
-            // 애플리케이션 프레임만 수집
-            if (isAppFrame(packageName)) {
-                String normalizedFrame = normalizeFrame(matcher);
+                // 애플리케이션 프레임 수집 (Unity는 패키지 개념이 없으므로 클래스명만 확인)
+                String normalizedFrame = normalizeUnityFrame(unityMatcher);
                 appFrames.add(normalizedFrame);
             }
         }
@@ -108,6 +125,29 @@ public class StackFrameFilter {
         }
 
         return String.format("%s.%s(%s%s)", packageName, methodName, fileName, normalizedLine);
+    }
+
+    /**
+     * Unity 스택 트레이스 프레임 정규화
+     *
+     * @param matcher Unity 프레임 패턴 매칭 결과
+     * @return 정규화된 프레임 문자열
+     */
+    private String normalizeUnityFrame(Matcher matcher) {
+        String className = matcher.group(1);
+        String methodName = matcher.group(2);
+        String fileName = matcher.group(3);
+        String lineNumber = matcher.group(4);
+
+        // 라인 번호 10단위 반올림 (있는 경우만)
+        String normalizedLine = "";
+        if (lineNumber != null && !lineNumber.isEmpty()) {
+            int line = Integer.parseInt(lineNumber);
+            int rounded = (line / 10) * 10;
+            normalizedLine = ":" + rounded;
+        }
+
+        return String.format("%s.%s(%s%s)", className, methodName, fileName, normalizedLine);
     }
 
     /**

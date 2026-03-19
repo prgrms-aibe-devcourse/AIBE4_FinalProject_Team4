@@ -250,11 +250,7 @@ class SeverityCalculatorTest {
         given(businessImpactStrategy.calculate(any(), any())).willReturn(0);
         given(playerCountStrategy.calculate(any(), any())).willReturn(0);
 
-        given(crashStrategy.generateReason(0, issue, log)).willReturn(null);
-        given(frequencyStrategy.generateReason(0, issue, log)).willReturn(null);
-        given(blockingStrategy.generateReason(0, issue, log)).willReturn(null);
-        given(businessImpactStrategy.generateReason(0, issue, log)).willReturn(null);
-        given(playerCountStrategy.generateReason(0, issue, log)).willReturn(null);
+        // 점수가 0일 때는 generateReason이 호출되지 않으므로 stub 제거
 
         // when
         SeverityScore result = severityCalculator.calculate(issue, log);
@@ -279,9 +275,7 @@ class SeverityCalculatorTest {
 
         given(crashStrategy.generateReason(50, issue, log)).willReturn("치명적 크래시 (50점)");
         given(frequencyStrategy.generateReason(20, issue, log)).willReturn("시간당 1,000회 발생 (20점)");
-        given(blockingStrategy.generateReason(0, issue, log)).willReturn(null);
         given(businessImpactStrategy.generateReason(30, issue, log)).willReturn("결제 시스템 영향 (30점)");
-        given(playerCountStrategy.generateReason(0, issue, log)).willReturn(null);
 
         // when
         SeverityScore result = severityCalculator.calculate(issue, log);
@@ -290,7 +284,7 @@ class SeverityCalculatorTest {
         assertThat(result.getReason()).contains("치명적 크래시");
         assertThat(result.getReason()).contains("시간당 1,000회 발생");
         assertThat(result.getReason()).contains("결제 시스템 영향");
-        assertThat(result.getReason()).doesNotContain("0점");
+        assertThat(result.getReason()).doesNotContain("(0점)");
     }
 
     // ===== 경계값 테스트 =====
