@@ -12,7 +12,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
+public interface ProjectMemberRepository
+        extends JpaRepository<ProjectMember, Long>, ProjectMemberRepositoryCustom {
 
     Optional<ProjectMember> findByProjectAndMember(Project project, Member member);
 
