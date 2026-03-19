@@ -71,7 +71,7 @@
                         </tr>
                         </thead>
                         <tbody class="divide-y divide-divider">
-                        <template x-for="rule in severityRules" :key="rule.id">
+                        <template x-for="rule in severityRules" :key="rule.ruleKey">
                             <tr class="hover:bg-surface-hover transition-colors">
                                 <td class="px-6 py-5 font-bold text-sm text-docu-ink" x-text="rule.name"></td>
                                 <td class="px-6 py-5 text-sm text-gray-500 font-mono" x-text="rule.condition"></td>
@@ -108,7 +108,7 @@
                         </tr>
                         </thead>
                         <tbody class="divide-y divide-divider">
-                        <template x-for="rule in issueRules" :key="rule.id">
+                        <template x-for="rule in issueRules" :key="rule.ruleKey">
                             <tr class="hover:bg-surface-hover transition-colors">
                                 <td class="px-6 py-5 font-bold text-sm text-docu-ink" x-text="rule.name"></td>
                                 <td class="px-6 py-5 text-sm text-gray-500" x-text="rule.condition"></td>
@@ -262,18 +262,10 @@
                 readTimeout: null,
                 readObserver: null,
 
-                // 알림 규칙 설정 Mock State (추후 API 연동 필요)
-                severityRules: [
-                    { id: 'sev_crit', name: 'CRITICAL', condition: 'issue.severity == CRITICAL', active: true },
-                    { id: 'sev_high', name: 'HIGH', condition: 'issue.severity == HIGH', active: true },
-                    { id: 'sev_med', name: 'MEDIUM', condition: 'issue.severity == MEDIUM', active: false },
-                    { id: 'sev_low', name: 'LOW', condition: 'issue.severity == LOW', active: false },
-                ],
-                issueRules: [
-                    { id: 'iss_assign', name: '담당자 배정/변경', condition: 'Assignee is', active: true },
-                    { id: 'iss_status', name: '진행 상태 변경', condition: 'Status is transitioned', active: true },
-                    { id: 'iss_comment', name: '댓글', condition: 'Comment is', active: true },
-                ],
+                // 알림 규칙 설정 State (API 로드)
+                severityRules: [],
+                issueRules: [],
+                isRulesLoading: false,
 
                 // ── Constants ─────────────────────────────────────────────────
                 EVENT_LABEL: {
@@ -321,6 +313,8 @@
                     this.publicId = document.getElementById('publicId')?.value;
                     if (!this.publicId) return;
 
+                    await this.loadRules();
+
                     // 이력 탭 관련 초기화
                     this.setupImpressionObserver();
                     await this.loadMore(false);
@@ -336,14 +330,32 @@
                 },
 
                 // ── Actions ───────────────────────────────────────────────────
-                // 🚨 [추가] 토글 스위치 변경 시 API 호출 (추후 구현)
-                async updateRuleStatus(rule) {
-                    // TODO: 백엔드 API 설계 완료 시 적용
-                    // await callApi(`/api/projects/${this.publicId}/notification-rules/${rule.id}`, { method: 'PATCH', body: { active: rule.active } });
-                    console.log(`[Setting] ${rule.name} 상태가 ${rule.active ? '활성화' : '비활성화'} 되었습니다.`);
+                async loadRules() {
+                    this.isRulesLoading = true;
+                    try {
+                        const res = await callApi(`/api/projects/${this.publicId}/issue-alert-rules`);
+                        if (res.success) {
+                            const all = res.data;
+                            this.severityRules = all.filter(r => r.category === 'SEVERITY');
+                            this.issueRules = all.filter(r => r.category === 'ISSUE_EVENT');
+                        }
+                    } finally {
+                        this.isRulesLoading = false;
+                    }
                 },
 
-                // ... (기존 loadMore, changeTab, ignoreNotification, setupImpressionObserver, flushPendingReads, refreshList 등 유지) ...
+                async updateRuleStatus(rule) {
+                    const prev = !rule.active;
+                    try {
+                        await callApi(
+                            `/api/projects/${this.publicId}/issue-alert-rules/${rule.ruleKey}`,
+                            { method: 'PATCH', body: JSON.stringify({ active: rule.active }) }
+                        );
+                    } catch (e) {
+                        rule.active = prev;
+                        window.showTopToast?.('설정 저장에 실패했습니다.', 'danger');
+                    }
+                },
                 async loadMore(append = true) {
                     if (this.isLoading || (!this.hasNext && append)) return;
                     this.isLoading = true;
