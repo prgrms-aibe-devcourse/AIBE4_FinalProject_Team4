@@ -884,23 +884,23 @@ async function renderTimeline(issue) {
 
             switch (history.fieldName) {
                 case 'STATUS':
-                    action = `상태를 "${history.beforeValue || '없음'}"에서 "${history.afterValue}"(으)로 변경`;
+                    action = `상태를 "${escapeHtml(history.beforeValue) || '없음'}"에서 "${escapeHtml(history.afterValue)}"(으)로 변경`;
                     icon = 'status';
                     break;
                 case 'ASSIGNEE':
                     const beforeMember = projectMembers.find(m => m.memberId === history.beforeValue);
                     const afterMember = projectMembers.find(m => m.memberId === history.afterValue);
-                    const beforeName = beforeMember ? beforeMember.nickname : '미할당';
-                    const afterName = afterMember ? afterMember.nickname : '미할당';
+                    const beforeName = beforeMember ? escapeHtml(beforeMember.nickname) : '미할당';
+                    const afterName = afterMember ? escapeHtml(afterMember.nickname) : '미할당';
                     action = `담당자를 "${beforeName}"에서 "${afterName}"(으)로 변경`;
                     icon = 'user';
                     break;
                 case 'PRIORITY':
-                    action = `우선순위를 "${history.beforeValue || '없음'}"에서 "${history.afterValue}"(으)로 변경`;
+                    action = `우선순위를 "${escapeHtml(history.beforeValue) || '없음'}"에서 "${escapeHtml(history.afterValue)}"(으)로 변경`;
                     icon = 'priority';
                     break;
                 case 'COMMENT':
-                    action = history.afterValue;
+                    action = escapeHtml(history.afterValue);
                     icon = 'comment';
                     break;
                 default:
@@ -938,10 +938,10 @@ async function renderTimeline(issue) {
                     </div>
                     <div class="${!isLast ? 'flex-1 pb-2' : 'flex-1'}">
                         <div class="flex items-center justify-between mb-0.5 gap-4">
-                            <span class="${isSystem ? 'text-xs font-semibold text-gray-500' : 'text-xs font-semibold text-docu-ink'}">${event.user}</span>
-                            <span class="text-[10px] text-gray-400">${formatTimeAgo(event.time)}</span>
+                            <span class="${isSystem ? 'text-xs font-semibold text-docu-secondary' : 'text-xs font-semibold text-docu-ink'}">${event.user}</span>
+                            <span class="text-[10px] text-docu-tertiary">${formatTimeAgo(event.time)}</span>
                         </div>
-                        <p class="text-xs text-gray-500">${event.action}</p>
+                        <p class="text-xs text-docu-secondary">${event.action}</p>
                     </div>
                 </div>
             `;
@@ -1260,4 +1260,14 @@ function closeModal(modalId) {
 
 function showError(message) {
     showTopToast(message, 'danger');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
