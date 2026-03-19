@@ -30,7 +30,12 @@
             <div class="col-span-2 text-center">카테고리</div>
             <div class="col-span-2 text-center">최신 버전</div>
             <div class="col-span-2 text-center">파일 수</div>
-            <div class="col-span-2"></div>
+            <div class="col-span-2 flex items-center justify-end">
+                <button id="btnCollapseAll" class="hidden text-sm font-medium text-docu-secondary hover:text-docu-ink flex items-center gap-1" onclick="collapseAll()">
+                    모두접기
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                </button>
+            </div>
         </div>
 
         <!-- 그룹 목록 (JS에서 렌더링) -->

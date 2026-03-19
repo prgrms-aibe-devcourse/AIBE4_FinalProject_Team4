@@ -343,6 +343,25 @@ async function confirmDelete() {
     stopLoading(btn);
 }
 
+// ==================== 모두접기 ====================
+
+function collapseAll() {
+    document.querySelectorAll('[id^="docs-"]:not(.hidden)').forEach(el => {
+        el.classList.add('hidden');
+        const groupId = el.id.replace('docs-', '');
+        const arrow = document.getElementById(`arrow-${groupId}`);
+        if (arrow) arrow.classList.remove('rotate-180');
+    });
+    updateCollapseAllButton();
+}
+
+function updateCollapseAllButton() {
+    const btn = document.getElementById('btnCollapseAll');
+    if (!btn) return;
+    const hasExpanded = document.querySelectorAll('[id^="docs-"]:not(.hidden)').length > 0;
+    btn.classList.toggle('hidden', !hasExpanded);
+}
+
 // ==================== 그룹/문서 로딩 ====================
 
 function getExpandedGroupIds() {
@@ -471,6 +490,7 @@ async function toggleDocuments(groupId) {
     if (!docsContainer.classList.contains('hidden')) {
         docsContainer.classList.add('hidden');
         arrow.classList.remove('rotate-180');
+        updateCollapseAllButton();
         return;
     }
 
@@ -487,6 +507,7 @@ async function toggleDocuments(groupId) {
             renderDocuments(groupId, result.data, groupName, category);
             docsContainer.classList.remove('hidden');
             arrow.classList.add('rotate-180');
+            updateCollapseAllButton();
         } else {
             alert(result.error?.message || '문서 목록을 불러오는데 실패했습니다.');
         }
