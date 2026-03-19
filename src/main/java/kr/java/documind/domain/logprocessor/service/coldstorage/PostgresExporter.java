@@ -180,7 +180,7 @@ public class PostgresExporter {
     public Long getCompanyIdForProject(UUID projectId) {
         log.debug("[PostgresExporter] Fetching company_id for project {}", projectId);
 
-        String query = "SELECT company_id FROM project WHERE public_id = ?";
+        String query = "SELECT company_id FROM project WHERE id = ?";
 
         try (Connection connection = dataSource.getConnection();
                 PreparedStatement ps = connection.prepareStatement(query)) {
