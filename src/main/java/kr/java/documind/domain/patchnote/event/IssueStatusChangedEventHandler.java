@@ -6,11 +6,14 @@ import java.util.List;
 import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClient;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
+import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.patchnote.exception.IssueInsufficientInfoException;
 import kr.java.documind.domain.patchnote.infrastructure.IssueSummaryGenerator;
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkingSource;
+import kr.java.documind.domain.patchnote.model.dto.IssueCommentChunkSource;
 import kr.java.documind.domain.patchnote.model.dto.IssueSummaryResult;
 import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateDto;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
@@ -39,6 +42,7 @@ public class IssueStatusChangedEventHandler {
     private static final int MIN_CONTENT_LENGTH = 15;
 
     private final IssueRepository issueRepository;
+    private final CommentRepository commentRepository;
     private final IssueChunkingService issueChunkingService;
     private final EmbeddingModelClient embeddingModelClient;
     private final VectorStoreManager vectorStoreManager;
@@ -71,15 +75,19 @@ public class IssueStatusChangedEventHandler {
                                         new IllegalStateException(
                                                 "이슈를 찾을 수 없습니다. issueId: " + event.issueId()));
 
-        // 3. 정보 충분성 검증: description 또는 resolutionNote 중 하나라도 MIN_CONTENT_LENGTH 이상
-        //    미달 시 IssueInsufficientInfoException throw → 담당자 경고 top-toast
-        if (isInsufficient(issue)) {
+        // 3. 댓글 로드 — 정보 충분성 판정 및 청킹에 함께 사용
+        List<IssueComment> comments =
+                commentRepository.findByIssueIdOrderByCreatedAtAsc(issue.getId());
+
+        // 4. 정보 충분성 검증: description, resolutionNote, 또는 댓글 중 하나라도 MIN_CONTENT_LENGTH 이상
+        //    모두 미달 시 IssueInsufficientInfoException throw → 담당자 경고 top-toast
+        if (isInsufficient(issue, comments)) {
             log.warn("[PatchNote] 이슈 정보 부족 — pending_item 미적재. issueId: {}", event.issueId());
             throw new IssueInsufficientInfoException(event.issueId());
         }
 
-        // 4. 청킹: 배경/해결/합본 청크 생성 + 이슈 전용 metadata 주입
-        //    IssueComment 미구현 — 연동 후 comments 목록 전달 예정
+        // 5. 청킹: 배경/해결/합본/댓글 청크 생성 + 이슈 전용 metadata 주입
+        List<IssueCommentChunkSource> commentSources = toCommentChunkSources(comments);
         IssueChunkingSource chunkingSource =
                 new IssueChunkingSource(
                         issue.getId(),
@@ -90,35 +98,35 @@ public class IssueStatusChangedEventHandler {
                         issue.getSeverity() != null ? issue.getSeverity().name() : null,
                         issue.getIssueType() != null ? issue.getIssueType().name() : null,
                         issue.getResolvedAt() != null ? issue.getResolvedAt().toInstant() : null,
-                        List.of());
+                        commentSources);
         List<Document> chunks = issueChunkingService.buildChunks(chunkingSource);
 
-        // 5. 임베딩 (EmbeddingModelClient 재사용, 기존 문서 ETL과 동일)
+        // 6. 임베딩 (EmbeddingModelClient 재사용, 기존 문서 ETL과 동일)
         List<String> texts = chunks.stream().map(Document::getText).toList();
         List<float[]> embeddings = embeddingModelClient.embed(texts);
 
-        // 6. LLM 요약 생성 — title(플레이어 친화적 제목) + summary(해요체 2~3문장) 반환
+        // 7. LLM 요약 생성 — title(플레이어 친화적 제목) + summary(해요체 2~3문장) 반환
         IssueSummaryResult summaryResult = issueSummaryGenerator.generate(issue);
 
-        // 7. PatchType 결정 (룰 기반, LLM 미사용)
+        // 8. PatchType 결정 (룰 기반, LLM 미사용)
         PatchType patchType = patchTypeResolver.resolveFromIssueType(issue.getIssueType());
 
-        // 8. 초성 추출 (검색용) — LLM이 변환한 플레이어 친화적 제목 기준
+        // 9. 초성 추출 (검색용) — LLM이 변환한 플레이어 친화적 제목 기준
         String choseong = choseongUtil.extract(summaryResult.title());
 
-        // 9. PENDING / EXCLUDED 분기
+        // 10. PENDING / EXCLUDED 분기
         PendingItemStatus status =
                 event.excludeFromPatchNote()
                         ? PendingItemStatus.EXCLUDED
                         : PendingItemStatus.PENDING;
 
-        // 10. sourceCreatedAt: 이슈 RESOLVED 전환 시점
+        // 11. sourceCreatedAt: 이슈 RESOLVED 전환 시점
         OffsetDateTime sourceCreatedAt =
                 event.occurredAt() != null
                         ? event.occurredAt().atOffset(ZoneOffset.UTC)
                         : OffsetDateTime.now(ZoneOffset.UTC);
 
-        // 11. DTO 조립 — LLM 결과(title, summary) 사용
+        // 12. DTO 조립 — LLM 결과(title, summary) 사용
         PendingItemCreateDto dto =
                 new PendingItemCreateDto(
                         event.projectId(),
@@ -131,7 +139,7 @@ public class IssueStatusChangedEventHandler {
                         status,
                         sourceCreatedAt);
 
-        // 12. 벡터 저장 → pending_item upsert (PendingItemUpsertService가 순서 보장 + @Retryable 적용)
+        // 13. 벡터 저장 → pending_item upsert (PendingItemUpsertService가 순서 보장 + @Retryable 적용)
         //     실패 예외 전파: PendingItemUpsertFailedException | Exception
         //     → CustomAsyncExceptionHandler가 타입별로 관리자 알림 발행
         pendingItemUpsertService.saveVectorThenUpsert(issue.getId(), chunks, embeddings, dto);
@@ -203,12 +211,29 @@ public class IssueStatusChangedEventHandler {
         }
     }
 
-    private boolean isInsufficient(Issue issue) {
-        return !hasMeaningfulText(issue.getDescription())
-                && !hasMeaningfulText(issue.getResolutionNote());
+    /**
+     * description, resolutionNote, 댓글 중 MIN_CONTENT_LENGTH 이상인 텍스트가 하나도 없으면 정보 부족으로 판정
+     */
+    private boolean isInsufficient(Issue issue, List<IssueComment> comments) {
+        if (hasMeaningfulText(issue.getDescription())) return false;
+        if (hasMeaningfulText(issue.getResolutionNote())) return false;
+        return comments.stream().noneMatch(c -> hasMeaningfulText(c.getContent()));
     }
 
     private boolean hasMeaningfulText(String text) {
         return text != null && text.strip().length() >= MIN_CONTENT_LENGTH;
+    }
+
+    private List<IssueCommentChunkSource> toCommentChunkSources(List<IssueComment> comments) {
+        return comments.stream()
+                .map(
+                        c ->
+                                new IssueCommentChunkSource(
+                                        c.getId(),
+                                        c.getContent(),
+                                        c.getCreatedAt() != null
+                                                ? c.getCreatedAt().toInstant()
+                                                : null))
+                .toList();
     }
 }

@@ -19,11 +19,14 @@ import java.util.UUID;
 import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClient;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
+import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.patchnote.exception.IssueInsufficientInfoException;
 import kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException;
 import kr.java.documind.domain.patchnote.infrastructure.IssueSummaryGenerator;
+import kr.java.documind.domain.patchnote.model.dto.IssueChunkingSource;
 import kr.java.documind.domain.patchnote.model.dto.IssueSummaryResult;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
@@ -52,6 +55,7 @@ class IssueStatusChangedEventHandlerTest {
     @InjectMocks private IssueStatusChangedEventHandler handler;
 
     @Mock private IssueRepository issueRepository;
+    @Mock private CommentRepository commentRepository;
     @Mock private IssueChunkingService issueChunkingService;
     @Mock private EmbeddingModelClient embeddingModelClient;
     @Mock private VectorStoreManager vectorStoreManager;
@@ -110,9 +114,10 @@ class IssueStatusChangedEventHandlerTest {
         return issue;
     }
 
-    /** 성공 경로 공통 stubbing */
+    /** 성공 경로 공통 stubbing (댓글 없음) */
     private void stubSuccessPath(Issue issue) {
         given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
+        given(commentRepository.findByIssueIdOrderByCreatedAtAsc(ISSUE_ID)).willReturn(List.of());
         given(issueChunkingService.buildChunks(any())).willReturn(List.of(new Document("청크 텍스트")));
         given(embeddingModelClient.embed(any()))
                 .willReturn(List.of(new float[] {0.1f, 0.2f, 0.3f}));
@@ -651,24 +656,98 @@ class IssueStatusChangedEventHandlerTest {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 이슈 댓글 관련 테스트 — 댓글 기능 구현 후 활성화
+    // 이슈 댓글 관련 테스트
     // ──────────────────────────────────────────────────────────────────────────
 
-    // TODO: 이슈 댓글 기능 구현 후 활성화
-    //
-    // @Test
-    // @DisplayName("정보 충분성: description=null, resolutionNote=null, comment>=15자 → 정보 충분으로 진행")
-    // void handleIssueResolved_comment만있는이슈_정보충분_진행() {
-    //     // Given — description, resolutionNote 없고 comment만 있는 경우
-    //     // IssueComment 연동 후 handler에서 comments를 로드하여 isInsufficient 판정에 반영
-    //     // 댓글 기능 구현 후 IssueComment 연동 시 활성화
-    // }
+    @Nested
+    @DisplayName("handleIssueResolved() - 이슈 댓글 연동")
+    class HandleIssueResolvedComment {
 
-    // TODO: 이슈 댓글 기능 구현 후 활성화
-    //
-    // @Test
-    // @DisplayName("청크 생성: comment 청크의 chunk_contains_resolution=false 확인")
-    // void handleIssueResolved_comment청크_metadata검증() {
-    //     // IssueChunkDocumentBuilder가 comment 청크에 chunk_contains_resolution=false 설정하는지 검증
-    // }
+        @Test
+        @DisplayName("정보 충분성: description=null, resolutionNote=null, comment>=15자 → 정보 충분으로 진행")
+        void handleIssueResolved_comment만있는이슈_정보충분_진행() {
+            // Given — description, resolutionNote 없고 comment만 있는 경우
+            Issue issue = sufficientIssue(null, null);
+            IssueComment comment =
+                    IssueComment.create(ISSUE_ID, UUID.randomUUID(), "A".repeat(15), List.of());
+            ReflectionTestUtils.setField(comment, "id", 100L);
+
+            given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
+            given(commentRepository.findByIssueIdOrderByCreatedAtAsc(ISSUE_ID))
+                    .willReturn(List.of(comment));
+            given(issueChunkingService.buildChunks(any()))
+                    .willReturn(List.of(new Document("청크 텍스트")));
+            given(embeddingModelClient.embed(any()))
+                    .willReturn(List.of(new float[] {0.1f, 0.2f, 0.3f}));
+            given(issueSummaryGenerator.generate(any()))
+                    .willReturn(new IssueSummaryResult("플레이어 친화적 제목", "요약입니다"));
+            given(patchTypeResolver.resolveFromIssueType(any())).willReturn(PatchType.FIX);
+            given(choseongUtil.extract(any())).willReturn("ㅍㄹㅇ");
+            IssueStatusChangedEvent event = resolvedEvent(false);
+
+            // When
+            handler.handleIssueResolved(event);
+
+            // Then — isInsufficient = false (댓글 ≥ 15자) → saveVectorThenUpsert 호출
+            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("정보 충분성: description=null, resolutionNote=null, comment 14자 → IssueInsufficientInfoException")
+        void handleIssueResolved_comment14자이하_정보부족_예외발생() {
+            // Given — 댓글이 있어도 14자 이하이면 부족 처리
+            Issue issue = sufficientIssue(null, null);
+            IssueComment shortComment =
+                    IssueComment.create(ISSUE_ID, UUID.randomUUID(), "A".repeat(14), List.of());
+            ReflectionTestUtils.setField(shortComment, "id", 101L);
+
+            given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
+            given(commentRepository.findByIssueIdOrderByCreatedAtAsc(ISSUE_ID))
+                    .willReturn(List.of(shortComment));
+            IssueStatusChangedEvent event = resolvedEvent(false);
+
+            // When & Then
+            assertThatThrownBy(() -> handler.handleIssueResolved(event))
+                    .isInstanceOf(IssueInsufficientInfoException.class);
+        }
+
+        @Test
+        @DisplayName("청크 생성: 댓글 포함 시 buildChunks에 전달되는 IssueChunkingSource에 comments가 포함됨")
+        void handleIssueResolved_comment청크_metadata검증() {
+            // Given — description 있는 이슈 + 댓글 1개
+            //   IssueChunkDocumentBuilder는 comment 청크 draft에 isResolutionLike()=false를 설정하여
+            //   chunk_contains_resolution=false 메타데이터를 부여함 (IssueChunkDraft.isResolutionLike 참조)
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
+            String commentContent = "댓글로 남긴 해결 참고 내용입니다";
+            IssueComment comment =
+                    IssueComment.create(ISSUE_ID, UUID.randomUUID(), commentContent, List.of());
+            ReflectionTestUtils.setField(comment, "id", 200L);
+
+            given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
+            given(commentRepository.findByIssueIdOrderByCreatedAtAsc(ISSUE_ID))
+                    .willReturn(List.of(comment));
+            given(issueChunkingService.buildChunks(any()))
+                    .willReturn(List.of(new Document("청크 텍스트")));
+            given(embeddingModelClient.embed(any()))
+                    .willReturn(List.of(new float[] {0.1f, 0.2f, 0.3f}));
+            given(issueSummaryGenerator.generate(any()))
+                    .willReturn(new IssueSummaryResult("플레이어 친화적 제목", "요약입니다"));
+            given(patchTypeResolver.resolveFromIssueType(any())).willReturn(PatchType.FIX);
+            given(choseongUtil.extract(any())).willReturn("ㅍㄹㅇ");
+            IssueStatusChangedEvent event = resolvedEvent(false);
+
+            // When
+            handler.handleIssueResolved(event);
+
+            // Then — buildChunks에 전달된 IssueChunkingSource의 comments 필드 검증
+            ArgumentCaptor<IssueChunkingSource> captor =
+                    ArgumentCaptor.forClass(IssueChunkingSource.class);
+            then(issueChunkingService).should().buildChunks(captor.capture());
+            IssueChunkingSource capturedSource = captor.getValue();
+
+            assertThat(capturedSource.comments()).hasSize(1);
+            assertThat(capturedSource.comments().get(0).commentId()).isEqualTo(200L);
+            assertThat(capturedSource.comments().get(0).content()).isEqualTo(commentContent);
+        }
+    }
 }
