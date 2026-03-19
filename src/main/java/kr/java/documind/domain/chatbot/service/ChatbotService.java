@@ -1,13 +1,10 @@
 package kr.java.documind.domain.chatbot.service;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import jakarta.annotation.PostConstruct;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
 import kr.java.documind.domain.chatbot.infrastructure.ChatModelResolver;
 import kr.java.documind.domain.chatbot.infrastructure.ChatSseConverter;
@@ -18,11 +15,15 @@ import kr.java.documind.domain.chatbot.model.vo.ResolvedChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.codec.ServerSentEvent;
@@ -33,6 +34,8 @@ import reactor.core.publisher.Flux;
 @Service
 @RequiredArgsConstructor
 public class ChatbotService {
+
+    private static final FilterExpressionBuilder FILTER = new FilterExpressionBuilder();
 
     private final ChatModelResolver chatModelResolver;
     private final ChatSseConverter chatSseConverter;
@@ -46,11 +49,18 @@ public class ChatbotService {
     @Value("classpath:prompts/system-message.st")
     private Resource systemMessageResource;
 
+    private PromptTemplate systemPromptTemplate;
+
+    @PostConstruct
+    void init() {
+        this.systemPromptTemplate = new PromptTemplate(systemMessageResource);
+    }
+
     public Flux<ServerSentEvent<String>> chat(
             String conversationId, UUID projectId, ChatRequest request) {
 
         // 1. 필터 표현식 생성
-        String filterExpression = buildFilterExpression(projectId, request);
+        Filter.Expression filterExpression = buildFilterExpression(projectId, request);
         if (filterExpression == null) {
             return Flux.just(
                     chatSseConverter.errorEvent("검색 대상 문서가 없습니다."), chatSseConverter.doneEvent());
@@ -60,56 +70,21 @@ public class ChatbotService {
         ResolvedChatModel resolved = chatModelResolver.resolve(request.modelAlias());
         String systemMessage = buildSystemMessage(request.userSystemMessage());
 
-        // 3. 참조문서 추출 상태 (null이면 아직 미추출)
-        AtomicReference<List<ReferenceResponse>> refsHolder = new AtomicReference<>(null);
+        // 3. 참조문서 홀더 (스트리밍 중 첫 추출 시 저장)
+        AtomicReference<List<ReferenceResponse>> refsHolder = new AtomicReference<>();
 
         // 4. ChatClient 스트리밍
         Flux<ServerSentEvent<String>> tokenEvents =
-                ChatClient.builder(resolved.chatModel())
-                        .defaultOptions(resolved.chatOptions())
-                        .defaultAdvisors(
-                                messageChatMemoryAdvisor,
-                                retrievalAugmentationAdvisor,
-                                simpleLoggerAdvisor)
-                        .build()
-                        .prompt()
-                        .system(systemMessage)
-                        .user(request.userMessage())
-                        .advisors(
-                                advisor -> {
-                                    advisor.param(ChatMemory.CONVERSATION_ID, conversationId);
-                                    advisor.param(
-                                            VectorStoreDocumentRetriever.FILTER_EXPRESSION,
-                                            filterExpression);
-                                })
-                        .stream()
-                        .chatClientResponse()
+                buildChatClient(resolved, conversationId, filterExpression, systemMessage, request)
                         .mapNotNull(
                                 response -> {
-                                    if (refsHolder.get() == null) {
-                                        List<ReferenceResponse> refs =
-                                                referenceExtractor.extract(response);
-                                        if (!refs.isEmpty()) {
-                                            refsHolder.set(refs);
-                                        }
-                                    }
+                                    captureReferencesOnce(refsHolder, response);
                                     return chatSseConverter.tokenEvent(response);
                                 });
 
         // 5. 종료 이벤트 (참조문서 + done)
         Flux<ServerSentEvent<String>> endEvents =
-                Flux.defer(
-                        () -> {
-                            List<ServerSentEvent<String>> events = new ArrayList<>();
-                            List<ReferenceResponse> refs = refsHolder.get();
-                            ServerSentEvent<String> refEvent =
-                                    refs != null ? chatSseConverter.referencesEvent(refs) : null;
-                            if (refEvent != null) {
-                                events.add(refEvent);
-                            }
-                            events.add(chatSseConverter.doneEvent());
-                            return Flux.fromIterable(events);
-                        });
+                Flux.defer(() -> buildEndEvents(refsHolder.get()));
 
         return tokenEvents
                 .concatWith(endEvents)
@@ -120,9 +95,16 @@ public class ChatbotService {
                         });
     }
 
-    private String buildFilterExpression(UUID projectId, ChatRequest request) {
+    private Filter.Expression buildFilterExpression(UUID projectId, ChatRequest request) {
+        if (request.documentId() != null) {
+            return FILTER.and(
+                            FILTER.eq("project_id", projectId.toString()),
+                            FILTER.eq("source_id", request.documentId()))
+                    .build();
+        }
+
         if (request.groupName() == null && request.categoryName() == null) {
-            return "project_id == '" + projectId + "'";
+            return FILTER.eq("project_id", projectId.toString()).build();
         }
 
         List<Long> sourceIds = resolveSourceIds(projectId, request);
@@ -134,11 +116,7 @@ public class ChatbotService {
             return null;
         }
 
-        String ids = sourceIds.stream().map(String::valueOf).collect(Collectors.joining(", "));
-
-        String expression = "source_id in [" + ids + "]";
-        log.debug("벡터스토어 필터 표현식: {}", expression);
-        return expression;
+        return FILTER.in("source_id", List.copyOf(sourceIds)).build();
     }
 
     private List<Long> resolveSourceIds(UUID projectId, ChatRequest request) {
@@ -151,16 +129,53 @@ public class ChatbotService {
     }
 
     private String buildSystemMessage(String userSystemMessage) {
-        String template = readTemplate();
-        return template.replace(
-                "{userSystemMessage}", userSystemMessage != null ? userSystemMessage : "");
+        String message = userSystemMessage != null ? userSystemMessage.strip() : "";
+        return systemPromptTemplate.render(Map.of("userSystemMessage", message)).strip();
     }
 
-    private String readTemplate() {
-        try {
-            return systemMessageResource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException("시스템 메시지 템플릿 로드 실패", e);
+    private Flux<ChatClientResponse> buildChatClient(
+            ResolvedChatModel resolved,
+            String conversationId,
+            Filter.Expression filterExpression,
+            String systemMessage,
+            ChatRequest request) {
+        return ChatClient.builder(resolved.chatModel())
+                .defaultOptions(resolved.chatOptions())
+                .defaultAdvisors(
+                        messageChatMemoryAdvisor, retrievalAugmentationAdvisor, simpleLoggerAdvisor)
+                .build()
+                .prompt()
+                .system(systemMessage)
+                .user(request.userMessage())
+                .advisors(
+                        advisor -> {
+                            advisor.param(ChatMemory.CONVERSATION_ID, conversationId);
+                            advisor.param(
+                                    VectorStoreDocumentRetriever.FILTER_EXPRESSION,
+                                    filterExpression);
+                        })
+                .stream()
+                .chatClientResponse();
+    }
+
+    private void captureReferencesOnce(
+            AtomicReference<List<ReferenceResponse>> holder, ChatClientResponse response) {
+        if (holder.get() != null) {
+            return;
         }
+        List<ReferenceResponse> refs = referenceExtractor.extract(response);
+        if (!refs.isEmpty()) {
+            holder.set(refs);
+        }
+    }
+
+    private Flux<ServerSentEvent<String>> buildEndEvents(List<ReferenceResponse> refs) {
+        if (refs == null) {
+            return Flux.just(chatSseConverter.doneEvent());
+        }
+        ServerSentEvent<String> refEvent = chatSseConverter.referencesEvent(refs);
+        return refEvent != null
+                ? Flux.just(refEvent, chatSseConverter.doneEvent())
+                : Flux.just(chatSseConverter.doneEvent());
     }
 }

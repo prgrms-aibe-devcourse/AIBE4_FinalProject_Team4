@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentFileStorage;
@@ -72,7 +73,7 @@ class DocumentMetadataServiceTest {
                 "stored/key",
                 false,
                 EmbeddingStatus.NONE,
-                OffsetDateTime.now());
+                OffsetDateTime.now(ZoneOffset.UTC));
     }
 
     private MultipartFile mockFile(String filename) {
@@ -127,6 +128,41 @@ class DocumentMetadataServiceTest {
     }
 
     @Nested
+    @DisplayName("임베딩 상태 조회")
+    class GetEmbeddingStatus {
+
+        @Test
+        @DisplayName("정상 조회 시 EmbeddingStatus 반환")
+        void getEmbeddingStatus_ValidDocument_ReturnsStatus() {
+            // Given
+            DocumentGroup group = createGroup();
+            DocumentMetadata metadata = createMetadata(group);
+
+            given(documentMetadataManager.getByIdAndProjectId(documentId, projectId))
+                    .willReturn(metadata);
+
+            // When
+            var result = documentMetadataService.getEmbeddingStatus(projectId, documentId);
+
+            // Then
+            assertThat(result).isEqualTo(EmbeddingStatus.NONE);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 문서 시 NotFoundException")
+        void getEmbeddingStatus_DocumentNotFound_ThrowsNotFoundException() {
+            // Given
+            given(documentMetadataManager.getByIdAndProjectId(documentId, projectId))
+                    .willThrow(new NotFoundException("프로젝트에서 문서를 찾을 수 없습니다."));
+
+            // When & Then
+            assertThatThrownBy(
+                            () -> documentMetadataService.getEmbeddingStatus(projectId, documentId))
+                    .isInstanceOf(NotFoundException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("문서 다운로드")
     class DownloadDocument {
 
@@ -148,6 +184,19 @@ class DocumentMetadataServiceTest {
             // Then
             assertThat(result.resource()).isEqualTo(resource);
             assertThat(result.downloadFilename()).isEqualTo("testDoc.pdf");
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 문서 시 NotFoundException")
+        void downloadDocument_DocumentNotFound_ThrowsNotFoundException() {
+            // Given
+            given(documentMetadataManager.getByIdAndProjectId(documentId, projectId))
+                    .willThrow(new NotFoundException("프로젝트에서 문서를 찾을 수 없습니다."));
+
+            // When & Then
+            assertThatThrownBy(
+                            () -> documentMetadataService.downloadDocument(projectId, documentId))
+                    .isInstanceOf(NotFoundException.class);
         }
     }
 
@@ -293,6 +342,51 @@ class DocumentMetadataServiceTest {
                                     documentMetadataService.uploadDocumentToGroup(
                                             projectId, groupId, request, file))
                     .isInstanceOf(NotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("빈 파일 시 BadRequestException")
+        void uploadDocumentToGroup_EmptyFile_ThrowsBadRequestException() {
+            // Given
+            MultipartFile file = mock(MultipartFile.class);
+            given(file.isEmpty()).willReturn(true);
+            NewVersionDocumentUploadRequest request =
+                    new NewVersionDocumentUploadRequest(1, 0, 0, null);
+            DocumentGroup group = createGroup();
+
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
+
+            // When & Then
+            assertThatThrownBy(
+                            () ->
+                                    documentMetadataService.uploadDocumentToGroup(
+                                            projectId, groupId, request, file))
+                    .isInstanceOf(BadRequestException.class);
+        }
+
+        @Test
+        @DisplayName("해시 중복 시 ConflictException")
+        void uploadDocumentToGroup_DuplicateHash_ThrowsConflictException() {
+            // Given
+            MultipartFile file = mockFile("testDoc.pdf");
+            NewVersionDocumentUploadRequest request =
+                    new NewVersionDocumentUploadRequest(2, 0, 0, null);
+            DocumentGroup group = createGroup();
+
+            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
+            given(documentMetadataManager.existsByGroupAndVersion(group, 2, 0, 0))
+                    .willReturn(false);
+            given(documentFileStorage.computeHash(file)).willReturn("duplicateHash");
+            given(documentMetadataManager.existsByProjectIdAndHash(projectId, "duplicateHash"))
+                    .willReturn(true);
+
+            // When & Then
+            assertThatThrownBy(
+                            () ->
+                                    documentMetadataService.uploadDocumentToGroup(
+                                            projectId, groupId, request, file))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessageContaining("동일한 내용");
         }
 
         @Test
@@ -453,6 +547,31 @@ class DocumentMetadataServiceTest {
                                             projectId, documentId, request, null))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("이미 존재하는 버전");
+        }
+
+        @Test
+        @DisplayName("파일을 전달했지만 해시가 동일하면 파일 변경 없이 처리")
+        void updateDocument_FileWithSameHash_TreatedAsNoFileChange() {
+            // Given
+            DocumentGroup group = createGroup();
+            DocumentMetadata metadata = createMetadata(group);
+            MultipartFile file = mockFile("sameDoc.pdf");
+            DocumentUpdateRequest request = new DocumentUpdateRequest(2, 0, 0, false);
+
+            given(documentMetadataManager.getByIdAndProjectId(documentId, projectId))
+                    .willReturn(metadata);
+            given(documentFileStorage.computeHash(file)).willReturn("abc123hash");
+            given(documentMetadataManager.existsByGroupAndVersion(group, 2, 0, 0))
+                    .willReturn(false);
+
+            // When
+            documentMetadataService.updateDocument(projectId, documentId, request, file);
+
+            // Then
+            assertThat(metadata.getMajorVersion()).isEqualTo(2);
+            assertThat(metadata.getStoredKey()).isEqualTo("stored/key");
+            then(documentFileStorage).should(never()).replace(any(), any());
+            then(documentVectorEventPublisher).should(never()).replaceEvent(any(), any());
         }
 
         @Test

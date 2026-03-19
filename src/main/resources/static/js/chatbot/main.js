@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const publicId = document.getElementById('publicId').value;
+    const fixedDocumentId = document.getElementById('fixedDocumentId').value || null;
+    const fixedDocumentName = document.getElementById('fixedDocumentName').value || null;
+    const fixedDocumentExtension = document.getElementById('fixedDocumentExtension').value || null;
     const scopeSelect = document.getElementById('scopeSelect');
     const scopeDetailWrapper = document.getElementById('scopeDetailWrapper');
     const scopeDetailSelect = document.getElementById('scopeDetailSelect');
@@ -10,8 +13,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let streaming = false;
 
-    // 검색 범위 변경 이벤트
-    scopeSelect.addEventListener('change', async () => {
+    // 시스템 메시지 토글
+    const systemMsgToggle = document.getElementById('systemMsgToggle');
+    const systemMsgArea = document.getElementById('systemMsgArea');
+    const systemMsgArrow = document.getElementById('systemMsgArrow');
+
+    systemMsgToggle.addEventListener('click', () => {
+        systemMsgArea.classList.toggle('hidden');
+        systemMsgArrow.classList.toggle('rotate-180');
+    });
+
+    // 문서 고정 모드: 미리보기 패널 자동 열기
+    if (fixedDocumentId) {
+        const previewUrl = `/api/projects/${publicId}/documents/${fixedDocumentId}/preview`;
+        const detailUrl = `/projects/${publicId}/documents/${fixedDocumentId}`;
+
+        document.getElementById('previewIframe').src = previewUrl;
+        document.getElementById('previewTitle').textContent = fixedDocumentName;
+        document.getElementById('previewDetailLink').href = detailUrl;
+        document.getElementById('previewPanel').classList.remove('hidden');
+    }
+
+    // 검색 범위 변경 이벤트 (문서 고정 모드에서는 불필요)
+    if (scopeSelect) scopeSelect.addEventListener('change', async () => {
         const type = scopeSelect.value;
 
         if (type === 'all') {
@@ -33,9 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 scopeDetailSelect.innerHTML = `<option value="" disabled selected>${emptyLabel}</option>`;
                 scopeDetailSelect.disabled = true;
             } else {
-                scopeDetailSelect.innerHTML = items
-                    .map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`)
-                    .join('');
+                scopeDetailSelect.innerHTML = '';
+                items.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    scopeDetailSelect.appendChild(opt);
+                });
                 scopeDetailSelect.disabled = false;
             }
 
@@ -89,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('채팅 오류:', e);
             if (!contentEl.textContent) {
                 contentEl.textContent = '응답 생성 중 오류가 발생했습니다.';
-                contentEl.classList.add('text-red-500');
+                contentEl.classList.add('text-docu-danger');
             }
         } finally {
             setStreaming(false);
@@ -98,16 +126,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function buildChatRequest(message) {
-        const scope = scopeSelect.value;
+        const systemMessage = document.getElementById('systemMessage').value.trim();
         const request = {
             modelAlias: document.getElementById('modelSelect').value,
             userMessage: message,
         };
 
-        if (scope === 'group') {
-            request.groupName = scopeDetailSelect.value;
-        } else if (scope === 'category') {
-            request.categoryName = scopeDetailSelect.value;
+        if (systemMessage) {
+            request.userSystemMessage = systemMessage;
+        }
+
+        if (fixedDocumentId) {
+            request.documentId = Number(fixedDocumentId);
+        } else if (scopeSelect) {
+            const scope = scopeSelect.value;
+            if (scope === 'group') {
+                request.groupName = scopeDetailSelect.value;
+            } else if (scope === 'category') {
+                request.categoryName = scopeDetailSelect.value;
+            }
         }
 
         return request;
@@ -219,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const typingOnError = contentEl.parentElement.querySelector('.ai-typing');
                 if (typingOnError) typingOnError.remove();
                 contentEl.textContent += data;
-                contentEl.classList.add('text-red-500');
+                contentEl.classList.add('text-docu-danger');
                 break;
             }
             case 'done':
@@ -232,50 +269,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 답변에서 실제 인용된 번호만 필터링
         const citedIndices = extractCitedIndices(answerText);
-        const citedRefs = refs.filter((_, i) => citedIndices.has(i + 1));
+        const citedRefs = refs
+            .map((ref, i) => ({ ref, originalIndex: i + 1 }))
+            .filter(({ originalIndex }) => citedIndices.has(originalIndex));
 
         if (citedRefs.length === 0) return;
 
         refsEl.classList.remove('hidden');
         const listEl = refsEl.querySelector('.ref-list');
 
-        citedRefs.forEach((ref, i) => {
-            const originalIndex = refs.indexOf(ref) + 1;
+        citedRefs.forEach(({ ref, originalIndex }) => {
             const pageInfo = ref.pageNumber ? ` - p.${ref.pageNumber}` : '';
+            const detailUrl = `/projects/${publicId}/documents/${ref.documentId}${ref.pageNumber ? '?page=' + ref.pageNumber : ''}`;
 
             const refItem = document.createElement('div');
-            refItem.className = 'flex flex-col gap-1 px-3 py-2 bg-gray-50 rounded-lg text-xs';
+            refItem.className = 'flex items-center gap-2 px-3 py-2 bg-surface-sub rounded-docu-btn border border-divider text-xs cursor-pointer hover:border-docu-primary hover:bg-docu-primary-light/30 transition-colors';
             refItem.innerHTML = `
-                <div class="flex items-center gap-2 cursor-pointer select-none" data-action="openRef">
-                    <span class="font-semibold text-indigo-600">[${originalIndex}]</span>
-                    <span class="font-medium text-gray-700">${escapeHtml(ref.documentName)}</span>
-                    <span class="text-gray-400">${escapeHtml(ref.version ?? '')}${pageInfo}</span>
-                    <span class="ref-toggle text-gray-400 ml-auto">▼ 자세히</span>
-                </div>
-                <div class="ref-detail hidden">
-                    <p class="text-gray-500 leading-relaxed whitespace-pre-wrap">${escapeHtml(ref.chunkText)}</p>
-                    <div class="flex items-center justify-between mt-1">
-                        <a href="/projects/${publicId}/documents/${ref.documentId}"
-                           target="_blank"
-                           class="text-indigo-500 hover:text-indigo-700 hover:underline">문서 상세 →</a>
-                        <span class="ref-close cursor-pointer select-none text-gray-400 hover:text-gray-600">▲ 접기</span>
-                    </div>
-                </div>
+                <span class="font-semibold text-docu-primary">[${originalIndex}]</span>
+                <span class="font-medium text-docu-ink">${escapeHtml(ref.documentName)}</span>
+                <span class="text-docu-secondary">${escapeHtml(ref.version ?? '')}${pageInfo}</span>
+                <a href="${detailUrl}" target="_blank"
+                   class="ml-auto text-docu-secondary hover:text-docu-primary hover:underline flex-shrink-0"
+                   onclick="event.stopPropagation()">상세페이지 →</a>
             `;
 
-            const header = refItem.querySelector('[data-action="openRef"]');
-            const detail = refItem.querySelector('.ref-detail');
-            const toggleLabel = refItem.querySelector('.ref-toggle');
-            const closeBtn = refItem.querySelector('.ref-close');
-
-            header.addEventListener('click', () => {
-                detail.classList.toggle('hidden');
-                toggleLabel.textContent = detail.classList.contains('hidden') ? '▼ 자세히' : '';
-            });
-
-            closeBtn.addEventListener('click', () => {
-                detail.classList.add('hidden');
-                toggleLabel.textContent = '▼ 자세히';
+            refItem.addEventListener('click', () => {
+                openPreviewPanel(ref.documentId, ref.documentName, ref.pageNumber || '');
             });
 
             listEl.appendChild(refItem);
@@ -293,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function highlightCitations(html) {
-        return html.replace(/\[(\d+)]/g, '<strong class="text-indigo-600 cursor-default">[$1]</strong>');
+        return html.replace(/\[(\d+)]/g, '<strong class="text-docu-primary cursor-default">[$1]</strong>');
     }
 
     function appendUserMessage(message) {
@@ -301,8 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
         messageEl.className = 'flex justify-end';
         messageEl.innerHTML = `
             <div class="max-w-2xl">
-                <div class="bg-white rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm border border-gray-100">
-                    <p class="text-sm text-gray-800 whitespace-pre-wrap">${escapeHtml(message)}</p>
+                <div class="bg-docu-primary text-white rounded-2xl rounded-tr-sm px-5 py-3 shadow-md">
+                    <p class="text-sm whitespace-pre-wrap">${escapeHtml(message)}</p>
                 </div>
             </div>
         `;
@@ -312,19 +331,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function appendAiMessage() {
         const messageEl = document.createElement('div');
-        messageEl.className = 'flex justify-start';
+        messageEl.className = 'flex justify-start gap-3';
         messageEl.innerHTML = `
+            <img src="/images/logo1.png" alt="AI" class="w-8 h-8 rounded-full flex-shrink-0 mt-1 object-cover">
             <div class="max-w-2xl w-full">
-                <div class="bg-white rounded-2xl rounded-tl-sm px-5 py-3 shadow-sm border border-gray-100">
-                    <p class="ai-content text-sm text-gray-800 whitespace-pre-wrap"></p>
-                    <div class="ai-typing flex items-center gap-1 py-1">
-                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
-                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
-                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                <div class="bg-surface-sub rounded-2xl rounded-tl-sm px-5 py-3 shadow-sm border border-divider">
+                    <p class="ai-content text-sm text-docu-ink whitespace-pre-wrap"></p>
+                    <div class="ai-typing flex items-center gap-1.5 py-1">
+                        <span class="w-2 h-2 bg-docu-primary/40 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                        <span class="w-2 h-2 bg-docu-primary/40 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                        <span class="w-2 h-2 bg-docu-primary/40 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
                     </div>
                 </div>
                 <div class="ai-refs hidden mt-2">
-                    <p class="text-xs font-medium text-gray-500 mb-1">참조 문서</p>
+                    <p class="text-xs font-medium text-docu-secondary mb-1">참조 문서</p>
                     <div class="ref-list space-y-1"></div>
                 </div>
             </div>
@@ -354,4 +374,39 @@ document.addEventListener('DOMContentLoaded', () => {
         div.textContent = text;
         return div.innerHTML;
     }
+
+    // ==================== 미리보기 패널 ====================
+
+    const previewPanel = document.getElementById('previewPanel');
+    const previewIframe = document.getElementById('previewIframe');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewPage = document.getElementById('previewPage');
+    const previewDetailLink = document.getElementById('previewDetailLink');
+    const previewClose = document.getElementById('previewClose');
+
+    function openPreviewPanel(documentId, documentName, page) {
+        const baseUrl = `/api/projects/${publicId}/documents/${documentId}/preview`;
+        const previewUrl = baseUrl + (page ? `#page=${page}` : '');
+        const detailUrl = `/projects/${publicId}/documents/${documentId}`
+            + (page ? `?page=${page}` : '');
+
+        // 같은 문서에서 페이지만 다른 경우 iframe이 갱신되지 않으므로 초기화 후 재설정
+        previewIframe.src = 'about:blank';
+        setTimeout(() => {
+            previewIframe.src = previewUrl;
+        }, 50);
+
+        previewTitle.textContent = documentName;
+        previewPage.textContent = page ? `p.${page}` : '';
+        previewDetailLink.href = detailUrl;
+
+        previewPanel.classList.remove('hidden');
+    }
+
+    function closePreviewPanel() {
+        previewPanel.classList.add('hidden');
+        previewIframe.src = '';
+    }
+
+    previewClose.addEventListener('click', closePreviewPanel);
 });

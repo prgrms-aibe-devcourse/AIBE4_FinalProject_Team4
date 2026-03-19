@@ -18,14 +18,20 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     목록으로
                 </a>
-                <span class="text-gray-300">&gt;</span>
+                <span class="text-docu-secondary">&gt;</span>
                 <span class="text-docu-secondary">파일 목록</span>
-                <span class="text-gray-300">&gt;</span>
+                <span class="text-docu-secondary">&gt;</span>
                 <span class="text-docu-ink font-medium">파일 상세</span>
             </div>
             <div class="flex items-center gap-2">
-                <button id="btnEdit" class="btn-secondary">수정</button>
-                <button id="btnDelete" class="btn-danger">삭제</button>
+                <button id="btnEdit"
+                        th:disabled="${document.embeddingStatus.name() == 'PENDING' or document.embeddingStatus.name() == 'PROCESSING'}"
+                        th:class="${(document.embeddingStatus.name() == 'PENDING' or document.embeddingStatus.name() == 'PROCESSING')
+                            ? 'btn-secondary opacity-50 cursor-not-allowed' : 'btn-secondary'}">수정</button>
+                <button id="btnDelete"
+                        th:disabled="${document.embeddingStatus.name() == 'PENDING' or document.embeddingStatus.name() == 'PROCESSING'}"
+                        th:class="${(document.embeddingStatus.name() == 'PENDING' or document.embeddingStatus.name() == 'PROCESSING')
+                            ? 'btn-danger opacity-50 cursor-not-allowed' : 'btn-danger'}">삭제</button>
             </div>
         </div>
 
@@ -35,8 +41,9 @@
             <!-- 좌측: 문서 미리보기 -->
             <div class="flex-1">
                 <!-- PDF 미리보기 -->
-                <iframe th:if="${document.extension == 'pdf'}"
-                        th:src="@{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
+                <iframe id="pdfPreview"
+                        th:if="${document.extension == 'pdf'}"
+                        th:src="${page != null} ? @{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})} + '#page=' + ${page} : @{/api/projects/{pid}/documents/{docId}/preview(pid=${publicId}, docId=${documentId})}"
                         class="w-full rounded-docu-card border border-divider min-h-[600px] bg-surface-card"
                         style="height: calc(100vh - 200px);">
                 </iframe>
@@ -103,15 +110,21 @@
                             <dd id="embeddingStatusBadge" th:case="'PENDING'" class="font-medium text-docu-secondary">대기</dd>
                             <dd id="embeddingStatusBadge" th:case="*" class="font-medium text-docu-secondary">-</dd>
                         </div>
+                        <div id="embeddingRetryContainer" class="hidden">
+                            <button id="btnRetryEmbedding" onclick="retryEmbedding()"
+                                    class="w-full text-sm text-docu-primary hover:text-docu-primary-dark border border-docu-primary hover:bg-docu-primary-light rounded-docu-btn py-1.5 transition-colors">
+                                임베딩 재시도
+                            </button>
+                        </div>
                         <div class="flex justify-between">
                             <dt class="text-docu-secondary">처음 업로드일시</dt>
-                            <dd class="text-docu-ink font-medium"
-                                th:text="${#temporals.format(document.uploadedAt, 'yyyy-MM-dd HH:mm')}">-</dd>
+                            <dd class="text-docu-ink font-medium local-datetime"
+                                th:data-utc="${document.uploadedAt}">-</dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-docu-secondary">마지막 수정일시</dt>
-                            <dd class="text-docu-ink font-medium"
-                                th:text="${document.reuploadedAt != null ? #temporals.format(document.reuploadedAt, 'yyyy-MM-dd HH:mm') : '-'}">-</dd>
+                            <dd class="text-docu-ink font-medium local-datetime"
+                                th:data-utc="${document.reuploadedAt}">-</dd>
                         </div>
                     </dl>
                 </div>
@@ -130,11 +143,11 @@
                         <a th:each="ver : ${document.versions}"
                            th:href="@{/projects/{pid}/documents/{docId}(pid=${publicId}, docId=${ver.documentId})}"
                            th:classappend="${ver.documentId == document.documentId} ? 'ring-2 ring-docu-primary' : ''"
-                           class="block p-3 rounded-docu-btn border border-divider hover:border-docu-primary hover:bg-blue-50 transition">
+                           class="block p-3 rounded-docu-btn border border-divider hover:border-docu-primary hover:bg-docu-primary-light transition">
                             <div class="flex items-center justify-between mb-1">
                                 <span class="text-sm font-medium text-docu-ink" th:text="${ver.version}"></span>
-                                <span class="text-xs text-docu-secondary"
-                                      th:text="${#temporals.format(ver.uploadedAt, 'yyyy-MM-dd')}"></span>
+                                <span class="text-xs text-docu-secondary local-date"
+                                      th:data-utc="${ver.uploadedAt}"></span>
                             </div>
                             <div class="text-xs text-docu-secondary truncate" th:text="${ver.documentName + '.' + ver.extension}"></div>
                         </a>
@@ -147,7 +160,12 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         원본 다운로드
                     </button>
-                    <button id="btnChat" class="flex-1 btn-primary py-3 flex items-center justify-center gap-2">
+                    <button id="btnChat"
+                            th:disabled="${document.embeddingStatus.name() != 'SUCCESS'}"
+                            th:class="${document.embeddingStatus.name() == 'SUCCESS'}
+                                ? 'flex-1 btn-primary py-3 flex items-center justify-center gap-2'
+                                : 'flex-1 py-3 flex items-center justify-center gap-2 bg-surface-muted text-docu-secondary border border-divider rounded-docu-btn cursor-not-allowed'"
+                            th:title="${document.embeddingStatus.name() != 'SUCCESS'} ? '임베딩이 완료된 문서만 채팅할 수 있습니다.' : ''">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
                         이 파일로 채팅
                     </button>

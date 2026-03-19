@@ -12,11 +12,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequireProjectMember
-@RequiredArgsConstructor
 @ProjectPage(ServiceMenu.DOCUMENTS)
+@RequiredArgsConstructor
 public class DocumentViewController {
 
     private final DocumentMetadataService documentMetadataService;
@@ -31,6 +32,7 @@ public class DocumentViewController {
     public String documentDetailPage(
             @CurrentProject ProjectRequestContext project,
             @PathVariable Long documentId,
+            @RequestParam(required = false) Integer page,
             Model model) {
         DocumentDetailResponse detail =
                 documentMetadataService.getDocumentDetail(project.projectId(), documentId);
@@ -38,6 +40,7 @@ public class DocumentViewController {
         model.addAttribute("publicId", project.publicId());
         model.addAttribute("documentId", documentId);
         model.addAttribute("document", detail);
+        model.addAttribute("page", page);
 
         return "document/detail";
     }
