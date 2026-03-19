@@ -93,6 +93,7 @@ public class ColdStorageService {
 
         // 2. 각 프로젝트별로 아카이빙
         List<String> s3Uris = new ArrayList<>();
+        List<UUID> failedProjects = new ArrayList<>();
 
         for (UUID projectId : projectIds) {
             try {
@@ -104,14 +105,23 @@ public class ColdStorageService {
                         projectId,
                         tableName,
                         e);
-                // 한 프로젝트 실패해도 다른 프로젝트는 계속 처리
+                failedProjects.add(projectId);
             }
         }
 
+        // 실패한 프로젝트가 있으면 예외 발생 (파티션 삭제 방지)
+        if (!failedProjects.isEmpty()) {
+            String errorMsg =
+                    String.format(
+                            "Failed to archive %d out of %d projects from %s. Failed projects: %s",
+                            failedProjects.size(), projectIds.size(), tableName, failedProjects);
+            log.error("[ColdStorage] {}", errorMsg);
+            throw new RuntimeException(errorMsg);
+        }
+
         log.info(
-                "[ColdStorage] Successfully archived {} out of {} projects from {}",
+                "[ColdStorage] Successfully archived all {} projects from {}",
                 s3Uris.size(),
-                projectIds.size(),
                 tableName);
 
         return String.join(", ", s3Uris);
