@@ -1,14 +1,13 @@
 package kr.java.documind.domain.patchnote.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.patchnote.model.entity.PendingItem;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
@@ -32,21 +31,22 @@ class PendingItemRollbackServiceTest {
 
     @InjectMocks private PendingItemRollbackService pendingItemRollbackService;
 
-    private static final UUID PROJECT_ID = UUID.randomUUID();
-    private static final Long SOURCE_ID = 42L;
+    private static final UUID   PROJECT_ID = UUID.randomUUID();
+    private static final Long   SOURCE_ID  = 42L;
     private static final OffsetDateTime NOW = OffsetDateTime.now(ZoneOffset.UTC);
 
     private PendingItem buildItem(PendingItemStatus status) {
         return PendingItem.create(
-                PROJECT_ID,
-                SOURCE_ID,
-                SourceType.ISSUE,
-                "제목",
-                "요약",
-                "ㅈㅇ",
-                PatchType.FIX,
-                status,
-                NOW);
+                PROJECT_ID, SOURCE_ID, SourceType.ISSUE,
+                "제목", "요약", "ㅈㅇ", PatchType.FIX,
+                status, NOW, 0, null, null);
+    }
+
+    private PendingItem buildDocItem(PendingItemStatus status, int changeIndex) {
+        return PendingItem.create(
+                PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT,
+                "문서 제목", "문서 요약", "ㅁㅅ", PatchType.CHANGE,
+                status, NOW, changeIndex, null, null);
     }
 
     @Nested
@@ -54,84 +54,138 @@ class PendingItemRollbackServiceTest {
     class DeleteForRollback {
 
         @Test
-        @DisplayName("롤백: PENDING 항목 → hard delete, true 반환")
-        void deleteForRollback_PENDING항목_hardDelete후true반환() {
+        @DisplayName("롤백: PENDING 항목 → bulk hard delete, true 반환")
+        void deleteForRollback_PENDING항목_bulkHardDelete후true반환() {
             // Given
             PendingItem item = buildItem(PendingItemStatus.PENDING);
-            given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
-                    .willReturn(Optional.of(item));
+            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+                    .willReturn(List.of(item));
 
             // When
-            boolean result =
-                    pendingItemRollbackService.deleteForRollback(
-                            PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result = pendingItemRollbackService.deleteForRollback(
+                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isTrue();
-            then(pendingItemRepository).should().delete(item);
+            then(pendingItemRepository).should()
+                    .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
+                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
         }
 
         @Test
-        @DisplayName("롤백: EXCLUDED 항목 → hard delete, true 반환")
-        void deleteForRollback_EXCLUDED항목_hardDelete후true반환() {
+        @DisplayName("롤백: EXCLUDED 항목 → bulk hard delete, true 반환")
+        void deleteForRollback_EXCLUDED항목_bulkHardDelete후true반환() {
             // Given
             PendingItem item = buildItem(PendingItemStatus.EXCLUDED);
-            given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
-                    .willReturn(Optional.of(item));
+            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+                    .willReturn(List.of(item));
 
             // When
-            boolean result =
-                    pendingItemRollbackService.deleteForRollback(
-                            PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result = pendingItemRollbackService.deleteForRollback(
+                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isTrue();
-            then(pendingItemRepository).should().delete(item);
+            then(pendingItemRepository).should()
+                    .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
+                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
         }
 
         @Test
-        @DisplayName("롤백: COMPLETED 항목 → sourceDeleted 처리, false 반환")
-        void deleteForRollback_COMPLETED항목_sourceDeleted처리후false반환() {
+        @DisplayName("롤백: COMPLETED 항목 → markSourceDeleted 처리, false 반환")
+        void deleteForRollback_COMPLETED항목_markSourceDeleted처리후false반환() {
             // Given
             PendingItem item = buildItem(PendingItemStatus.PENDING);
             item.complete(); // PENDING → COMPLETED
-            given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
-                    .willReturn(Optional.of(item));
+            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+                    .willReturn(List.of(item));
 
             // When
-            boolean result =
-                    pendingItemRollbackService.deleteForRollback(
-                            PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result = pendingItemRollbackService.deleteForRollback(
+                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isFalse();
-            assertThat(item.isSourceDeleted()).isTrue();
-            then(pendingItemRepository).should(never()).delete(any());
+            then(pendingItemRepository).should()
+                    .markSourceDeleted(PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
+            then(pendingItemRepository).should(never())
+                    .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
+                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
         }
 
         @Test
         @DisplayName("롤백: 항목 없음 → false 반환, delete 미호출")
         void deleteForRollback_항목없음_false반환() {
             // Given
-            given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
-                    .willReturn(Optional.empty());
+            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+                    .willReturn(List.of());
 
             // When
-            boolean result =
-                    pendingItemRollbackService.deleteForRollback(
-                            PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result = pendingItemRollbackService.deleteForRollback(
+                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isFalse();
-            then(pendingItemRepository).should(never()).delete(any());
+            then(pendingItemRepository).should(never())
+                    .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
+                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
+            then(pendingItemRepository).should(never())
+                    .markSourceDeleted(PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
+        }
+
+        @Test
+        @DisplayName("롤백: DOCUMENT 다중 changeIndex — PENDING + COMPLETED 혼재 → 각각 처리, true 반환")
+        void deleteForRollback_DOCUMENT다중changeIndex_혼재시각각처리후true반환() {
+            // Given — changeIndex 0은 COMPLETED (기존 패치노트에 포함), changeIndex 1은 PENDING (미사용)
+            PendingItem completed = buildDocItem(PendingItemStatus.PENDING, 0);
+            completed.complete(); // → COMPLETED
+            PendingItem pending   = buildDocItem(PendingItemStatus.PENDING, 1);
+
+            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                    PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID))
+                    .willReturn(List.of(completed, pending));
+
+            // When
+            boolean result = pendingItemRollbackService.deleteForRollback(
+                    PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT);
+
+            // Then
+            assertThat(result).isTrue(); // PENDING 항목이 있으므로 벡터 삭제 필요
+            then(pendingItemRepository).should()
+                    .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
+                            PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID);
+            then(pendingItemRepository).should()
+                    .markSourceDeleted(PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID);
+        }
+
+        @Test
+        @DisplayName("롤백: DOCUMENT 다중 changeIndex — 모두 COMPLETED → markSourceDeleted 만 호출, false 반환")
+        void deleteForRollback_DOCUMENT다중changeIndex_모두COMPLETED시false반환() {
+            // Given
+            PendingItem c1 = buildDocItem(PendingItemStatus.PENDING, 0);
+            c1.complete();
+            PendingItem c2 = buildDocItem(PendingItemStatus.PENDING, 1);
+            c2.complete();
+
+            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                    PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID))
+                    .willReturn(List.of(c1, c2));
+
+            // When
+            boolean result = pendingItemRollbackService.deleteForRollback(
+                    PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT);
+
+            // Then
+            assertThat(result).isFalse();
+            then(pendingItemRepository).should()
+                    .markSourceDeleted(PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID);
+            then(pendingItemRepository).should(never())
+                    .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
+                            PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID);
         }
     }
 

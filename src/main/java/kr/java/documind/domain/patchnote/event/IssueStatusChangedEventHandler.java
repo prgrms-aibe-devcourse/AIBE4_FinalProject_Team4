@@ -15,7 +15,7 @@ import kr.java.documind.domain.patchnote.infrastructure.IssueSummaryGenerator;
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkingSource;
 import kr.java.documind.domain.patchnote.model.dto.IssueCommentChunkSource;
 import kr.java.documind.domain.patchnote.model.dto.IssueSummaryResult;
-import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateDto;
+import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateRequest;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.domain.patchnote.service.IssueChunkingService;
@@ -127,8 +127,9 @@ public class IssueStatusChangedEventHandler {
                         : OffsetDateTime.now(ZoneOffset.UTC);
 
         // 12. DTO 조립 — LLM 결과(title, summary) 사용
-        PendingItemCreateDto dto =
-                new PendingItemCreateDto(
+        //     ISSUE 항목은 change_index=0 고정, evidence/score는 diff 기반 항목 전용이므로 null
+        PendingItemCreateRequest dto =
+                new PendingItemCreateRequest(
                         event.projectId(),
                         issue.getId(),
                         SourceType.ISSUE,
@@ -137,7 +138,10 @@ public class IssueStatusChangedEventHandler {
                         choseong,
                         patchType,
                         status,
-                        sourceCreatedAt);
+                        sourceCreatedAt,
+                        0,
+                        null,
+                        null);
 
         // 13. 벡터 저장 → pending_item upsert (PendingItemUpsertService가 순서 보장 + @Retryable 적용)
         //     실패 예외 전파: PendingItemUpsertFailedException | Exception

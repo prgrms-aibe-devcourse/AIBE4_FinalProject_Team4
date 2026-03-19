@@ -18,7 +18,7 @@ class DocumentMetadataTest {
     private final UUID projectId = UUID.randomUUID();
 
     private DocumentGroup createGroup() {
-        return DocumentGroup.create(projectId, "개발", "그룹A");
+        return DocumentGroup.create(projectId, "개발", "그룹A", "ㄱㄹA");
     }
 
     private DocumentMetadata createMetadata() {

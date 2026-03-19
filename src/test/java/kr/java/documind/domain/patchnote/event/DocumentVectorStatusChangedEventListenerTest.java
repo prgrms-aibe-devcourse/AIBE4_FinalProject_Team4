@@ -23,7 +23,7 @@ import kr.java.documind.domain.patchnote.exception.DocumentEmbeddingEmptyExcepti
 import kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException;
 import kr.java.documind.domain.patchnote.infrastructure.DocumentSummaryGenerator;
 import kr.java.documind.domain.patchnote.model.dto.DocumentSummaryResult;
-import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateDto;
+import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateRequest;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.domain.patchnote.service.DocumentMeaningfulnessService;
@@ -31,7 +31,6 @@ import kr.java.documind.domain.patchnote.service.PendingItemUpsertService;
 import kr.java.documind.domain.patchnote.util.PatchTypeResolver;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.util.ChoseongUtil;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -69,6 +68,7 @@ class DocumentVectorStatusChangedEventListenerTest {
         return new DocumentEmbeddedEvent(
                 SOURCE_ID,
                 PROJECT_ID,
+                1L,
                 "design-doc.pdf",
                 "기획서 그룹",
                 "CHANGE",
@@ -240,8 +240,8 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
-                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            ArgumentCaptor<PendingItemCreateRequest> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateRequest.class);
             then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
             assertThat(dtoCaptor.getValue().status()).isEqualTo(PendingItemStatus.PENDING);
         }
@@ -257,8 +257,8 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
-                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            ArgumentCaptor<PendingItemCreateRequest> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateRequest.class);
             then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
             assertThat(dtoCaptor.getValue().status()).isEqualTo(PendingItemStatus.EXCLUDED);
         }
@@ -298,10 +298,10 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
-                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            ArgumentCaptor<PendingItemCreateRequest> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateRequest.class);
             then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
-            PendingItemCreateDto dto = dtoCaptor.getValue();
+            PendingItemCreateRequest dto = dtoCaptor.getValue();
             assertThat(dto.sourceType()).isEqualTo(SourceType.DOCUMENT);
             assertThat(dto.projectId()).isEqualTo(PROJECT_ID);
             assertThat(dto.sourceId()).isEqualTo(SOURCE_ID);
@@ -345,8 +345,8 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
-                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            ArgumentCaptor<PendingItemCreateRequest> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateRequest.class);
             then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
             assertThat(dtoCaptor.getValue().choseong()).isEqualTo("ㅇㄷㅇㅌ ㄴㅌ");
         }
@@ -371,8 +371,8 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
-                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            ArgumentCaptor<PendingItemCreateRequest> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateRequest.class);
             then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
             assertThat(dtoCaptor.getValue().title()).isEqualTo("LLM제목");
             assertThat(dtoCaptor.getValue().summary()).isEqualTo("LLM요약내용");
@@ -398,8 +398,8 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
-                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            ArgumentCaptor<PendingItemCreateRequest> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateRequest.class);
             then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
             assertThat(dtoCaptor.getValue().patchType()).isEqualTo(PatchType.NEW);
         }
@@ -415,8 +415,8 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
-                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            ArgumentCaptor<PendingItemCreateRequest> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateRequest.class);
             then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
             assertThat(dtoCaptor.getValue().sourceCreatedAt()).isEqualTo(SOURCE_CREATED_AT);
         }
@@ -580,6 +580,7 @@ class DocumentVectorStatusChangedEventListenerTest {
                     new DocumentEmbeddedEvent(
                             SOURCE_ID,
                             otherProjectId,
+                            1L,
                             "doc.pdf",
                             "그룹",
                             "FIX",
@@ -599,8 +600,8 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then — dto projectId
-            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
-                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            ArgumentCaptor<PendingItemCreateRequest> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateRequest.class);
             then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
             assertThat(dtoCaptor.getValue().projectId()).isEqualTo(otherProjectId);
 
@@ -669,7 +670,7 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then — pending_item upsert 호출됨
-            then(pendingItemUpsertService).should().upsertPendingItem(any(PendingItemCreateDto.class));
+            then(pendingItemUpsertService).should().upsertPendingItem(any(PendingItemCreateRequest.class));
         }
     }
 }

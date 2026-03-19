@@ -3,23 +3,186 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const DRAFT_PARAMS_KEY = 'patchnote_draft_params';
+const SOURCE_TAG_REGEX = /\{\{source:([^}]+)\}\}/g;
 
 // ── 페이지 상태 ──────────────────────────────────────────────────────
 let publicId = null;
-let draftParams = null;     // sessionStorage에서 읽은 생성 파라미터
+let draftParams = null;
 
-let rawContent = '';        // SSE 토큰을 누적한 원본 (source 태그 포함 가능)
-let cleanedContent = '';    // done 이벤트에서 받은 정제 컨텐츠
-let sourceRefs = [];        // done 이벤트의 sourceRefs 목록
-let sourceList = [];        // {index, ref, type, patchType, title} 배열
+let rawContent = '';
+let cleanedContent = '';
+let sourceRefs = [];
+let sourceList = [];
 
 let generationComplete = false;
-let isSaved = false;        // 저장 완료 여부 (navigation guard)
-let pendingNavigation = null;// 이탈 확인 후 실행할 함수
+let isSaved = false;
+let pendingNavigation = null;
+let activeHighlightRef = null;
+let isOverwriteMode = false;
 
-let activeHighlightRef = null;// 현재 강조된 출처 ref
+// 스트리밍 타이프라이터 애니메이션
+let typewriterDisplayed = 0;  // 현재 화면에 표시된 글자 수
+let typewriterAnimId = null;  // requestAnimationFrame ID
 
-let isOverwriteMode = false;  // 버전 덮어쓰기 모드 여부
+// 완료 시 markdown 페이드 애니메이션용
+let finalRenderAnimated = false;
+
+// ── Markdown Renderer ───────────────────────────────────────────────
+
+const markdownRenderer = (() => {
+    if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
+        return {
+            renderToHtml(text) {
+                return escapeHtml(stripSourceTags(text ?? ''));
+            },
+            enhanceHtml() {},
+        };
+    }
+
+    const md = new marked.Marked({
+        gfm: true,
+        breaks: true,
+        headerIds: false,
+        mangle: false,
+    });
+
+    const renderer = {
+        link({ href, title, tokens }) {
+            const text = this.parser.parseInline(tokens);
+            const safeHref = escapeHtml(href || '#');
+            const safeTitle = title ? ` title="${escapeHtml(title)}"` : '';
+            return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer nofollow"${safeTitle}>${text}</a>`;
+        },
+
+        code({ text, lang }) {
+            const language = (lang || '').trim();
+            const langClass = language ? ` language-${escapeHtml(language)}` : '';
+
+            return [
+                '<pre class="md-pre not-prose overflow-x-auto rounded-2xl bg-slate-950 text-slate-100 px-4 py-4 shadow-sm">',
+                `<code class="md-code block text-[13px] leading-6${langClass}">${escapeHtml(text)}</code>`,
+                '</pre>',
+            ].join('');
+        },
+
+        table(header, body) {
+            return [
+                '<div class="not-prose my-5 overflow-x-auto rounded-2xl border border-divider bg-white shadow-sm">',
+                '<table class="w-full min-w-[520px] border-collapse text-sm">',
+                `<thead>${header}</thead>`,
+                `<tbody>${body}</tbody>`,
+                '</table>',
+                '</div>',
+            ].join('');
+        },
+
+        blockquote({ tokens }) {
+            return `<blockquote class="my-4">${this.parser.parse(tokens)}</blockquote>`;
+        },
+    };
+
+    md.use({ renderer });
+
+    function replaceSourceTags(text, sources = []) {
+        let fallbackIndex = 0;
+
+        return (text ?? '').replace(SOURCE_TAG_REGEX, (_, ref) => {
+            const found = sources.find(source => source.ref === ref);
+            const index = found ? found.index : ++fallbackIndex;
+
+            return `<sup class="cite-ref" data-ref="${escapeHtml(ref)}" title="출처 ${index}" aria-label="출처 ${index}"><span class="cite-ref__inner">[${index}]</span></sup>`;
+        });
+    }
+
+    function sanitizeHtml(html) {
+        return DOMPurify.sanitize(html, {
+            USE_PROFILES: { html: true },
+            ADD_TAGS: ['sup', 'span'],
+            ADD_ATTR: ['class', 'data-ref', 'title', 'aria-label', 'target', 'rel'],
+            FORBID_TAGS: ['script', 'style', 'iframe'],
+        });
+    }
+
+    function enhanceHtml(root) {
+        if (!root) return;
+
+        root.querySelectorAll('a').forEach(a => {
+            a.setAttribute('target', '_blank');
+            a.setAttribute('rel', 'noopener noreferrer nofollow');
+            a.classList.add('break-all', 'font-medium');
+        });
+
+        root.querySelectorAll('table').forEach(table => {
+            table.classList.add('w-full', 'border-collapse');
+        });
+
+        root.querySelectorAll('th').forEach(th => {
+            th.classList.add(
+                'bg-surface-subtle',
+                'text-docu-ink',
+                'font-semibold',
+                'text-left',
+                'px-4',
+                'py-3',
+                'border-b',
+                'border-divider'
+            );
+        });
+
+        root.querySelectorAll('td').forEach(td => {
+            td.classList.add(
+                'px-4',
+                'py-3',
+                'align-top',
+                'text-docu-secondary',
+                'border-b',
+                'border-divider'
+            );
+        });
+
+        root.querySelectorAll('sup[data-ref]').forEach(el => {
+            el.classList.add(
+                'citation-badge',
+                'align-super',
+                'ml-1'
+            );
+        });
+
+        root.querySelectorAll('.cite-ref__inner').forEach(el => {
+            el.classList.add(
+                'font-bold',
+                'text-docu-primary',
+                'cursor-pointer',
+                'select-none',
+                'transition-colors',
+                'duration-150',
+                'hover:text-docu-primary/70',
+                'focus:outline-none'
+            );
+        });
+
+        root.querySelectorAll('ul, ol').forEach(list => {
+            list.classList.add('space-y-1');
+        });
+
+        root.querySelectorAll('p').forEach(p => {
+            if (!p.textContent.trim()) {
+                p.remove();
+            }
+        });
+    }
+
+    function renderToHtml(text, sources = []) {
+        const replaced = replaceSourceTags(text, sources);
+        const parsed = md.parse(replaced);
+        return sanitizeHtml(parsed);
+    }
+
+    return {
+        renderToHtml,
+        enhanceHtml,
+    };
+})();
 
 // ── 초기화 ───────────────────────────────────────────────────────────
 
@@ -28,10 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el) return;
     publicId = el.value;
 
-    // sessionStorage에서 파라미터 읽기
     const raw = sessionStorage.getItem(DRAFT_PARAMS_KEY);
     if (!raw) {
-        // 파라미터 없으면 피드 페이지로 리다이렉트
         window.location.replace(`/projects/${publicId}/patch-note/pending-items`);
         return;
     }
@@ -43,7 +204,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // SSE 스트림 시작
+    // 피드 페이지에서 덮어쓰기 선택 시 overwrite 모드 초기화
+    if (draftParams.overwrite === true) {
+        isOverwriteMode = true;
+    }
+
+    const draftContentEl = document.getElementById('draftContent');
+    if (draftContentEl) {
+        draftContentEl.addEventListener('click', (e) => {
+            const badge = e.target.closest('[data-ref]');
+            if (!badge) return;
+            const ref = badge.dataset.ref;
+            if (ref) highlightSource(ref);
+        });
+
+        draftContentEl.addEventListener('keydown', (e) => {
+            const badge = e.target.closest('[data-ref]');
+            if (!badge) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const ref = badge.dataset.ref;
+                if (ref) highlightSource(ref);
+            }
+        });
+    }
+
     startSseStream();
 });
 
@@ -82,17 +267,17 @@ async function startSseStream() {
         let buffer = '';
         let currentEventName = null;
 
-        // eslint-disable-next-line no-constant-condition
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
-            buffer = lines.pop() ?? ''; // 마지막 미완성 줄 보관
+            buffer = lines.pop() ?? '';
 
             for (const line of lines) {
                 const trimmed = line.trim();
+
                 if (trimmed.startsWith('event:')) {
                     currentEventName = trimmed.slice(6).trim();
                 } else if (trimmed.startsWith('data:')) {
@@ -102,7 +287,7 @@ async function startSseStream() {
                             const data = JSON.parse(payload);
                             handleSseEvent(currentEventName, data);
                         } catch {
-                            // JSON 파싱 실패 무시
+                            // ignore invalid json
                         }
                     }
                     currentEventName = null;
@@ -150,7 +335,6 @@ function handleProgress(data) {
     } else if (step === 'GENERATING') {
         updateOverlay('AI 초안 생성 중...', 'LLM이 패치노트를 작성하고 있습니다.', 70);
         setStepActive(2);
-        // 오버레이 숨기고 본문 표시
         hideOverlay();
         showStreamCursor(true);
     }
@@ -165,37 +349,64 @@ function handleSources(data) {
 function handleToken(data) {
     const content = data.content ?? '';
     rawContent += content;
-    renderStreamingContent(rawContent);
-    updateWordCount(rawContent);
+    scheduleTypewriter();
+}
+
+// 타이프라이터: 스트리밍 중 plain text를 글자 단위로 점진적 노출
+function scheduleTypewriter() {
+    if (typewriterAnimId !== null) return;
+    typewriterAnimId = requestAnimationFrame(runTypewriter);
+}
+
+function runTypewriter() {
+    typewriterAnimId = null;
+    const plainText = stripSourceTags(rawContent);
+    const target = plainText.length;
+    if (typewriterDisplayed >= target) return;
+
+    // 누적된 글자가 많을수록 더 빠르게 따라잡기
+    const gap = target - typewriterDisplayed;
+    const step = Math.max(1, Math.min(gap, Math.ceil(gap / 4)));
+    typewriterDisplayed = Math.min(target, typewriterDisplayed + step);
+
+    const draftContentEl = document.getElementById('draftContent');
+    if (draftContentEl) {
+        draftContentEl.textContent = plainText.slice(0, typewriterDisplayed);
+    }
+
+    if (typewriterDisplayed < target) {
+        typewriterAnimId = requestAnimationFrame(runTypewriter);
+    }
 }
 
 function handleDone(data) {
+    // 타이프라이터 중단
+    if (typewriterAnimId !== null) {
+        cancelAnimationFrame(typewriterAnimId);
+        typewriterAnimId = null;
+    }
+    typewriterDisplayed = 0;
+
     cleanedContent = data.cleanedContent ?? rawContent;
     sourceRefs = data.sourceRefs ?? [];
 
-    // 완료 처리
+    // 실제 사용된 ref 기준으로 sourceList 재구성 (정확한 인덱스·링크 보장)
+    if (sourceRefs.length > 0) {
+        buildSourceList(sourceRefs);
+        renderSourcePanel();
+    } else if (sourceList.length === 0) {
+        renderSourcePanel();
+    }
+
+    updateWordCount(stripSourceTags(cleanedContent));
+    renderFinalContent(cleanedContent);
+
     generationComplete = true;
     showStreamCursor(false);
     updateStreamingBadge(false);
-
-    // 최종 컨텐츠 렌더링 (cleaned)
-    renderMarkdown(cleanedContent);
-    updateWordCount(cleanedContent);
-
-    // 버튼 활성화
     enableActionButtons();
-
-    // 생성 완료 시각
     setGeneratedAt(new Date());
-
-    // 완료 토스트
     showTopToast('패치노트 초안 생성이 완료되었습니다.', 'success');
-
-    // 아직 sources 이벤트가 없었다면 sourceRefs로 소스 목록 빌드
-    if (sourceList.length === 0 && sourceRefs.length > 0) {
-        buildSourceList(sourceRefs);
-        renderSourcePanel();
-    }
 }
 
 function handleError(data) {
@@ -233,25 +444,23 @@ function setStepActive(stepNum) {
     for (let i = 1; i <= 2; i++) {
         const stepEl = document.getElementById(`step${i}`);
         if (!stepEl) continue;
+
         const circle = stepEl.querySelector('div');
         const numEl = stepEl.querySelector('.step-num');
 
         if (i < stepNum) {
-            // 완료
             if (circle) {
                 circle.className = 'w-5 h-5 rounded-full border-2 border-emerald-500 bg-emerald-500 flex items-center justify-center';
             }
             if (numEl) numEl.textContent = '✓';
             stepEl.className = 'flex items-center gap-1.5 text-emerald-600';
         } else if (i === stepNum) {
-            // 진행 중
             if (circle) {
                 circle.className = 'w-5 h-5 rounded-full border-2 border-docu-primary bg-docu-primary/10 flex items-center justify-center';
             }
             if (numEl) numEl.textContent = i;
             stepEl.className = 'flex items-center gap-1.5 text-docu-primary font-medium';
         } else {
-            // 미진행
             if (circle) {
                 circle.className = 'w-5 h-5 rounded-full border-2 border-docu-tertiary flex items-center justify-center';
             }
@@ -289,7 +498,6 @@ function showContextOverflowModal(currentPercent) {
 
     if (percentEl) percentEl.textContent = `${currentPercent}%`;
     if (barEl) {
-        // 100% 초과일 수 있으므로 시각적으로 100%로 고정
         barEl.style.width = '100%';
     }
 
@@ -305,48 +513,49 @@ function closeContextOverflowModal() {
 
 // ── 다시 생성하기 ─────────────────────────────────────────────────────
 
-/**
- * 상태를 초기화하고 SSE 스트리밍을 재시작한다.
- * 에러 오버레이의 "다시 생성하기" 버튼과 연결된다.
- */
 function retryGeneration() {
-    // 상태 초기화
     rawContent = '';
     cleanedContent = '';
     sourceRefs = [];
     sourceList = [];
     generationComplete = false;
     activeHighlightRef = null;
+    finalRenderAnimated = false;
 
-    // 컨텐츠 영역 초기화
+    // 타이프라이터 상태 초기화
+    typewriterDisplayed = 0;
+    if (typewriterAnimId !== null) {
+        cancelAnimationFrame(typewriterAnimId);
+        typewriterAnimId = null;
+    }
+
     const draftContentEl = document.getElementById('draftContent');
-    if (draftContentEl) draftContentEl.innerHTML = '';
+    if (draftContentEl) {
+        draftContentEl.innerHTML = '';
+        draftContentEl.classList.remove('opacity-0', 'opacity-100', 'transition-opacity', 'duration-300', 'ease-out');
+    }
 
-    // 출처 패널 초기화
     const sourceListEl = document.getElementById('sourceList');
     if (sourceListEl) sourceListEl.innerHTML = '';
+
     const sourceEmptyEl = document.getElementById('sourceEmpty');
-    if (sourceEmptyEl) sourceEmptyEl.textContent = '';
+    if (sourceEmptyEl) sourceEmptyEl.textContent = '출처 정보를 수집 중입니다...';
+
     const countBadge = document.getElementById('sourceCountBadge');
     if (countBadge) countBadge.textContent = '0건';
 
-    // 단어 수 배지 초기화
     updateWordCount('');
 
-    // 버튼 비활성화
     ['copyBtn', 'saveBtn'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.disabled = true;
     });
 
-    // 스트리밍 배지 초기화
     updateStreamingBadge(true);
 
-    // 에러 오버레이 숨기기
     const errorOverlay = document.getElementById('errorOverlay');
     if (errorOverlay) errorOverlay.classList.add('hidden');
 
-    // 처리 오버레이 복원
     const processingOverlay = document.getElementById('processingOverlay');
     if (processingOverlay) {
         processingOverlay.style.transition = '';
@@ -354,66 +563,78 @@ function retryGeneration() {
         processingOverlay.classList.remove('hidden');
     }
 
-    // 진행 단계 초기화
     setStepActive(0);
-
-    // SSE 재시작
     startSseStream();
 }
 
-/**
- * 버전 중복 모달에서 "새 버전으로 덮어쓰기" 버튼 클릭 시 호출.
- * isOverwriteMode를 true로 설정하고 재생성한다.
- */
 function overwriteAndRegenerate() {
     isOverwriteMode = true;
     closeVersionDuplicateModal();
     retryGeneration();
 }
 
-// ── 컨텐츠 렌더링 ────────────────────────────────────────────────────
+// ── 렌더링 ───────────────────────────────────────────────────────────
 
-/**
- * 스트리밍 중 rawContent를 렌더링한다.
- * {{source:REF}} 패턴을 번호 배지로 치환 후 마크다운 변환.
- */
-function renderStreamingContent(text) {
+function renderMarkdownToElement(el, text, sources = []) {
+    if (!el) return;
+
+    if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
+        el.textContent = stripSourceTags(text ?? '');
+        return;
+    }
+
+    el.innerHTML = markdownRenderer.renderToHtml(text, sources);
+    markdownRenderer.enhanceHtml(el);
+
+    el.querySelectorAll('[data-ref]').forEach(node => {
+        node.setAttribute('tabindex', '0');
+        node.setAttribute('role', 'button');
+    });
+}
+
+function renderFinalContent(text) {
     const draftContentEl = document.getElementById('draftContent');
     if (!draftContentEl) return;
 
-    let processed = text;
-    let citationIndex = 0;
+    renderMarkdownToElement(draftContentEl, text, sourceList);
 
-    // {{source:REF}} → 클릭 가능한 번호 배지
-    processed = processed.replace(/\{\{source:([^}]+)\}\}/g, (match, ref) => {
-        citationIndex++;
-        const idx = citationIndex;
-        return `<sup class="citation-badge cursor-pointer select-none inline-flex items-center justify-center w-4 h-4 rounded-full bg-docu-primary/10 text-docu-primary text-[10px] font-bold align-super hover:bg-docu-primary/20 transition-colors" data-ref="${ref}" title="${ref}" onclick="highlightSource('${ref}')">[${idx}]</sup>`;
-    });
-
-    if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
-        // DOMPurify 설정: citation 배지의 onclick 허용
-        const clean = DOMPurify.sanitize(marked.parse(processed), {
-            ADD_ATTR: ['onclick', 'data-ref'],
+    if (!finalRenderAnimated) {
+        finalRenderAnimated = true;
+        draftContentEl.classList.add('opacity-0');
+        requestAnimationFrame(() => {
+            draftContentEl.classList.add('transition-opacity', 'duration-300', 'ease-out');
+            draftContentEl.classList.remove('opacity-0');
+            draftContentEl.classList.add('opacity-100');
         });
-        draftContentEl.innerHTML = clean;
-    } else {
-        draftContentEl.textContent = text;
     }
 }
 
-/**
- * 최종 cleanedContent를 마크다운으로 렌더링한다.
- */
-function renderMarkdown(text) {
-    const draftContentEl = document.getElementById('draftContent');
-    if (!draftContentEl) return;
+function stripSourceTags(text) {
+    if (!text) return '';
+    return text
+        .replace(SOURCE_TAG_REGEX, '')
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
 
-    if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
-        draftContentEl.innerHTML = DOMPurify.sanitize(marked.parse(text ?? ''));
-    } else {
-        draftContentEl.textContent = text ?? '';
+// plain text 복사용
+function markdownToPlainText(text) {
+    const withoutSources = stripSourceTags(text ?? '');
+
+    if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
+        return withoutSources;
     }
+
+    const html = markdownRenderer.renderToHtml(withoutSources, []);
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    temp.querySelectorAll('sup[data-ref]').forEach(el => el.remove());
+
+    return (temp.textContent || temp.innerText || '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
 }
 
 // ── 출처 패널 ────────────────────────────────────────────────────────
@@ -423,6 +644,18 @@ function buildSourceList(refs) {
         const pendingItems = draftParams?.pendingItems ?? [];
         const matched = findPendingItemByRef(ref, pendingItems);
 
+        // sourceLink: pendingItems에서 찾거나, ref 형식(ISSUE-/DOC-)에서 직접 구성
+        let sourceLink = matched?.sourceLink ?? null;
+        if (!sourceLink) {
+            if (ref.startsWith('ISSUE-')) {
+                const sid = parseInt(ref.slice(6), 10);
+                if (sid) sourceLink = `/projects/${publicId}/issues/${sid}/analysis`;
+            } else if (ref.startsWith('DOC-')) {
+                const sid = parseInt(ref.slice(4), 10);
+                if (sid) sourceLink = `/projects/${publicId}/documents/${sid}`;
+            }
+        }
+
         return {
             index: index + 1,
             ref,
@@ -430,6 +663,7 @@ function buildSourceList(refs) {
             patchType: matched?.patchType ?? null,
             title: matched?.title ?? ref,
             sourceId: matched?.sourceId ?? null,
+            sourceLink,
         };
     });
 }
@@ -439,10 +673,12 @@ function findPendingItemByRef(ref, pendingItems) {
         const sourceId = parseInt(ref.slice(6), 10);
         return pendingItems.find(item => item.sourceType === 'ISSUE' && item.sourceId === sourceId) ?? null;
     }
+
     if (ref.startsWith('DOC-')) {
         const sourceId = parseInt(ref.slice(4), 10);
         return pendingItems.find(item => item.sourceType === 'DOCUMENT' && item.sourceId === sourceId) ?? null;
     }
+
     return null;
 }
 
@@ -460,8 +696,8 @@ function renderSourcePanel() {
     }
 
     if (sourceEmptyEl) sourceEmptyEl.textContent = '';
-
     if (!sourceListEl) return;
+
     sourceListEl.innerHTML = '';
 
     sourceList.forEach(source => {
@@ -472,35 +708,51 @@ function renderSourcePanel() {
         item.setAttribute('tabindex', '0');
         item.setAttribute('aria-label', `출처 ${source.index}: ${source.title}`);
 
-        item.addEventListener('click', () => highlightSource(source.ref));
+        item.addEventListener('click', () => {
+            highlightSource(source.ref);
+            if (source.sourceLink) {
+                window.open(source.sourceLink, '_blank', 'noopener,noreferrer');
+            }
+        });
+
         item.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') highlightSource(source.ref);
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                highlightSource(source.ref);
+                if (source.sourceLink) {
+                    window.open(source.sourceLink, '_blank', 'noopener,noreferrer');
+                }
+            }
         });
 
         const row = document.createElement('div');
         row.className = 'flex items-start gap-3';
 
-        // 번호 배지
         const numBadge = document.createElement('span');
-        numBadge.className = 'flex-shrink-0 w-5 h-5 rounded-full bg-docu-primary/10 text-docu-primary text-[10px] font-bold flex items-center justify-center mt-0.5';
-        numBadge.textContent = source.index;
+        numBadge.className = 'flex-shrink-0 inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full border border-docu-primary/15 bg-gradient-to-b from-docu-primary/10 to-docu-primary/5 text-docu-primary text-[11px] font-semibold shadow-sm mt-0.5';
+        numBadge.textContent = `[${source.index}]`;
         row.appendChild(numBadge);
 
         const info = document.createElement('div');
         info.className = 'flex-1 min-w-0';
 
-        // 배지 행
         const badges = document.createElement('div');
         badges.className = 'flex items-center gap-1.5 mb-1';
         badges.appendChild(buildSourceTypeBadge(source.type));
         if (source.patchType) badges.appendChild(buildPatchTypeBadge(source.patchType));
         info.appendChild(badges);
 
-        // 제목
         const titleEl = document.createElement('p');
         titleEl.className = 'text-xs text-docu-secondary line-clamp-2 group-hover:text-docu-ink transition-colors';
         titleEl.textContent = source.title;
         info.appendChild(titleEl);
+
+        if (source.sourceLink) {
+            const linkHint = document.createElement('p');
+            linkHint.className = 'text-[10px] text-docu-primary mt-0.5 flex items-center gap-0.5';
+            linkHint.innerHTML = '<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>원본 보기';
+            info.appendChild(linkHint);
+        }
 
         row.appendChild(info);
         item.appendChild(row);
@@ -511,18 +763,28 @@ function renderSourcePanel() {
 // ── 출처 강조 ────────────────────────────────────────────────────────
 
 function highlightSource(ref) {
-    // 이전 강조 해제
     if (activeHighlightRef) {
         const prev = document.getElementById(`source-item-${activeHighlightRef}`);
         if (prev) prev.classList.remove('bg-docu-primary/5', 'ring-1', 'ring-docu-primary/30');
     }
 
-    // 새 강조
+    const prevBadge = document.querySelector(`sup[data-ref="${cssEscape(activeHighlightRef)}"] .cite-ref__inner`);
+    if (prevBadge) {
+        prevBadge.classList.remove('ring-2', 'ring-docu-primary/25', 'bg-docu-primary/15', 'scale-[1.03]');
+    }
+
     activeHighlightRef = ref;
+
     const target = document.getElementById(`source-item-${ref}`);
     if (target) {
         target.classList.add('bg-docu-primary/5', 'ring-1', 'ring-docu-primary/30');
         target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    const currentBadge = document.querySelector(`sup[data-ref="${cssEscape(ref)}"] .cite-ref__inner`);
+    if (currentBadge) {
+        currentBadge.classList.add('ring-2', 'ring-docu-primary/25', 'bg-docu-primary/15', 'scale-[1.03]');
+        currentBadge.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     }
 }
 
@@ -539,6 +801,7 @@ function buildSourceTypeBadge(type) {
         span.classList.add('bg-indigo-100', 'text-indigo-700');
         span.textContent = '문서';
     }
+
     return span;
 }
 
@@ -548,15 +811,16 @@ function buildPatchTypeBadge(patchType) {
 
     const config = {
         NEW:         { cls: ['bg-emerald-100', 'text-emerald-700'], label: '신규' },
-        CHANGE:      { cls: ['bg-blue-100',    'text-blue-700'],    label: '변경' },
-        FIX:         { cls: ['bg-red-100',     'text-red-700'],     label: '수정' },
-        MAINTENANCE: { cls: ['bg-slate-100',   'text-slate-600'],   label: '유지보수' },
+        CHANGE:      { cls: ['bg-blue-100', 'text-blue-700'], label: '변경' },
+        FIX:         { cls: ['bg-red-100', 'text-red-700'], label: '수정' },
+        MAINTENANCE: { cls: ['bg-slate-100', 'text-slate-600'], label: '유지보수' },
     }[patchType];
 
     if (config) {
         span.classList.add(...config.cls);
         span.textContent = config.label;
     }
+
     return span;
 }
 
@@ -572,7 +836,7 @@ function updateStreamingBadge(isStreaming) {
     if (!badge) return;
 
     if (isStreaming) {
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> 생성 중`;
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> 생성 중';
         badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700';
     } else {
         badge.textContent = '생성 완료';
@@ -583,6 +847,7 @@ function updateStreamingBadge(isStreaming) {
 function updateWordCount(text) {
     const badge = document.getElementById('wordCountBadge');
     if (!badge) return;
+
     const charCount = (text ?? '').replace(/\s+/g, '').length;
     badge.textContent = `${charCount.toLocaleString('ko-KR')}자`;
 }
@@ -590,9 +855,13 @@ function updateWordCount(text) {
 function setGeneratedAt(date) {
     const badge = document.getElementById('generatedAtBadge');
     if (!badge) return;
+
     badge.textContent = `생성 완료: ${date.toLocaleString('ko-KR', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
     })}`;
 }
 
@@ -607,11 +876,16 @@ function enableActionButtons() {
 
 function copyDraftContent() {
     if (!cleanedContent) return;
-    navigator.clipboard.writeText(cleanedContent).then(() => {
-        showTopToast('클립보드에 복사되었습니다.', 'success');
-    }).catch(() => {
-        showTopToast('복사에 실패했습니다.', 'danger');
-    });
+
+    const textToCopy = markdownToPlainText(cleanedContent);
+
+    navigator.clipboard.writeText(textToCopy)
+        .then(() => {
+            showTopToast('텍스트가 클립보드에 복사되었습니다.', 'success');
+        })
+        .catch(() => {
+            showTopToast('복사에 실패했습니다.', 'danger');
+        });
 }
 
 // ── 저장 ─────────────────────────────────────────────────────────────
@@ -656,13 +930,16 @@ function closeSaveConfirmModal() {
 
 async function savePatchNote() {
     const saveBtn = document.getElementById('saveConfirmBtn');
-    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '저장 중...';
+    }
 
     const { title, majorVersion, minorVersion, patchVersion, selectedItemIds } = draftParams ?? {};
 
     const requestBody = {
         title: title || '',
-        content: cleanedContent,
+        content: stripSourceTags(cleanedContent),
         majorVersion: majorVersion ?? 0,
         minorVersion: minorVersion ?? 0,
         patchVersion: patchVersion ?? 0,
@@ -687,12 +964,18 @@ async function savePatchNote() {
             sessionStorage.setItem('patchnote_list_toast', '패치노트가 저장되었습니다.');
             window.location.href = `/projects/${publicId}/patch-note`;
         } else {
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '저장'; }
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '저장';
+            }
             showTopToast(body.error?.message ?? '저장에 실패했습니다.', 'danger');
         }
     } catch (err) {
         closeSaveConfirmModal();
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '저장'; }
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '저장';
+        }
         showTopToast(err.message, 'danger');
     }
 }
@@ -702,6 +985,7 @@ async function savePatchNote() {
 function showVersionDuplicateModal(message) {
     const msgEl = document.getElementById('versionDuplicateMessage');
     if (msgEl) msgEl.textContent = message;
+
     const modal = document.getElementById('versionDuplicateModal');
     if (modal) modal.classList.remove('hidden');
 }
@@ -725,13 +1009,11 @@ function handleBackNavigation() {
     navigateTo(`/projects/${publicId}/patch-note`);
 }
 
-/**
- * 저장 전 이탈 가드 처리.
- * 생성 완료 후 저장 전인 경우 확인 모달을 표시한다.
- */
 function navigateTo(url) {
     if (generationComplete && !isSaved) {
-        pendingNavigation = () => { window.location.href = url; };
+        pendingNavigation = () => {
+            window.location.href = url;
+        };
         openLeaveConfirmModal();
     } else {
         window.location.href = url;
@@ -741,14 +1023,16 @@ function navigateTo(url) {
 function openLeaveConfirmModal() {
     const modal = document.getElementById('leaveConfirmModal');
     if (!modal) return;
+
     modal.classList.remove('hidden');
 
     const confirmBtn = document.getElementById('leaveConfirmBtn');
     if (confirmBtn) {
         confirmBtn.onclick = () => {
+            const nav = pendingNavigation;
             closeLeaveConfirmModal();
             sessionStorage.removeItem(DRAFT_PARAMS_KEY);
-            if (pendingNavigation) pendingNavigation();
+            if (nav) nav();
         };
     }
 }
@@ -759,7 +1043,6 @@ function closeLeaveConfirmModal() {
     if (modal) modal.classList.add('hidden');
 }
 
-// 브라우저 이탈 가드 (새로고침, 탭 닫기 등)
 window.addEventListener('beforeunload', (e) => {
     if (generationComplete && !isSaved) {
         e.preventDefault();
@@ -771,6 +1054,14 @@ window.addEventListener('beforeunload', (e) => {
 
 function escapeHtml(str) {
     const div = document.createElement('div');
-    div.textContent = str;
+    div.textContent = str ?? '';
     return div.innerHTML;
+}
+
+function cssEscape(value) {
+    if (!value) return '';
+    if (window.CSS && typeof window.CSS.escape === 'function') {
+        return window.CSS.escape(value);
+    }
+    return String(value).replace(/["\\]/g, '\\$&');
 }

@@ -16,8 +16,12 @@ import org.springframework.stereotype.Repository;
 public interface PendingItemRepository
         extends JpaRepository<PendingItem, Long>, PendingItemRepositoryCustom {
 
-    // 단건 조회
-    Optional<PendingItem> findByProjectIdAndSourceTypeAndSourceId(
+    // 단건 조회 (change_index 포함) — diff 기반 upsert 조회 기준
+    Optional<PendingItem> findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+            UUID projectId, SourceType sourceType, Long sourceId, int changeIndex);
+
+    // 전체 목록 조회 (change_index 무관) — 동일 sourceId에 여러 changeIndex가 존재하는 DOCUMENT 롤백에 사용
+    List<PendingItem> findAllByProjectIdAndSourceTypeAndSourceId(
             UUID projectId, SourceType sourceType, Long sourceId);
 
     // RAG pre-filter — ID 목록 기반 활성 항목 조회

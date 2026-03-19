@@ -3,14 +3,14 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const DRAFT_PARAMS_KEY = 'patchnote_draft_params';
-const VERSION_PATTERN = /^v?(\d+)\.(\d+)\.(\d+)$/;
 
 // ── 피드 상태 ────────────────────────────────────────────────────────
 let publicId = null;
-let currentMode = 'PENDING';    // PENDING | EXCLUDED | COMPLETED
 let currentSourceType = '';
 let currentPatchType = '';
 let currentKeyword = '';
+let currentDateFrom = '';
+let currentDateTo   = '';
 let debounceTimer = null;
 let pendingExcludeItemId = null;
 let currentDetailItemId = null;
@@ -23,6 +23,10 @@ let allPendingItems = [];
 // 탐색기 상태
 let explorerMode = 'EXCLUDED'; // EXCLUDED | COMPLETED
 
+// 설정 패널 값
+let templateValue = '';
+let additionalPromptValue = '';
+
 // ── 초기화 ───────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el) return;
     publicId = el.value;
 
-    // 필터 이벤트
+    // 키워드 필터
     const keywordInput = document.getElementById('keywordInput');
     if (keywordInput) {
         keywordInput.addEventListener('input', (e) => {
@@ -42,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 소스 타입 필터
     const sourceTypeFilter = document.getElementById('sourceTypeFilter');
     if (sourceTypeFilter) {
         sourceTypeFilter.addEventListener('change', (e) => {
@@ -50,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 패치 분류 필터
     const patchTypeFilter = document.getElementById('patchTypeFilter');
     if (patchTypeFilter) {
         patchTypeFilter.addEventListener('change', (e) => {
@@ -58,25 +64,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 날짜 필터
+    const dateFrom = document.getElementById('dateFrom');
+    if (dateFrom) {
+        dateFrom.addEventListener('change', (e) => {
+            currentDateFrom = e.target.value;
+            loadFeed();
+        });
+    }
+
+    const dateTo = document.getElementById('dateTo');
+    if (dateTo) {
+        dateTo.addEventListener('change', (e) => {
+            currentDateTo = e.target.value;
+            loadFeed();
+        });
+    }
+
+    initSelectAllCheckbox();
     loadFeed();
 });
-
-// ── 모드 탭 전환 ─────────────────────────────────────────────────────
-
-function switchMode(mode) {
-    currentMode = mode;
-
-    document.querySelectorAll('.mode-tab').forEach(btn => {
-        const isActive = btn.id === `tab-${mode}`;
-        btn.classList.toggle('border-docu-primary', isActive);
-        btn.classList.toggle('text-docu-primary', isActive);
-        btn.classList.toggle('border-transparent', !isActive);
-        btn.classList.toggle('text-docu-secondary', !isActive);
-        btn.setAttribute('aria-current', isActive ? 'page' : 'false');
-    });
-
-    loadFeed();
-}
 
 // ── 피드 로드 ────────────────────────────────────────────────────────
 
@@ -84,10 +91,12 @@ async function loadFeed() {
     showLoading(true);
 
     const params = new URLSearchParams();
-    params.set('mode', currentMode);
+    params.set('mode', 'PENDING');
     if (currentSourceType) params.set('sourceType', currentSourceType);
     if (currentPatchType)  params.set('patchType', currentPatchType);
     if (currentKeyword)    params.set('keyword', currentKeyword);
+    if (currentDateFrom)   params.set('dateFrom', currentDateFrom);
+    if (currentDateTo)     params.set('dateTo', currentDateTo);
 
     try {
         const body = await callApi(
@@ -96,16 +105,22 @@ async function loadFeed() {
 
         if (body.success) {
             const items = body.data ?? [];
+            allPendingItems = items;
 
-            // PENDING 모드인 경우 전체 아이템 저장 + 선택 상태 초기화
-            if (currentMode === 'PENDING') {
-                allPendingItems = items;
-                // 기본값: 모든 PENDING 항목 선택됨
+            // 첫 로드일 때만 전체 선택 기본값 적용
+            if (selectedItemIds.size === 0 && items.length > 0) {
                 selectedItemIds = new Set(items.map(item => item.id));
-                updateSelectedCount();
+            } else {
+                // 현재 화면에 없는 항목 ID는 제거
+                const visibleIds = new Set(items.map(item => item.id));
+                selectedItemIds = new Set(
+                    Array.from(selectedItemIds).filter(id => visibleIds.has(id))
+                );
             }
 
+            updateSelectedCount();
             renderFeed(items);
+            updateSelectAllCheckboxState(items);
         } else {
             showLoading(false);
             showTopToast(body.error?.message ?? '피드를 불러오지 못했습니다.', 'danger');
@@ -148,7 +163,9 @@ function renderFeed(items) {
     if (items.length === 0) {
         listEl.classList.add('hidden');
         emptyEl.classList.remove('hidden');
-        updateEmptyMessage();
+        const msg = document.getElementById('feedEmptyMessage');
+        if (msg) msg.textContent = '대기 중인 항목이 없습니다.';
+        updateSelectAllCheckboxState([]);
         return;
     }
 
@@ -156,13 +173,7 @@ function renderFeed(items) {
     listEl.innerHTML = '';
     items.forEach(item => listEl.appendChild(buildRow(item)));
     listEl.classList.remove('hidden');
-}
-
-function updateEmptyMessage() {
-    const msg = document.getElementById('feedEmptyMessage');
-    if (!msg) return;
-    const modeLabel = { PENDING: '대기 중인', EXCLUDED: '제외된', COMPLETED: '완료된' }[currentMode] ?? '';
-    msg.textContent = `${modeLabel} 항목이 없습니다.`;
+    updateSelectAllCheckboxState(items);
 }
 
 // ── 행(Row) 생성 ─────────────────────────────────────────────────────
@@ -172,24 +183,27 @@ function buildRow(item) {
     row.className = 'grid grid-cols-12 gap-3 items-start px-4 py-4 hover:bg-surface-subtle transition-colors';
     row.dataset.itemId = item.id;
 
-    // ── 1. 체크박스 (PENDING 모드만) ──
+    // ── 1. 체크박스 ──
     const checkCell = document.createElement('div');
-    checkCell.className = 'col-span-1 flex justify-center items-start pt-0.5';
+    checkCell.className = 'col-span-1 flex justify-center items-start pt-1';
 
-    if (item.status === 'PENDING') {
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'w-4 h-4 rounded border-divider text-docu-primary cursor-pointer';
-        checkbox.checked = selectedItemIds.has(item.id);
-        checkbox.setAttribute('aria-label', `${item.title} 포함 여부`);
-        checkbox.addEventListener('change', (e) => {
-            if (e.target.checked) selectedItemIds.add(item.id);
-            else selectedItemIds.delete(item.id);
-            updateSelectedCount();
-            e.stopPropagation();
-        });
-        checkCell.appendChild(checkbox);
-    }
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'w-4 h-4 rounded border-divider text-docu-primary cursor-pointer';
+    checkbox.checked = selectedItemIds.has(item.id);
+    checkbox.setAttribute('aria-label', `${item.title} 포함 여부`);
+    checkbox.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            selectedItemIds.add(item.id);
+        } else {
+            selectedItemIds.delete(item.id);
+        }
+
+        updateSelectedCount();
+        updateSelectAllCheckboxState(allPendingItems);
+        e.stopPropagation();
+    });
+    checkCell.appendChild(checkbox);
     row.appendChild(checkCell);
 
     // ── 2. 항목 정보 (col-span-4) ──
@@ -207,12 +221,12 @@ function buildRow(item) {
     }
 
     const title = document.createElement('p');
-    title.className = 'text-sm font-semibold text-docu-ink truncate';
+    title.className = 'text-base font-semibold text-docu-ink truncate';
     title.textContent = item.title;
     infoCell.appendChild(title);
 
     const summary = document.createElement('p');
-    summary.className = 'text-xs text-docu-secondary mt-0.5 line-clamp-2';
+    summary.className = 'text-[11px] text-docu-secondary mt-0.5 line-clamp-2';
     summary.textContent = item.summary;
     infoCell.appendChild(summary);
 
@@ -220,19 +234,19 @@ function buildRow(item) {
 
     // ── 3. 소스 타입 (col-span-2) ──
     const sourceCell = document.createElement('div');
-    sourceCell.className = 'col-span-2 flex justify-center items-start pt-0.5';
+    sourceCell.className = 'col-span-2 flex justify-center items-start pt-1';
     sourceCell.appendChild(buildSourceTypeBadge(item.sourceType));
     row.appendChild(sourceCell);
 
     // ── 4. 패치 분류 (col-span-2) ──
     const patchCell = document.createElement('div');
-    patchCell.className = 'col-span-2 flex justify-center items-start pt-0.5';
+    patchCell.className = 'col-span-2 flex justify-center items-start pt-1';
     patchCell.appendChild(buildPatchTypeBadge(item.patchType));
     row.appendChild(patchCell);
 
     // ── 5. 생성일 (col-span-2) ──
     const dateCell = document.createElement('div');
-    dateCell.className = 'col-span-2 text-xs text-docu-secondary text-center pt-0.5';
+    dateCell.className = 'col-span-2 text-xs text-docu-secondary text-center pt-1';
     dateCell.textContent = formatDate(item.sourceCreatedAt);
     row.appendChild(dateCell);
 
@@ -258,22 +272,75 @@ function buildRow(item) {
 function updateSelectedCount() {
     const display = document.getElementById('selectedCountDisplay');
     if (display) display.textContent = `${selectedItemIds.size}개`;
+
+    const generateBtn = document.getElementById('generateBtn');
+    if (generateBtn) {
+        generateBtn.disabled = selectedItemIds.size === 0;
+        generateBtn.classList.toggle('opacity-50', selectedItemIds.size === 0);
+        generateBtn.classList.toggle('cursor-not-allowed', selectedItemIds.size === 0);
+    }
+}
+
+function initSelectAllCheckbox() {
+    const selectAllEl = document.getElementById('selectAllCheckbox');
+    if (!selectAllEl) return;
+
+    selectAllEl.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+
+        if (checked) {
+            selectedItemIds = new Set(allPendingItems.map(item => item.id));
+        } else {
+            selectedItemIds = new Set();
+        }
+
+        renderFeed(allPendingItems);
+        updateSelectedCount();
+    });
+}
+
+function updateSelectAllCheckboxState(items = allPendingItems) {
+    const selectAllEl = document.getElementById('selectAllCheckbox');
+    if (!selectAllEl) return;
+
+    if (!items || items.length === 0) {
+        selectAllEl.checked = false;
+        selectAllEl.indeterminate = false;
+        selectAllEl.disabled = true;
+        return;
+    }
+
+    selectAllEl.disabled = false;
+
+    const totalCount = items.length;
+    const checkedCount = items.filter(item => selectedItemIds.has(item.id)).length;
+
+    if (checkedCount === 0) {
+        selectAllEl.checked = false;
+        selectAllEl.indeterminate = false;
+    } else if (checkedCount === totalCount) {
+        selectAllEl.checked = true;
+        selectAllEl.indeterminate = false;
+    } else {
+        selectAllEl.checked = false;
+        selectAllEl.indeterminate = true;
+    }
 }
 
 // ── 배지 빌더 ────────────────────────────────────────────────────────
 
 function buildSourceTypeBadge(sourceType) {
     const span = document.createElement('span');
-    span.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium';
+    span.className = 'badge-base';
 
     if (sourceType === 'DOCUMENT') {
-        span.classList.add('bg-indigo-100', 'text-indigo-700');
+        span.classList.add('bg-docu-primary-light', 'text-docu-primary-dark', 'border-docu-primary');
         span.textContent = '문서';
     } else if (sourceType === 'ISSUE') {
-        span.classList.add('bg-orange-100', 'text-orange-700');
+        span.classList.add('bg-docu-warning-light', 'text-docu-warning-dark', 'border-docu-warning');
         span.textContent = '이슈';
     } else {
-        span.classList.add('bg-surface-subtle', 'text-docu-secondary');
+        span.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-300');
         span.textContent = sourceType ?? '-';
     }
     return span;
@@ -281,20 +348,20 @@ function buildSourceTypeBadge(sourceType) {
 
 function buildPatchTypeBadge(patchType) {
     const span = document.createElement('span');
-    span.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium';
+    span.className = 'badge-base';
 
     const config = {
-        NEW:         { cls: ['bg-emerald-100', 'text-emerald-700'], label: '신규기능' },
-        CHANGE:      { cls: ['bg-blue-100',    'text-blue-700'],    label: '변경사항' },
-        FIX:         { cls: ['bg-red-100',     'text-red-700'],     label: '버그수정' },
-        MAINTENANCE: { cls: ['bg-slate-100',   'text-slate-600'],   label: '유지보수' },
+        NEW:         { cls: ['bg-docu-success-light', 'text-docu-success-dark', 'border-docu-success'],   label: '신규기능' },
+        CHANGE:      { cls: ['bg-docu-primary-light', 'text-docu-primary-dark', 'border-docu-primary'],   label: '변경사항' },
+        FIX:         { cls: ['bg-docu-danger-light',  'text-docu-danger',       'border-docu-danger'],    label: '버그수정' },
+        MAINTENANCE: { cls: ['bg-gray-100',           'text-gray-600',          'border-gray-300'],       label: '유지보수' },
     }[patchType];
 
     if (config) {
         span.classList.add(...config.cls);
         span.textContent = config.label;
     } else {
-        span.classList.add('bg-surface-subtle', 'text-docu-secondary');
+        span.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-300');
         span.textContent = patchType ?? '-';
     }
     return span;
@@ -306,20 +373,11 @@ function buildActionButton(item) {
     if (item.status === 'PENDING') {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'text-xs px-2.5 py-1 rounded border border-divider text-docu-secondary '
-                      + 'hover:border-amber-400 hover:text-amber-600 transition-colors whitespace-nowrap';
+        btn.className = 'inline-flex items-center justify-center px-2.5 py-1 text-xs font-semibold '
+                      + 'border-2 border-docu-ink bg-surface-base text-docu-ink rounded-docu-btn '
+                      + 'shadow-docu-sm hover:bg-white transition-colors whitespace-nowrap';
         btn.textContent = '제외';
         btn.addEventListener('click', () => openExcludeModal(item.id));
-        return btn;
-    }
-
-    if (item.status === 'EXCLUDED') {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'text-xs px-2.5 py-1 rounded border border-divider text-docu-secondary '
-                      + 'hover:border-docu-primary hover:text-docu-primary transition-colors whitespace-nowrap';
-        btn.textContent = '복원';
-        btn.addEventListener('click', () => restoreItem(item.id));
         return btn;
     }
 
@@ -502,16 +560,29 @@ async function restoreItem(itemId) {
     }
 }
 
+// ── 출처 링크 생성 ───────────────────────────────────────────────────
+
+function buildItemSourceLink(item) {
+    if (item.sourceDeleted) return null;
+    if (item.sourceType === 'DOCUMENT') return `/projects/${publicId}/documents/${item.sourceId}`;
+    if (item.sourceType === 'ISSUE') return `/projects/${publicId}/issues/${item.sourceId}/analysis`;
+    return null;
+}
+
 // ── 초안 생성 ─────────────────────────────────────────────────────────
 
-function startGeneration() {
-    // 유효성 검사
+let pendingDraftParams = null; // 버전 중복 모달 표시 중 파라미터 임시 보관
+
+async function startGeneration() {
     const titleInput = document.getElementById('draftTitleInput');
-    const versionInput = document.getElementById('versionInput');
-    const additionalPromptInput = document.getElementById('additionalPromptInput');
+    const majorInput = document.getElementById('versionMajor');
+    const minorInput = document.getElementById('versionMinor');
+    const patchInput = document.getElementById('versionPatch');
 
     const title = titleInput?.value.trim() ?? '';
-    const versionStr = versionInput?.value.trim() ?? '';
+    const majorVersion = parseInt(majorInput?.value ?? '0', 10) || 0;
+    const minorVersion = parseInt(minorInput?.value ?? '0', 10) || 0;
+    const patchVersion = parseInt(patchInput?.value ?? '0', 10) || 0;
 
     let hasError = false;
 
@@ -528,29 +599,25 @@ function startGeneration() {
 
     // 버전 검증
     const versionError = document.getElementById('versionError');
-    const versionMatch = versionStr.match(VERSION_PATTERN);
-    if (!versionStr) {
-        if (versionError) { versionError.textContent = '버전을 입력해 주세요.'; versionError.classList.remove('hidden'); }
-        if (versionInput) versionInput.classList.add('border-red-400');
-        hasError = true;
-    } else if (!versionMatch) {
-        if (versionError) { versionError.textContent = 'v{major}.{minor}.{patch} 형식으로 입력해 주세요. 예: v1.2.0'; versionError.classList.remove('hidden'); }
-        if (versionInput) versionInput.classList.add('border-red-400');
+    if (isNaN(majorVersion) || majorVersion < 0) {
+        if (versionError) { versionError.textContent = '버전 값을 올바르게 입력해 주세요.'; versionError.classList.remove('hidden'); }
         hasError = true;
     } else {
         if (versionError) versionError.classList.add('hidden');
-        if (versionInput) versionInput.classList.remove('border-red-400');
     }
 
     if (hasError) return;
 
-    const majorVersion = parseInt(versionMatch[1], 10);
-    const minorVersion = parseInt(versionMatch[2], 10);
-    const patchVersion = parseInt(versionMatch[3], 10);
+    // 템플릿 + 추가 프롬프트 결합
+    let combinedPrompt = '';
+    if (templateValue) {
+        combinedPrompt += `다음 템플릿 형식을 따라 패치노트를 작성해 주세요:\n${templateValue}`;
+    }
+    if (additionalPromptValue) {
+        if (combinedPrompt) combinedPrompt += '\n\n';
+        combinedPrompt += additionalPromptValue;
+    }
 
-    const additionalPromptRaw = additionalPromptInput?.value.trim() ?? '';
-
-    // sessionStorage에 파라미터 저장
     const params = {
         publicId,
         title,
@@ -558,7 +625,7 @@ function startGeneration() {
         majorVersion,
         minorVersion,
         patchVersion,
-        additionalPrompt: additionalPromptRaw || null,
+        additionalPrompt: combinedPrompt || null,
         selectedItemIds: Array.from(selectedItemIds),
         pendingItems: allPendingItems.map(item => ({
             id: item.id,
@@ -566,13 +633,63 @@ function startGeneration() {
             sourceType: item.sourceType,
             title: item.title,
             patchType: item.patchType,
+            sourceLink: buildItemSourceLink(item),
         })),
+        overwrite: false,
     };
 
-    sessionStorage.setItem(DRAFT_PARAMS_KEY, JSON.stringify(params));
+    // 버전 중복 사전 체크 (초안 페이지 이동 전)
+    try {
+        const body = await callApi(`/api/projects/${publicId}/patch-note`);
+        if (body.success) {
+            const notes = body.data ?? [];
+            const versionLabel = `v${majorVersion}.${minorVersion}.${patchVersion}`;
+            const alreadyExists = notes.some(note => note.versionLabel === versionLabel);
+            if (alreadyExists) {
+                pendingDraftParams = params;
+                showVersionExistsModal(versionLabel);
+                return;
+            }
+        }
+    } catch {
+        // 체크 실패 시 그냥 진행 (서버에서 재검증)
+    }
 
-    // 초안 페이지로 이동
+    navigateToDraft(params);
+}
+
+function navigateToDraft(params) {
+    sessionStorage.setItem(DRAFT_PARAMS_KEY, JSON.stringify(params));
     window.location.href = `/projects/${publicId}/patch-note/draft`;
+}
+
+// ── 버전 존재 확인 모달 ───────────────────────────────────────────────
+
+function showVersionExistsModal(versionLabel) {
+    const msgEl = document.getElementById('versionExistsMessage');
+    if (msgEl) {
+        msgEl.textContent = `${versionLabel} 버전이 이미 존재합니다. 기존 버전을 삭제하고 새 초안을 생성하시겠습니까?`;
+    }
+    const modal = document.getElementById('versionExistsModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeVersionExistsModal() {
+    pendingDraftParams = null;
+    const modal = document.getElementById('versionExistsModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function goToPatchNoteList() {
+    closeVersionExistsModal();
+    window.location.href = `/projects/${publicId}/patch-note`;
+}
+
+function proceedWithOverwrite() {
+    if (!pendingDraftParams) return;
+    const params = { ...pendingDraftParams, overwrite: true };
+    closeVersionExistsModal();
+    navigateToDraft(params);
 }
 
 // ── 제외된 항목 탐색기 ────────────────────────────────────────────────
@@ -623,7 +740,8 @@ async function loadExplorerItems() {
         if (loadingEl) loadingEl.classList.add('hidden');
 
         if (body.success) {
-            const items = body.data ?? [];
+            // 클라이언트 사이드 필터: 현재 탭의 상태만 표시
+            const items = (body.data ?? []).filter(item => item.status === explorerMode);
             if (countEl) countEl.textContent = items.length > 0 ? `${items.length}건` : '';
 
             if (items.length === 0) {
@@ -661,7 +779,7 @@ function buildExplorerRow(item) {
     badgeRow.appendChild(buildPatchTypeBadge(item.patchType));
 
     const dateSpan = document.createElement('span');
-    dateSpan.className = 'text-xs text-docu-tertiary';
+    dateSpan.className = 'text-xs text-docu-secondary';
     dateSpan.textContent = formatDate(item.sourceCreatedAt);
     badgeRow.appendChild(dateSpan);
 
@@ -674,52 +792,130 @@ function buildExplorerRow(item) {
 
     row.appendChild(info);
 
-    // 피드에 추가 버튼
-    const addBtn = document.createElement('button');
-    addBtn.type = 'button';
-    addBtn.className = 'flex-shrink-0 text-xs px-3 py-1.5 rounded border border-divider text-docu-secondary '
-                     + 'hover:border-docu-primary hover:text-docu-primary transition-colors whitespace-nowrap';
-    addBtn.textContent = '피드에 추가';
-    addBtn.addEventListener('click', async () => {
-        addBtn.disabled = true;
-        addBtn.textContent = '처리 중...';
+    // 피드에 추가 / 복원 버튼 (EXCLUDED만)
+    if (item.status === 'EXCLUDED') {
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'flex-shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold '
+                         + 'border-2 border-docu-ink bg-surface-base text-docu-ink rounded-docu-btn '
+                         + 'shadow-docu-sm hover:bg-white transition-colors whitespace-nowrap';
+        addBtn.textContent = '피드에 추가';
+        addBtn.addEventListener('click', async () => {
+            addBtn.disabled = true;
+            addBtn.textContent = '처리 중...';
 
-        try {
-            const body = await callApi(
-                `/api/projects/${publicId}/patch-note/pending-items/${item.id}/restore`,
-                { method: 'PATCH' }
-            );
+            try {
+                const body = await callApi(
+                    `/api/projects/${publicId}/patch-note/pending-items/${item.id}/restore`,
+                    { method: 'PATCH' }
+                );
 
-            if (body.success) {
-                // 탐색기 행 제거 + 애니메이션
-                row.style.transition = 'opacity 0.3s';
-                row.style.opacity = '0';
-                setTimeout(() => {
-                    row.remove();
-                    // 남은 항목 수 업데이트
-                    const countEl = document.getElementById('explorerCount');
-                    if (countEl) {
-                        const remaining = document.getElementById('explorerList')?.children.length ?? 0;
-                        countEl.textContent = remaining > 0 ? `${remaining}건` : '';
-                    }
-                }, 300);
+                if (body.success) {
+                    row.style.transition = 'opacity 0.3s';
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        const countEl = document.getElementById('explorerCount');
+                        if (countEl) {
+                            const remaining = document.getElementById('explorerList')?.children.length ?? 0;
+                            countEl.textContent = remaining > 0 ? `${remaining}건` : '';
+                        }
+                    }, 300);
 
-                // 피드 새로고침 (PENDING 모드인 경우)
-                if (currentMode === 'PENDING') loadFeed();
-
-                showTopToast('피드에 추가되었습니다.', 'success');
-            } else {
+                    loadFeed();
+                    showTopToast('피드에 추가되었습니다.', 'success');
+                } else {
+                    addBtn.disabled = false;
+                    addBtn.textContent = '피드에 추가';
+                    showTopToast(body.error?.message ?? '추가에 실패했습니다.', 'danger');
+                }
+            } catch (err) {
                 addBtn.disabled = false;
                 addBtn.textContent = '피드에 추가';
-                showTopToast(body.error?.message ?? '추가에 실패했습니다.', 'danger');
+                showTopToast(err.message, 'danger');
             }
-        } catch (err) {
-            addBtn.disabled = false;
-            addBtn.textContent = '피드에 추가';
-            showTopToast(err.message, 'danger');
-        }
-    });
+        });
 
-    row.appendChild(addBtn);
+        row.appendChild(addBtn);
+    }
+
     return row;
+}
+
+// ── 템플릿 모달 ───────────────────────────────────────────────────────
+
+function openTemplateModal() {
+    const modal = document.getElementById('templateModal');
+    if (!modal) return;
+    const input = document.getElementById('templateModalInput');
+    if (input) input.value = templateValue;
+    modal.classList.remove('hidden');
+    if (input) setTimeout(() => input.focus(), 50);
+}
+
+function closeTemplateModal() {
+    const modal = document.getElementById('templateModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function confirmTemplateInput() {
+    const input = document.getElementById('templateModalInput');
+    if (input) {
+        templateValue = input.value.trim();
+        updateTemplateTrigger();
+    }
+    closeTemplateModal();
+}
+
+function updateTemplateTrigger() {
+    const preview = document.getElementById('templatePreview');
+    if (!preview) return;
+    if (templateValue) {
+        preview.textContent = templateValue;
+        preview.classList.remove('text-docu-secondary');
+        preview.classList.add('text-docu-ink');
+    } else {
+        preview.textContent = '패치노트 작성 양식이 있다면 클릭해서 입력하세요';
+        preview.classList.remove('text-docu-ink');
+        preview.classList.add('text-docu-secondary');
+    }
+}
+
+// ── 추가 프롬프트 모달 ────────────────────────────────────────────────
+
+function openAdditionalPromptModal() {
+    const modal = document.getElementById('additionalPromptModal');
+    if (!modal) return;
+    const input = document.getElementById('additionalPromptModalInput');
+    if (input) input.value = additionalPromptValue;
+    modal.classList.remove('hidden');
+    if (input) setTimeout(() => input.focus(), 50);
+}
+
+function closeAdditionalPromptModal() {
+    const modal = document.getElementById('additionalPromptModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function confirmAdditionalPromptInput() {
+    const input = document.getElementById('additionalPromptModalInput');
+    if (input) {
+        additionalPromptValue = input.value.trim();
+        updateAdditionalPromptTrigger();
+    }
+    closeAdditionalPromptModal();
+}
+
+function updateAdditionalPromptTrigger() {
+    const preview = document.getElementById('additionalPromptPreview');
+    if (!preview) return;
+    if (additionalPromptValue) {
+        preview.textContent = additionalPromptValue;
+        preview.classList.remove('text-docu-secondary');
+        preview.classList.add('text-docu-ink');
+    } else {
+        preview.textContent = 'AI에게 추가로 전달할 지침을 클릭해서 입력하세요';
+        preview.classList.remove('text-docu-ink');
+        preview.classList.add('text-docu-secondary');
+    }
 }

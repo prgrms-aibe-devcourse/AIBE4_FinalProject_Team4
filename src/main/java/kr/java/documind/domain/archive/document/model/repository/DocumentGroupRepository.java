@@ -24,6 +24,21 @@ public interface DocumentGroupRepository extends JpaRepository<DocumentGroup, Lo
     Page<DocumentGroupSummary> findGroupSummariesByProjectId(
             @Param("projectId") UUID projectId, Pageable pageable);
 
+    @Query(
+            "SELECT g.id AS groupId, g.groupName AS groupName, g.category AS category, "
+                    + "MAX(dm.majorVersion * 1000000 + dm.minorVersion * 1000 + dm.patchVersion) AS versionOrdinal, "
+                    + "COUNT(dm) AS documentCount "
+                    + "FROM DocumentGroup g JOIN DocumentMetadata dm ON dm.documentGroup = g "
+                    + "WHERE g.projectId = :projectId "
+                    + "AND (LOWER(g.groupName) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+                    + "  OR g.choseong LIKE CONCAT('%', :choseong, '%')) "
+                    + "GROUP BY g.id, g.groupName, g.category")
+    Page<DocumentGroupSummary> findGroupSummariesByProjectIdAndKeyword(
+            @Param("projectId") UUID projectId,
+            @Param("keyword") String keyword,
+            @Param("choseong") String choseong,
+            Pageable pageable);
+
     @Query("SELECT DISTINCT dg.groupName FROM DocumentGroup dg WHERE dg.projectId = :projectId")
     List<String> findDistinctGroupNamesByProjectId(@Param("projectId") UUID projectId);
 

@@ -19,7 +19,7 @@ class DocumentGroupTest {
         @Test
         @DisplayName("정적 팩토리로 생성 시 모든 필드가 설정된다")
         void create_ValidInput_SetsAllFields() {
-            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서");
+            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서", "ㅅㄱㅁㅅ");
 
             assertThat(group.getProjectId()).isEqualTo(projectId);
             assertThat(group.getCategory()).isEqualTo("개발");
@@ -29,7 +29,7 @@ class DocumentGroupTest {
         @Test
         @DisplayName("초성이 자동 설정된다")
         void create_SetsChoseong() {
-            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서");
+            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서", "ㅅㄱㅁㅅ");
 
             assertThat(group.getChoseong()).isNotNull();
             assertThat(group.getChoseong()).isNotBlank();
@@ -43,7 +43,7 @@ class DocumentGroupTest {
         @Test
         @DisplayName("카테고리가 변경된다")
         void updateCategory_ChangesCategory() {
-            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서");
+            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서", "ㅅㄱㅁㅅ");
 
             group.updateCategory("운영");
 
@@ -53,7 +53,7 @@ class DocumentGroupTest {
         @Test
         @DisplayName("카테고리 변경 시 다른 필드는 유지된다")
         void updateCategory_OtherFieldsUnchanged() {
-            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서");
+            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서", "ㅅㄱㅁㅅ");
             String originalGroupName = group.getGroupName();
             String originalChoseong = group.getChoseong();
 
@@ -71,9 +71,9 @@ class DocumentGroupTest {
         @Test
         @DisplayName("그룹명이 변경된다")
         void updateGroupName_ChangesGroupName() {
-            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서");
+            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서", "ㅅㄱㅁㅅ");
 
-            group.updateGroupName("API문서");
+            group.updateGroupName("API문서", "ㅁㅅ");
 
             assertThat(group.getGroupName()).isEqualTo("API문서");
         }
@@ -81,10 +81,10 @@ class DocumentGroupTest {
         @Test
         @DisplayName("그룹명 변경 시 초성이 재설정된다")
         void updateGroupName_UpdatesChoseong() {
-            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서");
+            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서", "ㅅㄱㅁㅅ");
             String originalChoseong = group.getChoseong();
 
-            group.updateGroupName("API문서");
+            group.updateGroupName("API문서", "ㅁㅅ");
 
             assertThat(group.getChoseong()).isNotNull();
             assertThat(group.getChoseong()).isNotEqualTo(originalChoseong);
@@ -93,9 +93,9 @@ class DocumentGroupTest {
         @Test
         @DisplayName("그룹명 변경 시 카테고리는 유지된다")
         void updateGroupName_CategoryUnchanged() {
-            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서");
+            DocumentGroup group = DocumentGroup.create(projectId, "개발", "설계문서", "ㅅㄱㅁㅅ");
 
-            group.updateGroupName("API문서");
+            group.updateGroupName("API문서", "ㅁㅅ");
 
             assertThat(group.getCategory()).isEqualTo("개발");
         }

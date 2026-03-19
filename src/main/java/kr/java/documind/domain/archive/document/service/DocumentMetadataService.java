@@ -21,6 +21,7 @@ import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
+import kr.java.documind.global.util.ChoseongUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class DocumentMetadataService {
 
     private final DocumentFileStorage documentFileStorage;
     private final DocumentVectorEventPublisher documentVectorEventPublisher;
+    private final ChoseongUtil choseongUtil;
 
     public DocumentDetailResponse getDocumentDetail(UUID projectId, Long documentId) {
         DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
@@ -73,7 +75,8 @@ public class DocumentMetadataService {
         documentGroupManager.validateGroupNameUniqueness(projectId, category, groupName);
 
         DocumentGroup group =
-                documentGroupManager.save(DocumentGroup.create(projectId, category, groupName));
+                documentGroupManager.save(
+                        DocumentGroup.create(projectId, category, groupName, choseongUtil.extract(groupName)));
 
         return saveFileAndCreateMetadata(projectId, group, file, request, isProcessed);
     }

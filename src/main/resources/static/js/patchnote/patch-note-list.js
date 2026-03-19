@@ -69,18 +69,47 @@ async function loadNotes() {
     }
 }
 
+// ── 초성 추출 (Java ChoseongUtil과 동일 로직) ─────────────────────────
+
+function extractChoseong(text) {
+    if (!text) return '';
+    const HANGUL_BASE = 0xAC00;
+    const HANGUL_END  = 0xD7A3;
+    const JUNG_COUNT  = 21;
+    const JONG_COUNT  = 28;
+    const CHOSEONG    = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+    let result = '';
+    for (const c of text) {
+        const code = c.charCodeAt(0);
+        if (code >= HANGUL_BASE && code <= HANGUL_END) {
+            const index = Math.floor((code - HANGUL_BASE) / (JUNG_COUNT * JONG_COUNT));
+            result += CHOSEONG[index];
+        } else if (/[a-zA-Z0-9]/.test(c) || (code >= 0x3131 && code <= 0x3163)) {
+            // 영숫자 및 한글 자모(이미 초성인 경우) 그대로 포함
+            result += c.toLowerCase();
+        }
+    }
+    return result;
+}
+
 // ── 필터링 ───────────────────────────────────────────────────────────
 
 function applyFilter() {
-    const keyword = (document.getElementById('keywordInput')?.value ?? '').trim().toLowerCase();
-    const from = document.getElementById('dateFrom')?.value ?? '';
-    const to = document.getElementById('dateTo')?.value ?? '';
+    const keyword        = (document.getElementById('keywordInput')?.value ?? '').trim().toLowerCase();
+    const from           = document.getElementById('dateFrom')?.value ?? '';
+    const to             = document.getElementById('dateTo')?.value ?? '';
+    const keywordChoseong = extractChoseong(keyword);
 
     filteredNotes = allNotes.filter(note => {
-        // 키워드 (제목 + 버전)
+        // 키워드: 제목 일반 매치 | 제목 초성 매치 | 버전 매치
         if (keyword) {
-            const titleMatch = note.title.toLowerCase().includes(keyword);
-            const versionMatch = note.versionLabel.toLowerCase().includes(keyword);
+            const titleLower    = note.title.toLowerCase();
+            const titleChoseong = extractChoseong(note.title);
+            const versionLower  = note.versionLabel.toLowerCase();
+
+            const titleMatch   = titleLower.includes(keyword)
+                              || (keywordChoseong && titleChoseong.includes(keywordChoseong));
+            const versionMatch = versionLower.includes(keyword);
             if (!titleMatch && !versionMatch) return false;
         }
         // 날짜 범위
@@ -408,13 +437,14 @@ function renderDetailModal(detail) {
     if (loadingEl) loadingEl.classList.add('hidden');
     if (contentEl) {
         // Markdown rendering (marked + DOMPurify)
+        const cleanContent = stripSourceTags(detail.content ?? '');
         if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
-            contentEl.innerHTML = DOMPurify.sanitize(marked.parse(detail.content ?? ''));
+            contentEl.innerHTML = DOMPurify.sanitize(marked.parse(cleanContent));
         } else {
             // Fallback: pre-formatted text
             const pre = document.createElement('pre');
             pre.className = 'text-sm text-docu-secondary whitespace-pre-wrap';
-            pre.textContent = detail.content ?? '';
+            pre.textContent = cleanContent;
             contentEl.appendChild(pre);
         }
         contentEl.classList.remove('hidden');
@@ -543,4 +573,14 @@ function formatDateTime(isoString) {
             hour: '2-digit', minute: '2-digit',
         });
     } catch { return '-'; }
+}
+
+// ── 소스 태그 제거 유틸 ───────────────────────────────────────────────
+
+/**
+ * {{source:REF}} 태그를 제거하고 정제된 텍스트를 반환한다.
+ */
+function stripSourceTags(text) {
+    if (!text) return '';
+    return text.replace(/\{\{source:[^}]+\}\}/g, '').replace(/  +/g, ' ').trim();
 }

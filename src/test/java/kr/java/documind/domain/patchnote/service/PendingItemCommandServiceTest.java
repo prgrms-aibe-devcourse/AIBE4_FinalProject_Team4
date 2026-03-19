@@ -47,7 +47,8 @@ class PendingItemCommandServiceTest {
                 "ㅌㅅㅡ",
                 PatchType.FIX,
                 PendingItemStatus.PENDING,
-                NOW);
+                NOW,
+                0, null, null);
         // PENDING이 기본값이므로 EXCLUDED/COMPLETED는 상태 전이
         if (status == PendingItemStatus.EXCLUDED) {
             item.exclude();

@@ -4,15 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.springframework.stereotype.Component;
-
 /**
  * LLM 출력의 {@code {{source:REF}}} 태그 파서.
  *
  * <p>LLM은 패치노트 컨텐츠 내에 출처 태그를 {@code {{source:ISSUE-245}}} 형식으로 삽입한다.
  * 이 클래스는 해당 태그를 제거하거나 추출하는 유틸리티를 제공한다.
+ *
+ * <p><b>주의:</b> 이 클래스는 Spring 컨텍스트에 등록되지 않는 순수 유틸리티이다.
+ * 인라인 태그 삽입은 {@link kr.java.documind.domain.patchnote.service.PatchNoteRenderer}가 담당한다.
+ * 이 클래스는 독립적인 유틸리티 목적으로만 사용한다.
  */
-@Component
 public class SourceTagParser {
 
     /** {@code {{source:REF}}} 패턴. REF는 영숫자, 하이픈 허용. */

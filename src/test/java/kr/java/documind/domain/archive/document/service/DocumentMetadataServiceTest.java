@@ -30,6 +30,7 @@ import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
+import kr.java.documind.global.util.ChoseongUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,7 @@ class DocumentMetadataServiceTest {
     @Mock private DocumentMetadataManager documentMetadataManager;
     @Mock private DocumentFileStorage documentFileStorage;
     @Mock private DocumentVectorEventPublisher documentVectorEventPublisher;
+    @Mock private ChoseongUtil choseongUtil;
     @InjectMocks private DocumentMetadataService documentMetadataService;
 
     private final UUID projectId = UUID.randomUUID();
@@ -56,7 +58,7 @@ class DocumentMetadataServiceTest {
     private final Long groupId = 1L;
 
     private DocumentGroup createGroup() {
-        return DocumentGroup.create(projectId, "개발", "그룹A");
+        return DocumentGroup.create(projectId, "개발", "그룹A", "ㄱㄹA");
     }
 
     private DocumentMetadata createMetadata(DocumentGroup group) {

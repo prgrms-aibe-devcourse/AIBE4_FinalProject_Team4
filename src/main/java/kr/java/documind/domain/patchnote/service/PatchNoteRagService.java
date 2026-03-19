@@ -1,18 +1,18 @@
 package kr.java.documind.domain.patchnote.service;
 
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClient;
-import kr.java.documind.domain.patchnote.infrastructure.HybridVectorSearchRepository;
+import kr.java.documind.domain.patchnote.model.repository.HybridVectorSearchRepositoryCustom;
+import kr.java.documind.domain.patchnote.model.dto.ItemContext;
+import kr.java.documind.domain.patchnote.model.dto.ItemQuery;
 import kr.java.documind.domain.patchnote.model.dto.RagContext;
+import kr.java.documind.domain.patchnote.model.dto.RagEvidence;
 import kr.java.documind.domain.patchnote.model.dto.TokenEstimation;
 import kr.java.documind.domain.patchnote.model.dto.VectorChunkResult;
 import kr.java.documind.domain.patchnote.model.entity.PendingItem;
-import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import kr.java.documind.domain.patchnote.util.TokenEstimator;
 import kr.java.documind.global.enums.SourceType;
 import lombok.RequiredArgsConstructor;
@@ -22,17 +22,22 @@ import org.springframework.stereotype.Service;
 /**
  * 패치노트 초안 생성을 위한 RAG 컨텍스트 빌더.
  *
- * <p>처리 순서:
+ * <h3>처리 순서</h3>
  * <ol>
  *   <li>원본 삭제 항목({@code sourceDeleted=true}) 제외
- *   <li>소스 ID 목록 추출
- *   <li>요약 기반 키워드 생성 + 임베딩 (best-effort — 실패 시 키워드 전용 검색)
- *   <li>{@link HybridVectorSearchRepository}로 청크 검색
- *   <li>소스별 재랭킹: {@code has_numeric_change} → {@code affects_player} → {@code chunk_role}
- *       → 유사도 순
- *   <li>소스별 상위 N 청크 선택
- *   <li>patch_type 그룹별 컨텍스트 조립
- *   <li>소스 REF 매핑 (ISSUE-{sourceId}, DOC-{sourceId})
+ *   <li>evidence 보유 여부로 항목 분리
+ *       — evidence 항목: diff 텍스트 직접 사용 (벡터 검색 불필요)
+ *       — vector 항목: 하이브리드 벡터 검색 수행
+ *   <li>vector 항목: {@link ItemQueryBuilder}로 항목별 독립 {@link ItemQuery} 생성
+ *       (배치 임베딩으로 API 호출 최소화)
+ *   <li>항목별 {@link HybridVectorSearchRepositoryCustom#searchForItem} 호출
+ *       — source_id 스코프 제한으로 검색 노이즈 최소화
+ *   <li>항목별 {@link PatchNoteReranker} 재랭킹 — 다중 신호 점수 기반
+ *   <li>항목별 상위 N 청크 선택
+ *   <li>항목별 {@link ItemContext} 조립
+ *       — evidence 항목: {@code diff_change} RagEvidence
+ *       — vector 항목: 청크 기반 RagEvidence 목록
+ *   <li>소스 REF 매핑 (ISSUE-{sourceId}, DOC-{sourceId}-{changeIndex})
  * </ol>
  */
 @Slf4j
@@ -43,17 +48,15 @@ public class PatchNoteRagService {
     /** 소스 하나당 최대 포함 청크 수. */
     private static final int MAX_CHUNKS_PER_SOURCE = 3;
 
-    /** 하이브리드 서치 총 후보 수. */
-    private static final int TOTAL_CHUNK_LIMIT = 60;
-
-    /** 키워드 임베딩 쿼리 최대 길이 (chars). */
-    private static final int MAX_KEYWORD_LENGTH = 500;
+    /** 항목별 하이브리드 서치 후보 수. */
+    private static final int PER_ITEM_CHUNK_LIMIT = 12;
 
     /** 청크 컨텐츠 최대 표시 길이 (chars). */
     private static final int MAX_CONTENT_LENGTH = 800;
 
-    private final HybridVectorSearchRepository hybridVectorSearchRepository;
-    private final EmbeddingModelClient embeddingModelClient;
+    private final HybridVectorSearchRepositoryCustom hybridVectorSearchRepositoryCustom;
+    private final ItemQueryBuilder itemQueryBuilder;
+    private final PatchNoteReranker patchNoteReranker;
     private final TokenEstimator tokenEstimator;
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -63,9 +66,13 @@ public class PatchNoteRagService {
     /**
      * RAG 컨텍스트 빌드.
      *
+     * <p>evidence를 보유한 항목(diff 기반 문서 변경)은 벡터 검색을 건너뛰고 diff evidence를
+     * {@link RagEvidence}로 직접 변환한다. evidence가 없는 항목(이슈, 신규 문서)은 항목별
+     * 하이브리드 벡터 검색 + 다중 신호 재랭킹으로 {@link RagEvidence} 목록을 생성한다.
+     *
      * @param projectId    프로젝트 UUID
      * @param pendingItems 초안에 포함할 PendingItem 목록
-     * @return 조립된 RAG 컨텍스트 (소스 없으면 {@link RagContext#empty(TokenEstimation)} 반환)
+     * @return 조립된 RAG 컨텍스트 (활성 소스 없으면 {@link RagContext#empty(TokenEstimation)})
      */
     public RagContext buildContext(UUID projectId, List<PendingItem> pendingItems) {
 
@@ -80,44 +87,54 @@ public class PatchNoteRagService {
             return RagContext.empty(tokenEstimation);
         }
 
-        // 2. 소스 ID 목록
-        List<Long> sourceIds = activeItems.stream().map(PendingItem::getSourceId).toList();
+        // 2. evidence 보유 여부로 항목 분리
+        //    - evidenceItems: diff 기반 문서 변경 → RagEvidence(diff_change) 직접 생성
+        //    - vectorItems:   이슈 / 신규 문서   → 항목별 하이브리드 벡터 검색
+        List<PendingItem> evidenceItems =
+                activeItems.stream().filter(item -> item.getEvidence() != null).toList();
+        List<PendingItem> vectorItems =
+                activeItems.stream().filter(item -> item.getEvidence() == null).toList();
 
-        // 3. 키워드 생성 + 임베딩 (best-effort)
-        String keyword = buildKeyword(activeItems);
-        float[] queryVector = embedKeyword(keyword);
+        // key: PendingItem.id → 청크 목록 (evidence 항목은 빈 목록)
+        Map<Long, List<VectorChunkResult>> topChunksById = new LinkedHashMap<>();
 
-        // 4. 하이브리드 서치
-        List<VectorChunkResult> allChunks =
-                hybridVectorSearchRepository.hybridSearch(
-                        projectId.toString(), sourceIds, keyword, queryVector, TOTAL_CHUNK_LIMIT);
-
-        log.debug(
-                "하이브리드 서치 완료 — projectId={}, sourceCount={}, chunkCount={}",
-                projectId, activeItems.size(), allChunks.size());
-
-        // 5. 소스별 그룹핑
-        Map<Long, List<VectorChunkResult>> chunksBySource =
-                allChunks.stream().collect(Collectors.groupingBy(VectorChunkResult::sourceId));
-
-        // 6. 소스별 재랭킹 + 상위 N 청크 선택
-        Map<Long, List<VectorChunkResult>> topChunksMap = new LinkedHashMap<>();
-        for (PendingItem item : activeItems) {
-            List<VectorChunkResult> chunks =
-                    chunksBySource.getOrDefault(item.getSourceId(), List.of());
-            topChunksMap.put(
-                    item.getSourceId(),
-                    rerank(chunks).stream().limit(MAX_CHUNKS_PER_SOURCE).toList());
+        for (PendingItem item : evidenceItems) {
+            topChunksById.put(item.getId(), List.of());
         }
 
-        // 7. 소스 REF 매핑
+        if (!vectorItems.isEmpty()) {
+            // 3. 항목별 ItemQuery 생성 (배치 임베딩)
+            List<ItemQuery> itemQueries = itemQueryBuilder.buildAll(vectorItems);
+
+            // 4–6. 항목별 검색 → 재랭킹 → 상위 N 선택
+            for (int i = 0; i < vectorItems.size(); i++) {
+                PendingItem item  = vectorItems.get(i);
+                ItemQuery   query = itemQueries.get(i);
+
+                List<VectorChunkResult> chunks = hybridVectorSearchRepositoryCustom.searchForItem(
+                        projectId.toString(), query, PER_ITEM_CHUNK_LIMIT);
+
+                List<VectorChunkResult> topChunks = patchNoteReranker.rerank(chunks)
+                        .stream()
+                        .limit(MAX_CHUNKS_PER_SOURCE)
+                        .toList();
+
+                topChunksById.put(item.getId(), topChunks);
+
+                log.debug(
+                        "항목별 서치 완료 — ref={}, sourceId={}, rawChunks={}, topChunks={}",
+                        query.itemRef(), query.sourceId(), chunks.size(), topChunks.size());
+            }
+        }
+
+        // 7. 소스 REF 매핑 (항목별 고유 REF 보장)
         Map<String, String> sourceRefMap = buildSourceRefMap(activeItems);
 
-        // 8. 컨텍스트 조립
-        String contextText = assembleContext(activeItems, topChunksMap, sourceRefMap);
+        // 8. 항목별 ItemContext 조립 (구조화된 증거 블록)
+        List<ItemContext> itemContexts = buildItemContexts(activeItems, topChunksById, sourceRefMap);
 
         return new RagContext(
-                contextText, sourceRefMap, List.copyOf(sourceRefMap.keySet()), tokenEstimation);
+                itemContexts, sourceRefMap, List.copyOf(sourceRefMap.keySet()), tokenEstimation);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -125,71 +142,11 @@ public class PatchNoteRagService {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * PendingItem 요약을 합쳐 검색 키워드를 만든다.
-     *
-     * <p>pg_bigm LIKE 쿼리에 사용되므로 최대 길이를 제한한다.
-     */
-    private String buildKeyword(List<PendingItem> items) {
-        String combined =
-                items.stream()
-                        .map(item -> item.getTitle() + " " + item.getSummary())
-                        .collect(Collectors.joining(" "));
-
-        return combined.length() > MAX_KEYWORD_LENGTH
-                ? combined.substring(0, MAX_KEYWORD_LENGTH)
-                : combined;
-    }
-
-    /**
-     * 키워드를 임베딩 벡터로 변환한다.
-     *
-     * <p>임베딩 API 호출 실패 시 null을 반환하여 키워드 전용 검색으로 fallback한다.
-     */
-    private float[] embedKeyword(String keyword) {
-        try {
-            List<float[]> embeddings = embeddingModelClient.embed(List.of(keyword));
-            return embeddings.isEmpty() ? null : embeddings.get(0);
-        } catch (Exception e) {
-            log.warn("RAG 키워드 임베딩 실패 — 키워드 전용 검색으로 fallback. error={}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * 청크 재랭킹.
-     *
-     * <p>우선순위 (내림차순):
-     * <ol>
-     *   <li>{@code has_numeric_change} — 수치 변경 포함 청크 우선
-     *   <li>{@code affects_player} — 플레이어 직접 영향 청크 우선
-     *   <li>{@code chunk_role} 우선순위 — background_resolution > resolution > background > 기타
-     *   <li>벡터 유사도 — 높을수록 우선
-     * </ol>
-     *
-     * <p>각 조건을 독립 역순으로 정렬하기 위해 정수 매핑 방식을 사용한다.
-     * ({@code Comparator.reversed()}는 전체 체인을 뒤집으므로 사용하지 않는다.)
-     */
-    private List<VectorChunkResult> rerank(List<VectorChunkResult> chunks) {
-        return chunks.stream()
-                .sorted(
-                        // has_numeric_change DESC: true(0) → false(1)
-                        Comparator.<VectorChunkResult>comparingInt(
-                                        chunk -> chunk.hasNumericChange() ? 0 : 1)
-                                // affects_player DESC: true(0) → false(1)
-                                .thenComparingInt(chunk -> chunk.affectsPlayer() ? 0 : 1)
-                                // chunkRolePriority DESC: 부호 반전으로 오름차순 = 원값 내림차순
-                                .thenComparingInt(chunk -> -chunk.chunkRolePriority())
-                                // similarity DESC: 부호 반전으로 오름차순 = 원값 내림차순
-                                .thenComparingDouble(chunk -> -chunk.similarity()))
-                .toList();
-    }
-
-    /**
      * 소스 REF 매핑 생성.
      *
      * <ul>
-     *   <li>ISSUE → {@code ISSUE-{sourceId}}
-     *   <li>DOCUMENT → {@code DOC-{sourceId}}
+     *   <li>ISSUE    → {@code ISSUE-{sourceId}}
+     *   <li>DOCUMENT → {@code DOC-{sourceId}-{changeIndex}} (동일 문서 다수 후보 구분)
      * </ul>
      */
     private Map<String, String> buildSourceRefMap(List<PendingItem> items) {
@@ -201,51 +158,108 @@ public class PatchNoteRagService {
     }
 
     private String buildRef(PendingItem item) {
-        return item.getSourceType() == SourceType.ISSUE
-                ? "ISSUE-" + item.getSourceId()
-                : "DOC-" + item.getSourceId();
+        if (item.getSourceType() == SourceType.ISSUE) {
+            return "ISSUE-" + item.getSourceId();
+        }
+        return "DOC-" + item.getSourceId() + "-" + item.getChangeIndex();
     }
 
     /**
-     * LLM 시스템 프롬프트에 삽입할 컨텍스트 텍스트 조립.
+     * 활성 항목 목록으로부터 {@link ItemContext} 목록을 조립한다.
      *
-     * <p>{@code patch_type} 별로 섹션을 구분하고, 각 소스의 요약과 청크 상세를 포함한다.
+     * <ul>
+     *   <li>diff evidence 보유 → {@code diff_change} 역할의 단일 {@link RagEvidence}
+     *   <li>벡터 검색 결과 보유 → 재랭킹된 청크별 {@link RagEvidence} 목록
+     * </ul>
      */
-    private String assembleContext(
+    private List<ItemContext> buildItemContexts(
             List<PendingItem> items,
-            Map<Long, List<VectorChunkResult>> topChunksMap,
+            Map<Long, List<VectorChunkResult>> topChunksById,
             Map<String, String> sourceRefMap) {
 
-        StringBuilder sb = new StringBuilder();
+        List<ItemContext> result = new ArrayList<>(items.size());
 
-        // patch_type 그룹핑 (PatchType 열거 순서 유지)
-        Map<PatchType, List<PendingItem>> byType =
-                items.stream().collect(Collectors.groupingBy(PendingItem::getPatchType));
+        for (PendingItem item : items) {
+            String ref = buildRef(item);
+            List<RagEvidence> evidences = buildEvidences(item, ref, topChunksById);
 
-        for (PatchType type : PatchType.values()) {
-            List<PendingItem> typeItems = byType.getOrDefault(type, List.of());
-            if (typeItems.isEmpty()) {
-                continue;
-            }
-
-            sb.append("### 분류: ").append(type.name()).append("\n\n");
-
-            for (PendingItem item : typeItems) {
-                String ref = buildRef(item);
-                sb.append("#### ").append(ref).append(" — ").append(item.getTitle()).append('\n');
-                sb.append("요약: ").append(item.getSummary()).append('\n');
-
-                List<VectorChunkResult> chunks =
-                        topChunksMap.getOrDefault(item.getSourceId(), List.of());
-                for (VectorChunkResult chunk : chunks) {
-                    String content = truncateContent(chunk.content());
-                    sb.append("상세 내용: ").append(content).append('\n');
-                }
-                sb.append('\n');
-            }
+            result.add(new ItemContext(
+                    ref,
+                    item.getPatchType(),
+                    item.getTitle(),
+                    item.getSummary(),
+                    evidences,
+                    List.of(ref) // allowedSourceRefs: 현재는 자신의 REF만 허용
+            ));
         }
 
-        return sb.toString().strip();
+        return result;
+    }
+
+    /**
+     * 단일 PendingItem에 대한 {@link RagEvidence} 목록을 생성한다.
+     *
+     * <ul>
+     *   <li>diff evidence 보유 항목 → {@code diff_change} 역할의 RagEvidence 1개
+     *   <li>벡터 청크 보유 항목 → 청크별 역할·메타데이터가 매핑된 RagEvidence 목록
+     * </ul>
+     */
+    private List<RagEvidence> buildEvidences(
+            PendingItem item,
+            String ref,
+            Map<Long, List<VectorChunkResult>> topChunksById) {
+
+        if (item.getEvidence() != null) {
+            // diff 기반 항목: evidence 텍스트 자체가 증거
+            double score = item.getScore() != null ? item.getScore() : 1.0;
+            return List.of(new RagEvidence(
+                    ref,
+                    "diff_change",
+                    truncateContent(item.getEvidence()),
+                    score,
+                    true,  // playerVisible: diff 항목은 플레이어 영향 기본 가정
+                    false, // numericChange: 항목 레벨에서 미추적
+                    true   // releaseSpecific: diff 항목은 항상 이번 릴리스 변경사항
+            ));
+        }
+
+        // 벡터 검색 항목: 재랭킹된 청크를 RagEvidence로 변환
+        List<VectorChunkResult> chunks = topChunksById.getOrDefault(item.getId(), List.of());
+        return chunks.stream()
+                .map(chunk -> new RagEvidence(
+                        ref,
+                        resolveChunkRole(chunk.chunkRole()),
+                        truncateContent(chunk.content()),
+                        chunk.similarity(),
+                        chunk.affectsPlayer(),
+                        chunk.hasNumericChange(),
+                        chunk.hasNumericChange() || chunk.affectsPlayer()))
+                .toList();
+    }
+
+    /**
+     * {@link VectorChunkResult#chunkRole()}을 {@link RagEvidence} 역할 문자열로 변환한다.
+     *
+     * <table>
+     *   <tr><th>chunkRole</th><th>역할</th></tr>
+     *   <tr><td>background_resolution</td><td>combined</td></tr>
+     *   <tr><td>resolution / final_change / diff</td><td>resolution</td></tr>
+     *   <tr><td>background</td><td>background</td></tr>
+     *   <tr><td>summary</td><td>summary</td></tr>
+     *   <tr><td>null / 기타</td><td>chunk</td></tr>
+     * </table>
+     */
+    private String resolveChunkRole(String chunkRole) {
+        if (chunkRole == null) {
+            return "chunk";
+        }
+        return switch (chunkRole) {
+            case "background_resolution"               -> "combined";
+            case "resolution", "final_change", "diff" -> "resolution";
+            case "background"                          -> "background";
+            case "summary"                             -> "summary";
+            default                                    -> "chunk";
+        };
     }
 
     /** 청크 컨텐츠를 최대 길이로 잘라 반환. */

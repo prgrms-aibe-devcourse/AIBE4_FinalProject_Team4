@@ -49,6 +49,7 @@ public class EmbeddingStatusUpdateListener {
                                     new DocumentEmbeddedEvent(
                                             metadata.getId(),
                                             group.getProjectId(),
+                                            group.getId(),
                                             metadata.getDocumentName(),
                                             group.getGroupName(),
                                             group.getCategory(),

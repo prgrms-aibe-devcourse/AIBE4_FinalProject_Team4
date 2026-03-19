@@ -111,14 +111,14 @@ public class PatchNoteApiController {
     /**
      * 패치노트 삭제 (soft delete).
      *
-     * <p>DRAFT / PUBLISHED 상태 모두 삭제 가능하다. 이미 삭제된 항목에 대해서는 404를 반환한다.
+     * <p>DRAFT 상태 패치노트를 삭제한다. 이미 삭제된 항목에 대해서는 404를 반환한다.
      *
      * @param ctx 프로젝트 컨텍스트
      * @param id  삭제 대상 패치노트 ID
      */
     @Operation(
             summary = "패치노트 삭제",
-            description = "패치노트를 soft delete합니다. DRAFT·PUBLISHED 모두 삭제 가능합니다.")
+            description = "패치노트를 soft delete합니다. 이미 삭제된 항목에 대해서는 404를 반환합니다.")
     @PatchNoteSwaggerDocs.DeletePatchNoteDocs
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deletePatchNote(

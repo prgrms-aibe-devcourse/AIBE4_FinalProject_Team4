@@ -3,7 +3,7 @@ package kr.java.documind.domain.patchnote.service;
 import java.util.List;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException;
-import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateDto;
+import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateRequest;
 import kr.java.documind.domain.patchnote.model.entity.PendingItem;
 import kr.java.documind.domain.patchnote.model.repository.PendingItemRepository;
 import kr.java.documind.global.enums.SourceType;
@@ -53,7 +53,7 @@ public class PendingItemUpsertService {
             Long sourceId,
             List<Document> chunks,
             List<float[]> embeddings,
-            PendingItemCreateDto dto) {
+            PendingItemCreateRequest dto) {
         // 1. 벡터 저장 (RDBMS 트랜잭션 미참여) — 실패 시 예외 전파, pending_item 미적재
         vectorStoreManager.insertChunks(sourceId, chunks, embeddings);
 
@@ -72,10 +72,10 @@ public class PendingItemUpsertService {
             maxAttempts = 3,
             backoff = @Backoff(delay = 500, multiplier = 2))
     @Transactional
-    public void upsertPendingItem(PendingItemCreateDto dto) {
+    public void upsertPendingItem(PendingItemCreateRequest dto) {
         pendingItemRepository
-                .findByProjectIdAndSourceTypeAndSourceId(
-                        dto.projectId(), dto.sourceType(), dto.sourceId())
+                .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                        dto.projectId(), dto.sourceType(), dto.sourceId(), dto.changeIndex())
                 .ifPresentOrElse(
                         existing -> {
                             existing.refresh(
@@ -83,10 +83,14 @@ public class PendingItemUpsertService {
                                     dto.summary(),
                                     dto.choseong(),
                                     dto.patchType(),
-                                    dto.sourceCreatedAt());
+                                    dto.sourceCreatedAt(),
+                                    dto.evidence(),
+                                    dto.score());
                             log.debug(
-                                    "[PendingItem] refresh 완료 - sourceId: {}, sourceType: {}, 유지된 status: {}",
+                                    "[PendingItem] refresh 완료 - sourceId: {}, changeIndex: {},"
+                                            + " sourceType: {}, 유지된 status: {}",
                                     dto.sourceId(),
+                                    dto.changeIndex(),
                                     dto.sourceType(),
                                     existing.getStatus());
                         },
@@ -101,11 +105,16 @@ public class PendingItemUpsertService {
                                             dto.choseong(),
                                             dto.patchType(),
                                             dto.status(),
-                                            dto.sourceCreatedAt());
+                                            dto.sourceCreatedAt(),
+                                            dto.changeIndex(),
+                                            dto.evidence(),
+                                            dto.score());
                             pendingItemRepository.save(item);
                             log.debug(
-                                    "[PendingItem] 신규 생성 완료 - sourceId: {}, sourceType: {}, status: {}",
+                                    "[PendingItem] 신규 생성 완료 - sourceId: {}, changeIndex: {},"
+                                            + " sourceType: {}, status: {}",
                                     dto.sourceId(),
+                                    dto.changeIndex(),
                                     dto.sourceType(),
                                     dto.status());
                         });
@@ -119,7 +128,7 @@ public class PendingItemUpsertService {
      * 정리 성공 여부와 무관하게 {@link PendingItemUpsertFailedException}을 전파한다.
      */
     @Recover
-    public void recoverUpsert(DataAccessException e, PendingItemCreateDto dto) {
+    public void recoverUpsert(DataAccessException e, PendingItemCreateRequest dto) {
         log.error(
                 "[PendingItem] upsert 3회 재시도 모두 실패 — sourceId: {}, sourceType: {}",
                 dto.sourceId(),

@@ -55,7 +55,8 @@ class PendingItemQueryServiceTest {
                 "ㅍㅊ",
                 PatchType.FIX,
                 PendingItemStatus.PENDING,
-                NOW);
+                NOW,
+                0, null, null);
         if (sourceDeleted) {
             item.markSourceDeleted();
         }
