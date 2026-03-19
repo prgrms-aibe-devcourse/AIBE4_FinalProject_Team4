@@ -1,6 +1,6 @@
 package kr.java.documind.domain.dashboard.model.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import kr.java.documind.domain.dashboard.model.entity.DashboardView;
 
@@ -12,8 +12,8 @@ public record DashboardViewSummaryResponse(
         String globalTimeRange,
         Integer refreshIntervalMs,
         boolean defaultView,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt) {
 
     public static DashboardViewSummaryResponse from(DashboardView view) {
         return new DashboardViewSummaryResponse(
