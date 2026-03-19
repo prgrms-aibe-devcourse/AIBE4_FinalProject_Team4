@@ -18,7 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties = "app.rate-limit.capacity=5")
+@SpringBootTest(properties = "app.rate-limit.ingest.capacity=5")
 @AutoConfigureMockMvc
 @DisplayName("RateLimitFilter 통합 테스트")
 class RateLimitFilterTest {

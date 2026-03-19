@@ -4,6 +4,7 @@ import java.util.List;
 import kr.java.documind.domain.auth.web.interceptor.ProjectAccessInterceptor;
 import kr.java.documind.domain.auth.web.resolver.CurrentProjectArgumentResolver;
 import kr.java.documind.global.resolver.ProjectIdArgumentResolver;
+import kr.java.documind.global.security.interceptor.QueryRateLimitInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final ProjectAccessInterceptor projectAccessInterceptor;
+    private final QueryRateLimitInterceptor queryRateLimitInterceptor;
     private final CurrentProjectArgumentResolver currentProjectArgumentResolver;
     private final ProjectIdArgumentResolver projectIdArgumentResolver;
 
@@ -23,11 +25,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
      *
      * <p>인터셉터가 {@code ProjectRequestContext}를 설정하면, 이후 ArgumentResolver들이 DB 추가 조회 없이 context에서 값을
      * 읽는다.
+     *
+     * <p>{@code QueryRateLimitInterceptor}는 {@code ProjectAccessInterceptor} 이후에 등록한다
+     * (ProjectRequestContext 의존).
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(projectAccessInterceptor)
                 .addPathPatterns("/projects/**", "/api/projects/**");
+        registry.addInterceptor(queryRateLimitInterceptor).addPathPatterns("/api/projects/**");
     }
 
     /**

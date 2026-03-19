@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/service-layout}">
+<head>
+    <title>로그 탐색기</title>
+</head>
+<body>
+<th:block layout:fragment="content">
+    <input type="hidden" id="publicId" th:value="${publicId}">
+
+    <section class="space-y-4" x-data="explorerApp()" x-init="init()">
+
+        <!-- 헤더 -->
+        <div>
+            <div th:replace="~{common/fragments/ui-components :: breadcrumb('로그 탐색기')}"></div>
+            <h1 class="text-h1 text-docu-ink mt-3">로그 탐색기</h1>
+            <p class="text-sm text-docu-secondary mt-1">게임 로그를 동적 쿼리로 탐색합니다.</p>
+        </div>
+
+        <!-- Rate Limit 경고 배너 -->
+        <div x-show="ui.rateLimited"
+             class="flex items-center gap-3 px-4 py-3 bg-docu-danger-light border border-docu-danger rounded-docu-card text-sm text-docu-danger">
+            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <span>쿼리 요청 한도를 초과했습니다. 자동 갱신이 중지되었습니다. 잠시 후 다시 시도해주세요.</span>
+            <button @click="ui.rateLimited = false" class="ml-auto text-docu-danger hover:text-docu-danger-dark">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 툴바 -->
+        <div class="card-base card-shadow p-4 flex flex-wrap items-center gap-3">
+            <!-- 시간 범위 프리셋 -->
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-docu-secondary">기간</label>
+                <select class="form-select w-auto text-xs"
+                        @change="applyRelativeRange($event.target.value)">
+                    <option value="15m">최근 15분</option>
+                    <option value="1h" selected>최근 1시간</option>
+                    <option value="6h">최근 6시간</option>
+                    <option value="24h">최근 24시간</option>
+                    <option value="7d">최근 7일</option>
+                    <option value="30d">최근 30일</option>
+                </select>
+            </div>
+
+            <!-- 절대 시간 토글 -->
+            <button @click="ui.showAbsolutePicker = !ui.showAbsolutePicker"
+                    class="btn-ghost btn-sm text-xs">
+                절대 시간
+            </button>
+
+            <!-- 시간 필드 선택 -->
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-docu-secondary">기준 컬럼</label>
+                <select x-model="query.timeField" class="form-select w-auto text-xs">
+                    <option value="occurred_at">발생 시각 (occurred_at)</option>
+                    <option value="ingested_at">수집 시각 (ingested_at)</option>
+                </select>
+            </div>
+
+            <!-- 자동 갱신 -->
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-docu-secondary">자동 갱신</label>
+                <select class="form-select w-auto text-xs" @change="onAutoRefreshChange($event)">
+                    <option value="0">Off</option>
+                    <option value="5000">5초</option>
+                    <option value="15000">15초</option>
+                    <option value="30000">30초</option>
+                    <option value="60000">1분</option>
+                </select>
+            </div>
+
+            <!-- 실행 버튼 -->
+            <button @click="runQuery(false)"
+                    :disabled="ui.isLoading"
+                    class="btn-primary btn-sm ml-auto">
+                <svg x-show="ui.isLoading" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span x-text="ui.isLoading ? '실행 중...' : '▶ 실행'"></span>
+            </button>
+        </div>
+
+        <!-- 절대 시간 피커 -->
+        <div x-show="ui.showAbsolutePicker"
+             class="card-base card-shadow p-4 flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-docu-secondary">From</label>
+                <input type="datetime-local" x-model="query.from"
+                       class="form-input text-xs w-48">
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-docu-secondary">To</label>
+                <input type="datetime-local" x-model="query.to"
+                       class="form-input text-xs w-48">
+            </div>
+            <span class="text-xs text-docu-secondary">브라우저 로컬 타임존 기준</span>
+        </div>
+
+        <!-- 쿼리 빌더 패널 -->
+        <div class="card-base card-shadow overflow-hidden">
+
+            <!-- SELECT 섹션 -->
+            <div class="p-4 border-b border-divider">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-docu-ink">SELECT</h3>
+                    <button @click="addSelect()" class="btn-ghost btn-sm text-xs">+ 컬럼 추가</button>
+                </div>
+                <div x-show="query.selects.length === 0" class="text-xs text-docu-secondary py-1">
+                    (비어있음 = 기본 컬럼 전체 조회)
+                </div>
+                <div class="space-y-2">
+                    <template x-for="sel in query.selects" :key="sel.id">
+                        <div class="flex items-center gap-2">
+                            <select x-model="sel.column" class="form-select flex-1 text-xs">
+                                <option value="">-- 컬럼 선택 --</option>
+                                <template x-for="opt in allColumnOptions" :key="opt.value">
+                                    <option :value="opt.value" x-text="opt.label"></option>
+                                </template>
+                            </select>
+                            <select x-model="sel.aggregation" class="form-select w-40 text-xs">
+                                <option :value="null">집계 없음</option>
+                                <option value="COUNT">COUNT</option>
+                                <option value="COUNT_DISTINCT">COUNT DISTINCT</option>
+                                <option value="SUM">SUM</option>
+                                <option value="AVG">AVG</option>
+                                <option value="MIN">MIN</option>
+                                <option value="MAX">MAX</option>
+                            </select>
+                            <input x-model="sel.alias"
+                                   placeholder="alias"
+                                   class="form-input w-28 text-xs"
+                                   type="text">
+                            <button @click="removeSelect(sel.id)"
+                                    class="btn-icon flex-shrink-0 text-docu-danger hover:text-docu-danger-dark">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- WHERE 섹션 -->
+            <div class="p-4 border-b border-divider">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-sm font-semibold text-docu-ink">WHERE</h3>
+                        <div class="flex items-center gap-1 text-xs text-docu-secondary">
+                            <span>조건 간</span>
+                            <select x-model="query.whereLogic" class="form-select w-16 text-xs py-0.5">
+                                <option value="AND">AND</option>
+                                <option value="OR">OR</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button @click="addWhere()" class="btn-ghost btn-sm text-xs">+ 조건 추가</button>
+                </div>
+                <div x-show="query.wheres.length === 0" class="text-xs text-docu-secondary py-1">
+                    (조건 없음 = 시간 범위 내 전체 조회)
+                </div>
+                <div class="space-y-2">
+                    <template x-for="w in query.wheres" :key="w.id">
+                        <div class="flex items-start gap-2 flex-wrap">
+                            <select x-model="w.column" class="form-select flex-1 min-w-[160px] text-xs">
+                                <option value="">-- 컬럼 선택 --</option>
+                                <template x-for="opt in allColumnOptions" :key="opt.value">
+                                    <option :value="opt.value" x-text="opt.label"></option>
+                                </template>
+                            </select>
+                            <select x-model="w.operator" class="form-select w-36 text-xs">
+                                <option value="EQ">= (같음)</option>
+                                <option value="NEQ">≠ (다름)</option>
+                                <option value="GT">&gt; (초과)</option>
+                                <option value="LT">&lt; (미만)</option>
+                                <option value="GTE">≥ (이상)</option>
+                                <option value="LTE">≤ (이하)</option>
+                                <option value="BETWEEN">BETWEEN</option>
+                                <option value="NOT_BETWEEN">NOT BETWEEN</option>
+                                <option value="IS_NULL">IS NULL</option>
+                                <option value="IS_NOT_NULL">IS NOT NULL</option>
+                                <option value="CONTAINS">CONTAINS</option>
+                                <option value="NOT_CONTAINS">NOT CONTAINS</option>
+                                <option value="STARTS_WITH">STARTS WITH</option>
+                                <option value="ENDS_WITH">ENDS WITH</option>
+                                <option value="IS_EMPTY">IS EMPTY</option>
+                                <option value="IS_NOT_EMPTY">IS NOT EMPTY</option>
+                                <option value="ANY_IN">IN (목록)</option>
+                                <option value="NOT_IN">NOT IN (목록)</option>
+                            </select>
+                            <input x-show="needsValue(w.operator)"
+                                   x-model="w.value"
+                                   placeholder="값"
+                                   class="form-input w-40 text-xs"
+                                   type="text">
+                            <template x-if="needsTwoValues(w.operator)">
+                                <input x-model="w.value2"
+                                       placeholder="값 2"
+                                       class="form-input w-36 text-xs"
+                                       type="text">
+                            </template>
+                            <template x-if="needsListValues(w.operator)">
+                                <input x-model="w.value"
+                                       placeholder="값1,값2,값3"
+                                       @blur="w.values = w.value.split(',').map(v => v.trim()).filter(v => v)"
+                                       class="form-input w-48 text-xs"
+                                       type="text">
+                            </template>
+                            <button @click="removeWhere(w.id)"
+                                    class="btn-icon flex-shrink-0 text-docu-danger hover:text-docu-danger-dark">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- GROUP BY / ORDER BY / LIMIT 섹션 -->
+            <div class="p-4 flex flex-wrap gap-6">
+
+                <!-- GROUP BY -->
+                <div class="flex-1 min-w-[200px]">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xs font-semibold text-docu-secondary uppercase tracking-wide">GROUP BY</h3>
+                        <button x-show="query.groupBy.length < 3" @click="addGroupBy()"
+                                class="text-xs text-docu-primary hover:underline">+ 추가</button>
+                    </div>
+                    <div class="space-y-1.5">
+                        <template x-for="(col, idx) in query.groupBy" :key="idx">
+                            <div class="flex items-center gap-1.5">
+                                <select x-model="query.groupBy[idx]" class="form-select flex-1 text-xs">
+                                    <option value="">-- 선택 --</option>
+                                    <template x-for="opt in allColumnOptions" :key="opt.value">
+                                        <option :value="opt.value" x-text="opt.label"></option>
+                                    </template>
+                                </select>
+                                <button @click="removeGroupBy(idx)" class="text-docu-secondary hover:text-docu-danger">
+                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- ORDER BY -->
+                <div class="flex-1 min-w-[200px]">
+                    <h3 class="text-xs font-semibold text-docu-secondary uppercase tracking-wide mb-2">ORDER BY</h3>
+                    <div class="flex items-center gap-2">
+                        <select x-model="query.orderBy.column" class="form-select flex-1 text-xs">
+                            <option value="">기본 (occurred_at DESC)</option>
+                            <template x-for="opt in allColumnOptions" :key="opt.value">
+                                <option :value="opt.value" x-text="opt.label"></option>
+                            </template>
+                        </select>
+                        <select x-model="query.orderBy.direction" class="form-select w-20 text-xs">
+                            <option value="ASC">ASC</option>
+                            <option value="DESC">DESC</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- LIMIT -->
+                <div class="min-w-[140px]">
+                    <h3 class="text-xs font-semibold text-docu-secondary uppercase tracking-wide mb-2">LIMIT</h3>
+                    <select x-model.number="query.limit" class="form-select text-xs">
+                        <option value="10">10건</option>
+                        <option value="50" selected>50건</option>
+                        <option value="100">100건</option>
+                        <option value="500">500건</option>
+                        <option value="1000">1,000건</option>
+                        <option value="2000">2,000건</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- SQL 미리보기 -->
+        <div class="card-base card-shadow overflow-hidden">
+            <div class="px-4 py-2.5 border-b border-divider flex items-center justify-between">
+                <h3 class="text-xs font-semibold text-docu-secondary uppercase tracking-wide">SQL 미리보기</h3>
+                <span class="text-2xs text-docu-secondary">실제 실행 전 서버에서 재검증됩니다</span>
+            </div>
+            <pre class="p-4 text-xs font-mono text-docu-ink bg-surface-code/5 overflow-x-auto leading-relaxed"
+                 x-text="sqlPreview"></pre>
+        </div>
+
+        <!-- 결과 패널 -->
+        <div class="card-base card-shadow overflow-hidden" x-show="results.columnNames.length > 0 || ui.isLoading">
+
+            <!-- 결과 헤더 -->
+            <div class="px-4 py-2.5 border-b border-divider flex items-center gap-4">
+                <span class="text-xs font-semibold text-docu-ink"
+                      x-text="`결과 ${results.rows.length.toLocaleString()}건`"></span>
+
+                <!-- Trim 알림 -->
+                <span x-show="ui.trimNotice"
+                      class="text-xs text-docu-warning">
+                    오래된 결과 일부가 제거되었습니다 (3,000건 초과).
+                </span>
+
+                <!-- 탭 -->
+                <div class="ml-auto flex gap-1">
+                    <button @click="ui.activeTab = 'table'"
+                            :class="ui.activeTab === 'table' ? 'btn-primary btn-sm text-xs' : 'btn-ghost btn-sm text-xs'">
+                        테이블
+                    </button>
+                    <button @click="ui.activeTab = 'json'"
+                            :class="ui.activeTab === 'json' ? 'btn-primary btn-sm text-xs' : 'btn-ghost btn-sm text-xs'">
+                        JSON
+                    </button>
+                </div>
+            </div>
+
+            <!-- 로딩 중 -->
+            <div x-show="ui.isLoading" class="flex items-center justify-center py-12 text-docu-secondary text-sm gap-2">
+                <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span>쿼리 실행 중...</span>
+            </div>
+
+            <!-- 테이블 뷰 -->
+            <div x-show="!ui.isLoading && ui.activeTab === 'table'" class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead class="bg-surface-sub sticky top-0">
+                    <tr>
+                        <template x-for="col in results.columnNames" :key="col">
+                            <th class="px-3 py-2 text-left font-semibold text-docu-secondary border-b border-divider whitespace-nowrap"
+                                x-text="col"></th>
+                        </template>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-divider">
+                    <template x-for="(row, rowIdx) in results.rows" :key="rowIdx">
+                        <tr class="hover:bg-surface-hover transition-colors">
+                            <template x-for="col in results.columnNames" :key="col">
+                                <td class="px-3 py-2 text-docu-ink max-w-[300px] truncate"
+                                    :title="formatCellValue(row[col])"
+                                    x-text="formatCellValue(row[col])"></td>
+                            </template>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+
+                <!-- 빈 결과 -->
+                <div x-show="results.rows.length === 0 && !ui.isLoading"
+                     class="py-12 text-center text-sm text-docu-secondary">
+                    조회 결과가 없습니다.
+                </div>
+            </div>
+
+            <!-- JSON 뷰 -->
+            <div x-show="!ui.isLoading && ui.activeTab === 'json'" class="p-4">
+                <pre class="text-xs font-mono text-docu-ink bg-surface-code/5 p-3 rounded-docu-btn overflow-x-auto max-h-[500px]"
+                     x-text="getJsonPreview()"></pre>
+                <p x-show="results.rows.length > 100"
+                   class="mt-2 text-xs text-docu-secondary">
+                    처음 100건만 표시됩니다.
+                </p>
+            </div>
+
+            <!-- 더 불러오기 -->
+            <div x-show="results.hasMore && !ui.isLoading"
+                 class="px-4 py-3 border-t border-divider flex justify-center">
+                <button @click="runQuery(true)" class="btn-secondary btn-sm text-xs">
+                    다음 <span x-text="query.limit.toLocaleString()"></span>건 더 불러오기
+                </button>
+            </div>
+        </div>
+
+    </section>
+
+    <script src="/js/log/Explorer.js"></script>
+</th:block>
+</body>
+</html>

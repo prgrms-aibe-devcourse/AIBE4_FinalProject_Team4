@@ -167,9 +167,14 @@ app:
         display-name: Gemini 2.5 Flash-Lite
 
   rate-limit:
-    capacity: 50 # 초당 허용할 최대 API 요청 횟수
-    expiration-hours: 1 # 버킷 메모리 유지 시간 (hour 단위)
-    redis-prefix: "ratelimit:"
+    ingest:
+      capacity: 50 # 초당 허용할 최대 API 요청 횟수
+      expiration-hours: 1 # 버킷 메모리 유지 시간 (hour 단위)
+      redis-prefix: "ratelimit:ingest"
+    query:
+      capacity: 20
+      expiration-hours: 1
+      redis-prefix: "ratelimit:query"
 
   api-key:
     # HMAC-SHA-256 서명 키(pepper) — DB와 분리 관리
