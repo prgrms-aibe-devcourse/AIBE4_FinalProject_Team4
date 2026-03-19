@@ -25,6 +25,18 @@ CREATE INDEX idx_issue_comment_created_at ON issue_comment (created_at DESC);
 -- 인덱스: 멘션된 사용자 검색 (GIN 인덱스)
 CREATE INDEX idx_issue_comment_mentioned_member_ids ON issue_comment USING GIN (mentioned_member_ids jsonb_path_ops);
 
+-- 외래 키 제약조건
+ALTER TABLE issue_comment
+    ADD CONSTRAINT fk_issue_comment_issue
+        FOREIGN KEY (issue_id)
+        REFERENCES issue(id)
+        ON DELETE CASCADE;
+
+ALTER TABLE issue_comment
+    ADD CONSTRAINT fk_issue_comment_member
+        FOREIGN KEY (member_id)
+        REFERENCES member(id);
+
 -- 코멘트 추가
 COMMENT ON TABLE issue_comment IS '이슈 댓글 테이블 (협업 커뮤니케이션 + 멘션 기능)';
 COMMENT ON COLUMN issue_comment.issue_id IS '이슈 ID (FK to issue)';
@@ -33,3 +45,5 @@ COMMENT ON COLUMN issue_comment.content IS '댓글 내용 (멘션 @닉네임 포
 COMMENT ON COLUMN issue_comment.mentioned_member_ids IS '멘션된 사용자 UUID 배열 (알림 발송용, 파싱 결과 저장)';
 COMMENT ON COLUMN issue_comment.created_at IS '댓글 작성 시각 (UTC)';
 COMMENT ON COLUMN issue_comment.updated_at IS '댓글 수정 시각 (UTC)';
+COMMENT ON CONSTRAINT fk_issue_comment_issue ON issue_comment IS '이슈 삭제 시 댓글 자동 삭제';
+COMMENT ON CONSTRAINT fk_issue_comment_member ON issue_comment IS '작성자 참조 무결성 보장';
