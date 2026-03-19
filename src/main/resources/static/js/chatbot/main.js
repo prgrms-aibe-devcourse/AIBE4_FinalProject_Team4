@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const publicId = document.getElementById('publicId').value;
+    const fixedDocumentId = document.getElementById('fixedDocumentId').value || null;
+    const fixedDocumentName = document.getElementById('fixedDocumentName').value || null;
+    const fixedDocumentExtension = document.getElementById('fixedDocumentExtension').value || null;
     const scopeSelect = document.getElementById('scopeSelect');
     const scopeDetailWrapper = document.getElementById('scopeDetailWrapper');
     const scopeDetailSelect = document.getElementById('scopeDetailSelect');
@@ -20,8 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
         systemMsgArrow.classList.toggle('rotate-180');
     });
 
-    // 검색 범위 변경 이벤트
-    scopeSelect.addEventListener('change', async () => {
+    // 문서 고정 모드: 미리보기 패널 자동 열기
+    if (fixedDocumentId) {
+        const previewUrl = `/api/projects/${publicId}/documents/${fixedDocumentId}/preview`;
+        const detailUrl = `/projects/${publicId}/documents/${fixedDocumentId}`;
+
+        document.getElementById('previewIframe').src = previewUrl;
+        document.getElementById('previewTitle').textContent = fixedDocumentName;
+        document.getElementById('previewDetailLink').href = detailUrl;
+        document.getElementById('previewPanel').classList.remove('hidden');
+    }
+
+    // 검색 범위 변경 이벤트 (문서 고정 모드에서는 불필요)
+    if (scopeSelect) scopeSelect.addEventListener('change', async () => {
         const type = scopeSelect.value;
 
         if (type === 'all') {
@@ -108,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function buildChatRequest(message) {
-        const scope = scopeSelect.value;
         const systemMessage = document.getElementById('systemMessage').value.trim();
         const request = {
             modelAlias: document.getElementById('modelSelect').value,
@@ -119,10 +132,15 @@ document.addEventListener('DOMContentLoaded', () => {
             request.userSystemMessage = systemMessage;
         }
 
-        if (scope === 'group') {
-            request.groupName = scopeDetailSelect.value;
-        } else if (scope === 'category') {
-            request.categoryName = scopeDetailSelect.value;
+        if (fixedDocumentId) {
+            request.documentId = Number(fixedDocumentId);
+        } else if (scopeSelect) {
+            const scope = scopeSelect.value;
+            if (scope === 'group') {
+                request.groupName = scopeDetailSelect.value;
+            } else if (scope === 'category') {
+                request.categoryName = scopeDetailSelect.value;
+            }
         }
 
         return request;

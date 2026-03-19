@@ -96,6 +96,10 @@ public class ChatbotService {
     }
 
     private Filter.Expression buildFilterExpression(UUID projectId, ChatRequest request) {
+        if (request.documentId() != null) {
+            return FILTER.eq("source_id", request.documentId()).build();
+        }
+
         if (request.groupName() == null && request.categoryName() == null) {
             return FILTER.eq("project_id", projectId.toString()).build();
         }

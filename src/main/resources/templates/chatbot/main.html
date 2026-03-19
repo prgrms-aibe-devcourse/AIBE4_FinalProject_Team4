@@ -27,8 +27,8 @@
                     </select>
                 </div>
 
-                <!-- 검색 범위 선택 -->
-                <div class="flex items-center gap-2">
+                <!-- 검색 범위 선택 (문서 고정 모드에서는 숨김) -->
+                <div th:if="${fixedDocumentId == null}" class="flex items-center gap-2">
                     <label class="text-sm font-medium text-docu-secondary whitespace-nowrap">검색 범위</label>
                     <select id="scopeSelect" class="form-select">
                         <option value="all">전체 문서</option>
@@ -36,11 +36,16 @@
                         <option value="category">카테고리</option>
                     </select>
                 </div>
-
-                <!-- 그룹/카테고리 목록 (동적 표시) -->
-                <div id="scopeDetailWrapper" class="hidden flex items-center gap-2">
+                <div th:if="${fixedDocumentId == null}" id="scopeDetailWrapper" class="hidden flex items-center gap-2">
                     <select id="scopeDetailSelect" class="form-select">
                     </select>
+                </div>
+
+                <!-- 문서 고정 모드: 문서명 표시 -->
+                <div th:if="${fixedDocumentId != null}" class="flex items-center gap-2">
+                    <label class="text-sm font-medium text-docu-secondary whitespace-nowrap">대상 문서</label>
+                    <span class="text-sm font-medium text-docu-ink bg-surface-sub px-3 py-1.5 rounded-docu-btn border border-divider truncate max-w-xs"
+                          th:text="${fixedDocumentName}"></span>
                 </div>
 
                 <!-- 시스템 메시지 토글 -->
@@ -76,7 +81,8 @@
                     <div class="flex items-center gap-2 flex-shrink-0">
                         <a id="previewDetailLink" href="#" target="_blank"
                            class="text-xs text-docu-primary hover:underline">상세보기</a>
-                        <button id="previewClose" class="text-docu-secondary hover:text-docu-ink transition-colors">
+                        <button id="previewClose" th:classappend="${fixedDocumentId != null} ? 'hidden' : ''"
+                                class="text-docu-secondary hover:text-docu-ink transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
@@ -124,6 +130,9 @@
 
     <!-- 메타 정보 -->
     <input type="hidden" id="publicId" th:value="${publicId}">
+    <input type="hidden" id="fixedDocumentId" th:value="${fixedDocumentId}">
+    <input type="hidden" id="fixedDocumentName" th:value="${fixedDocumentName}">
+    <input type="hidden" id="fixedDocumentExtension" th:value="${fixedDocumentExtension}">
 
 </th:block>
 

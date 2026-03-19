@@ -155,7 +155,7 @@ document.getElementById('btnDownload').addEventListener('click', () => {
 });
 
 document.getElementById('btnChat').addEventListener('click', () => {
-    window.location.href = `/projects/${projectId}/chatbot`;
+    window.location.href = `/projects/${projectId}/chatbot?documentId=${documentId}`;
 });
 
 // ==================== 임베딩 SSE ====================
@@ -174,6 +174,7 @@ function subscribeEmbeddingStatus() {
     source.addEventListener('embedding-status', (e) => {
         const status = e.data;
         updateEmbeddingBadge(status);
+        updateChatButton(status);
 
         if (status === 'SUCCESS' || status === 'FAILED') {
             source.close();
@@ -192,4 +193,19 @@ function updateEmbeddingBadge(status) {
     const config = EMBEDDING_STATUS_MAP[status] || EMBEDDING_STATUS_MAP.NONE;
     badge.className = config.classes;
     badge.textContent = config.label;
+}
+
+function updateChatButton(status) {
+    const btn = document.getElementById('btnChat');
+    if (!btn) return;
+
+    if (status === 'SUCCESS') {
+        btn.disabled = false;
+        btn.className = 'flex-1 btn-primary py-3 flex items-center justify-center gap-2';
+        btn.title = '';
+    } else {
+        btn.disabled = true;
+        btn.className = 'flex-1 py-3 flex items-center justify-center gap-2 bg-surface-muted text-docu-secondary border border-divider rounded-docu-btn cursor-not-allowed';
+        btn.title = '임베딩이 완료된 문서만 채팅할 수 있습니다.';
+    }
 }
