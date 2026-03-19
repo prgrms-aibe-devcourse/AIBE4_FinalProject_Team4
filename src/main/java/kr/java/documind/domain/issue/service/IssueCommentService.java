@@ -227,20 +227,14 @@ public class IssueCommentService {
             throw new ForbiddenException("해당 프로젝트의 이슈가 아닙니다: " + issueId);
         }
 
-        // 2. 댓글 목록 조회 (오래된 순)
-        List<IssueComment> issueComments = commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId);
+        // 2. 댓글 목록 조회 (페이징, 오래된 순)
+        Page<IssueComment> page = commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId, pageable);
 
-        // 3. 페이지네이션 적용
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), issueComments.size());
-        List<IssueComment> pageIssueComments =
-                start >= issueComments.size() ? List.of() : issueComments.subList(start, end);
-
-        // 4. DTO 변환 (작성자 및 멘션 정보 포함)
+        // 3. DTO 변환 (작성자 및 멘션 정보 포함)
         List<CommentResponse> responses =
-                pageIssueComments.stream().map(this::buildCommentResponse).toList();
+                page.getContent().stream().map(this::buildCommentResponse).toList();
 
-        return new PageImpl<>(responses, pageable, issueComments.size());
+        return new PageImpl<>(responses, pageable, page.getTotalElements());
     }
 
     /**

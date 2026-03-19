@@ -81,13 +81,15 @@ function renderCommentItem(comment) {
         });
     }
 
+    const authorNameEscaped = escapeHtml(authorName);
+
     return `
         <div class="border-b border-gray-100 pb-3 last:border-0" data-comment-id="${comment.id}">
             <div class="flex items-start gap-2">
                 ${profileHtml}
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1">
-                        <span class="text-xs font-semibold text-gray-900">${authorName}</span>
+                        <span class="text-xs font-semibold text-gray-900">${authorNameEscaped}</span>
                         <span class="text-xs text-gray-400">${formatDateTime(comment.createdAt)}</span>
                         ${comment.createdAt !== comment.updatedAt ? '<span class="text-xs text-gray-400">(수정됨)</span>' : ''}
                     </div>
@@ -403,7 +405,8 @@ function renderMentionDropdown(members) {
         return `
             <div class="mention-item px-3 py-2 cursor-pointer flex items-center gap-3 transition-colors duration-150 hover:bg-gray-50 rounded-md mx-1 ${index === 0 ? 'bg-indigo-50' : ''}"
                  data-index="${index}"
-                 onclick="selectMention('${member.memberId}', '${nickname}')">
+                 data-member-id="${escapeHtml(member.memberId)}"
+                 data-nickname="${escapeHtml(member.nickname)}">
                 ${avatarHtml}
                 <div class="flex flex-col min-w-0">
                     <span class="text-sm font-medium text-gray-900 truncate">${nickname}</span>
@@ -411,6 +414,15 @@ function renderMentionDropdown(members) {
             </div>
         `;
     }).join('');
+
+    // 이벤트 리스너 등록 (inline onclick 대신)
+    dropdown.querySelectorAll('.mention-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const memberId = item.dataset.memberId;
+            const nickname = item.dataset.nickname;
+            selectMention(memberId, nickname);
+        });
+    });
 
     dropdown.classList.remove('hidden');
 }
