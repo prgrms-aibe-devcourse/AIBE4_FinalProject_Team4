@@ -120,6 +120,9 @@ document.addEventListener('alpine:init', () => {
                     this.unreadCount++;
                     // 3. 드롭다운이 열려있다면 목록 최상단에 추가 (Optional)
                     if (this.isOpen) this.fetchNotifications();
+
+                    // 브라우저 전역으로 새 알림 도착 이벤트 브로드캐스팅 (Event Bus 패턴)
+                    window.dispatchEvent(new CustomEvent('docu-new-notification', { detail: payload }));
                 } catch (err) {
                     console.error('[SSE] Payload parsing error');
                 }
