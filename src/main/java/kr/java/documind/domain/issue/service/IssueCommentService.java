@@ -230,7 +230,8 @@ public class IssueCommentService {
         }
 
         // 2. 댓글 목록 조회 (페이징, 오래된 순)
-        Page<IssueComment> page = commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId, pageable);
+        Page<IssueComment> page =
+                commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId, pageable);
 
         // 3. DTO 변환 (작성자 및 멘션 정보 포함)
         List<CommentResponse> responses =
@@ -282,9 +283,10 @@ public class IssueCommentService {
                 memberRepository.findById(issueComment.getMemberId()).orElse(null); // 탈퇴한 사용자일 수 있음
         MemberSimpleInfo authorInfo = null;
         if (author != null) {
-            String profileUrl = author.getProfileKey() != null
-                    ? fileStore.getAccessUrl(author.getProfileKey())
-                    : null;
+            String profileUrl =
+                    author.getProfileKey() != null
+                            ? fileStore.getAccessUrl(author.getProfileKey())
+                            : null;
             authorInfo = new MemberSimpleInfo(author.getId(), author.getNickname(), profileUrl);
         }
 
@@ -303,12 +305,16 @@ public class IssueCommentService {
                     issueComment.getMentionedMemberIds().stream()
                             .map(memberMap::get)
                             .filter(m -> m != null) // 탈퇴한 사용자 제외
-                            .map(member -> {
-                                String profileUrl = member.getProfileKey() != null
-                                        ? fileStore.getAccessUrl(member.getProfileKey())
-                                        : null;
-                                return new MemberSimpleInfo(member.getId(), member.getNickname(), profileUrl);
-                            })
+                            .map(
+                                    member -> {
+                                        String profileUrl =
+                                                member.getProfileKey() != null
+                                                        ? fileStore.getAccessUrl(
+                                                                member.getProfileKey())
+                                                        : null;
+                                        return new MemberSimpleInfo(
+                                                member.getId(), member.getNickname(), profileUrl);
+                                    })
                             .toList();
         }
 

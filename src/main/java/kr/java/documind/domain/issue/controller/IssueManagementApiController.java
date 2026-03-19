@@ -29,9 +29,9 @@ import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
 import kr.java.documind.domain.issue.service.workflow.IssueManagementService;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
 import kr.java.documind.global.annotation.CurrentProject;
-import kr.java.documind.global.storage.FileStore;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
+import kr.java.documind.global.storage.FileStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -88,15 +88,21 @@ public class IssueManagementApiController {
                                         assignee =
                                                 memberRepository
                                                         .findById(issue.getAssigneeId())
-                                                        .map(member -> {
-                                                            String profileUrl = member.getProfileKey() != null
-                                                                    ? fileStore.getAccessUrl(member.getProfileKey())
-                                                                    : null;
-                                                            return new AssigneeInfo(
-                                                                    member.getId(),
-                                                                    member.getNickname(),
-                                                                    profileUrl);
-                                                        })
+                                                        .map(
+                                                                member -> {
+                                                                    String profileUrl =
+                                                                            member.getProfileKey()
+                                                                                            != null
+                                                                                    ? fileStore
+                                                                                            .getAccessUrl(
+                                                                                                    member
+                                                                                                            .getProfileKey())
+                                                                                    : null;
+                                                                    return new AssigneeInfo(
+                                                                            member.getId(),
+                                                                            member.getNickname(),
+                                                                            profileUrl);
+                                                                })
                                                         .orElse(null);
                                     }
                                     return IssueListResponse.from(issue, assignee);
@@ -129,15 +135,16 @@ public class IssueManagementApiController {
             assignee =
                     memberRepository
                             .findById(issue.getAssigneeId())
-                            .map(member -> {
-                                String profileUrl = member.getProfileKey() != null
-                                        ? fileStore.getAccessUrl(member.getProfileKey())
-                                        : null;
-                                return new AssigneeInfo(
-                                        member.getId(),
-                                        member.getNickname(),
-                                        profileUrl);
-                            })
+                            .map(
+                                    member -> {
+                                        String profileUrl =
+                                                member.getProfileKey() != null
+                                                        ? fileStore.getAccessUrl(
+                                                                member.getProfileKey())
+                                                        : null;
+                                        return new AssigneeInfo(
+                                                member.getId(), member.getNickname(), profileUrl);
+                                    })
                             .orElse(null);
         }
 
