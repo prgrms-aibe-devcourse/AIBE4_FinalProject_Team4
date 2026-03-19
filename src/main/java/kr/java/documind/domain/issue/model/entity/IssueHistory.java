@@ -2,14 +2,10 @@ package kr.java.documind.domain.issue.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.enums.IssuePriority;
+import kr.java.documind.global.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,11 +23,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class IssueHistory {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class IssueHistory extends BaseEntity {
 
     @Column(name = "issue_id", nullable = false)
     private Long issueId;
@@ -47,14 +39,6 @@ public class IssueHistory {
 
     @Column(name = "after_value", columnDefinition = "TEXT")
     private String afterValue;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @Builder.Default
-    private OffsetDateTime createdAt = OffsetDateTime.now(ZoneOffset.UTC);
-
-    @Column(name = "updated_at", nullable = false)
-    @Builder.Default
-    private OffsetDateTime updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 정적 팩토리 메서드
@@ -120,6 +104,24 @@ public class IssueHistory {
                 .fieldName("PRIORITY")
                 .beforeValue(beforePriority != null ? beforePriority.toString() : null)
                 .afterValue(afterPriority != null ? afterPriority.toString() : null)
+                .build();
+    }
+
+    /**
+     * 댓글 작성 이력 생성
+     *
+     * @param issueId 이슈 ID
+     * @param authorId 작성자 ID
+     * @param commentContent 댓글 내용
+     * @return 이력 객체
+     */
+    public static IssueHistory ofCommentAdded(Long issueId, UUID authorId, String commentContent) {
+        return IssueHistory.builder()
+                .issueId(issueId)
+                .modifierId(authorId)
+                .fieldName("COMMENT")
+                .beforeValue(null)
+                .afterValue(commentContent)
                 .build();
     }
 }

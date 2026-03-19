@@ -195,16 +195,41 @@ public class FingerprintGenerator {
      * <p>간단한 구현: "at " 패턴이 포함된 라인들을 스택트레이스로 간주
      */
     private String extractStackTrace(String archive) {
-        if (archive == null || !archive.contains("at ")) {
+        if (archive == null) {
+            return null;
+        }
+
+        // Java 스타일 ("at ") 또는 Unity 스타일 ("(at Assets/..." 또는 "Class.Method (...) (at ...)")
+        boolean hasJavaFrames = archive.contains("at ");
+        boolean hasUnityFrames = archive.contains("(at Assets/") || archive.contains("(at <");
+
+        if (!hasJavaFrames && !hasUnityFrames) {
             return null;
         }
 
         StringBuilder stackTrace = new StringBuilder();
         String[] lines = archive.split("\\r?\\n");
+        boolean inStackTrace = false;
 
         for (String line : lines) {
-            if (line.trim().startsWith("at ")) {
+            String trimmed = line.trim();
+
+            // Java 스타일 프레임
+            if (trimmed.startsWith("at ")) {
                 stackTrace.append(line).append("\n");
+                inStackTrace = true;
+            }
+            // Unity 스타일 프레임
+            else if (inStackTrace && trimmed.contains(" (at ")) {
+                stackTrace.append(line).append("\n");
+            }
+            // 첫 줄이 아닌 경우, Unity 프레임으로 추정되는 패턴
+            else if (!trimmed.isEmpty()
+                    && trimmed.contains(".")
+                    && trimmed.contains("(")
+                    && trimmed.contains(") (at ")) {
+                stackTrace.append(line).append("\n");
+                inStackTrace = true;
             }
         }
 

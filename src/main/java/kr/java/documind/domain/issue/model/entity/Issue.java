@@ -4,9 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -16,6 +13,7 @@ import kr.java.documind.domain.issue.model.enums.IssuePriority;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.IssueType;
+import kr.java.documind.global.entity.BaseEntity;
 import kr.java.documind.global.exception.ConflictException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -34,11 +32,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Issue {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Issue extends BaseEntity {
 
     @Column(name = "assignee_id")
     private UUID assigneeId;
@@ -101,12 +95,6 @@ public class Issue {
     @Column(name = "resolved_at")
     private OffsetDateTime resolvedAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 비즈니스 로직
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -124,7 +112,6 @@ public class Issue {
         if (this.lastOccurredAt == null || occurredAt.isAfter(this.lastOccurredAt)) {
             this.lastOccurredAt = occurredAt;
         }
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -134,7 +121,6 @@ public class Issue {
      */
     public void changeStatus(IssueStatus newStatus) {
         this.status = newStatus;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
 
         // RESOLVED 상태로 변경 시 resolved_at 설정
         if (newStatus == IssueStatus.RESOLVED) {
@@ -153,7 +139,6 @@ public class Issue {
      */
     public void assignTo(UUID assigneeId) {
         this.assigneeId = assigneeId;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -165,7 +150,6 @@ public class Issue {
     public void updateSeverity(IssueSeverity severity, Integer score) {
         this.severity = severity;
         this.severityScore = score;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -175,7 +159,6 @@ public class Issue {
      */
     public void updateTitle(String title) {
         this.title = title;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -185,7 +168,6 @@ public class Issue {
      */
     public void updateDescription(String description) {
         this.description = description;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -195,7 +177,6 @@ public class Issue {
      */
     public void setPriority(IssuePriority priority) {
         this.priority = priority;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -205,7 +186,6 @@ public class Issue {
      */
     public void writeResolutionNote(String resolutionNote) {
         this.resolutionNote = resolutionNote;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /** 이슈 추천 승인 (RECOMMENDED → TODO) */
@@ -215,7 +195,6 @@ public class Issue {
                     "이슈 추천 상태(RECOMMENDED)에서만 승인할 수 있습니다. 현재 상태: " + this.status);
         }
         this.status = IssueStatus.TODO;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /** 이슈 추천 거부 (RECOMMENDED → REJECTED) */
@@ -225,6 +204,5 @@ public class Issue {
                     "이슈 추천 상태(RECOMMENDED)에서만 거부할 수 있습니다. 현재 상태: " + this.status);
         }
         this.status = IssueStatus.REJECTED;
-        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 }

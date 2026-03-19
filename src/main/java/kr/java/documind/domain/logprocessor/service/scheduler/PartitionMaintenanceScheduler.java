@@ -195,10 +195,10 @@ public class PartitionMaintenanceScheduler {
                 return;
             }
 
-            // S3로 Parquet Export
+            // S3로 Parquet Export (모든 프로젝트가 성공해야 함)
             String s3Uri = coldStorageService.archivePartitionToS3(tableName, coldMonday);
 
-            // 파티션 삭제
+            // 아카이빙 성공 시에만 파티션 삭제
             String sql = String.format("DROP TABLE IF EXISTS %s", tableName);
             jdbcTemplate.execute(sql);
 

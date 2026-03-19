@@ -17,12 +17,16 @@ import kr.java.documind.domain.issue.model.repository.IssueHistoryRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.patchnote.event.IssueStatusChangedEvent;
 import kr.java.documind.global.exception.BadRequestException;
+import kr.java.documind.global.storage.FileStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.event.ApplicationEvents;
@@ -38,14 +42,23 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 @Transactional
 @RecordApplicationEvents
+@EnableAutoConfiguration(
+        excludeName = {
+            "org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration",
+            "org.springframework.ai.autoconfigure.openai.OpenAiEmbeddingAutoConfiguration",
+            "org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration",
+            "io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration",
+            "io.awspring.cloud.autoconfigure.core.AwsAutoConfiguration"
+        })
 @DisplayName("IssueManagementService 통합 테스트")
 @TestPropertySource(
         properties = {
-            "spring.datasource.url=jdbc:h2:mem:testdb",
+            "spring.datasource.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
             "spring.datasource.driver-class-name=org.h2.Driver",
             "spring.jpa.hibernate.ddl-auto=create-drop",
             "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
-            "spring.flyway.enabled=false"
+            "spring.flyway.enabled=false",
+            "spring.cloud.aws.s3.bucket="
         })
 class IssueManagementServiceIntegrationTest {
 
@@ -56,6 +69,11 @@ class IssueManagementServiceIntegrationTest {
     @Autowired private IssueHistoryRepository issueHistoryRepository;
 
     @Autowired private ApplicationEvents applicationEvents;
+
+    @MockBean private FileStore fileStore;
+
+    @MockBean(name = "openAiEmbeddingModel")
+    private EmbeddingModel embeddingModel;
 
     private UUID testProjectId;
     private UUID testModifierId;
@@ -81,8 +99,8 @@ class IssueManagementServiceIntegrationTest {
                         .errorType(ErrorType.NULL_POINTER)
                         .stackKey("TestService.testMethod:42")
                         .occurrenceCount(10)
-                        .firstOccurredAt(OffsetDateTime.now().minusDays(1))
-                        .lastOccurredAt(OffsetDateTime.now())
+                        .firstOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC).minusDays(1))
+                        .lastOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
                         .build();
 
         testIssue = issueRepository.save(testIssue);

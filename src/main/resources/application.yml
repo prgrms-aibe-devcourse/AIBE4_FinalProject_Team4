@@ -168,39 +168,39 @@ issue:
                 IO: 10
                 SERIALIZATION: 10
 
-        # 크래시 심각도 점수 기준
-        crash:
-            error-types:
-                OUT_OF_MEMORY: 50
-                STACK_OVERFLOW: 50
-                DATABASE: 40
-                DEADLOCK: 40
-                NETWORK: 30
-                TIMEOUT: 30
-                IO: 30
-                NULL_POINTER: 15
-                INDEX_OUT_OF_BOUNDS: 15
-                ILLEGAL_ARGUMENT: 10
-                ILLEGAL_STATE: 10
-                UNSUPPORTED_OPERATION: 10
+    # 크래시 심각도 점수 기준
+    crash:
+      error-types:
+        OUT_OF_MEMORY: 50
+        STACK_OVERFLOW: 50
+        DATABASE: 40
+        DEADLOCK: 40
+        NETWORK: 30
+        TIMEOUT: 30
+        IO: 30
+        NULL_POINTER: 15
+        INDEX_OUT_OF_BOUNDS: 15
+        ILLEGAL_ARGUMENT: 10
+        ILLEGAL_STATE: 10
+        UNSUPPORTED_OPERATION: 10
 
 # 로그 샘플링 설정
 sampling:
-    enabled: ${SAMPLING_ENABLED:false}  # 기본값: 비활성화
-    window-seconds: ${SAMPLING_WINDOW_SECONDS:60}  # 샘플링 윈도우 크기 (초)
+  enabled: ${SAMPLING_ENABLED:false}  # 기본값: 비활성화
+  window-seconds: ${SAMPLING_WINDOW_SECONDS:60}  # 샘플링 윈도우 크기 (초)
 
-    # 심각도별 샘플링 비율
-    severity-rates:
-        DEBUG: ${SAMPLING_SEVERITY_DEBUG:0.05}   # DEBUG 로그는 5%만 수집
-        INFO: ${SAMPLING_SEVERITY_INFO:0.1}      # INFO 로그는 10%만 수집
-        WARN: ${SAMPLING_SEVERITY_WARN:0.5}      # WARN 로그는 50%만 수집
-        ERROR: ${SAMPLING_SEVERITY_ERROR:1.0}    # ERROR 로그는 100% 수집
-        FATAL: ${SAMPLING_SEVERITY_FATAL:1.0}    # FATAL 로그는 100% 수집
+  # 심각도별 샘플링 비율
+  severity-rates:
+    DEBUG: ${SAMPLING_SEVERITY_DEBUG:0.05}   # DEBUG 로그는 5%만 수집
+    INFO: ${SAMPLING_SEVERITY_INFO:0.1}      # INFO 로그는 10%만 수집
+    WARN: ${SAMPLING_SEVERITY_WARN:0.5}      # WARN 로그는 50%만 수집
+    ERROR: ${SAMPLING_SEVERITY_ERROR:1.0}    # ERROR 로그는 100% 수집
+    FATAL: ${SAMPLING_SEVERITY_FATAL:1.0}    # FATAL 로그는 100% 수집
 
-    # 임계값 기반 샘플링
-    threshold: ${SAMPLING_THRESHOLD:100}  # 초당 로그 수가 이 값을 넘으면 샘플링 활성화
-    rate: ${SAMPLING_RATE:0.1}            # 임계값 초과 시 기본 샘플링 비율 (10%)
+  # 임계값 기반 샘플링
+  threshold: ${SAMPLING_THRESHOLD:100}  # 초당 로그 수가 이 값을 넘으면 샘플링 활성화
+  rate: ${SAMPLING_RATE:0.1}            # 임계값 초과 시 기본 샘플링 비율 (10%)
 
-    # 백프레셔 대응
-    backpressure-enabled: ${SAMPLING_BACKPRESSURE_ENABLED:true}  # 백프레셔 감지 시 추가 샘플링
-    backpressure-rate: ${SAMPLING_BACKPRESSURE_RATE:0.05}        # 백프레셔 시 샘플링 비율 (5%)
+  # 백프레셔 대응
+  backpressure-enabled: ${SAMPLING_BACKPRESSURE_ENABLED:true}  # 백프레셔 감지 시 추가 샘플링
+  backpressure-rate: ${SAMPLING_BACKPRESSURE_RATE:0.05}        # 백프레셔 시 샘플링 비율 (5%)

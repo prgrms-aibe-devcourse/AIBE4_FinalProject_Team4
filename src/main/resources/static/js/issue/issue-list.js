@@ -58,10 +58,10 @@ function switchMainTab(tab, updateUrl = true) {
     const issuesTab = document.getElementById('issuesTab');
 
     if (tab === 'recommendations') {
-        recommendationsTab.classList.add('border-indigo-600', 'text-indigo-600');
-        recommendationsTab.classList.remove('border-transparent', 'text-gray-500');
-        issuesTab.classList.add('border-transparent', 'text-gray-500');
-        issuesTab.classList.remove('border-indigo-600', 'text-indigo-600');
+        recommendationsTab.classList.add('border-docu-primary', 'text-docu-primary');
+        recommendationsTab.classList.remove('border-transparent', 'text-docu-secondary');
+        issuesTab.classList.add('border-transparent', 'text-docu-secondary');
+        issuesTab.classList.remove('border-docu-primary', 'text-docu-primary');
 
         // 섹션 표시/숨김
         document.getElementById('recommendationsSection').classList.remove('hidden');
@@ -70,10 +70,10 @@ function switchMainTab(tab, updateUrl = true) {
 
         loadRecommendationList();
     } else {
-        issuesTab.classList.add('border-indigo-600', 'text-indigo-600');
-        issuesTab.classList.remove('border-transparent', 'text-gray-500');
-        recommendationsTab.classList.add('border-transparent', 'text-gray-500');
-        recommendationsTab.classList.remove('border-indigo-600', 'text-indigo-600');
+        issuesTab.classList.add('border-docu-primary', 'text-docu-primary');
+        issuesTab.classList.remove('border-transparent', 'text-docu-secondary');
+        recommendationsTab.classList.add('border-transparent', 'text-docu-secondary');
+        recommendationsTab.classList.remove('border-docu-primary', 'text-docu-primary');
 
         // 섹션 표시/숨김
         document.getElementById('issuesSection').classList.remove('hidden');
@@ -90,7 +90,7 @@ function switchMainTab(tab, updateUrl = true) {
 
 async function loadRecommendationList() {
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issue-recommendations`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issue-recommendations`, {
             method: 'GET'
         });
 
@@ -123,38 +123,35 @@ function renderRecommendationList(recommendations) {
     });
 
     container.innerHTML = sortedRecs.map(rec => {
-        const borderColor = getSeverityBorderColor(rec.severity);
         return `
-        <div class="mx-4 my-3 p-4 bg-white border-l-4 ${borderColor} rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        <div class="mx-4 my-3 p-4 bg-surface-card border border-divider rounded-lg shadow-sm hover:bg-surface-hover hover:shadow-md transition-colors cursor-pointer"
              onclick="openRecommendationDetail(${rec.id})">
             <div class="grid grid-cols-12 gap-4 items-center">
                 <div class="col-span-4">
-                    <p class="text-sm font-semibold text-gray-900 mb-1">${rec.title}</p>
-                    <div class="flex items-center gap-2 text-xs text-gray-500">
-                        <span>ID: ${rec.id}</span>
-                        <span>•</span>
+                    <p class="text-sm font-semibold text-docu-ink mb-1">${rec.title}</p>
+                    <div class="flex items-center gap-2 text-xs text-docu-secondary">
                         <span>${rec.errorType || 'UNKNOWN'}</span>
                     </div>
-                </div>
-                <div class="col-span-1 text-center">
-                    ${getQualityBadge(rec.severityScore)}
                 </div>
                 <div class="col-span-2 text-center">
                     ${getSeverityBadge(rec.severity, rec.severityScore)}
                 </div>
                 <div class="col-span-1 text-center">
-                    <span class="text-sm font-medium text-gray-700">${rec.occurrenceCount}회</span>
+                    <span class="text-sm font-medium text-docu-ink">${rec.occurrenceCount}회</span>
+                </div>
+                <div class="col-span-2 text-center">
+                    <p class="text-xs text-docu-secondary">${formatDateTime(rec.lastOccurredAt)}</p>
                 </div>
                 <div class="col-span-1 text-center">
-                    <p class="text-xs text-gray-600">${formatDateTime(rec.lastOccurredAt)}</p>
+                    ${getQualityBadge(rec.fingerprintQuality)}
                 </div>
-                <div class="col-span-3 text-center flex items-center justify-center gap-2">
+                <div class="col-span-2 text-center flex items-center justify-center gap-2">
                     <button onclick="event.stopPropagation(); openRecommendationDetail(${rec.id})"
-                            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+                            class="btn-primary">
                         상세보기
                     </button>
                     <button onclick="event.stopPropagation(); rejectRecommendation(${rec.id})"
-                            class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors">
+                            class="px-4 py-2 text-sm font-medium text-docu-secondary hover:bg-surface-sub border border-divider rounded-lg transition-colors">
                         거부
                     </button>
                 </div>
@@ -168,7 +165,7 @@ async function openRecommendationDetail(recommendationId) {
 
     try {
         // 추천 상세 조회
-        const detailBody = await callApi(`/api/projects/${currentProjectId}/issue-recommendations/${recommendationId}`, {
+        const detailBody = await callApi(`/api/projects/${currentPublicId}/issue-recommendations/${recommendationId}`, {
             method: 'GET'
         });
 
@@ -194,14 +191,14 @@ async function openRecommendationDetail(recommendationId) {
 function renderSimilarityAnalysis(similarityResults) {
     if (!similarityResults || similarityResults.length === 0) {
         return `
-            <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div class="p-4 bg-surface-secondary border border-divider rounded-lg">
                 <div class="flex items-start gap-2">
-                    <svg class="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-docu-secondary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <div class="text-sm text-gray-900">
+                    <div class="text-sm text-docu-ink">
                         <strong class="font-semibold">AI 판단 근거</strong><br>
-                        <span class="text-gray-700">유사도 분석 중...</span>
+                        <span class="text-docu-ink">유사도 분석 중...</span>
                     </div>
                 </div>
             </div>
@@ -218,35 +215,35 @@ function renderSingleSimilarity(similarityResult, index, total) {
     let colorClass, bgClass, borderClass, icon, badge;
 
     if (matchType === 'EXACT_MATCH') {
-        colorClass = 'text-red-900';
-        bgClass = 'bg-red-50';
-        borderClass = 'border-red-200';
+        colorClass = 'text-docu-ink';
+        bgClass = 'bg-surface-secondary';
+        borderClass = 'border-divider';
         badge = '완전 일치';
-        icon = `<svg class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        icon = `<svg class="w-5 h-5 text-docu-danger mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>`;
     } else if (matchType === 'HIGHLY_SIMILAR') {
-        colorClass = 'text-red-800';
-        bgClass = 'bg-red-50';
-        borderClass = 'border-red-200';
+        colorClass = 'text-docu-ink';
+        bgClass = 'bg-surface-secondary';
+        borderClass = 'border-divider';
         badge = '매우 유사';
-        icon = `<svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        icon = `<svg class="w-5 h-5 text-docu-danger mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>`;
     } else if (matchType === 'SIMILAR') {
-        colorClass = 'text-orange-900';
-        bgClass = 'bg-orange-50';
-        borderClass = 'border-orange-200';
+        colorClass = 'text-docu-ink';
+        bgClass = 'bg-surface-secondary';
+        borderClass = 'border-divider';
         badge = '유사';
-        icon = `<svg class="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        icon = `<svg class="w-5 h-5 text-docu-warning mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>`;
     } else {
-        colorClass = 'text-green-900';
-        bgClass = 'bg-green-50';
-        borderClass = 'border-green-200';
+        colorClass = 'text-docu-ink';
+        bgClass = 'bg-surface-secondary';
+        borderClass = 'border-divider';
         badge = '신규';
-        icon = `<svg class="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        icon = `<svg class="w-5 h-5 text-docu-success mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>`;
     }
@@ -260,9 +257,9 @@ function renderSingleSimilarity(similarityResult, index, total) {
                         <div class="flex items-center gap-2">
                             ${total > 1 && index === 0 ? '<strong class="text-xs">#1</strong>' : ''}
                             ${total > 1 && index > 0 ? `<span class="text-xs opacity-60">#${index + 1}</span>` : ''}
-                            <span class="px-2 py-0.5 bg-white rounded text-xs font-medium">${badge}</span>
+                            <span class="px-2 py-0.5 bg-surface-card rounded text-xs font-medium">${badge}</span>
                         </div>
-                        ${similarity !== null ? `<span class="px-2 py-0.5 bg-white rounded-full text-xs font-medium">유사도 ${similarity.toFixed(1)}%</span>` : ''}
+                        ${similarity !== null ? `<span class="px-2 py-0.5 bg-surface-card rounded-full text-xs font-medium">유사도 ${similarity.toFixed(1)}%</span>` : ''}
                     </div>
                     <p class="mb-3">${reason}</p>
 
@@ -316,20 +313,20 @@ function renderRecommendationDetail(rec, members) {
         <div class="space-y-5">
             <!-- 이슈 제목 -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">이슈 제목 <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-semibold text-docu-ink mb-2">이슈 제목 <span class="text-docu-danger">*</span></label>
                 <input type="text" id="editIssueTitle" value="${rec.title || ''}"
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                       class="w-full px-4 py-3 border border-divider rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-docu-primary focus:border-transparent"
                        placeholder="이슈 제목을 입력하세요">
             </div>
 
             <!-- 이슈 설명 -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">이슈 설명</label>
+                <label class="block text-sm font-semibold text-docu-ink mb-2">이슈 설명</label>
                 <textarea id="editIssueDescription" rows="8"
-                          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                          class="w-full px-4 py-3 border border-divider rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-docu-primary focus:border-transparent resize-none"
                           placeholder="이슈에 대한 상세 설명을 입력하세요">${rec.description || ''}</textarea>
-                <div class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
-                    <strong class="text-gray-900">자동 수집된 정보:</strong><br>
+                <div class="mt-2 p-3 bg-surface-secondary border border-divider rounded-lg text-xs text-docu-secondary">
+                    <strong class="text-docu-ink">자동 수집된 정보:</strong><br>
                     Error Type: ${rec.errorType || 'UNKNOWN'} |
                     Stack Key: ${rec.stackKey || 'N/A'}
                 </div>
@@ -345,7 +342,7 @@ function renderRecommendationDetail(rec, members) {
         <div class="space-y-5">
             <!-- 심각도 -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-3">심각도</label>
+                <label class="block text-sm font-semibold text-docu-ink mb-3">심각도</label>
                 <div class="grid grid-cols-2 gap-2">
                     ${[
                         { level: 'CRITICAL', label: 'P1 긴급' },
@@ -355,21 +352,21 @@ function renderRecommendationDetail(rec, members) {
                     ].map(({ level, label }) => {
                         const isActive = rec.severity === level;
                         const colors = {
-                            CRITICAL: 'bg-red-500 text-white',
-                            HIGH: 'bg-orange-500 text-white',
-                            MEDIUM: 'bg-yellow-500 text-white',
-                            LOW: 'bg-gray-400 text-white'
+                            CRITICAL: 'bg-docu-danger text-white',
+                            HIGH: 'bg-docu-warning text-white',
+                            MEDIUM: 'bg-docu-warning text-white',
+                            LOW: 'bg-surface-sub text-docu-ink'
                         };
-                        return `<div class="px-3 py-2 ${isActive ? colors[level] : 'bg-gray-100 text-gray-400'} rounded-lg text-center text-sm font-medium">${label}</div>`;
+                        return `<div class="px-3 py-2 ${isActive ? colors[level] : 'bg-surface-sub text-docu-tertiary'} rounded-lg text-center text-sm font-medium">${label}</div>`;
                     }).join('')}
                 </div>
-                <p class="text-xs text-gray-500 mt-2">심각도 점수: ${rec.severityScore}점</p>
+                <p class="text-xs text-docu-secondary mt-2">심각도 점수: ${rec.severityScore}점</p>
             </div>
 
             <!-- 담당자 지정 -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-3">담당자 지정</label>
-                <select id="assigneeSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                <label class="block text-sm font-semibold text-docu-ink mb-3">담당자 지정</label>
+                <select id="assigneeSelect" class="w-full px-4 py-3 border border-divider rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-docu-primary focus:border-transparent"
                         onchange="selectedAssigneeId = this.value">
                     ${members.map(member => `
                         <option value="${member.memberId}" ${member.memberId === rec.assigneeId ? 'selected' : ''}>
@@ -377,41 +374,41 @@ function renderRecommendationDetail(rec, members) {
                         </option>
                     `).join('')}
                 </select>
-                <p class="text-xs text-gray-500 mt-2">
+                <p class="text-xs text-docu-secondary mt-2">
                     💡 이슈 생성 시 선택한 담당자에게 알림이 전송됩니다
                 </p>
             </div>
 
             <!-- 우선순위 선택 -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-3">우선순위 <span class="text-red-500">*</span></label>
-                <select id="prioritySelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <label class="block text-sm font-semibold text-docu-ink mb-3">우선순위 <span class="text-docu-danger">*</span></label>
+                <select id="prioritySelect" class="w-full px-4 py-3 border border-divider rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-docu-primary focus:border-transparent">
                     <option value="">선택하세요</option>
                     <option value="P1">P1 긴급</option>
                     <option value="P2">P2 높음</option>
                     <option value="P3">P3 보통</option>
                     <option value="P4">P4 낮음</option>
                 </select>
-                <p class="text-xs text-gray-500 mt-2">
+                <p class="text-xs text-docu-secondary mt-2">
                     💡 비즈니스 중요도에 따라 우선순위를 지정하세요
                 </p>
             </div>
 
             <!-- 발생 정보 -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">발생 정보</label>
+                <label class="block text-sm font-semibold text-docu-ink mb-2">발생 정보</label>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="text-gray-600">발생 횟수:</span>
-                        <span class="font-medium text-gray-900">${rec.occurrenceCount}회</span>
+                        <span class="text-docu-secondary">발생 횟수:</span>
+                        <span class="font-medium text-docu-ink">${rec.occurrenceCount}회</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-600">최초 발생:</span>
-                        <span class="text-gray-900">${formatDateTime(rec.firstOccurredAt)}</span>
+                        <span class="text-docu-secondary">최초 발생:</span>
+                        <span class="text-docu-ink">${formatDateTime(rec.firstOccurredAt)}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-600">최근 발생:</span>
-                        <span class="text-gray-900">${formatDateTime(rec.lastOccurredAt)}</span>
+                        <span class="text-docu-secondary">최근 발생:</span>
+                        <span class="text-docu-ink">${formatDateTime(rec.lastOccurredAt)}</span>
                     </div>
                 </div>
             </div>
@@ -425,7 +422,7 @@ async function approveRecommendation(recommendationId) {
     }
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issue-recommendations/${recommendationId}/approve`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issue-recommendations/${recommendationId}/approve`, {
             method: 'POST'
         });
 
@@ -473,7 +470,7 @@ async function approveFromDetail() {
     }
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issue-recommendations/${currentRecommendationId}/approve`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issue-recommendations/${currentRecommendationId}/approve`, {
             method: 'POST',
             body: JSON.stringify({
                 assigneeId: selectedAssigneeId,
@@ -510,7 +507,7 @@ async function confirmReject() {
     }
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issue-recommendations/${recommendationId}/reject`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issue-recommendations/${recommendationId}/reject`, {
             method: 'POST'
         });
 
@@ -541,7 +538,7 @@ function rejectFromDetail() {
 
 async function loadIssueList() {
     try {
-        let url = `/api/projects/${currentProjectId}/issues`;
+        let url = `/api/projects/${currentPublicId}/issues`;
         if (currentStatus) {
             url += `?status=${currentStatus}`;
         }
@@ -584,21 +581,15 @@ function renderIssueList(issues) {
     });
 
     container.innerHTML = sortedIssues.map(issue => {
-        const borderColor = getSeverityBorderColor(issue.severity);
         return `
-        <div class="mx-4 my-3 p-4 bg-white border-l-4 ${borderColor} rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        <div class="mx-4 my-3 p-4 bg-surface-card border border-divider rounded-lg shadow-sm hover:bg-surface-hover hover:shadow-md transition-colors cursor-pointer"
              onclick="openIssueDetail(${issue.id})">
             <div class="grid grid-cols-12 gap-4 items-center">
                 <div class="col-span-3">
-                    <p class="text-sm font-semibold text-gray-900 mb-1">${issue.title}</p>
-                    <div class="flex items-center gap-2 text-xs text-gray-500">
-                        <span>ID: ${issue.id}</span>
-                        <span>•</span>
+                    <p class="text-sm font-semibold text-docu-ink mb-1">${issue.title}</p>
+                    <div class="flex items-center gap-2 text-xs text-docu-secondary">
                         <span>${issue.errorType || 'UNKNOWN'}</span>
                     </div>
-                </div>
-                <div class="col-span-1 text-center">
-                    ${getStatusBadge(issue.status)}
                 </div>
                 <div class="col-span-2 text-center">
                     ${getSeverityBadge(issue.severity, issue.severityScore)}
@@ -607,18 +598,24 @@ function renderIssueList(issues) {
                     ${getPriorityBadge(issue.priority)}
                 </div>
                 <div class="col-span-1 text-center">
-                    <span class="text-sm font-medium text-gray-700">${issue.occurrenceCount}회</span>
+                    ${getStatusBadge(issue.status)}
                 </div>
                 <div class="col-span-1 text-center">
-                    <p class="text-xs text-gray-600">${formatDateTime(issue.lastOccurredAt)}</p>
+                    <span class="text-sm font-medium text-docu-ink">${issue.occurrenceCount}회</span>
                 </div>
-                <div class="col-span-3 text-center flex items-center justify-center gap-2">
+                <div class="col-span-1 text-center">
+                    <p class="text-xs text-docu-secondary">${formatDateTime(issue.lastOccurredAt)}</p>
+                </div>
+                <div class="col-span-1 text-center flex items-center justify-center gap-1.5">
+                    ${getAssigneeDisplay(issue.assignee)}
+                </div>
+                <div class="col-span-2 text-center flex items-center justify-center gap-2">
                     <button onclick="event.stopPropagation(); openIssueDetail(${issue.id})"
-                            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+                            class="btn-primary">
                         상세보기
                     </button>
                     <button onclick="event.stopPropagation(); openStatusModal(${issue.id}, '${issue.status}')"
-                            class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors">
+                            class="px-4 py-2 text-sm font-medium text-docu-secondary hover:bg-surface-sub border border-divider rounded-lg transition-colors">
                         상태변경
                     </button>
                 </div>
@@ -638,11 +635,11 @@ function filterByStatus(status) {
     document.querySelectorAll('.status-tab').forEach(tab => {
         const tabStatus = tab.dataset.status === 'all' ? null : tab.dataset.status;
         if (tabStatus === status) {
-            tab.classList.remove('border-transparent', 'text-gray-500');
-            tab.classList.add('border-indigo-600', 'text-indigo-600');
+            tab.classList.remove('border-transparent', 'text-docu-secondary');
+            tab.classList.add('border-docu-primary', 'text-docu-primary');
         } else {
-            tab.classList.remove('border-indigo-600', 'text-indigo-600');
-            tab.classList.add('border-transparent', 'text-gray-500');
+            tab.classList.remove('border-docu-primary', 'text-docu-primary');
+            tab.classList.add('border-transparent', 'text-docu-secondary');
         }
     });
 
@@ -657,7 +654,7 @@ async function openIssueDetail(issueId) {
     currentDetailIssueId = issueId; // 현재 보고 있는 이슈 ID 저장
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${issueId}`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${issueId}`, {
             method: 'GET'
         });
 
@@ -694,15 +691,15 @@ function renderIssueDetail(issue) {
 
     // 심각도
     const severityColors = {
-        CRITICAL: 'text-red-600',
-        HIGH: 'text-orange-600',
-        MEDIUM: 'text-yellow-600',
-        LOW: 'text-gray-600'
+        CRITICAL: 'text-docu-danger',
+        HIGH: 'text-docu-warning',
+        MEDIUM: 'text-docu-warning',
+        LOW: 'text-docu-secondary'
     };
     const severityColor = severityColors[issue.severity] || severityColors.LOW;
     document.getElementById('quickSeverity').innerHTML = `
         <span class="${severityColor}">${issue.severity}</span>
-        <div class="text-xs text-gray-500 mt-1">${issue.severityScore}점</div>
+        <div class="text-xs text-docu-secondary mt-1">${issue.severityScore}점</div>
     `;
 
     // 발생 횟수
@@ -751,7 +748,7 @@ async function submitAssign() {
     }
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${issueId}/assignee`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${issueId}/assignee`, {
             method: 'PUT',
             body: JSON.stringify({ assigneeId })
         });
@@ -795,7 +792,7 @@ async function submitStatusChange() {
     }
 
     try {
-        const body = await callApi(`/api/projects/${currentProjectId}/issues/${issueId}/status`, {
+        const body = await callApi(`/api/projects/${currentPublicId}/issues/${issueId}/status`, {
             method: 'PUT',
             body: JSON.stringify({ status })
         });
@@ -820,26 +817,23 @@ async function submitStatusChange() {
 
 function getStatusBadge(status) {
     const statusMap = {
-        TODO: { label: '대기중', color: 'bg-gray-100 text-gray-700' },
-        IN_PROGRESS: { label: '처리중', color: 'bg-blue-100 text-blue-700' },
-        RESOLVED: { label: '해결됨', color: 'bg-green-100 text-green-700' }
+        TODO: { label: '대기중', class: 'badge-status-pending' },
+        IN_PROGRESS: { label: '처리중', class: 'badge-status-active' },
+        RESOLVED: { label: '해결됨', class: 'badge-status-selected' }
     };
-    const { label, color } = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
-    return `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
+    const { label, class: badgeClass } = statusMap[status] || { label: status, class: 'badge-default' };
+    return `<span class="${badgeClass}">${label}</span>`;
 }
 
 function getSeverityBadge(severity, score) {
     const severityMap = {
-        LOW: { label: '낮음', color: 'bg-gray-100 text-gray-700' },
-        MEDIUM: { label: '보통', color: 'bg-yellow-100 text-yellow-700' },
-        HIGH: { label: '높음', color: 'bg-orange-100 text-orange-700' },
-        CRITICAL: { label: '심각', color: 'bg-red-100 text-red-700' }
+        LOW: { label: 'LOW', class: 'badge-severity-low' },
+        MEDIUM: { label: 'MEDIUM', class: 'badge-severity-medium' },
+        HIGH: { label: 'HIGH', class: 'badge-severity-high' },
+        CRITICAL: { label: 'CRITICAL', class: 'badge-severity-critical' }
     };
-    const { label, color } = severityMap[severity] || { label: severity, color: 'bg-gray-100 text-gray-700' };
-    return `<div class="inline-flex flex-col items-center">
-        <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>
-        <span class="text-xs text-gray-400 mt-1">${score}점</span>
-    </div>`;
+    const { label, class: badgeClass } = severityMap[severity] || { label: severity, class: 'badge-default' };
+    return `<span class="${badgeClass}">${label}</span>`;
 }
 
 function formatDateTime(dateTimeStr) {
@@ -873,49 +867,105 @@ function closeModal(modalId) {
 
 function getRecommendationStatusBadge(status) {
     const statusMap = {
-        RECOMMENDED: { label: '추천 대기', color: 'bg-blue-100 text-blue-700' },
-        TODO: { label: '대기중', color: 'bg-gray-100 text-gray-700' },
-        IN_PROGRESS: { label: '처리중', color: 'bg-blue-100 text-blue-700' },
-        RESOLVED: { label: '해결됨', color: 'bg-green-100 text-green-700' },
-        REJECTED: { label: '거부됨', color: 'bg-red-100 text-red-700' }
+        RECOMMENDED: { label: '추천 대기', class: 'badge-event-suggest' },
+        TODO: { label: '대기중', class: 'badge-status-pending' },
+        IN_PROGRESS: { label: '처리중', class: 'badge-status-active' },
+        RESOLVED: { label: '해결됨', class: 'badge-status-selected' },
+        REJECTED: { label: '거부됨', class: 'badge-default' }
     };
-    const { label, color } = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
-    return `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
+    const { label, class: badgeClass } = statusMap[status] || { label: status, class: 'badge-default' };
+    return `<span class="${badgeClass}">${label}</span>`;
 }
 
 function getSeverityBorderColor(severity) {
     const borderMap = {
-        CRITICAL: 'border-red-500',
-        HIGH: 'border-orange-500',
-        MEDIUM: 'border-yellow-500',
-        LOW: 'border-gray-400'
+        CRITICAL: 'border-docu-danger',
+        HIGH: 'border-docu-warning',
+        MEDIUM: 'border-docu-warning',
+        LOW: 'border-divider'
     };
-    return borderMap[severity] || 'border-gray-300';
+    return borderMap[severity] || 'border-divider';
 }
 
-function getQualityBadge(severityScore) {
-    if (severityScore >= 80) {
-        return '<span class="px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">높음</span>';
-    } else if (severityScore >= 50) {
-        return '<span class="px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">보통</span>';
-    } else {
-        return '<span class="px-2.5 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">낮음</span>';
+function getQualityBadge(fingerprintQuality) {
+    if (!fingerprintQuality) {
+        return '<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">알 수 없음</span>';
     }
+
+    // FingerprintQuality enum 기반
+    const qualityMap = {
+        'HIGH': {
+            label: '높음',
+            class: 'bg-green-100 text-green-800',
+            needsReview: false
+        },
+        'MEDIUM': {
+            label: '보통',
+            class: 'bg-blue-100 text-blue-800',
+            needsReview: false
+        },
+        'LOW': {
+            label: '낮음',
+            class: 'bg-yellow-100 text-yellow-800',
+            needsReview: true
+        },
+        'VERY_LOW': {
+            label: '매우 낮음',
+            class: 'bg-orange-100 text-orange-800',
+            needsReview: true
+        },
+        'FALLBACK': {
+            label: '최소',
+            class: 'bg-red-100 text-red-800',
+            needsReview: true
+        }
+    };
+
+    const config = qualityMap[fingerprintQuality] || qualityMap['FALLBACK'];
+    const reviewBadge = config.needsReview
+        ? '<span class="ml-1 text-[10px] text-orange-600" title="수동 검토 필요">⚠️</span>'
+        : '';
+
+    return `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${config.class}">${config.label}${reviewBadge}</span>`;
 }
 
 function getPriorityBadge(priority) {
     if (!priority) {
-        return '<span class="text-xs text-gray-400">미설정</span>';
+        return '<span class="text-xs text-docu-tertiary">미설정</span>';
     }
 
     const priorityMap = {
-        P1: { label: 'P1 긴급', color: 'bg-red-100 text-red-700' },
-        P2: { label: 'P2 높음', color: 'bg-orange-100 text-orange-700' },
-        P3: { label: 'P3 보통', color: 'bg-yellow-100 text-yellow-700' },
-        P4: { label: 'P4 낮음', color: 'bg-gray-100 text-gray-700' }
+        P1: { label: 'P1 긴급', class: 'badge-severity-critical' },
+        P2: { label: 'P2 높음', class: 'badge-severity-high' },
+        P3: { label: 'P3 보통', class: 'badge-severity-medium' },
+        P4: { label: 'P4 낮음', class: 'badge-severity-low' }
     };
-    const { label, color } = priorityMap[priority] || { label: priority, color: 'bg-gray-100 text-gray-700' };
-    return `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
+    const { label, class: badgeClass } = priorityMap[priority] || { label: priority, class: 'badge-default' };
+    return `<span class="${badgeClass}">${label}</span>`;
+}
+
+function getAssigneeDisplay(assignee) {
+    if (!assignee) {
+        return `<p class="text-xs text-docu-tertiary">-</p>`;
+    }
+
+    const initial = assignee.nickname ? assignee.nickname.charAt(0) : '?';
+
+    if (assignee.profileImageUrl) {
+        return `
+            <div class="w-6 h-6 rounded-full overflow-hidden border border-divider bg-surface-sub shrink-0">
+                <img src="${assignee.profileImageUrl}" alt="${assignee.nickname}" class="w-full h-full object-cover">
+            </div>
+            <p class="text-xs text-docu-ink truncate">${assignee.nickname}</p>
+        `;
+    } else {
+        return `
+            <div class="w-6 h-6 rounded-full overflow-hidden border border-divider bg-docu-primary flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                ${initial}
+            </div>
+            <p class="text-xs text-docu-ink truncate">${assignee.nickname}</p>
+        `;
+    }
 }
 
 function showError(message) {

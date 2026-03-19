@@ -170,7 +170,7 @@
                                         ✕ 취소
                                     </button>
                                 </div>
-                                <div id="assigneeEditError" class="hidden mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600"></div>
+                                <div id="assigneeEditError" class="hidden mt-2 p-2 bg-surface-secondary border border-divider rounded text-xs text-docu-danger"></div>
                             </div>
                         </div>
 
@@ -202,7 +202,7 @@
                                         ✕ 취소
                                     </button>
                                 </div>
-                                <div id="priorityEditError" class="hidden mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600"></div>
+                                <div id="priorityEditError" class="hidden mt-2 p-2 bg-surface-secondary border border-divider rounded text-xs text-docu-danger"></div>
                             </div>
                         </div>
 
@@ -229,26 +229,12 @@
                     </div>
                 </div>
 
-                <!-- 변경 이력 -->
+                <!-- 타임라인 -->
                 <div class="card-base card-shadow p-widget-p">
-                    <h3 class="text-sm font-bold text-docu-ink mb-4">변경 이력</h3>
+                    <h3 class="text-sm font-bold text-docu-ink mb-4">타임라인</h3>
                     <div id="timeline" class="space-y-4">
                         <!-- Timeline items -->
                     </div>
-                </div>
-
-                <!-- 내부 댓글 -->
-                <div class="card-base card-shadow p-widget-p">
-                    <h3 class="text-sm font-bold text-docu-ink mb-4">내부 댓글</h3>
-                    <div id="comments" class="space-y-3 mb-4">
-                        <p class="text-xs text-docu-tertiary">댓글이 없습니다.</p>
-                    </div>
-                    <textarea id="newComment" placeholder="댓글을 입력하세요..."
-                              class="form-textarea resize-none"
-                              rows="3"></textarea>
-                    <button onclick="submitComment()" class="mt-2 w-full btn-primary">
-                        댓글 작성
-                    </button>
                 </div>
 
             </div>
@@ -270,9 +256,9 @@
                     </button>
                 </div>
                 <div class="px-8 pb-4">
-                    <div id="statusError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+                    <div id="statusError" class="hidden mb-4 p-3 bg-surface-secondary border border-divider rounded-lg text-sm text-docu-danger"></div>
                     <div class="mb-5">
-                        <label class="block text-sm font-semibold text-docu-ink mb-2">변경할 상태 <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-docu-ink mb-2">변경할 상태 <span class="text-docu-danger">*</span></label>
                         <select id="newStatus" class="form-select">
                             <option value="">선택하세요</option>
                             <option value="TODO">대기중</option>
