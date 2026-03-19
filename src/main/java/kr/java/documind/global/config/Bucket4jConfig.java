@@ -18,8 +18,11 @@ public class Bucket4jConfig {
 
     private final RedissonClient redissonClient;
 
-    @Value("${app.rate-limit.expiration-hours:1}")
-    private long expirationHours;
+    @Value("${app.rate-limit.ingest.expiration-hours:1}")
+    private long ingestExpirationHours;
+
+    @Value("${app.rate-limit.query.expiration-hours:1}")
+    private long queryExpirationHours;
 
     /** 분산 환경에서 버킷 상태를 관리하는 ProxyManager를 Bean으로 등록 */
     @Bean
@@ -32,11 +35,13 @@ public class Bucket4jConfig {
         // Redis 명령어를 직접 실행하기 위해 RedissonClient를 실제 구현체인 Redisson으로 캐스팅하여 내부 Async 엔진을 추출
         CommandAsyncExecutor commandExecutor = ((Redisson) redissonClient).getCommandExecutor();
 
+        long maxMarginHours = Math.max(ingestExpirationHours, queryExpirationHours);
+
         return Bucket4jRedisson.casBasedBuilder(commandExecutor)
                 // 버킷이 다시 채워지는 시간에 기반한 유동적 만료 전략
                 .expirationAfterWrite(
                         ExpirationAfterWriteStrategy.basedOnTimeForRefillingBucketUpToMax(
-                                Duration.ofHours(expirationHours)))
+                                Duration.ofHours(maxMarginHours)))
                 .build();
     }
 }

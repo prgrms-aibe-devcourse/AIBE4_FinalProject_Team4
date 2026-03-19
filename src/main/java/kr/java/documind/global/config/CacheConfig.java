@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import java.util.List;
+import kr.java.documind.domain.logexplorer.model.dto.response.LogColumnResponse;
 import kr.java.documind.domain.member.model.dto.ProjectSummary;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -58,6 +59,33 @@ public class CacheConfig {
                     }
                 };
 
+        RedisSerializer<Object> logColumnResponseSerializer =
+                new RedisSerializer<Object>() {
+                    @Override
+                    public byte[] serialize(Object t) throws SerializationException {
+                        if (t != null && !(t instanceof LogColumnResponse)) {
+                            throw new SerializationException(
+                                    "logColumnResponseSerializer expects LogColumnResponse, got: "
+                                            + t.getClass());
+                        }
+                        try {
+                            return objectMapper.writeValueAsBytes(t);
+                        } catch (Exception e) {
+                            throw new SerializationException("Redis 직렬화 에러", e);
+                        }
+                    }
+
+                    @Override
+                    public Object deserialize(byte[] bytes) throws SerializationException {
+                        if (bytes == null || bytes.length == 0) return null;
+                        try {
+                            return objectMapper.readValue(bytes, LogColumnResponse.class);
+                        } catch (Exception e) {
+                            throw new SerializationException("Redis 역직렬화 에러", e);
+                        }
+                    }
+                };
+
         RedisCacheConfiguration projectSelectorConfig =
                 RedisCacheConfiguration.defaultCacheConfig()
                         .entryTtl(Duration.ofSeconds(60))
@@ -68,8 +96,19 @@ public class CacheConfig {
                                 RedisSerializationContext.SerializationPair.fromSerializer(
                                         projectSummarySerializer));
 
+        RedisCacheConfiguration logColumnsConfig =
+                RedisCacheConfiguration.defaultCacheConfig()
+                        .entryTtl(Duration.ofMinutes(5))
+                        .serializeKeysWith(
+                                RedisSerializationContext.SerializationPair.fromSerializer(
+                                        new StringRedisSerializer()))
+                        .serializeValuesWith(
+                                RedisSerializationContext.SerializationPair.fromSerializer(
+                                        logColumnResponseSerializer));
+
         return RedisCacheManager.builder(connectionFactory)
                 .withCacheConfiguration("projectSelector", projectSelectorConfig)
+                .withCacheConfiguration("logColumns", logColumnsConfig)
                 .build();
     }
 }
