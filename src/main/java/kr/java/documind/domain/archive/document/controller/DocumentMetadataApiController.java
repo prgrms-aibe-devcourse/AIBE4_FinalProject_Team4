@@ -64,16 +64,6 @@ public class DocumentMetadataApiController {
         return buildFileResponse(projectId, documentId, "inline");
     }
 
-    @GetMapping(
-            value = "/{documentId}/embedding-status",
-            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribeEmbeddingStatus(
-            @ProjectId UUID projectId, @PathVariable Long documentId) {
-        EmbeddingStatus embeddingStatus =
-                documentMetadataService.getEmbeddingStatus(projectId, documentId);
-        return etlService.subscribeEmbeddingStatus(documentId, embeddingStatus);
-    }
-
     @PatchMapping("/{documentId}")
     @RequireProjectMember
     public ApiResponse<Void> updateDocument(
@@ -90,6 +80,24 @@ public class DocumentMetadataApiController {
     public ApiResponse<Void> deleteDocument(
             @ProjectId UUID projectId, @PathVariable Long documentId) {
         documentMetadataService.deleteDocument(projectId, documentId);
+        return ApiResponse.success();
+    }
+
+    @GetMapping(
+            value = "/{documentId}/embedding-status",
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeEmbeddingStatus(
+            @ProjectId UUID projectId, @PathVariable Long documentId) {
+        EmbeddingStatus embeddingStatus =
+                documentMetadataService.getEmbeddingStatus(projectId, documentId);
+        return etlService.subscribeEmbeddingStatus(documentId, embeddingStatus);
+    }
+
+    @PostMapping("/{documentId}/retry-embedding")
+    @RequireProjectMember
+    public ApiResponse<Void> retryEmbedding(
+            @ProjectId UUID projectId, @PathVariable Long documentId) {
+        documentMetadataService.retryEmbedding(projectId, documentId);
         return ApiResponse.success();
     }
 

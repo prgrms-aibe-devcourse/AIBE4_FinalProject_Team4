@@ -27,8 +27,8 @@
                     </select>
                 </div>
 
-                <!-- 검색 범위 선택 -->
-                <div class="flex items-center gap-2">
+                <!-- 검색 범위 선택 (문서 고정 모드에서는 숨김) -->
+                <div th:if="${fixedDocumentId == null}" class="flex items-center gap-2">
                     <label class="text-sm font-medium text-docu-secondary whitespace-nowrap">검색 범위</label>
                     <select id="scopeSelect" class="form-select">
                         <option value="all">전체 문서</option>
@@ -36,42 +36,88 @@
                         <option value="category">카테고리</option>
                     </select>
                 </div>
-
-                <!-- 그룹/카테고리 목록 (동적 표시) -->
-                <div id="scopeDetailWrapper" class="hidden flex items-center gap-2">
+                <div th:if="${fixedDocumentId == null}" id="scopeDetailWrapper" class="hidden flex items-center gap-2">
                     <select id="scopeDetailSelect" class="form-select">
                     </select>
                 </div>
+
+                <!-- 문서 고정 모드: 문서명 표시 -->
+                <div th:if="${fixedDocumentId != null}" class="flex items-center gap-2">
+                    <label class="text-sm font-medium text-docu-secondary whitespace-nowrap">대상 문서</label>
+                    <span class="text-sm font-medium text-docu-ink bg-surface-sub px-3 py-1.5 rounded-docu-btn border border-divider truncate max-w-xs"
+                          th:text="${fixedDocumentName}"></span>
+                </div>
+
+                <!-- 시스템 메시지 토글 -->
+                <button id="systemMsgToggle" type="button"
+                        class="ml-auto flex items-center gap-1.5 text-sm text-docu-secondary hover:text-docu-primary transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    시스템 메시지
+                    <svg id="systemMsgArrow" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+            </div>
+
+            <!-- 시스템 메시지 영역 (접이식) -->
+            <div id="systemMsgArea" class="hidden mt-3 pt-3 border-t border-divider">
+                <textarea id="systemMessage"
+                          rows="2"
+                          placeholder="AI에게 전달할 시스템 메시지를 입력하세요. (예: 한국어로 답변해주세요, 답변은 간결하게 해주세요)"
+                          class="form-textarea w-full resize-none text-sm"
+                          style="max-height: 100px;"></textarea>
             </div>
         </div>
 
-        <!-- 채팅 영역 -->
-        <div id="chatArea" class="flex-1 overflow-y-auto rounded-docu-card bg-surface-card border border-divider p-6 mb-4 docu-scroll">
+        <!-- 메인 영역: 미리보기 + 채팅 -->
+        <div class="flex-1 flex gap-4 min-h-0 mb-4">
 
-            <!-- 빈 상태 안내 -->
-            <div id="emptyChat" class="flex flex-col items-center justify-center h-full text-docu-secondary">
-                <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                </svg>
-                <p class="text-sm">문서에 대해 질문해 보세요.</p>
+            <!-- 미리보기 패널 (기본 숨김) -->
+            <div id="previewPanel" class="hidden w-3/5 flex-shrink-0 flex flex-col rounded-docu-card bg-surface-card border border-divider overflow-hidden">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-divider bg-surface-sub">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <svg class="w-4 h-4 text-docu-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span id="previewTitle" class="text-sm font-medium text-docu-ink truncate"></span>
+                        <span id="previewPage" class="text-xs text-docu-secondary flex-shrink-0"></span>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <a id="previewDetailLink" href="#" target="_blank"
+                           class="text-xs text-docu-primary hover:underline">상세보기</a>
+                        <button id="previewClose" th:classappend="${fixedDocumentId != null} ? 'hidden' : ''"
+                                class="text-docu-secondary hover:text-docu-ink transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <iframe id="previewIframe" class="flex-1 w-full bg-white"></iframe>
             </div>
 
-            <!-- 채팅 메시지 목록 (JS에서 렌더링) -->
-            <div id="chatMessages" class="hidden space-y-6">
+            <!-- 채팅 영역 -->
+            <div id="chatArea" class="flex-1 overflow-y-auto rounded-docu-card bg-surface-card border border-divider p-6 docu-scroll">
+
+                <!-- 빈 상태 안내 -->
+                <div id="emptyChat" class="flex flex-col items-center justify-center h-full text-docu-secondary">
+                    <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                    </svg>
+                    <p class="text-sm">문서에 대해 질문해 보세요.</p>
+                </div>
+
+                <!-- 채팅 메시지 목록 (JS에서 렌더링) -->
+                <div id="chatMessages" class="hidden space-y-6">
+                </div>
             </div>
         </div>
 
         <!-- 하단 입력 바 -->
         <div class="card-base card-shadow px-6 py-4">
-            <div class="max-w-4xl mx-auto relative">
+            <div class="max-w-4xl mx-auto flex items-end gap-3">
                 <textarea id="chatInput"
                           rows="1"
                           placeholder="질문을 입력하세요..."
-                          class="form-textarea w-full pr-12 resize-none"
+                          class="form-textarea flex-1 resize-none"
                           style="max-height: 120px;"></textarea>
                 <button id="sendBtn"
-                        class="absolute right-3 bottom-3 p-1.5 btn-primary rounded-lg">
+                        class="px-3 py-2 btn-primary rounded-docu-btn flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M12 19V5m0 0l-7 7m7-7l7 7"/>
@@ -84,6 +130,9 @@
 
     <!-- 메타 정보 -->
     <input type="hidden" id="publicId" th:value="${publicId}">
+    <input type="hidden" id="fixedDocumentId" th:value="${fixedDocumentId}">
+    <input type="hidden" id="fixedDocumentName" th:value="${fixedDocumentName}">
+    <input type="hidden" id="fixedDocumentExtension" th:value="${fixedDocumentExtension}">
 
 </th:block>
 

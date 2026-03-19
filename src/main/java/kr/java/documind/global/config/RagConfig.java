@@ -30,14 +30,6 @@ public class RagConfig {
     }
 
     @Bean
-    public ContextualQueryAugmenter queryAugmenter() {
-        return ContextualQueryAugmenter.builder()
-                .allowEmptyContext(false)
-                .documentFormatter(this::formatDocuments)
-                .build();
-    }
-
-    @Bean
     public DuplicateRemovalPostProcessor duplicateRemovalPostProcessor() {
         return new DuplicateRemovalPostProcessor();
     }
@@ -50,6 +42,14 @@ public class RagConfig {
             List<Document> docs = documentRetriever.retrieve(query);
             return duplicateRemovalPostProcessor.process(query, docs);
         };
+    }
+
+    @Bean
+    public ContextualQueryAugmenter queryAugmenter() {
+        return ContextualQueryAugmenter.builder()
+                .allowEmptyContext(false)
+                .documentFormatter(this::formatDocuments)
+                .build();
     }
 
     @Bean

@@ -13,13 +13,30 @@ const currentDoc = {
 
 document.addEventListener('DOMContentLoaded', () => {
     setupDropZone('editDropZone', 'editFile');
+    convertLocalDateTimes();
 
-    // 임베딩 진행중이면 SSE 구독
+    // 임베딩 상태에 따른 처리
     const embeddingStatus = document.getElementById('docEmbeddingStatus').value;
     if (embeddingStatus === 'PENDING' || embeddingStatus === 'PROCESSING') {
         subscribeEmbeddingStatus();
     }
+    if (embeddingStatus === 'FAILED') {
+        updateRetryButton('FAILED');
+    }
 });
+
+// ==================== UTC → 로컬 시간 변환 ====================
+
+function convertLocalDateTimes() {
+    document.querySelectorAll('.local-datetime').forEach(el => {
+        const utc = el.dataset.utc;
+        el.textContent = utc ? formatDateTime(utc) : '-';
+    });
+    document.querySelectorAll('.local-date').forEach(el => {
+        const utc = el.dataset.utc;
+        el.textContent = utc ? formatDate(utc) : '-';
+    });
+}
 
 // ==================== 파일 수정 ====================
 
@@ -104,6 +121,8 @@ async function confirmDelete() {
             closeModal('deleteModal');
             window.location.href = `/projects/${projectId}/groups`;
             return;
+        } else {
+            alert(result.error?.message || '문서 삭제에 실패했습니다.');
         }
     } catch (e) {
         alert('문서 삭제에 실패했습니다.');
@@ -119,18 +138,10 @@ document.getElementById('btnDownload').addEventListener('click', () => {
 });
 
 document.getElementById('btnChat').addEventListener('click', () => {
-    // TODO: 채팅 페이지로 이동
+    window.location.href = `/projects/${projectId}/chatbot?documentId=${documentId}`;
 });
 
 // ==================== 임베딩 SSE ====================
-
-const EMBEDDING_STATUS_MAP = {
-    NONE:       { classes: 'font-medium text-gray-400', label: '-' },
-    PENDING:    { classes: 'font-medium text-gray-500', label: '대기' },
-    PROCESSING: { classes: 'font-medium text-blue-600', label: '진행중' },
-    SUCCESS:    { classes: 'font-medium text-green-600', label: '성공' },
-    FAILED:     { classes: 'font-medium text-red-600', label: '실패' },
-};
 
 function subscribeEmbeddingStatus() {
     const source = new EventSource(`/api/projects/${projectId}/documents/${documentId}/embedding-status`);
@@ -138,6 +149,8 @@ function subscribeEmbeddingStatus() {
     source.addEventListener('embedding-status', (e) => {
         const status = e.data;
         updateEmbeddingBadge(status);
+        updateChatButton(status);
+        updateEditDeleteButtons(status);
 
         if (status === 'SUCCESS' || status === 'FAILED') {
             source.close();
@@ -153,7 +166,76 @@ function updateEmbeddingBadge(status) {
     const badge = document.getElementById('embeddingStatusBadge');
     if (!badge) return;
 
-    const config = EMBEDDING_STATUS_MAP[status] || EMBEDDING_STATUS_MAP.NONE;
-    badge.className = config.classes;
+    const config = EMBEDDING_STATUS[status] || EMBEDDING_STATUS.NONE;
+    badge.className = 'font-medium ' + config.classes;
     badge.textContent = config.label;
+
+    updateRetryButton(status);
+}
+
+function updateRetryButton(status) {
+    const container = document.getElementById('embeddingRetryContainer');
+    if (!container) return;
+
+    if (status === 'FAILED') {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
+async function retryEmbedding() {
+    const btn = document.getElementById('btnRetryEmbedding');
+    btn.disabled = true;
+    btn.textContent = '재시도 중...';
+
+    try {
+        const result = await callApi(
+            `/api/projects/${projectId}/documents/${documentId}/retry-embedding`,
+            { method: 'POST' }
+        );
+        if (result.success) {
+            subscribeEmbeddingStatus();
+        } else {
+            alert(result.error?.message || '임베딩 재시도에 실패했습니다.');
+            btn.disabled = false;
+            btn.textContent = '임베딩 재시도';
+        }
+    } catch (e) {
+        alert('임베딩 재시도에 실패했습니다.');
+        btn.disabled = false;
+        btn.textContent = '임베딩 재시도';
+        console.error(e);
+    }
+}
+
+function updateEditDeleteButtons(status) {
+    const btnEdit = document.getElementById('btnEdit');
+    const btnDelete = document.getElementById('btnDelete');
+    const inProgress = status === 'PENDING' || status === 'PROCESSING';
+
+    [btnEdit, btnDelete].forEach(btn => {
+        if (!btn) return;
+        btn.disabled = inProgress;
+        if (inProgress) {
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
+}
+
+function updateChatButton(status) {
+    const btn = document.getElementById('btnChat');
+    if (!btn) return;
+
+    if (status === 'SUCCESS') {
+        btn.disabled = false;
+        btn.className = 'flex-1 btn-primary py-3 flex items-center justify-center gap-2';
+        btn.title = '';
+    } else {
+        btn.disabled = true;
+        btn.className = 'flex-1 py-3 flex items-center justify-center gap-2 bg-surface-muted text-docu-secondary border border-divider rounded-docu-btn cursor-not-allowed';
+        btn.title = '임베딩이 완료된 문서만 채팅할 수 있습니다.';
+    }
 }

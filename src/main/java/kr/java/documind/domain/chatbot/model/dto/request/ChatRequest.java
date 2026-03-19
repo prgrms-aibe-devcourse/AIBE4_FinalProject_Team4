@@ -7,4 +7,5 @@ public record ChatRequest(
         String userSystemMessage,
         @NotBlank(message = "메시지를 입력해 주세요.") String userMessage,
         String groupName,
-        String categoryName) {}
+        String categoryName,
+        Long documentId) {}

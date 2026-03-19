@@ -6,79 +6,44 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import technology.tabula.RectangularTextContainer;
 import technology.tabula.Table;
 
-@Slf4j
 public class TableRefiner {
 
     private static final int MIN_NON_EMPTY_CELLS = 2;
 
     public String refine(Table table) {
         List<List<String>> grid = extractRawGrid(table);
-        log.debug(
-                "[TableRefiner] rawGrid: {}행 x {}열",
-                grid.size(),
-                grid.isEmpty() ? 0 : grid.get(0).size());
-        logGrid("rawGrid", grid);
         return refine(grid);
     }
 
     public String refine(List<List<String>> grid) {
         grid = expandMergedCells(grid);
-        logGrid("expandMergedCells", grid);
-
         grid = normalizeCells(grid);
         grid = removeEmptyRows(grid);
         grid = removeEmptyColumns(grid);
         grid = normalizeColumnCount(grid);
         grid = cleanupSparseTable(grid);
-        logGrid("normalize 완료", grid);
-
         grid = distributeStackedValues(grid);
-        logGrid("distributeStackedValues", grid);
-
         grid = collapseHeaderRows(grid);
-        logGrid("collapseHeaderRows", grid);
-
         grid = removeStandaloneGroupRows(grid);
         grid = removeEmptyRows(grid);
         grid = removeEmptyColumns(grid);
-        logGrid("cleanup 완료", grid);
 
         if (isFragmentedTextTable(grid)) {
-            log.debug("[TableRefiner] 파편화된 텍스트 표 감지 → 행별 텍스트 병합");
             return joinFragmentedRows(grid);
         }
 
         if (!shouldPreserveSparseHeader(grid)) {
             fillMergedCells(grid);
-            logGrid("fillMergedCells", grid);
         }
 
         if (!isMeaningful(grid)) {
-            log.debug("[TableRefiner] 유효하지 않은 표 → 빈 문자열 반환");
             return "";
         }
 
-        boolean hasHeader = detectHeader(grid);
-        log.debug("[TableRefiner] hasHeader={}", hasHeader);
-        return toMarkdown(grid, hasHeader);
-    }
-
-    private void logGrid(String step, List<List<String>> grid) {
-        if (!log.isDebugEnabled() || grid.isEmpty()) {
-            return;
-        }
-        log.debug("[TableRefiner][{}] {}행 x {}열", step, grid.size(), grid.get(0).size());
-        int limit = Math.min(grid.size(), 5);
-        for (int i = 0; i < limit; i++) {
-            log.debug("[TableRefiner][{}] row[{}]: {}", step, i, grid.get(i));
-        }
-        if (grid.size() > limit) {
-            log.debug("[TableRefiner][{}] ... 외 {}행", step, grid.size() - limit);
-        }
+        return toMarkdown(grid, detectHeader(grid));
     }
 
     // ── 1. Raw Grid 추출 ──
@@ -363,11 +328,6 @@ public class TableRefiner {
                 }
             }
 
-            log.debug(
-                    "[distributeStackedValues] row {} → {}행 분배 (includeCurrentRow={})",
-                    rowIdx,
-                    matchCount,
-                    includeCurrentRow);
             rowIdx += emptyBelow + 1;
         }
         return grid;
@@ -424,7 +384,6 @@ public class TableRefiner {
             result.add(grid.get(row));
         }
 
-        log.debug("[collapseHeaderRows] {}행 헤더 → 1행으로 축소", dataStart);
         return result;
     }
 
