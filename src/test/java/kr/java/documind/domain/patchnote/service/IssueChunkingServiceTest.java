@@ -288,6 +288,37 @@ class IssueChunkingServiceTest {
         }
 
         @Test
+        @DisplayName("청크 생성: resolutionNote 없을 때 total_chunks=1 metadata 확인")
+        void buildChunks_background1개_total_chunks_1() {
+            // Given
+            IssueChunkingSource source = sourceWithoutResolution("충분한 설명입니다");
+
+            // When
+            List<Document> chunks = chunkingService.buildChunks(source);
+
+            // Then
+            assertThat(chunks).hasSize(1);
+            assertThat(chunks.get(0).getMetadata()).containsEntry("total_chunks", 1);
+        }
+
+        @Test
+        @DisplayName("청크 생성: resolutionNote 500자 초과 시 total_chunks=2 metadata 확인")
+        void buildChunks_background_resolution2개_total_chunks_2() {
+            // Given
+            IssueChunkingSource source = sourceWithResolution("A".repeat(501));
+
+            // When
+            List<Document> chunks = chunkingService.buildChunks(source);
+
+            // Then
+            assertThat(chunks).hasSize(2);
+            assertThat(chunks)
+                    .allSatisfy(
+                            chunk ->
+                                    assertThat(chunk.getMetadata()).containsEntry("total_chunks", 2));
+        }
+
+        @Test
         @DisplayName("청크 생성: project_id, severity, error_type 메타데이터 포함")
         void buildChunks_필수메타데이터_포함() {
             // Given
@@ -298,9 +329,89 @@ class IssueChunkingServiceTest {
 
             // Then
             Map<String, Object> metadata = chunks.get(0).getMetadata();
-            assertThat(metadata).containsEntry("project_id", PROJECT_ID.toString());
+            assertThat(metadata).containsEntry("project_id", PROJECT_ID);
             assertThat(metadata).containsEntry("severity", "HIGH");
             assertThat(metadata).containsEntry("error_type", "BUG");
+        }
+    }
+
+    @Nested
+    @DisplayName("buildChunks() - has_resolution / issue_title / null 처리")
+    class AdditionalMetadata {
+
+        @Test
+        @DisplayName("청크 생성: resolutionNote 있을 때 has_resolution=true (모든 청크 공통)")
+        void buildChunks_resolutionNote있을때_has_resolution_true() {
+            // Given
+            IssueChunkingSource source = sourceWithResolution("짧은 해결 방법");
+
+            // When
+            List<Document> chunks = chunkingService.buildChunks(source);
+
+            // Then
+            assertThat(chunks)
+                    .allSatisfy(
+                            chunk ->
+                                    assertThat(chunk.getMetadata())
+                                            .containsEntry("has_resolution", true));
+        }
+
+        @Test
+        @DisplayName("청크 생성: resolutionNote 없을 때 has_resolution=false")
+        void buildChunks_resolutionNote없을때_has_resolution_false() {
+            // Given
+            IssueChunkingSource source = sourceWithoutResolution("충분한 설명입니다");
+
+            // When
+            List<Document> chunks = chunkingService.buildChunks(source);
+
+            // Then
+            assertThat(chunks.get(0).getMetadata()).containsEntry("has_resolution", false);
+        }
+
+        @Test
+        @DisplayName("청크 생성: issue_title 메타데이터가 소스 title과 일치")
+        void buildChunks_issue_title_metadata포함() {
+            // Given
+            IssueChunkingSource source = sourceWithoutResolution("충분한 설명입니다");
+
+            // When
+            List<Document> chunks = chunkingService.buildChunks(source);
+
+            // Then
+            assertThat(chunks.get(0).getMetadata()).containsEntry("issue_title", "테스트 이슈");
+        }
+
+        @Test
+        @DisplayName("청크 생성: severity=null → metadata에 \"UNKNOWN\" 저장")
+        void buildChunks_severity_null_UNKNOWN저장() {
+            // Given
+            IssueChunkingSource source =
+                    new IssueChunkingSource(
+                            ISSUE_ID, PROJECT_ID, "테스트 이슈", "충분한 설명입니다",
+                            null, null, "BUG", null, List.of());
+
+            // When
+            List<Document> chunks = chunkingService.buildChunks(source);
+
+            // Then
+            assertThat(chunks.get(0).getMetadata()).containsEntry("severity", "UNKNOWN");
+        }
+
+        @Test
+        @DisplayName("청크 생성: issueType=null → error_type metadata에 \"UNKNOWN\" 저장")
+        void buildChunks_issueType_null_UNKNOWN저장() {
+            // Given
+            IssueChunkingSource source =
+                    new IssueChunkingSource(
+                            ISSUE_ID, PROJECT_ID, "테스트 이슈", "충분한 설명입니다",
+                            null, "HIGH", null, null, List.of());
+
+            // When
+            List<Document> chunks = chunkingService.buildChunks(source);
+
+            // Then
+            assertThat(chunks.get(0).getMetadata()).containsEntry("error_type", "UNKNOWN");
         }
     }
 

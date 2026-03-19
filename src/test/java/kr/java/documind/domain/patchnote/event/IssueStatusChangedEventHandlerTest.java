@@ -7,7 +7,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
+
+import org.mockito.InOrder;
 
 import java.time.Instant;
 import java.util.List;
@@ -299,6 +302,21 @@ class IssueStatusChangedEventHandlerTest {
         }
 
         @Test
+        @DisplayName("성공 흐름: excludeFromPatchNote=true 이어도 saveVectorThenUpsert 호출됨")
+        void handleIssueResolved_excludeFromPatchNote_true_saveVectorThenUpsert호출됨() {
+            // Given
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
+            stubSuccessPath(issue);
+            IssueStatusChangedEvent event = resolvedEvent(true);
+
+            // When
+            handler.handleIssueResolved(event);
+
+            // Then
+            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
+        }
+
+        @Test
         @DisplayName("성공 흐름: occurredAt=null → NPE 없이 현재 시각으로 대체")
         void handleIssueResolved_occurredAt_null_정상처리() {
             // Given
@@ -319,6 +337,33 @@ class IssueStatusChangedEventHandlerTest {
 
             // Then
             then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // handleIssueResolved() — 처리 순서 보장
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("handleIssueResolved() - 처리 순서 보장")
+    class HandleIssueResolvedOrder {
+
+        @Test
+        @DisplayName("순서 보장: embed → saveVectorThenUpsert → publishEvent 순서로 호출")
+        void handleIssueResolved_InOrder_embed_save_publish() {
+            // Given
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
+            stubSuccessPath(issue);
+            IssueStatusChangedEvent event = resolvedEvent(false);
+
+            // When
+            handler.handleIssueResolved(event);
+
+            // Then
+            InOrder order = inOrder(embeddingModelClient, pendingItemUpsertService, eventPublisher);
+            then(embeddingModelClient).should(order).embed(any());
+            then(pendingItemUpsertService).should(order).saveVectorThenUpsert(any(), any(), any(), any());
+            then(eventPublisher).should(order).publishEvent(any(Object.class));
         }
     }
 
@@ -442,6 +487,21 @@ class IssueStatusChangedEventHandlerTest {
 
             // Then
             then(vectorStoreManager).should(never()).deleteBySourceId(any(), any());
+        }
+
+        @Test
+        @DisplayName("롤백 처리: vectorStoreManager.deleteBySourceId 예외 발생 → 전파되지 않음")
+        void handleIssueRollback_벡터삭제예외발생시_삼킴() {
+            // Given
+            IssueStatusChangedEvent event = rollbackEvent(IssueStatus.IN_PROGRESS);
+            given(pendingItemRollbackService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+                    .willReturn(true);
+            willThrow(new RuntimeException("벡터 삭제 실패"))
+                    .given(vectorStoreManager)
+                    .deleteBySourceId(ISSUE_ID, SourceType.ISSUE);
+
+            // When & Then (예외 전파 없음)
+            handler.handleIssueRollback(event);
         }
 
         @Test

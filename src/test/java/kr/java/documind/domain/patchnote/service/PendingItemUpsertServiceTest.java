@@ -6,7 +6,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+
+import org.mockito.InOrder;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -145,6 +148,66 @@ class PendingItemUpsertServiceTest {
         }
 
         @Test
+        @DisplayName("upsert: refresh 시 is_source_deleted 불변성 — sourceDeleted=true 유지")
+        void upsertPendingItem_refresh시_sourceDeleted_불변성유지() {
+            // Given
+            PendingItemCreateDto dto = buildDto(PendingItemStatus.PENDING);
+            PendingItem existing =
+                    PendingItem.create(
+                            PROJECT_ID,
+                            SOURCE_ID,
+                            SourceType.ISSUE,
+                            "이전 제목",
+                            "이전 요약",
+                            "ㅇㅈ",
+                            PatchType.FIX,
+                            PendingItemStatus.PENDING,
+                            NOW.minusDays(1));
+            existing.markSourceDeleted();
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+                    .willReturn(Optional.of(existing));
+
+            // When
+            pendingItemUpsertService.upsertPendingItem(dto);
+
+            // Then
+            assertThat(existing.getTitle()).isEqualTo("패치노트 제목");
+            assertThat(existing.isSourceDeleted()).isTrue();
+        }
+
+        @Test
+        @DisplayName("upsert: refresh 시 summary·choseong·patchType·sourceCreatedAt 갱신 확인")
+        void upsertPendingItem_refresh시_갱신필드확인() {
+            // Given
+            PendingItemCreateDto dto = buildDto(PendingItemStatus.PENDING);
+            PendingItem existing =
+                    PendingItem.create(
+                            PROJECT_ID,
+                            SOURCE_ID,
+                            SourceType.ISSUE,
+                            "이전 제목",
+                            "이전 요약",
+                            "ㅇㅈ",
+                            PatchType.NEW,
+                            PendingItemStatus.PENDING,
+                            NOW.minusDays(1));
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+                    .willReturn(Optional.of(existing));
+
+            // When
+            pendingItemUpsertService.upsertPendingItem(dto);
+
+            // Then
+            assertThat(existing.getSummary()).isEqualTo("패치노트 요약입니다");
+            assertThat(existing.getPatchType()).isEqualTo(PatchType.FIX);
+            assertThat(existing.getSourceCreatedAt()).isEqualTo(NOW);
+        }
+
+        @Test
         @DisplayName("upsert: 기존 COMPLETED 항목 refresh → status는 COMPLETED 유지")
         void upsertPendingItem_COMPLETED항목_status유지refresh() {
             // Given
@@ -193,6 +256,29 @@ class PendingItemUpsertServiceTest {
         }
 
         @Test
+        @DisplayName("recover: sourceType=DOCUMENT → vectorStoreManager 미호출 후 PendingItemUpsertFailedException 발생")
+        void recoverUpsert_DOCUMENT타입_벡터삭제미호출() {
+            // Given
+            PendingItemCreateDto dto =
+                    new PendingItemCreateDto(
+                            PROJECT_ID,
+                            SOURCE_ID,
+                            SourceType.DOCUMENT,
+                            "문서 제목",
+                            "문서 요약",
+                            "ㄷㅅ",
+                            PatchType.CHANGE,
+                            PendingItemStatus.PENDING,
+                            NOW);
+            DataAccessException cause = new DataIntegrityViolationException("DB 오류");
+
+            // When & Then
+            assertThatThrownBy(() -> pendingItemUpsertService.recoverUpsert(cause, dto))
+                    .isInstanceOf(PendingItemUpsertFailedException.class);
+            then(vectorStoreManager).should(never()).deleteBySourceId(any(), any());
+        }
+
+        @Test
         @DisplayName("recover: 벡터 정리 실패해도 PendingItemUpsertFailedException 발생")
         void recoverUpsert_벡터정리실패해도_PendingItemUpsertFailedException발생() {
             // Given
@@ -229,6 +315,27 @@ class PendingItemUpsertServiceTest {
                     .isInstanceOf(RuntimeException.class);
             then(pendingItemRepository)
                     .should(never())
+                    .findByProjectIdAndSourceTypeAndSourceId(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("벡터+upsert: insertChunks → upsertPendingItem(findByProjectId...) 순서 보장")
+        void saveVectorThenUpsert_InOrder_벡터저장후_upsert호출() {
+            // Given
+            PendingItemCreateDto dto = buildDto(PendingItemStatus.PENDING);
+            given(
+                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+                    .willReturn(Optional.empty());
+
+            // When
+            pendingItemUpsertService.saveVectorThenUpsert(SOURCE_ID, List.of(), List.of(), dto);
+
+            // Then
+            InOrder order = inOrder(vectorStoreManager, pendingItemRepository);
+            then(vectorStoreManager).should(order).insertChunks(any(), any(), any());
+            then(pendingItemRepository)
+                    .should(order)
                     .findByProjectIdAndSourceTypeAndSourceId(any(), any(), any());
         }
 

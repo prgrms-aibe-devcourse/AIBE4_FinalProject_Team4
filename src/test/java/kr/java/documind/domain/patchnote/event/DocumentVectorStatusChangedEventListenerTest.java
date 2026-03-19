@@ -9,7 +9,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+
+import org.mockito.InOrder;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -349,6 +352,59 @@ class DocumentVectorStatusChangedEventListenerTest {
         }
 
         @Test
+        @DisplayName("dto 조립: dto.title() · dto.summary() 가 LLM 결과값과 일치")
+        void handle_dto조립_title_summary_LLM결과반영() {
+            // Given
+            DocumentEmbeddedEvent event = buildEvent(true, false);
+            DocumentSummaryResult summary =
+                    new DocumentSummaryResult("LLM제목", "LLM요약내용", "CHANGE", true);
+            given(vectorStoreRepository.findContentsBySourceId(SOURCE_ID, SourceType.DOCUMENT, 10))
+                    .willReturn(List.of("청크1"));
+            given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
+                    .willReturn(true);
+            given(documentSummaryGenerator.generate(anyString(), anyString(), anyString(), anyList()))
+                    .willReturn(summary);
+            given(patchTypeResolver.resolveFromLlmCategory("CHANGE")).willReturn(PatchType.CHANGE);
+            given(choseongUtil.extract("LLM제목")).willReturn("ㄹㄹㅁ");
+
+            // When
+            listener.handle(event);
+
+            // Then
+            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
+            assertThat(dtoCaptor.getValue().title()).isEqualTo("LLM제목");
+            assertThat(dtoCaptor.getValue().summary()).isEqualTo("LLM요약내용");
+        }
+
+        @Test
+        @DisplayName("dto 조립: dto.patchType() 이 PatchTypeResolver 반환값과 일치")
+        void handle_dto조립_patchType_resolver반영() {
+            // Given
+            DocumentEmbeddedEvent event = buildEvent(true, false);
+            DocumentSummaryResult summary =
+                    new DocumentSummaryResult("제목", "요약", "NEW", true);
+            given(vectorStoreRepository.findContentsBySourceId(SOURCE_ID, SourceType.DOCUMENT, 10))
+                    .willReturn(List.of("청크1"));
+            given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
+                    .willReturn(true);
+            given(documentSummaryGenerator.generate(anyString(), anyString(), anyString(), anyList()))
+                    .willReturn(summary);
+            given(patchTypeResolver.resolveFromLlmCategory("NEW")).willReturn(PatchType.NEW);
+            given(choseongUtil.extract("제목")).willReturn("ㅈㅁ");
+
+            // When
+            listener.handle(event);
+
+            // Then
+            ArgumentCaptor<PendingItemCreateDto> dtoCaptor =
+                    ArgumentCaptor.forClass(PendingItemCreateDto.class);
+            then(pendingItemUpsertService).should().upsertPendingItem(dtoCaptor.capture());
+            assertThat(dtoCaptor.getValue().patchType()).isEqualTo(PatchType.NEW);
+        }
+
+        @Test
         @DisplayName("dto 조립: sourceCreatedAt 이벤트값 그대로 전달")
         void handle_dto조립_sourceCreatedAt이벤트값전달() {
             // Given
@@ -551,6 +607,35 @@ class DocumentVectorStatusChangedEventListenerTest {
             // Then — 성공 이벤트 projectId
             DocumentPendingItemCreatedEvent published = captureCreatedEvent();
             assertThat(published.projectId()).isEqualTo(otherProjectId);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // handle() — 처리 순서 보장
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("handle() - 처리 순서 보장")
+    class HandleOrder {
+
+        @Test
+        @DisplayName("순서 보장: documentSummaryGenerator → upsertPendingItem → publishEvent 순서로 호출")
+        void handle_InOrder_LLM후_upsert후_publish() {
+            // Given
+            DocumentEmbeddedEvent event = buildEvent(true, false);
+            stubSuccessPath();
+
+            // When
+            listener.handle(event);
+
+            // Then
+            InOrder order =
+                    inOrder(documentSummaryGenerator, pendingItemUpsertService, eventPublisher);
+            then(documentSummaryGenerator)
+                    .should(order)
+                    .generate(anyString(), anyString(), anyString(), anyList());
+            then(pendingItemUpsertService).should(order).upsertPendingItem(any());
+            then(eventPublisher).should(order).publishEvent(any(Object.class));
         }
     }
 
