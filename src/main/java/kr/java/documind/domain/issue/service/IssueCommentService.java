@@ -230,8 +230,7 @@ public class IssueCommentService {
         }
 
         // 2. 댓글 목록 조회 (페이징, 오래된 순)
-        Page<IssueComment> page =
-                commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId, pageable);
+        Page<IssueComment> page = commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId, pageable);
 
         // 3. DTO 변환 (작성자 및 멘션 정보 포함)
         List<CommentResponse> responses =
