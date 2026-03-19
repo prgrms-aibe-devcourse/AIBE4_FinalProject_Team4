@@ -102,7 +102,7 @@ class LogBufferServiceTest {
 
     // 헬퍼 메서드: GameLog 생성
     private GameLog createGameLog(String logIdSuffix) {
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         return GameLog.builder()
                 .logId(UUID.randomUUID())
                 .projectId(UUID.randomUUID())
@@ -128,12 +128,12 @@ class LogBufferServiceTest {
         return new LogEvent(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                OffsetDateTime.now(),
+                OffsetDateTime.now(java.time.ZoneOffset.UTC),
                 "test-session",
                 "test-user",
                 LogSeverity.INFO.name(),
                 EventCategory.SYSTEM.name(),
-                OffsetDateTime.now().toString(),
+                OffsetDateTime.now(java.time.ZoneOffset.UTC).toString(),
                 "trace-123",
                 "span-456",
                 archiveMessage,

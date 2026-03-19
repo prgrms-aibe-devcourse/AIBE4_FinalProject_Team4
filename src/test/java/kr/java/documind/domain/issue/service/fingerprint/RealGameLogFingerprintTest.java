@@ -306,8 +306,8 @@ class RealGameLogFingerprintTest {
                 .fingerprint(logEntry.path("fingerprint").asText(null))
                 .resource(objectMapper.convertValue(logEntry.path("resource"), Map.class))
                 .attributes(objectMapper.convertValue(logEntry.path("attributes"), Map.class))
-                .createdAt(OffsetDateTime.now())
-                .updatedAt(OffsetDateTime.now())
+                .createdAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
+                .updatedAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
                 .build();
     }
 

@@ -81,8 +81,8 @@ class IssueManagementServiceIntegrationTest {
                         .errorType(ErrorType.NULL_POINTER)
                         .stackKey("TestService.testMethod:42")
                         .occurrenceCount(10)
-                        .firstOccurredAt(OffsetDateTime.now().minusDays(1))
-                        .lastOccurredAt(OffsetDateTime.now())
+                        .firstOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC).minusDays(1))
+                        .lastOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
                         .build();
 
         testIssue = issueRepository.save(testIssue);

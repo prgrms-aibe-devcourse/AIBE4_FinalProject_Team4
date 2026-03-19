@@ -230,7 +230,7 @@ class LogJdbcRepositoryTest {
      * @return GameLog 리스트
      */
     private List<GameLog> createTestLogs(int count) {
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         return IntStream.range(0, count)
                 .mapToObj(
                         i ->
