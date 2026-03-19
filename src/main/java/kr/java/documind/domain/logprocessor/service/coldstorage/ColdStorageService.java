@@ -205,7 +205,7 @@ public class ColdStorageService {
                                 java.util.Map.of(
                                         "table-name", tableName,
                                         "week-start-date", weekStartDate.toString(),
-                                        "archived-at", java.time.OffsetDateTime.now().toString()))
+                                        "archived-at", java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toString()))
                         .build();
 
         s3Client.putObject(putRequest, parquetFile.toPath());
