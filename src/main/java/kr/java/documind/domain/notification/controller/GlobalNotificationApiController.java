@@ -1,5 +1,6 @@
 package kr.java.documind.domain.notification.controller;
 
+import java.util.List;
 import kr.java.documind.domain.notification.infrastructure.NotificationSseManager;
 import kr.java.documind.domain.notification.model.dto.response.NotificationCursorPageResponse;
 import kr.java.documind.domain.notification.service.NotificationCommandService;
@@ -13,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -66,6 +68,15 @@ public class GlobalNotificationApiController {
     public ResponseEntity<ApiResponse<Void>> readGlobal(
             @PathVariable Long id, @AuthenticationPrincipal CustomUserDetails auth) {
         commandService.markRead(id, auth.getMemberId(), null);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    /** 6. 화면 노출 기반 다중 읽음 처리 (Batch) */
+    @PatchMapping("/read-batch")
+    public ResponseEntity<ApiResponse<Void>> readBatchGlobal(
+            @RequestBody List<Long> notificationIds,
+            @AuthenticationPrincipal CustomUserDetails auth) {
+        commandService.markReadBatch(notificationIds, auth.getMemberId());
         return ResponseEntity.ok(ApiResponse.success());
     }
 }

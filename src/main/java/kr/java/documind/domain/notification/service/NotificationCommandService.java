@@ -1,5 +1,6 @@
 package kr.java.documind.domain.notification.service;
 
+import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.notification.model.entity.Notification;
 import kr.java.documind.domain.notification.model.repository.NotificationRepository;
@@ -34,6 +35,12 @@ public class NotificationCommandService {
 
     @Transactional
     public int markAllRead(UUID memberId, UUID projectId) {
-        return notificationRepository.markAllReadByProjectIdAndReceiverId(projectId, memberId);
+        return notificationRepository.markAllReadDynamically(projectId, memberId); // 수정됨
+    }
+
+    @Transactional
+    public void markReadBatch(List<Long> ids, UUID memberId) {
+        if (ids == null || ids.isEmpty()) return;
+        notificationRepository.markReadBatch(ids, memberId);
     }
 }

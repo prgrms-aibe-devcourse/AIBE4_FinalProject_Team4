@@ -60,59 +60,63 @@
 
         <!-- 알림 종 버튼 -->
         <button type="button"
+                id="notification-menu-button"
                 @click="toggleDropdown()"
                 class="relative w-9 h-9 flex items-center justify-center rounded-docu-btn border-2 border-docu-ink bg-surface-base text-docu-ink shadow-docu-sm transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary"
                 aria-label="알림"
+                aria-haspopup="true"
                 :aria-expanded="isOpen">
 
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
 
-            <!-- 🚨 [수정] 배지: x-show와 x-text로 실시간 바인딩 -->
+            <!-- 배지: x-show와 x-text로 실시간 바인딩 -->
             <span x-show="unreadCount > 0"
                   x-text="unreadCount > 99 ? '99+' : unreadCount"
                   class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-docu-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none border border-white">
-            </span>
+        </span>
         </button>
 
         <!-- 알림 드롭다운 -->
-<!--        <div x-show="isOpen"-->
-<!--             x-transition:enter="transition ease-out duration-200"-->
-<!--             x-transition:enter-start="opacity-0 scale-95"-->
-<!--             x-transition:enter-end="opacity-100 scale-100"-->
-<!--             class="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-surface-card border border-divider rounded-docu-card shadow-docu-card z-[100] overflow-hidden">-->
+        <!-- Alpine 3.x 단축 속성(Shorthand) 적용으로 IDE 경고 제거 및 가독성 향상 -->
         <div x-show="isOpen"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 scale-95"
-             x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="transition ease-in duration-75"
-             x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-95"
-             class="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-surface-card border border-divider rounded-docu-card shadow-docu-card z-[100] overflow-hidden">
+             x-transition.duration.200ms.ease-out
+             x-transition.scale.95
+             x-transition.opacity
+             class="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-surface-card border border-divider rounded-docu-card shadow-docu-card z-[100] overflow-hidden"
+             role="menu"
+             aria-orientation="vertical"
+             aria-labelledby="notification-menu-button">
 
             <div class="flex items-center justify-between px-4 py-3 border-b border-divider bg-surface-base">
                 <span class="text-sm font-bold text-docu-ink">최근 알림</span>
                 <button @click="markAllAsRead()"
-                        class="text-xs text-docu-secondary hover:text-docu-primary transition-colors">
+                        class="text-xs text-docu-secondary hover:text-docu-primary transition-colors"
+                        role="menuitem">
                     모두 읽음
                 </button>
             </div>
 
-            <ul class="max-h-[400px] overflow-y-auto divide-y divide-divider">
+            <ul class="max-h-[400px] overflow-y-auto divide-y divide-divider" role="none">
                 <!-- 로딩 상태 -->
                 <template x-if="isLoading">
-                    <li class="px-4 py-8 text-center text-sm text-docu-secondary">로딩 중...</li>
+                    <li class="px-4 py-8 text-center text-sm text-docu-secondary" role="none">로딩 중...</li>
                 </template>
 
                 <!-- 빈 상태 -->
                 <template x-if="!isLoading && notifications.length === 0">
-                    <li class="px-4 py-8 text-center text-sm text-docu-secondary">새로운 알림이 없습니다.</li>
+                    <li class="px-4 py-8 text-center text-sm text-docu-secondary" role="none">새로운 알림이 없습니다.</li>
                 </template>
 
                 <!-- 알림 목록 루프 (x-for) -->
                 <template x-for="n in notifications" :key="n.id">
-                    <li @click="handleNotificationClick(n)"
+                    <!-- Intersection Observer 연동을 위한 data-id 및 x-init 바인딩 -->
+                    <li :data-id="n.id"
+                        x-init="!n.isRead ? observer.observe($el) : null"
+                        @click="handleNotificationClick(n)"
+                        role="menuitem"
+                        tabindex="-1"
                         class="relative flex items-start gap-3 px-4 py-3 hover:bg-surface-sub cursor-pointer transition-colors">
 
                         <!-- 미읽음 표시 점 -->

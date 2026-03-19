@@ -42,6 +42,11 @@
             <div class="space-y-3 min-h-[300px]">
                 <template x-for="n in notifications" :key="n.id">
                     <div class="relative bg-surface-sub rounded-docu-card border border-divider p-4 space-y-2 transition-all">
+                        <!-- data-id 및 readObserver 등록 -->
+                        <div :data-id="n.id"
+                             x-init="!n.isRead ? readObserver.observe($el) : null"
+                             class="relative bg-surface-sub rounded-docu-card border border-divider p-4 space-y-2 transition-all">
+
                         <!-- 미읽음 배지 (x-show 사용) -->
                         <span x-show="!n.isRead"
                               class="absolute top-4 left-3 w-2 h-2 rounded-full bg-docu-danger"></span>
@@ -108,6 +113,9 @@
                 cursorId: null,
                 hasNext: true,
                 isLoading: false,
+                pendingReadIds: new Set(),
+                readTimeout: null,
+                readObserver: null,
 
                 // ── Constants ─────────────────────────────────────────────────
                 EVENT_LABEL: {
@@ -131,11 +139,66 @@
                     this.publicId = document.getElementById('publicId')?.value;
                     if (!this.publicId) return;
 
+                    this.setupImpressionObserver();
                     await this.loadMore(false);
                     this.setupInfiniteScroll();
                 },
 
                 // ── Actions ───────────────────────────────────────────────────
+                // 노출 기반 읽음 처리 로직
+                setupImpressionObserver() {
+                    this.readObserver = new IntersectionObserver((entries) => {
+                        let hasNewReads = false;
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const id = parseInt(entry.target.dataset.id, 10);
+                                const noti = this.notifications.find(n => n.id === id);
+
+                                if (noti && !noti.isRead && !this.pendingReadIds.has(id)) {
+                                    this.pendingReadIds.add(id);
+                                    hasNewReads = true;
+
+                                    // 한 번 인지한 항목은 다시 관찰하지 않음
+                                    this.readObserver.unobserve(entry.target);
+
+                                    // 즉각적인 isRead = true 처리를 제거하고,
+                                    // 사용자가 새 알림을 인지할 수 있도록 2.5초 뒤에 지워지게 함
+                                    setTimeout(() => {
+                                        noti.isRead = true;
+                                    }, 2500);
+                                }
+                            }
+                        });
+
+                        // 백엔드 데이터 동기화는 기존과 동일하게 500ms 단위로 빠르고 정확하게 Batch 처리
+                        if (hasNewReads) {
+                            clearTimeout(this.readTimeout);
+                            this.readTimeout = setTimeout(() => this.flushPendingReads(), 500);
+                        }
+                    }, { threshold: 0.5 }); // 항목이 50% 이상 보일 때 감지
+                },
+
+                async flushPendingReads() {
+                    if (this.pendingReadIds.size === 0) return;
+                    const idsToUpdate = Array.from(this.pendingReadIds);
+                    this.pendingReadIds.clear();
+
+                    try {
+                        // 전역 GNB에서 사용하던 Batch API 재사용 (코드 재사용성 확보)
+                        await callApi('/api/notifications/read-batch', {
+                            method: 'PATCH',
+                            body: JSON.stringify(idsToUpdate)
+                        });
+
+                        // 전역 스토어(GNB 배지 카운트)와의 동기화가 필요하다면 여기서 트리거
+                        if (window.notificationGlobalDataLoaded) {
+                            Alpine.store('notificationStore')?.fetchInitialData(); // 카운트 재조회
+                        }
+                    } catch (error) {
+                        console.error('[Notification History] Batch read failed:', error);
+                    }
+                },
+
                 async loadMore(append = true) {
                     if (this.isLoading || (!this.hasNext && append)) return;
                     this.isLoading = true;
