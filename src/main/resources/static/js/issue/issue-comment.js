@@ -143,6 +143,11 @@ async function submitComment() {
             mentionedMembers = [];
             updateMentionedMembersPreview();
             loadComments(0); // 첫 페이지로 이동
+
+            // 타임라인 즉시 업데이트 (issue-analysis.js의 함수 호출)
+            if (typeof renderTimeline === 'function' && currentIssue) {
+                renderTimeline(currentIssue);
+            }
         }
     } catch (error) {
         console.error('댓글 작성 실패:', error);
@@ -235,6 +240,11 @@ async function deleteComment(commentId) {
         if (response.success) {
             showTopToast('댓글이 삭제되었습니다', 'success');
             loadComments(currentPage);
+
+            // 타임라인 즉시 업데이트
+            if (typeof renderTimeline === 'function' && currentIssue) {
+                renderTimeline(currentIssue);
+            }
         }
     } catch (error) {
         console.error('댓글 삭제 실패:', error);

@@ -9,6 +9,7 @@ let currentTimeRange = '7d';
 let trendChart = null;
 let currentAssignee = null;
 let projectMembers = []; // 프로젝트 멤버 캐시
+let currentIssue = null; // 현재 이슈 정보 캐시
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 초기화
@@ -81,6 +82,9 @@ async function loadIssueDetail() {
 }
 
 async function renderIssueDetail(issue) {
+    // 현재 이슈 캐시에 저장
+    currentIssue = issue;
+
     // 헤더 정보
     document.getElementById('issueTitle').textContent = issue.title;
     document.getElementById('statusBadge').innerHTML = getStatusBadge(issue.status);

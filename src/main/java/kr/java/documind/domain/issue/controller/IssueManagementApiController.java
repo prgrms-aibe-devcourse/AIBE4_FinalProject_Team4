@@ -29,6 +29,7 @@ import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
 import kr.java.documind.domain.issue.service.workflow.IssueManagementService;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
 import kr.java.documind.global.annotation.CurrentProject;
+import kr.java.documind.global.storage.FileStore;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,7 @@ public class IssueManagementApiController {
     private final RootCauseAnalysisService rootCauseAnalysisService;
     private final IssueContextService issueContextService;
     private final MemberRepository memberRepository;
+    private final FileStore fileStore;
 
     /**
      * 프로젝트별 이슈 목록 조회
@@ -86,7 +88,15 @@ public class IssueManagementApiController {
                                         assignee =
                                                 memberRepository
                                                         .findById(issue.getAssigneeId())
-                                                        .map(AssigneeInfo::from)
+                                                        .map(member -> {
+                                                            String profileUrl = member.getProfileKey() != null
+                                                                    ? fileStore.getAccessUrl(member.getProfileKey())
+                                                                    : null;
+                                                            return new AssigneeInfo(
+                                                                    member.getId(),
+                                                                    member.getNickname(),
+                                                                    profileUrl);
+                                                        })
                                                         .orElse(null);
                                     }
                                     return IssueListResponse.from(issue, assignee);
@@ -119,7 +129,15 @@ public class IssueManagementApiController {
             assignee =
                     memberRepository
                             .findById(issue.getAssigneeId())
-                            .map(AssigneeInfo::from)
+                            .map(member -> {
+                                String profileUrl = member.getProfileKey() != null
+                                        ? fileStore.getAccessUrl(member.getProfileKey())
+                                        : null;
+                                return new AssigneeInfo(
+                                        member.getId(),
+                                        member.getNickname(),
+                                        profileUrl);
+                            })
                             .orElse(null);
         }
 
