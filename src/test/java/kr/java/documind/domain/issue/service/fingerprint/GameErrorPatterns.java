@@ -25,6 +25,7 @@ public class GameErrorPatterns {
             at java.util.ArrayList.rangeCheck(ArrayList.java:659)
             at com.game.quest.QuestManager.getQuest(QuestManager.java:67)
             at com.game.ui.QuestUI.displayQuest(QuestUI.java:45)
+            at com.game.controller.GameController.handleQuest(GameController.java:123)
             """;
 
     public static final String CLASS_CAST =
@@ -61,6 +62,7 @@ public class GameErrorPatterns {
             at java.util.Arrays.copyOf(Arrays.java:3332)
             at com.game.graphics.TextureCache.loadTexture(TextureCache.java:234)
             at com.game.graphics.AssetLoader.loadAssets(AssetLoader.java:123)
+            at com.game.scenes.GameScene.initialize(GameScene.java:56)
             """;
 
     public static final String STACK_OVERFLOW =
@@ -80,6 +82,7 @@ public class GameErrorPatterns {
             NullReferenceException: Object reference not set to an instance of an object
             PlayerInventory.AddItem (Item item) (at Assets/Scripts/PlayerInventory.cs:45)
             ItemPickup.OnTriggerEnter (UnityEngine.Collider other) (at Assets/Scripts/ItemPickup.cs:18)
+            GameManager.ProcessItemPickup () (at Assets/Scripts/GameManager.cs:234)
             UnityEngine.Physics.Internal_TriggerEnter (UnityEngine.Collider col) (at <hash>:0)
             """;
 
@@ -129,6 +132,7 @@ public class GameErrorPatterns {
             at java.net.DualStackPlainSocketImpl.socketConnect(DualStackPlainSocketImpl.java:80)
             at com.game.network.MatchmakingClient.connect(MatchmakingClient.java:56)
             at com.game.matchmaking.MatchmakingService.joinQueue(MatchmakingService.java:123)
+            at com.game.controller.LobbyController.findMatch(LobbyController.java:45)
             """;
 
     public static final String NETWORK_SOCKET_TIMEOUT =
@@ -138,6 +142,7 @@ public class GameErrorPatterns {
             at java.net.SocketInputStream.socketRead(SocketInputStream.java:116)
             at com.game.network.GameServerConnection.receive(GameServerConnection.java:123)
             at com.game.network.NetworkManager.update(NetworkManager.java:89)
+            at com.game.GameLoop.tick(GameLoop.java:56)
             """;
 
     public static final String NETWORK_UNKNOWN_HOST =
@@ -147,6 +152,7 @@ public class GameErrorPatterns {
             at java.net.InetAddress.getAllByName(InetAddress.java:1193)
             at com.game.network.ServerResolver.resolve(ServerResolver.java:34)
             at com.game.network.ConnectionPool.createConnection(ConnectionPool.java:67)
+            at com.game.network.NetworkManager.connect(NetworkManager.java:123)
             """;
 
     public static final String NETWORK_NETTY_TIMEOUT =
@@ -168,6 +174,7 @@ public class GameErrorPatterns {
             at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3593)
             at com.game.database.PlayerDataRepository.save(PlayerDataRepository.java:78)
             at com.game.player.PlayerService.updatePlayerData(PlayerService.java:123)
+            at com.game.controller.PlayerController.saveProgress(PlayerController.java:234)
             """;
 
     public static final String DB_DUPLICATE_KEY =
@@ -184,6 +191,7 @@ public class GameErrorPatterns {
             at com.mysql.jdbc.StatementImpl.executeQuery(StatementImpl.java:1234)
             at com.game.ranking.RankingCalculator.updateRanks(RankingCalculator.java:234)
             at com.game.ranking.RankingScheduler.calculateDaily(RankingScheduler.java:89)
+            at com.game.scheduler.JobExecutor.execute(JobExecutor.java:45)
             """;
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -287,6 +295,7 @@ public class GameErrorPatterns {
             at java.util.ArrayList$Itr.next(ArrayList.java:861)
             at com.game.entity.EntityManager.updateAll(EntityManager.java:67)
             at com.game.world.WorldUpdater.tick(WorldUpdater.java:123)
+            at com.game.GameLoop.update(GameLoop.java:45)
             """;
 
     public static final String ILLEGAL_MONITOR_STATE =
@@ -295,6 +304,7 @@ public class GameErrorPatterns {
             at java.lang.Object.notify(Native Method)
             at com.game.sync.SyncManager.notifyUpdate(SyncManager.java:45)
             at com.game.sync.SyncWorker.run(SyncWorker.java:89)
+            at com.game.threading.WorkerPool.execute(WorkerPool.java:234)
             """;
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -307,6 +317,7 @@ public class GameErrorPatterns {
             at com.fasterxml.jackson.databind.DeserializationContext.handleUnexpectedToken(DeserializationContext.java:1635)
             at com.game.config.ConfigLoader.load(ConfigLoader.java:34)
             at com.game.GameInitializer.initialize(GameInitializer.java:67)
+            at com.game.Application.start(Application.java:23)
             """;
 
     public static final String GSON_SYNTAX_EXCEPTION =
@@ -315,5 +326,6 @@ public class GameErrorPatterns {
             at com.google.gson.Gson.fromJson(Gson.java:941)
             at com.game.network.PacketSerializer.deserialize(PacketSerializer.java:78)
             at com.game.network.PacketHandler.handle(PacketHandler.java:45)
+            at com.game.network.NetworkManager.processPacket(NetworkManager.java:234)
             """;
 }

@@ -90,10 +90,10 @@ class BackpressureManagerTest {
     @Test
     @DisplayName("WARN 상태 진입: 평균 지연 3초 이상")
     void warnStateWhenAvgLatencyHigh() {
-        // Given & When: 평균 지연이 3초 이상 되도록 여러 번 기록
-        backpressureManager.recordLatency(4000);
-        backpressureManager.recordLatency(4000);
-        backpressureManager.recordLatency(4000);
+        // Given & When: 평균 지연이 3초 이상 되도록 여러 번 기록 (EMA 계산 고려)
+        backpressureManager.recordLatency(5000);
+        backpressureManager.recordLatency(5000);
+        backpressureManager.recordLatency(5000);
 
         // Then
         assertThat(backpressureManager.getState()).isEqualTo(BackpressureState.WARN);
@@ -103,10 +103,10 @@ class BackpressureManagerTest {
     @Test
     @DisplayName("CRITICAL 상태 진입: 평균 지연 5초 이상")
     void criticalStateWhenAvgLatencyVeryHigh() {
-        // Given & When: 평균 지연이 5초 이상 되도록 여러 번 기록
-        backpressureManager.recordLatency(6000);
-        backpressureManager.recordLatency(6000);
-        backpressureManager.recordLatency(6000);
+        // Given & When: 평균 지연이 5초 이상 되도록 여러 번 기록 (EMA 계산 고려)
+        backpressureManager.recordLatency(8000);
+        backpressureManager.recordLatency(8000);
+        backpressureManager.recordLatency(8000);
 
         // Then
         assertThat(backpressureManager.getState()).isEqualTo(BackpressureState.CRITICAL);

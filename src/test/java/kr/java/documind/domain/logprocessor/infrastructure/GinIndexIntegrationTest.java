@@ -177,19 +177,20 @@ class GinIndexIntegrationTest {
                 """
                 INSERT INTO game_log (
                     log_id, project_id, session_id, user_id, severity,
-                    event_category, body, occurred_at, ingested_at,
-                    trace_id, span_id, fingerprint, resource, attributes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)
+                    event_category, archive, occurred_at, ingested_at,
+                    trace_id, span_id, fingerprint, resource, attributes, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?)
                 """;
 
         // 2024년 3월 데이터 삽입 (파티션 존재)
         OffsetDateTime testDate = OffsetDateTime.parse("2024-03-15T12:00:00+09:00");
 
+        UUID testProjectId = UUID.randomUUID();
         for (int i = 0; i < 10; i++) {
             jdbcTemplate.update(
                     sql,
                     UUID.randomUUID(),
-                    "test-project",
+                    testProjectId,
                     "session-" + i,
                     "user-" + i,
                     LogSeverity.INFO.toString(),
@@ -201,7 +202,9 @@ class GinIndexIntegrationTest {
                     "span-" + i,
                     "fingerprint-" + i,
                     "{\"environment\": \"test\"}",
-                    "{\"action\": \"test\"}");
+                    "{\"action\": \"test\"}",
+                    testDate,
+                    testDate);
         }
     }
 }

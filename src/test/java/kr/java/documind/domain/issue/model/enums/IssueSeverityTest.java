@@ -154,12 +154,13 @@ class IssueSeverityTest {
         }
 
         @Test
-        @DisplayName("지원하지 않는 문자열이면 예외 발생")
-        void shouldThrowExceptionForUnsupportedString() {
-            // When & Then
-            assertThatThrownBy(() -> IssueSeverity.fromString("UNKNOWN"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Unknown issue severity");
+        @DisplayName("지원하지 않는 문자열이면 MEDIUM 반환 (fallback)")
+        void shouldReturnMediumForUnsupportedString() {
+            // When
+            IssueSeverity result = IssueSeverity.fromString("UNKNOWN");
+
+            // Then
+            assertThat(result).isEqualTo(IssueSeverity.MEDIUM);
         }
     }
 
