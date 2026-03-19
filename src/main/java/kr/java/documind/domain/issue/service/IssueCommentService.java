@@ -23,6 +23,7 @@ import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ForbiddenException;
 import kr.java.documind.global.exception.NotFoundException;
+import kr.java.documind.global.storage.FileStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -47,6 +48,7 @@ public class IssueCommentService {
     private final MemberRepository memberRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final IssueHistoryService issueHistoryService;
+    private final FileStore fileStore;
 
     /**
      * 댓글 생성
@@ -279,7 +281,14 @@ public class IssueCommentService {
         // 작성자 정보 조회
         Member author =
                 memberRepository.findById(issueComment.getMemberId()).orElse(null); // 탈퇴한 사용자일 수 있음
-        MemberSimpleInfo authorInfo = author != null ? MemberSimpleInfo.from(author) : null;
+        MemberSimpleInfo authorInfo = null;
+        if (author != null) {
+            String profileUrl =
+                    author.getProfileKey() != null
+                            ? fileStore.getAccessUrl(author.getProfileKey())
+                            : null;
+            authorInfo = new MemberSimpleInfo(author.getId(), author.getNickname(), profileUrl);
+        }
 
         // 멘션된 사용자 정보 조회
         List<MemberSimpleInfo> mentionedMembers = List.of();
@@ -296,7 +305,16 @@ public class IssueCommentService {
                     issueComment.getMentionedMemberIds().stream()
                             .map(memberMap::get)
                             .filter(m -> m != null) // 탈퇴한 사용자 제외
-                            .map(MemberSimpleInfo::from)
+                            .map(
+                                    member -> {
+                                        String profileUrl =
+                                                member.getProfileKey() != null
+                                                        ? fileStore.getAccessUrl(
+                                                                member.getProfileKey())
+                                                        : null;
+                                        return new MemberSimpleInfo(
+                                                member.getId(), member.getNickname(), profileUrl);
+                                    })
                             .toList();
         }
 

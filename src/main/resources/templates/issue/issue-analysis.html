@@ -295,6 +295,46 @@
             </div>
         </div>
 
+        <!-- 댓글 섹션 -->
+        <div class="card-base card-shadow p-widget-p">
+            <h3 class="text-h3 text-docu-ink mb-4">댓글 <span id="commentCount" class="text-docu-tertiary">(0)</span></h3>
+
+            <!-- 댓글 목록 -->
+            <div id="commentList" class="space-y-4 mb-4">
+                <p class="text-sm text-docu-tertiary text-center py-4">댓글이 없습니다.</p>
+            </div>
+
+            <!-- 페이지네이션 -->
+            <div id="commentPagination" class="hidden flex items-center justify-center gap-2 mb-4">
+                <button onclick="loadComments(currentPage - 1)" id="prevPage" class="btn-secondary text-xs px-3 py-1">
+                    이전
+                </button>
+                <span id="pageInfo" class="text-sm text-docu-secondary"></span>
+                <button onclick="loadComments(currentPage + 1)" id="nextPage" class="btn-secondary text-xs px-3 py-1">
+                    다음
+                </button>
+            </div>
+
+            <!-- 댓글 작성 폼 -->
+            <div class="relative">
+                <textarea id="commentInput" placeholder="댓글을 입력하세요... (@닉네임으로 멘션 가능)"
+                          class="form-input w-full resize-none"
+                          rows="3"></textarea>
+
+                <!-- 멘션 자동완성 드롭다운 (Slack 스타일 - 커서 위치에 표시) -->
+                <div id="mentionDropdown" class="hidden absolute bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto z-20 py-1">
+                    <!-- 멤버 목록이 여기에 렌더링됩니다 -->
+                </div>
+
+                <div class="flex items-center justify-between mt-2">
+                    <span id="mentionedMembersPreview" class="text-sm text-docu-tertiary"></span>
+                    <button onclick="submitComment()" class="btn-primary">
+                        댓글 작성
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </section>
 
 </th:block>
@@ -302,6 +342,7 @@
 <th:block layout:fragment="scripts">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script th:src="@{/js/issue/issue-analysis.js}"></script>
+    <script th:src="@{/js/issue/issue-comment.js}"></script>
 </th:block>
 </body>
 </html>
