@@ -35,7 +35,7 @@ public class NotificationCommandService {
 
     @Transactional
     public int markAllRead(UUID memberId, UUID projectId) {
-        return notificationRepository.markAllReadDynamically(projectId, memberId); // 수정됨
+        return notificationRepository.markAllReadDynamically(projectId, memberId);
     }
 
     @Transactional

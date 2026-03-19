@@ -19,7 +19,7 @@
             <p class="text-sm text-docu-secondary mt-1">프로젝트의 알림 수신 규칙을 설정하고 모든 알림 내역을 확인합니다.</p>
         </div>
 
-        <!-- 🚨 [추가] 메인 탭 (알림 규칙 vs 발생 이력) -->
+        <!-- 메인 탭 (알림 규칙 vs 발생 이력) -->
         <div class="flex border-b border-divider mb-6" role="tablist">
             <button type="button" role="tab"
                     @click="mainTab = 'RULES'"
@@ -64,7 +64,6 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-surface-sub border-b border-divider text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                         <tr>
-                            <!-- 🚨 [수정] CHANNEL 컬럼 삭제 및 너비 재조정 (w-1/3, w-1/2, w-1/6) -->
                             <th class="px-6 py-4 w-1/3">RULE NAME / ORIGIN</th>
                             <th class="px-6 py-4 w-1/2">CONDITION</th>
                             <th class="px-6 py-4 w-1/6 text-right">STATUS</th>
@@ -75,7 +74,6 @@
                             <tr class="hover:bg-surface-hover transition-colors">
                                 <td class="px-6 py-5 font-bold text-sm text-docu-ink" x-text="rule.name"></td>
                                 <td class="px-6 py-5 text-sm text-gray-500 font-mono" x-text="rule.condition"></td>
-                                <!-- 🚨 [수정] channel 데이터 셀 삭제 -->
                                 <td class="px-6 py-5 text-right">
                                     <label class="inline-flex items-center gap-2.5 cursor-pointer select-none justify-end w-full">
                                             <span class="text-sm font-semibold transition-colors"
@@ -101,7 +99,6 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-surface-sub border-b border-divider text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                         <tr>
-                            <!-- 🚨 [수정] CHANNEL 컬럼 삭제 및 너비 재조정 -->
                             <th class="px-6 py-4 w-1/3">RULE NAME / ORIGIN</th>
                             <th class="px-6 py-4 w-1/2">CONDITION</th>
                             <th class="px-6 py-4 w-1/6 text-right">STATUS</th>
@@ -112,7 +109,6 @@
                             <tr class="hover:bg-surface-hover transition-colors">
                                 <td class="px-6 py-5 font-bold text-sm text-docu-ink" x-text="rule.name"></td>
                                 <td class="px-6 py-5 text-sm text-gray-500" x-text="rule.condition"></td>
-                                <!-- 🚨 [수정] channel 데이터 셀 삭제 -->
                                 <td class="px-6 py-5 text-right">
                                     <label class="inline-flex items-center gap-2.5 cursor-pointer select-none justify-end w-full">
                                             <span class="text-sm font-semibold transition-colors"
@@ -249,7 +245,7 @@
             Alpine.data('notificationHistoryApp', () => ({
                 // ── State ─────────────────────────────────────────────────────
                 publicId: null,
-                mainTab: 'RULES', // 🚨 [추가] 'RULES' or 'HISTORY' 메인 탭 제어
+                mainTab: 'RULES',
 
                 // [이력 관련 State]
                 notifications: [],
