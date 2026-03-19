@@ -29,7 +29,7 @@ public class Notification extends BaseEntity {
     private UUID receiverId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_id", nullable = false)
+    @JoinColumn(name = "source_id")
     private DomainSource source;
 
     @Enumerated(EnumType.STRING)

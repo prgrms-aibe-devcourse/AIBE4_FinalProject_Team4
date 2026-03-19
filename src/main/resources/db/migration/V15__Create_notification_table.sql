@@ -2,7 +2,7 @@ CREATE TABLE notification (
     id          BIGSERIAL                   PRIMARY KEY,
     project_id  UUID                        NOT NULL,
     receiver_id UUID                        NOT NULL REFERENCES member(id) ON DELETE CASCADE,
-    source_id   BIGINT                      NOT NULL REFERENCES domain_source(id) ON DELETE CASCADE,
+    source_id   BIGINT                      REFERENCES domain_source(id) ON DELETE CASCADE,
     event_type  VARCHAR(50)                 NOT NULL,
     title       VARCHAR(255)               NOT NULL,
     message     TEXT                       NOT NULL,
