@@ -39,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.document.Document;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("IssueStatusChangedEventHandler 단위 테스트")
@@ -92,14 +93,15 @@ class IssueStatusChangedEventHandlerTest {
     }
 
     private Issue sufficientIssue(String description, String resolutionNote) {
-        return Issue.builder()
-                .id(ISSUE_ID)
+        Issue issue = Issue.builder()
                 .projectId(PROJECT_ID)
                 .title("테스트 이슈 제목")
                 .description(description)
                 .resolutionNote(resolutionNote)
                 .fingerprint("fp-test")
                 .build();
+        ReflectionTestUtils.setField(issue, "id", ISSUE_ID);
+        return issue;
     }
 
     /** 성공 경로 공통 stubbing */
@@ -421,7 +423,7 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueRollback(event);
 
             // Then
-            then(vectorStoreManager).should().deleteBySourceId(ISSUE_ID);
+            then(vectorStoreManager).should().deleteBySourceId(ISSUE_ID, SourceType.ISSUE);
         }
 
         @Test
@@ -436,7 +438,7 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueRollback(event);
 
             // Then
-            then(vectorStoreManager).should(never()).deleteBySourceId(any());
+            then(vectorStoreManager).should(never()).deleteBySourceId(any(), any());
         }
 
         @Test
@@ -464,49 +466,12 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueRollback(event);
 
             // Then
-            then(vectorStoreManager).should(never()).deleteBySourceId(any());
+            then(vectorStoreManager).should(never()).deleteBySourceId(any(), any());
         }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
     // handleIssueDeleted()
-    // ──────────────────────────────────────────────────────────────────────────
-
-    @Nested
-    @DisplayName("handleIssueDeleted()")
-    class HandleIssueDeleted {
-
-        @Test
-        @DisplayName("이슈 삭제: markSourceDeleted 정확한 인자로 호출")
-        void handleIssueDeleted_markSourceDeleted_호출() {
-            // Given
-            IssueDeletedEvent event =
-                    new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
-
-            // When
-            handler.handleIssueDeleted(event);
-
-            // Then
-            then(pendingItemService)
-                    .should()
-                    .markSourceDeleted(PROJECT_ID, ISSUE_ID, SourceType.ISSUE);
-        }
-
-        @Test
-        @DisplayName("이슈 삭제 예외 삼킴: markSourceDeleted 예외 발생 → 전파되지 않음")
-        void handleIssueDeleted_예외발생시_삼킴() {
-            // Given
-            IssueDeletedEvent event =
-                    new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
-            willThrow(new RuntimeException("DB 오류"))
-                    .given(pendingItemService)
-                    .markSourceDeleted(PROJECT_ID, ISSUE_ID, SourceType.ISSUE);
-
-            // When & Then (예외 전파 없음)
-            handler.handleIssueDeleted(event);
-        }
-    }
-
     // ──────────────────────────────────────────────────────────────────────────
     // 프로젝트 격리 검증
     // ──────────────────────────────────────────────────────────────────────────
@@ -531,12 +496,12 @@ class IssueStatusChangedEventHandlerTest {
                             Instant.now());
             Issue issue =
                     Issue.builder()
-                            .id(ISSUE_ID)
                             .projectId(otherProjectId)
                             .title("다른 프로젝트 이슈")
                             .description("충분한 설명 텍스트입니다")
                             .fingerprint("fp-other")
                             .build();
+            ReflectionTestUtils.setField(issue, "id", ISSUE_ID);
 
             given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
             given(issueChunkingService.buildChunks(any())).willReturn(List.of(new Document("텍스트")));

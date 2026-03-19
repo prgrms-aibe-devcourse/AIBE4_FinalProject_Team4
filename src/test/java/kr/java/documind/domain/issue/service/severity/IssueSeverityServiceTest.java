@@ -15,6 +15,7 @@ import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.IssueType;
 import kr.java.documind.domain.issue.model.vo.SeverityScore;
+import kr.java.documind.domain.issue.model.enums.SeverityFactor;
 import kr.java.documind.domain.logprocessor.model.entity.GameLog;
 import kr.java.documind.domain.logprocessor.model.enums.EventCategory;
 import kr.java.documind.domain.logprocessor.model.enums.LogSeverity;
@@ -53,8 +54,8 @@ class IssueSeverityServiceTest {
                 .severity(IssueSeverity.MEDIUM)
                 .severityScore(50)
                 .occurrenceCount(1)
-                .firstOccurredAt(OffsetDateTime.now())
-                .lastOccurredAt(OffsetDateTime.now())
+                .firstOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
+                .lastOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
                 .build();
 
         gameLog = GameLog.builder()
@@ -64,13 +65,13 @@ class IssueSeverityServiceTest {
                 .severity(LogSeverity.ERROR)
                 .eventCategory(EventCategory.SYSTEM)
                 .archive("java.lang.NullPointerException: Cannot load player")
-                .occurredAt(OffsetDateTime.now())
-                .ingestedAt(OffsetDateTime.now())
+                .occurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
+                .ingestedAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
                 .fingerprint("test-fingerprint-001")
                 .resource(Map.of())
                 .attributes(Map.of())
-                .createdAt(OffsetDateTime.now())
-                .updatedAt(OffsetDateTime.now())
+                .createdAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
+                .updatedAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
                 .build();
     }
 
@@ -78,12 +79,17 @@ class IssueSeverityServiceTest {
     @DisplayName("CRITICAL 등급 판별: 게임 크래시 + 다수 플레이어 영향")
     void calculateCriticalSeverity() {
         // Given
-        SeverityScore criticalScore = new SeverityScore(
-                IssueSeverity.CRITICAL,
-                100, // totalScore
-                110, // rawScore (cap at 100)
-                "게임 크래시 (50점) + 플레이어 1500명 (20점) + 결제 시스템 (30점)"
-        );
+        SeverityScore criticalScore = SeverityScore.builder()
+                .severity(IssueSeverity.CRITICAL)
+                .totalScore(100)
+                .rawScore(110)
+                .scoreBreakdown(Map.of(
+                        SeverityFactor.CRASH, 50,
+                        SeverityFactor.PLAYER_COUNT, 20,
+                        SeverityFactor.BUSINESS_IMPACT, 30
+                ))
+                .reason("게임 크래시 (50점) + 플레이어 1500명 (20점) + 결제 시스템 (30점)")
+                .build();
 
         when(severityCalculator.calculate(any(Issue.class), any(GameLog.class)))
                 .thenReturn(criticalScore);
@@ -105,12 +111,16 @@ class IssueSeverityServiceTest {
     @DisplayName("HIGH 등급 판별: 메인 진행 차단")
     void calculateHighSeverity() {
         // Given
-        SeverityScore highScore = new SeverityScore(
-                IssueSeverity.HIGH,
-                75,
-                75,
-                "메인 퀘스트 진행 차단 (15점) + 플레이어 500명 (18점)"
-        );
+        SeverityScore highScore = SeverityScore.builder()
+                .severity(IssueSeverity.HIGH)
+                .totalScore(75)
+                .rawScore(75)
+                .scoreBreakdown(Map.of(
+                        SeverityFactor.BUSINESS_IMPACT, 15,
+                        SeverityFactor.PLAYER_COUNT, 18
+                ))
+                .reason("메인 퀘스트 진행 차단 (15점) + 플레이어 500명 (18점)")
+                .build();
 
         when(severityCalculator.calculate(any(Issue.class), any(GameLog.class)))
                 .thenReturn(highScore);
@@ -130,12 +140,16 @@ class IssueSeverityServiceTest {
     @DisplayName("MEDIUM 등급 판별: 일부 기능 차단")
     void calculateMediumSeverity() {
         // Given
-        SeverityScore mediumScore = new SeverityScore(
-                IssueSeverity.MEDIUM,
-                45,
-                45,
-                "일부 기능 차단 (10점) + 플레이어 30명 (8점)"
-        );
+        SeverityScore mediumScore = SeverityScore.builder()
+                .severity(IssueSeverity.MEDIUM)
+                .totalScore(45)
+                .rawScore(45)
+                .scoreBreakdown(Map.of(
+                        SeverityFactor.BUSINESS_IMPACT, 10,
+                        SeverityFactor.PLAYER_COUNT, 8
+                ))
+                .reason("일부 기능 차단 (10점) + 플레이어 30명 (8점)")
+                .build();
 
         when(severityCalculator.calculate(any(Issue.class), any(GameLog.class)))
                 .thenReturn(mediumScore);
@@ -155,12 +169,16 @@ class IssueSeverityServiceTest {
     @DisplayName("LOW 등급 판별: 경미한 UI 버그")
     void calculateLowSeverity() {
         // Given
-        SeverityScore lowScore = new SeverityScore(
-                IssueSeverity.LOW,
-                17,
-                17,
-                "UI 렌더링 버그 (15점) + 플레이어 3명 (2점)"
-        );
+        SeverityScore lowScore = SeverityScore.builder()
+                .severity(IssueSeverity.LOW)
+                .totalScore(17)
+                .rawScore(17)
+                .scoreBreakdown(Map.of(
+                        SeverityFactor.BLOCKING, 15,
+                        SeverityFactor.PLAYER_COUNT, 2
+                ))
+                .reason("UI 렌더링 버그 (15점) + 플레이어 3명 (2점)")
+                .build();
 
         when(severityCalculator.calculate(any(Issue.class), any(GameLog.class)))
                 .thenReturn(lowScore);
@@ -183,12 +201,16 @@ class IssueSeverityServiceTest {
         IssueSeverity originalSeverity = issue.getSeverity();
         Integer originalScore = issue.getSeverityScore();
 
-        SeverityScore calculatedScore = new SeverityScore(
-                IssueSeverity.CRITICAL,
-                90,
-                90,
-                "계산된 심각도"
-        );
+        SeverityScore calculatedScore = SeverityScore.builder()
+                .severity(IssueSeverity.CRITICAL)
+                .totalScore(90)
+                .rawScore(90)
+                .scoreBreakdown(Map.of(
+                        SeverityFactor.CRASH, 50,
+                        SeverityFactor.BUSINESS_IMPACT, 20
+                ))
+                .reason("계산된 심각도")
+                .build();
 
         when(severityCalculator.calculate(any(Issue.class), any(GameLog.class)))
                 .thenReturn(calculatedScore);
@@ -238,12 +260,16 @@ class IssueSeverityServiceTest {
         issue.updateSeverity(IssueSeverity.MEDIUM, 50);
 
         // 발생 횟수 증가 후 재계산 시 HIGH로 상승
-        SeverityScore updatedScore = new SeverityScore(
-                IssueSeverity.HIGH,
-                75,
-                75,
-                "발생 빈도 증가 (20점 추가)"
-        );
+        SeverityScore updatedScore = SeverityScore.builder()
+                .severity(IssueSeverity.HIGH)
+                .totalScore(75)
+                .rawScore(75)
+                .scoreBreakdown(Map.of(
+                        SeverityFactor.FREQUENCY, 20,
+                        SeverityFactor.BUSINESS_IMPACT, 15
+                ))
+                .reason("발생 빈도 증가 (20점 추가)")
+                .build();
 
         when(severityCalculator.calculate(any(Issue.class), any(GameLog.class)))
                 .thenReturn(updatedScore);

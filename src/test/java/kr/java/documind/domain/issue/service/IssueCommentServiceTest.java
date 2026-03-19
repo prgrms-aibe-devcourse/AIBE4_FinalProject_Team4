@@ -29,9 +29,10 @@ import kr.java.documind.domain.issue.model.enums.IssueType;
 import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
+import kr.java.documind.domain.auth.model.enums.GlobalRole;
+import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
-import kr.java.documind.domain.member.model.enums.ProviderType;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
 import kr.java.documind.global.exception.BadRequestException;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("IssueCommentService 단위 테스트")
@@ -83,7 +85,6 @@ class IssueCommentServiceTest {
         mentionedMemberId = UUID.randomUUID();
 
         issue = Issue.builder()
-                .id(issueId)
                 .projectId(projectId)
                 .fingerprint("test-fingerprint")
                 .title("NullPointerException")
@@ -95,29 +96,32 @@ class IssueCommentServiceTest {
                 .severity(IssueSeverity.MEDIUM)
                 .severityScore(50)
                 .occurrenceCount(1)
-                .firstOccurredAt(OffsetDateTime.now())
-                .lastOccurredAt(OffsetDateTime.now())
+                .firstOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
+                .lastOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
                 .build();
+        ReflectionTestUtils.setField(issue, "id", issueId);
 
-        author = Member.builder()
-                .id(authorId)
-                .email("author@example.com")
-                .username("author")
-                .nickname("작성자")
-                .provider(ProviderType.LOCAL)
-                .accountStatus(AccountStatus.ACTIVE)
-                .profileImageUrl("https://example.com/avatar.png")
-                .build();
+        author = Member.createByOAuth(
+                "author@example.com",
+                "작성자",
+                "작성자",
+                OAuthProvider.GOOGLE,
+                "google-123",
+                GlobalRole.EMPLOYEE
+        );
+        ReflectionTestUtils.setField(author, "id", authorId);
+        ReflectionTestUtils.setField(author, "profileKey", "profile/avatar.png");
 
-        mentionedMember = Member.builder()
-                .id(mentionedMemberId)
-                .email("mentioned@example.com")
-                .username("mentioned")
-                .nickname("김철수")
-                .provider(ProviderType.LOCAL)
-                .accountStatus(AccountStatus.ACTIVE)
-                .profileImageUrl("https://example.com/avatar2.png")
-                .build();
+        mentionedMember = Member.createByOAuth(
+                "mentioned@example.com",
+                "김철수",
+                "김철수",
+                OAuthProvider.GOOGLE,
+                "google-456",
+                GlobalRole.EMPLOYEE
+        );
+        ReflectionTestUtils.setField(mentionedMember, "id", mentionedMemberId);
+        ReflectionTestUtils.setField(mentionedMember, "profileKey", "profile/avatar2.png");
     }
 
     @Test
@@ -136,7 +140,7 @@ class IssueCommentServiceTest {
         when(memberRepository.findAllById(anyList())).thenReturn(List.of(mentionedMember));
 
         IssueComment savedComment = IssueComment.create(issueId, authorId, content, mentionIds);
-        savedComment.setId(1L);
+        ReflectionTestUtils.setField(savedComment, "id", 1L);
         when(commentRepository.save(any(IssueComment.class))).thenReturn(savedComment);
 
         // When
@@ -165,7 +169,7 @@ class IssueCommentServiceTest {
         when(memberRepository.findById(authorId)).thenReturn(Optional.of(author));
 
         IssueComment savedComment = IssueComment.create(issueId, authorId, content, List.of());
-        savedComment.setId(1L);
+        ReflectionTestUtils.setField(savedComment, "id", 1L);
         when(commentRepository.save(any(IssueComment.class))).thenReturn(savedComment);
 
         // When
@@ -223,7 +227,7 @@ class IssueCommentServiceTest {
         when(memberRepository.findById(authorId)).thenReturn(Optional.of(author));
 
         IssueComment savedComment = IssueComment.create(issueId, authorId, "댓글", List.of());
-        savedComment.setId(1L);
+        ReflectionTestUtils.setField(savedComment, "id", 1L);
         when(commentRepository.save(any(IssueComment.class))).thenReturn(savedComment);
 
         // When
@@ -248,13 +252,17 @@ class IssueCommentServiceTest {
         List<UUID> newMentions = List.of(newMentionId);
 
         IssueComment existingComment = IssueComment.create(issueId, authorId, originalContent, originalMentions);
-        existingComment.setId(commentId);
+        ReflectionTestUtils.setField(existingComment, "id", commentId);
 
-        Member newMentionedMember = Member.builder()
-                .id(newMentionId)
-                .nickname("박영희")
-                .accountStatus(AccountStatus.ACTIVE)
-                .build();
+        Member newMentionedMember = Member.createByOAuth(
+                "park@example.com",
+                "박영희",
+                "박영희",
+                OAuthProvider.GOOGLE,
+                "google-789",
+                GlobalRole.EMPLOYEE
+        );
+        ReflectionTestUtils.setField(newMentionedMember, "id", newMentionId);
 
         CommentUpdateRequest request = new CommentUpdateRequest(newContent, newMentions);
 
@@ -283,7 +291,7 @@ class IssueCommentServiceTest {
         Long commentId = 1L;
         UUID otherUserId = UUID.randomUUID();
         IssueComment comment = IssueComment.create(issueId, authorId, "댓글", List.of());
-        comment.setId(commentId);
+        ReflectionTestUtils.setField(comment, "id", commentId);
 
         CommentUpdateRequest request = new CommentUpdateRequest("수정", List.of());
 
@@ -304,7 +312,7 @@ class IssueCommentServiceTest {
         Long commentId = 1L;
         Long wrongIssueId = 999L;
         IssueComment comment = IssueComment.create(issueId, authorId, "댓글", List.of());
-        comment.setId(commentId);
+        ReflectionTestUtils.setField(comment, "id", commentId);
 
         CommentUpdateRequest request = new CommentUpdateRequest("수정", List.of());
 
@@ -323,7 +331,7 @@ class IssueCommentServiceTest {
         // Given
         Long commentId = 1L;
         IssueComment comment = IssueComment.create(issueId, authorId, "댓글", List.of());
-        comment.setId(commentId);
+        ReflectionTestUtils.setField(comment, "id", commentId);
 
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
         when(issueRepository.findById(issueId)).thenReturn(Optional.of(issue));
@@ -342,7 +350,7 @@ class IssueCommentServiceTest {
         Long commentId = 1L;
         UUID otherUserId = UUID.randomUUID();
         IssueComment comment = IssueComment.create(issueId, authorId, "댓글", List.of());
-        comment.setId(commentId);
+        ReflectionTestUtils.setField(comment, "id", commentId);
 
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
         when(issueRepository.findById(issueId)).thenReturn(Optional.of(issue));
@@ -361,7 +369,7 @@ class IssueCommentServiceTest {
         List<IssueComment> comments = new ArrayList<>();
         for (int i = 1; i <= 5; i++) {
             IssueComment comment = IssueComment.create(issueId, authorId, "댓글 " + i, List.of());
-            comment.setId((long) i);
+            ReflectionTestUtils.setField(comment, "id", (long) i);
             comments.add(comment);
         }
 

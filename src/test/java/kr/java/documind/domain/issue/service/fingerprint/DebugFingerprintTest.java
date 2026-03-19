@@ -82,13 +82,13 @@ class DebugFingerprintTest {
                 .severity(LogSeverity.ERROR)
                 .eventCategory(EventCategory.SYSTEM)
                 .archive(archive)
-                .occurredAt(OffsetDateTime.now())
-                .ingestedAt(OffsetDateTime.now())
+                .occurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
+                .ingestedAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
                 .fingerprint("temp")
                 .resource(Map.of())
                 .attributes(Map.of())
-                .createdAt(OffsetDateTime.now())
-                .updatedAt(OffsetDateTime.now())
+                .createdAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
+                .updatedAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
                 .build();
     }
 }
