@@ -22,8 +22,8 @@ public class AsyncConfig implements AsyncConfigurer {
     /**
      * 애플리케이션 전역 비동기 스레드 풀.
      *
-     * <p>{@code @Async} 기본 실행자로 사용되며, {@code CompletableFuture.runAsync(task, taskExecutor)}
-     * 형태로 직접 주입하여 사용할 수도 있다.
+     * <p>{@code @Async} 기본 실행자로 사용되며, {@code CompletableFuture.runAsync(task, taskExecutor)} 형태로 직접
+     * 주입하여 사용할 수도 있다.
      */
     @org.springframework.context.annotation.Bean("taskExecutor")
     public Executor taskExecutor() {

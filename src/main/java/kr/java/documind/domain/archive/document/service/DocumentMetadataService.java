@@ -76,7 +76,8 @@ public class DocumentMetadataService {
 
         DocumentGroup group =
                 documentGroupManager.save(
-                        DocumentGroup.create(projectId, category, groupName, choseongUtil.extract(groupName)));
+                        DocumentGroup.create(
+                                projectId, category, groupName, choseongUtil.extract(groupName)));
 
         return saveFileAndCreateMetadata(projectId, group, file, request, isProcessed);
     }
@@ -247,7 +248,10 @@ public class DocumentMetadataService {
     }
 
     private void replaceFile(
-            UUID projectId, DocumentMetadata documentMetadata, MultipartFile file, String newHash,
+            UUID projectId,
+            DocumentMetadata documentMetadata,
+            MultipartFile file,
+            String newHash,
             boolean excludeFromPatchNote) {
         DocumentFileStorage.StoredDocumentFile storedFile =
                 documentFileStorage.replace(documentMetadata.getStoredKey(), file);
@@ -259,6 +263,7 @@ public class DocumentMetadataService {
                 storedFile.size(),
                 storedFile.storedKey());
 
-        documentVectorEventPublisher.replaceEvent(projectId, documentMetadata, excludeFromPatchNote);
+        documentVectorEventPublisher.replaceEvent(
+                projectId, documentMetadata, excludeFromPatchNote);
     }
 }

@@ -37,7 +37,8 @@ public class DocumentGroup extends BaseEntity {
         this.choseong = choseong;
     }
 
-    public static DocumentGroup create(UUID projectId, String category, String groupName, String choseong) {
+    public static DocumentGroup create(
+            UUID projectId, String category, String groupName, String choseong) {
         return new DocumentGroup(projectId, category, groupName, choseong);
     }
 

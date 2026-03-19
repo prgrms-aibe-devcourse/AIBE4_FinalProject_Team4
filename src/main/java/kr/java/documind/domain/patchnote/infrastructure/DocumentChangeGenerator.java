@@ -13,14 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
-/**
- * 문서 버전 간 단일 변경 청크를 분석하여 패치노트 피드용 제목·요약·카테고리를 생성하는 LLM 기반 컴포넌트.
- *
- * <p>{@code document-change-summary.st} 프롬프트를 사용하며, diff에서 추출된 {@link PatchCandidate} 하나에
- * 대해 LLM을 호출하여 플레이어 관점의 title, summary, category를 추출한다.
- *
- * <p>LLM 호출 실패 시 문서명과 변경 유형을 조합한 fallback을 반환한다.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -35,15 +27,6 @@ public class DocumentChangeGenerator {
     private final PromptUtil promptUtil;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 단일 diff 변경 청크에서 LLM 분석 결과를 생성한다.
-     *
-     * @param candidate       diff에서 추출된 패치 후보 (변경 유형, 이전/현재 내용, evidence 포함)
-     * @param documentName    문서 파일명 (fallback 제목 생성용)
-     * @param documentGroupName 문서 그룹명
-     * @param category        문서 그룹 카테고리
-     * @return LLM 분석 결과 (title, summary, categoryFromLlm, affectsPlayer)
-     */
     public DocumentSummaryResult generate(
             PatchCandidate candidate,
             String documentName,
@@ -57,7 +40,8 @@ public class DocumentChangeGenerator {
                     promptUtil.render(
                             PROMPT_FILENAME,
                             Map.of(
-                                    "changeType", candidate.changeType(),
+                                    "changeType",
+                                    candidate.changeType(),
                                     "previousContent",
                                     previousContent != null ? previousContent : "(없음)",
                                     "currentContent",

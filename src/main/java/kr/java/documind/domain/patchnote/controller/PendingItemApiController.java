@@ -27,12 +27,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 패치노트 Pending Item 관리 API.
- *
- * <p>피드 목록/상세 조회 및 제외/복원 상태 전환을 제공한다.
- * 모든 엔드포인트는 {@code @RequireProjectMember}를 통해 프로젝트 멤버만 접근할 수 있다.
- */
 @Tag(name = "PatchNote Feed", description = "패치노트 피드(Pending Item) 관리 API")
 @RestController
 @RequestMapping("/api/projects/{publicId}/patch-note/pending-items")
@@ -43,9 +37,6 @@ public class PendingItemApiController {
     private final PendingItemQueryService pendingItemQueryService;
     private final PendingItemCommandService pendingItemCommandService;
 
-    /**
-     * Pending Item 피드 목록 조회.
-     */
     @Operation(
             summary = "패치노트 피드 목록 조회",
             description =
@@ -85,15 +76,6 @@ public class PendingItemApiController {
         return ResponseEntity.ok(ApiResponse.success(feed));
     }
 
-    /**
-     * Pending Item 단건 상세 조회.
-     *
-     * <p>sourceLink는 원본 소스가 존재하면 해당 페이지 URL을, 삭제된 경우 null을 반환한다.
-     * 프론트엔드는 sourceLink null 여부로 링크 활성/비활성을 결정한다.
-     *
-     * @param ctx 프로젝트 컨텍스트 (인터셉터 주입)
-     * @param itemId 조회 대상 PendingItem ID
-     */
     @Operation(
             summary = "패치노트 피드 항목 상세 조회",
             description =
@@ -113,14 +95,6 @@ public class PendingItemApiController {
         return ResponseEntity.ok(ApiResponse.success(detail));
     }
 
-    /**
-     * Pending Item 제외.
-     *
-     * <p>PENDING -> EXCLUDED 상태 전환. 패치노트 생성 시 해당 항목을 건너뛴다.
-     *
-     * @param ctx 프로젝트 컨텍스트 (인터셉터 주입)
-     * @param itemId 대상 PendingItem ID
-     */
     @Operation(
             summary = "패치노트 피드 항목 제외",
             description =
@@ -138,14 +112,6 @@ public class PendingItemApiController {
         return ResponseEntity.ok(ApiResponse.success("패치노트 피드에서 제외되었습니다."));
     }
 
-    /**
-     * 제외된 Pending Item 복원.
-     *
-     * <p>EXCLUDED -> PENDING 상태 전환. 복원된 항목은 다음 패치노트 생성 시 다시 포함 대상이 된다.
-     *
-     * @param ctx 프로젝트 컨텍스트 (인터셉터 주입)
-     * @param itemId 대상 PendingItem ID
-     */
     @Operation(
             summary = "제외된 항목 복원",
             description =

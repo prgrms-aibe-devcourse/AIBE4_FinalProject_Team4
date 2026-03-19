@@ -315,7 +315,8 @@ class IssueChunkingServiceTest {
             assertThat(chunks)
                     .allSatisfy(
                             chunk ->
-                                    assertThat(chunk.getMetadata()).containsEntry("total_chunks", 2));
+                                    assertThat(chunk.getMetadata())
+                                            .containsEntry("total_chunks", 2));
         }
 
         @Test
@@ -388,8 +389,15 @@ class IssueChunkingServiceTest {
             // Given
             IssueChunkingSource source =
                     new IssueChunkingSource(
-                            ISSUE_ID, PROJECT_ID, "테스트 이슈", "충분한 설명입니다",
-                            null, null, "BUG", null, List.of());
+                            ISSUE_ID,
+                            PROJECT_ID,
+                            "테스트 이슈",
+                            "충분한 설명입니다",
+                            null,
+                            null,
+                            "BUG",
+                            null,
+                            List.of());
 
             // When
             List<Document> chunks = chunkingService.buildChunks(source);
@@ -404,8 +412,15 @@ class IssueChunkingServiceTest {
             // Given
             IssueChunkingSource source =
                     new IssueChunkingSource(
-                            ISSUE_ID, PROJECT_ID, "테스트 이슈", "충분한 설명입니다",
-                            null, "HIGH", null, null, List.of());
+                            ISSUE_ID,
+                            PROJECT_ID,
+                            "테스트 이슈",
+                            "충분한 설명입니다",
+                            null,
+                            "HIGH",
+                            null,
+                            null,
+                            List.of());
 
             // When
             List<Document> chunks = chunkingService.buildChunks(source);

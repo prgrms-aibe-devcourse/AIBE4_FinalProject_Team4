@@ -14,7 +14,6 @@ import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.domain.patchnote.model.repository.PendingItemRepository;
 import kr.java.documind.global.enums.SourceType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,22 +30,40 @@ class PendingItemRollbackServiceTest {
 
     @InjectMocks private PendingItemRollbackService pendingItemRollbackService;
 
-    private static final UUID   PROJECT_ID = UUID.randomUUID();
-    private static final Long   SOURCE_ID  = 42L;
+    private static final UUID PROJECT_ID = UUID.randomUUID();
+    private static final Long SOURCE_ID = 42L;
     private static final OffsetDateTime NOW = OffsetDateTime.now(ZoneOffset.UTC);
 
     private PendingItem buildItem(PendingItemStatus status) {
         return PendingItem.create(
-                PROJECT_ID, SOURCE_ID, SourceType.ISSUE,
-                "제목", "요약", "ㅈㅇ", PatchType.FIX,
-                status, NOW, 0, null, null);
+                PROJECT_ID,
+                SOURCE_ID,
+                SourceType.ISSUE,
+                "제목",
+                "요약",
+                "ㅈㅇ",
+                PatchType.FIX,
+                status,
+                NOW,
+                0,
+                null,
+                null);
     }
 
     private PendingItem buildDocItem(PendingItemStatus status, int changeIndex) {
         return PendingItem.create(
-                PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT,
-                "문서 제목", "문서 요약", "ㅁㅅ", PatchType.CHANGE,
-                status, NOW, changeIndex, null, null);
+                PROJECT_ID,
+                SOURCE_ID,
+                SourceType.DOCUMENT,
+                "문서 제목",
+                "문서 요약",
+                "ㅁㅅ",
+                PatchType.CHANGE,
+                status,
+                NOW,
+                changeIndex,
+                null,
+                null);
     }
 
     @Nested
@@ -58,17 +75,20 @@ class PendingItemRollbackServiceTest {
         void deleteForRollback_PENDING항목_bulkHardDelete후true반환() {
             // Given
             PendingItem item = buildItem(PendingItemStatus.PENDING);
-            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
-                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            given(
+                            pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(List.of(item));
 
             // When
-            boolean result = pendingItemRollbackService.deleteForRollback(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result =
+                    pendingItemRollbackService.deleteForRollback(
+                            PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isTrue();
-            then(pendingItemRepository).should()
+            then(pendingItemRepository)
+                    .should()
                     .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
                             PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
         }
@@ -78,17 +98,20 @@ class PendingItemRollbackServiceTest {
         void deleteForRollback_EXCLUDED항목_bulkHardDelete후true반환() {
             // Given
             PendingItem item = buildItem(PendingItemStatus.EXCLUDED);
-            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
-                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            given(
+                            pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(List.of(item));
 
             // When
-            boolean result = pendingItemRollbackService.deleteForRollback(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result =
+                    pendingItemRollbackService.deleteForRollback(
+                            PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isTrue();
-            then(pendingItemRepository).should()
+            then(pendingItemRepository)
+                    .should()
                     .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
                             PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
         }
@@ -99,19 +122,23 @@ class PendingItemRollbackServiceTest {
             // Given
             PendingItem item = buildItem(PendingItemStatus.PENDING);
             item.complete(); // PENDING → COMPLETED
-            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
-                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            given(
+                            pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(List.of(item));
 
             // When
-            boolean result = pendingItemRollbackService.deleteForRollback(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result =
+                    pendingItemRollbackService.deleteForRollback(
+                            PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isFalse();
-            then(pendingItemRepository).should()
+            then(pendingItemRepository)
+                    .should()
                     .markSourceDeleted(PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
-            then(pendingItemRepository).should(never())
+            then(pendingItemRepository)
+                    .should(never())
                     .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
                             PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
         }
@@ -120,20 +147,24 @@ class PendingItemRollbackServiceTest {
         @DisplayName("롤백: 항목 없음 → false 반환, delete 미호출")
         void deleteForRollback_항목없음_false반환() {
             // Given
-            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
-                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
+            given(
+                            pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID))
                     .willReturn(List.of());
 
             // When
-            boolean result = pendingItemRollbackService.deleteForRollback(
-                    PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
+            boolean result =
+                    pendingItemRollbackService.deleteForRollback(
+                            PROJECT_ID, SOURCE_ID, SourceType.ISSUE);
 
             // Then
             assertThat(result).isFalse();
-            then(pendingItemRepository).should(never())
+            then(pendingItemRepository)
+                    .should(never())
                     .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
                             PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
-            then(pendingItemRepository).should(never())
+            then(pendingItemRepository)
+                    .should(never())
                     .markSourceDeleted(PROJECT_ID, SourceType.ISSUE, SOURCE_ID);
         }
 
@@ -143,27 +174,32 @@ class PendingItemRollbackServiceTest {
             // Given — changeIndex 0은 COMPLETED (기존 패치노트에 포함), changeIndex 1은 PENDING (미사용)
             PendingItem completed = buildDocItem(PendingItemStatus.PENDING, 0);
             completed.complete(); // → COMPLETED
-            PendingItem pending   = buildDocItem(PendingItemStatus.PENDING, 1);
+            PendingItem pending = buildDocItem(PendingItemStatus.PENDING, 1);
 
-            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
-                    PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID))
+            given(
+                            pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID))
                     .willReturn(List.of(completed, pending));
 
             // When
-            boolean result = pendingItemRollbackService.deleteForRollback(
-                    PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT);
+            boolean result =
+                    pendingItemRollbackService.deleteForRollback(
+                            PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT);
 
             // Then
             assertThat(result).isTrue(); // PENDING 항목이 있으므로 벡터 삭제 필요
-            then(pendingItemRepository).should()
+            then(pendingItemRepository)
+                    .should()
                     .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
                             PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID);
-            then(pendingItemRepository).should()
+            then(pendingItemRepository)
+                    .should()
                     .markSourceDeleted(PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID);
         }
 
         @Test
-        @DisplayName("롤백: DOCUMENT 다중 changeIndex — 모두 COMPLETED → markSourceDeleted 만 호출, false 반환")
+        @DisplayName(
+                "롤백: DOCUMENT 다중 changeIndex — 모두 COMPLETED → markSourceDeleted 만 호출, false 반환")
         void deleteForRollback_DOCUMENT다중changeIndex_모두COMPLETED시false반환() {
             // Given
             PendingItem c1 = buildDocItem(PendingItemStatus.PENDING, 0);
@@ -171,19 +207,23 @@ class PendingItemRollbackServiceTest {
             PendingItem c2 = buildDocItem(PendingItemStatus.PENDING, 1);
             c2.complete();
 
-            given(pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
-                    PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID))
+            given(
+                            pendingItemRepository.findAllByProjectIdAndSourceTypeAndSourceId(
+                                    PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID))
                     .willReturn(List.of(c1, c2));
 
             // When
-            boolean result = pendingItemRollbackService.deleteForRollback(
-                    PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT);
+            boolean result =
+                    pendingItemRollbackService.deleteForRollback(
+                            PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT);
 
             // Then
             assertThat(result).isFalse();
-            then(pendingItemRepository).should()
+            then(pendingItemRepository)
+                    .should()
                     .markSourceDeleted(PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID);
-            then(pendingItemRepository).should(never())
+            then(pendingItemRepository)
+                    .should(never())
                     .deleteByProjectIdAndSourceTypeAndSourceIdIfNotCompleted(
                             PROJECT_ID, SourceType.DOCUMENT, SOURCE_ID);
         }

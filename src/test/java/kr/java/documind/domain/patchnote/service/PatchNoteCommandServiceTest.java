@@ -17,7 +17,6 @@ import kr.java.documind.domain.patchnote.model.repository.PatchNoteRepository;
 import kr.java.documind.domain.patchnote.model.repository.PendingItemRepository;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,14 +37,9 @@ class PatchNoteCommandServiceTest {
     private static final UUID PROJECT_ID = UUID.randomUUID();
     private static final Long PATCH_NOTE_ID = 1L;
 
-    private PatchNoteCreateRequest buildRequest(
-            boolean overwrite, List<Long> itemIds) {
+    private PatchNoteCreateRequest buildRequest(boolean overwrite, List<Long> itemIds) {
         return new PatchNoteCreateRequest(
-                "v1.2.0 업데이트",
-                "## 수정\n- 버그 수정",
-                1, 2, 0,
-                itemIds,
-                overwrite);
+                "v1.2.0 업데이트", "## 수정\n- 버그 수정", 1, 2, 0, itemIds, overwrite);
     }
 
     // ─────────────────────────────────────────────
@@ -85,8 +79,7 @@ class PatchNoteCommandServiceTest {
                     .willReturn(true);
 
             // When / Then
-            assertThatThrownBy(
-                            () -> patchNoteCommandService.savePatchNote(PROJECT_ID, request))
+            assertThatThrownBy(() -> patchNoteCommandService.savePatchNote(PROJECT_ID, request))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("이미 존재하는 버전입니다");
         }
@@ -129,7 +122,9 @@ class PatchNoteCommandServiceTest {
             patchNoteCommandService.savePatchNote(PROJECT_ID, request);
 
             // Then
-            then(patchNoteRepository).should(never()).softDeleteByVersion(any(), any(), any(), any(), any());
+            then(patchNoteRepository)
+                    .should(never())
+                    .softDeleteByVersion(any(), any(), any(), any(), any());
         }
 
         @Test
@@ -181,8 +176,7 @@ class PatchNoteCommandServiceTest {
                     .willReturn(false);
 
             // When / Then
-            assertThatThrownBy(
-                            () -> patchNoteCommandService.savePatchNote(PROJECT_ID, request))
+            assertThatThrownBy(() -> patchNoteCommandService.savePatchNote(PROJECT_ID, request))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("버전은 0 이상이어야 합니다");
         }
@@ -218,7 +212,9 @@ class PatchNoteCommandServiceTest {
 
             // When / Then
             assertThatThrownBy(
-                            () -> patchNoteCommandService.deletePatchNote(PROJECT_ID, PATCH_NOTE_ID))
+                            () ->
+                                    patchNoteCommandService.deletePatchNote(
+                                            PROJECT_ID, PATCH_NOTE_ID))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining(String.valueOf(PATCH_NOTE_ID));
         }
@@ -232,7 +228,9 @@ class PatchNoteCommandServiceTest {
 
             // When / Then
             assertThatThrownBy(
-                            () -> patchNoteCommandService.deletePatchNote(PROJECT_ID, PATCH_NOTE_ID))
+                            () ->
+                                    patchNoteCommandService.deletePatchNote(
+                                            PROJECT_ID, PATCH_NOTE_ID))
                     .isInstanceOf(NotFoundException.class);
         }
     }

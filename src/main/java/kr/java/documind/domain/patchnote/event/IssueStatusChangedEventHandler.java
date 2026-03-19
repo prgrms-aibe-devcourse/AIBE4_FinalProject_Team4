@@ -210,14 +210,11 @@ public class IssueStatusChangedEventHandler {
                     "[PatchNote] 이슈 삭제 완료 — pending_item sourceDeleted 처리. issueId: {}",
                     event.issueId());
         } catch (Exception e) {
-            log.error(
-                    "[PatchNote] 이슈 삭제 처리 중 예외 발생 - issueId: {}", event.issueId(), e);
+            log.error("[PatchNote] 이슈 삭제 처리 중 예외 발생 - issueId: {}", event.issueId(), e);
         }
     }
 
-    /**
-     * description, resolutionNote, 댓글 중 MIN_CONTENT_LENGTH 이상인 텍스트가 하나도 없으면 정보 부족으로 판정
-     */
+    /** description, resolutionNote, 댓글 중 MIN_CONTENT_LENGTH 이상인 텍스트가 하나도 없으면 정보 부족으로 판정 */
     private boolean isInsufficient(Issue issue, List<IssueComment> comments) {
         if (hasMeaningfulText(issue.getDescription())) return false;
         if (hasMeaningfulText(issue.getResolutionNote())) return false;

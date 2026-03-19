@@ -9,7 +9,6 @@ import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
-import java.util.Map;
 import kr.java.documind.domain.chatbot.infrastructure.ChatModelResolver;
 import kr.java.documind.domain.chatbot.model.vo.ResolvedChatModel;
 import kr.java.documind.domain.patchnote.model.dto.DocumentSummaryResult;
@@ -56,13 +55,10 @@ class DocumentSummaryGeneratorTest {
 
         ChatClient.Builder mockBuilder = mock(ChatClient.Builder.class);
         ChatClient mockChatClient = mock(ChatClient.class);
-        ChatClient.ChatClientRequestSpec mockSpec =
-                mock(ChatClient.ChatClientRequestSpec.class);
+        ChatClient.ChatClientRequestSpec mockSpec = mock(ChatClient.ChatClientRequestSpec.class);
         ChatClient.CallResponseSpec mockCallSpec = mock(ChatClient.CallResponseSpec.class);
 
-        chatClientStatic
-                .when(() -> ChatClient.builder(mockChatModel))
-                .thenReturn(mockBuilder);
+        chatClientStatic.when(() -> ChatClient.builder(mockChatModel)).thenReturn(mockBuilder);
         given(mockBuilder.defaultOptions(mockChatOptions)).willReturn(mockBuilder);
         given(mockBuilder.build()).willReturn(mockChatClient);
         given(mockChatClient.prompt()).willReturn(mockSpec);
@@ -80,7 +76,8 @@ class DocumentSummaryGeneratorTest {
     class GenerateFallback {
 
         @Test
-        @DisplayName("fallback: chatModelResolver.resolve() 예외 → title/summary=documentName, affectsPlayer=true")
+        @DisplayName(
+                "fallback: chatModelResolver.resolve() 예외 → title/summary=documentName, affectsPlayer=true")
         void generate_chatModelResolver예외_fallback반환() {
             // Given
             given(chatModelResolver.resolve(null)).willThrow(new RuntimeException("모델 없음"));
@@ -100,8 +97,7 @@ class DocumentSummaryGeneratorTest {
         @DisplayName("fallback: promptUtil.render() 예외 → fallback 반환 (LLM 미호출)")
         void generate_promptUtil예외_fallback반환() {
             // Given
-            given(promptUtil.render(anyString(), any()))
-                    .willThrow(new RuntimeException("템플릿 없음"));
+            given(promptUtil.render(anyString(), any())).willThrow(new RuntimeException("템플릿 없음"));
 
             // When
             DocumentSummaryResult result =
@@ -120,8 +116,7 @@ class DocumentSummaryGeneratorTest {
             given(promptUtil.render(anyString(), any())).willReturn("프롬프트");
 
             // When
-            DocumentSummaryResult result =
-                    generator.generate("문서.pdf", "그룹", null, List.of("청크"));
+            DocumentSummaryResult result = generator.generate("문서.pdf", "그룹", null, List.of("청크"));
 
             // Then
             assertThat(result.categoryFromLlm()).isEqualTo("");
@@ -218,7 +213,8 @@ class DocumentSummaryGeneratorTest {
                     .willReturn(new ResolvedChatModel(mockChatModel, mockChatOptions));
             given(promptUtil.render(anyString(), any())).willReturn("프롬프트");
 
-            String json = """
+            String json =
+                    """
                     {"title":"제목","summary":"요약","category":"NEW"}
                     """;
 
@@ -244,7 +240,8 @@ class DocumentSummaryGeneratorTest {
                     .willReturn(new ResolvedChatModel(mockChatModel, mockChatOptions));
             given(promptUtil.render(anyString(), any())).willReturn("프롬프트");
 
-            String json = """
+            String json =
+                    """
                     {"title":"","summary":"요약","category":"FIX","isUserFacing":true}
                     """;
 
@@ -270,7 +267,8 @@ class DocumentSummaryGeneratorTest {
                     .willReturn(new ResolvedChatModel(mockChatModel, mockChatOptions));
             given(promptUtil.render(anyString(), any())).willReturn("프롬프트");
 
-            String json = """
+            String json =
+                    """
                     {"title":"제목","summary":"","category":"FIX","isUserFacing":true}
                     """;
 
@@ -296,7 +294,8 @@ class DocumentSummaryGeneratorTest {
                     .willReturn(new ResolvedChatModel(mockChatModel, mockChatOptions));
             given(promptUtil.render(anyString(), any())).willReturn("프롬프트");
 
-            String json = """
+            String json =
+                    """
                     {"title":"제목","summary":"요약","category":"","isUserFacing":true}
                     """;
 
@@ -334,8 +333,7 @@ class DocumentSummaryGeneratorTest {
             String invalidJson = "죄송합니다. 분석이 불가합니다.";
 
             try (MockedStatic<ChatClient> chatClientStatic = mockStatic(ChatClient.class)) {
-                stubChatClientChain(
-                        mockChatModel, mockChatOptions, chatClientStatic, invalidJson);
+                stubChatClientChain(mockChatModel, mockChatOptions, chatClientStatic, invalidJson);
 
                 // When
                 DocumentSummaryResult result =
@@ -365,8 +363,7 @@ class DocumentSummaryGeneratorTest {
                     """;
 
             try (MockedStatic<ChatClient> chatClientStatic = mockStatic(ChatClient.class)) {
-                stubChatClientChain(
-                        mockChatModel, mockChatOptions, chatClientStatic, markdownJson);
+                stubChatClientChain(mockChatModel, mockChatOptions, chatClientStatic, markdownJson);
 
                 // When
                 DocumentSummaryResult result =
@@ -401,8 +398,7 @@ class DocumentSummaryGeneratorTest {
 
             // When
             DocumentSummaryResult result =
-                    generator.generate(
-                            "긴문서.pdf", "그룹", "FIX", List.of(chunk1, chunk2, chunk3));
+                    generator.generate("긴문서.pdf", "그룹", "FIX", List.of(chunk1, chunk2, chunk3));
 
             // Then — fallback이지만 예외 없이 처리
             assertThat(result.title()).isEqualTo("긴문서.pdf");
@@ -416,8 +412,7 @@ class DocumentSummaryGeneratorTest {
             given(promptUtil.render(anyString(), any())).willReturn("프롬프트");
 
             // When
-            DocumentSummaryResult result =
-                    generator.generate("빈문서.pdf", "그룹", "FIX", List.of());
+            DocumentSummaryResult result = generator.generate("빈문서.pdf", "그룹", "FIX", List.of());
 
             // Then
             assertThat(result.title()).isEqualTo("빈문서.pdf");

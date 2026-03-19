@@ -8,11 +8,11 @@ import kr.java.documind.domain.patchnote.model.enums.PatchNoteStatus;
 /**
  * 패치노트 목록 조회용 요약 DTO.
  *
- * @param id           패치노트 ID
- * @param title        제목
+ * @param id 패치노트 ID
+ * @param title 제목
  * @param versionLabel 버전 레이블 (예: "v1.2.0")
- * @param status       상태 (DRAFT / PUBLISHED / DELETED)
- * @param createdAt    생성일시
+ * @param status 상태 (DRAFT / PUBLISHED / DELETED)
+ * @param createdAt 생성일시
  */
 @Schema(description = "패치노트 목록 항목")
 public record PatchNoteSummary(

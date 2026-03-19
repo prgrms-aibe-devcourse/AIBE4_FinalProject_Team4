@@ -103,7 +103,8 @@ class ChatModelResolverTest {
         @DisplayName("Google 모델을 선택하면 GoogleGenAiChatModel이 반환된다")
         void resolve_GoogleProvider_ReturnsGoogleModel() {
             SupportedChatModels supported =
-                    new SupportedChatModels("gemini", "gemini", List.of(googleModel("gemini", "gemini-pro")));
+                    new SupportedChatModels(
+                            "gemini", "gemini", List.of(googleModel("gemini", "gemini-pro")));
             ChatModelResolver resolver = createResolver(supported);
 
             ResolvedChatModel result = resolver.resolve("gemini");
@@ -115,7 +116,8 @@ class ChatModelResolverTest {
         @DisplayName("Ollama 모델을 선택하면 OllamaChatModel이 반환된다")
         void resolve_OllamaProvider_ReturnsOllamaModel() {
             SupportedChatModels supported =
-                    new SupportedChatModels("llama", "llama", List.of(ollamaModel("llama", "llama3")));
+                    new SupportedChatModels(
+                            "llama", "llama", List.of(ollamaModel("llama", "llama3")));
             ChatModelResolver resolver = createResolver(supported);
 
             ResolvedChatModel result = resolver.resolve("llama");
@@ -166,7 +168,8 @@ class ChatModelResolverTest {
         @DisplayName("Ollama가 null이면 InternalServerException이 발생한다")
         void resolve_OllamaDisabled_ThrowsInternalServer() {
             SupportedChatModels supported =
-                    new SupportedChatModels("llama", "llama", List.of(ollamaModel("llama", "llama3")));
+                    new SupportedChatModels(
+                            "llama", "llama", List.of(ollamaModel("llama", "llama3")));
             ChatModelResolver resolver =
                     new ChatModelResolver(null, openAiChatModel, googleGenAiChatModel, supported);
 

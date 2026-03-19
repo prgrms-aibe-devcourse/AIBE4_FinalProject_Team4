@@ -30,6 +30,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * 문서 임베딩 완료 이벤트를 수신하여 패치노트 Pending Item을 적재한다.
  *
  * <h3>신규 문서 처리 흐름 ({@code isNewDocument=true})</h3>
+ *
  * <ol>
  *   <li>벡터 스토어에서 문서 청크 조회 (LLM 입력 + 유의미성 판단용)
  *   <li>유의미성 검증: trivial 변경이면 적재 생략
@@ -38,6 +39,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * </ol>
  *
  * <h3>업데이트 문서 처리 흐름 ({@code isNewDocument=false})</h3>
+ *
  * <ol>
  *   <li>{@link DocumentDiffService}로 이전 버전과 청크 단위 diff 계산
  *   <li>{@link PatchCandidateExtractor}로 유의미한 변경 후보 추출 및 점수화
@@ -46,8 +48,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * </ol>
  *
  * <ul>
- *   <li>벡터 청크 없음 → {@link DocumentEmbeddingEmptyException} throw → CustomAsyncExceptionHandler
- *       경고 알림
+ *   <li>벡터 청크 없음 → {@link DocumentEmbeddingEmptyException} throw → CustomAsyncExceptionHandler 경고
+ *       알림
  *   <li>pending_item 최종 저장 실패 → {@code PendingItemUpsertFailedException} throw → 관리자 알림
  *   <li>기타 예외 → 그대로 전파 → CustomAsyncExceptionHandler 관리자 알림
  *   <li>성공 → {@link DocumentPendingItemCreatedEvent} 발행 → alarm-toast + 헤더 배지
@@ -75,8 +77,8 @@ public class DocumentVectorStatusChangedEventListener {
     /**
      * 문서 임베딩 완료 시 pending_item을 적재한다.
      *
-     * <p>실패 예외는 호출 스택 상위로 전파하여 {@code CustomAsyncExceptionHandler}에 위임한다.
-     * trivial 변경(유의미하지 않은 문서/후보 없음)은 예외 없이 조기 반환한다.
+     * <p>실패 예외는 호출 스택 상위로 전파하여 {@code CustomAsyncExceptionHandler}에 위임한다. trivial 변경(유의미하지 않은 문서/후보
+     * 없음)은 예외 없이 조기 반환한다.
      */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -94,10 +96,6 @@ public class DocumentVectorStatusChangedEventListener {
             handleUpdatedDocument(event);
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 신규 문서 처리 — 전문 LLM 요약 기반, 단일 pending_item (change_index=0)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void handleNewDocument(DocumentEmbeddedEvent event) {
         List<String> chunks =
@@ -161,10 +159,6 @@ public class DocumentVectorStatusChangedEventListener {
                         event.sourceId(), event.projectId(), summaryResult.title(), status));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 업데이트 문서 처리 — diff 기반, 후보별 pending_item (change_index = chunkIndex)
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void handleUpdatedDocument(DocumentEmbeddedEvent event) {
         // 1. 이전 버전과 청크 단위 diff 계산
         List<ChunkDiffResult> diffs =
@@ -174,8 +168,7 @@ public class DocumentVectorStatusChangedEventListener {
         List<PatchCandidate> candidates = patchCandidateExtractor.extract(diffs);
 
         if (candidates.isEmpty()) {
-            log.info(
-                    "[PatchNote] 문서 업데이트 — 유의미한 변경 후보 없음. sourceId: {}", event.sourceId());
+            log.info("[PatchNote] 문서 업데이트 — 유의미한 변경 후보 없음. sourceId: {}", event.sourceId());
             return;
         }
 
@@ -237,10 +230,6 @@ public class DocumentVectorStatusChangedEventListener {
                             event.sourceId(), event.projectId(), lastTitle, status));
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 내부 헬퍼
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void updateAffectsPlayerBestEffort(Long sourceId, boolean affectsPlayer) {
         try {

@@ -10,7 +10,6 @@ import kr.java.documind.domain.patchnote.model.dto.PatchNoteItemResponse;
 import kr.java.documind.domain.patchnote.model.dto.PatchNoteSectionResponse;
 import kr.java.documind.domain.patchnote.model.dto.RagContext;
 import kr.java.documind.domain.patchnote.model.dto.TokenEstimation;
-import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -61,8 +60,13 @@ class PatchNoteRefValidatorTest {
         void validate_모든REF유효_그대로반환() {
             // Given
             RagContext ctx = ragContextWith("ISSUE-1", "DOC-5-0");
-            PatchNoteDraftResponse resp = response(List.of(
-                    section("FIX", item("버그 수정", "ISSUE-1"), item("문서 수정", "DOC-5-0"))));
+            PatchNoteDraftResponse resp =
+                    response(
+                            List.of(
+                                    section(
+                                            "FIX",
+                                            item("버그 수정", "ISSUE-1"),
+                                            item("문서 수정", "DOC-5-0"))));
 
             // When
             PatchNoteDraftResponse result = validator.validate(resp, ctx);
@@ -70,7 +74,8 @@ class PatchNoteRefValidatorTest {
             // Then
             assertThat(result.sections()).hasSize(1);
             assertThat(result.sections().get(0).items()).hasSize(2);
-            assertThat(result.sections().get(0).items().get(0).sourceRefs()).containsExactly("ISSUE-1");
+            assertThat(result.sections().get(0).items().get(0).sourceRefs())
+                    .containsExactly("ISSUE-1");
         }
 
         @Test
@@ -78,8 +83,8 @@ class PatchNoteRefValidatorTest {
         void validate_환각REF포함_환각만제거() {
             // Given — 화이트리스트: ISSUE-1 만; 환각: FAKE-99
             RagContext ctx = ragContextWith("ISSUE-1");
-            PatchNoteDraftResponse resp = response(List.of(
-                    section("FIX", item("버그 수정", "ISSUE-1", "FAKE-99"))));
+            PatchNoteDraftResponse resp =
+                    response(List.of(section("FIX", item("버그 수정", "ISSUE-1", "FAKE-99"))));
 
             // When
             PatchNoteDraftResponse result = validator.validate(resp, ctx);
@@ -96,8 +101,7 @@ class PatchNoteRefValidatorTest {
             // Given
             RagContext ctx = ragContextWith("ISSUE-1");
             PatchNoteItemResponse nullText = new PatchNoteItemResponse(null, List.of("ISSUE-1"));
-            PatchNoteDraftResponse resp = response(List.of(
-                    section("FIX", nullText)));
+            PatchNoteDraftResponse resp = response(List.of(section("FIX", nullText)));
 
             // When
             PatchNoteDraftResponse result = validator.validate(resp, ctx);
@@ -112,8 +116,7 @@ class PatchNoteRefValidatorTest {
             // Given
             RagContext ctx = ragContextWith("ISSUE-1");
             PatchNoteItemResponse blankText = new PatchNoteItemResponse("   ", List.of("ISSUE-1"));
-            PatchNoteDraftResponse resp = response(List.of(
-                    section("FIX", blankText)));
+            PatchNoteDraftResponse resp = response(List.of(section("FIX", blankText)));
 
             // When
             PatchNoteDraftResponse result = validator.validate(resp, ctx);
@@ -127,10 +130,8 @@ class PatchNoteRefValidatorTest {
         void validate_모든항목드롭_섹션드롭() {
             // Given — 모든 REF가 환각
             RagContext ctx = ragContextWith("ISSUE-1");
-            PatchNoteDraftResponse resp = response(List.of(
-                    section("FIX",
-                            item("수정1", "FAKE-1"),
-                            item("수정2", "FAKE-2"))));
+            PatchNoteDraftResponse resp =
+                    response(List.of(section("FIX", item("수정1", "FAKE-1"), item("수정2", "FAKE-2"))));
 
             // When
             PatchNoteDraftResponse result = validator.validate(resp, ctx);
@@ -138,8 +139,8 @@ class PatchNoteRefValidatorTest {
             // Then — sourceRefs 제거 후 text는 유지, sections는 남음 (항목 자체는 살아있음)
             // 참고: validator는 text가 있으면 항목 유지, ref만 제거
             assertThat(result.sections()).hasSize(1);
-            assertThat(result.sections().get(0).items()).allMatch(
-                    i -> i.sourceRefs() == null || i.sourceRefs().isEmpty());
+            assertThat(result.sections().get(0).items())
+                    .allMatch(i -> i.sourceRefs() == null || i.sourceRefs().isEmpty());
         }
 
         @Test
@@ -175,8 +176,7 @@ class PatchNoteRefValidatorTest {
         void validate_sourceRefs없는항목_변경없이통과() {
             // Given
             RagContext ctx = ragContextWith("ISSUE-1");
-            PatchNoteDraftResponse resp = response(List.of(
-                    section("NEW", item("신규 기능 추가"))));
+            PatchNoteDraftResponse resp = response(List.of(section("NEW", item("신규 기능 추가"))));
 
             // When
             PatchNoteDraftResponse result = validator.validate(resp, ctx);

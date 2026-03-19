@@ -54,7 +54,8 @@ public class DocumentGroupService {
         documentGroupManager.validateGroupNameUniqueness(
                 group.getProjectId(), group.getCategory(), normalizedGroupName);
 
-        group.updateGroupName(normalizedGroupName, documentGroupManager.extractChoseong(normalizedGroupName));
+        group.updateGroupName(
+                normalizedGroupName, documentGroupManager.extractChoseong(normalizedGroupName));
     }
 
     @Transactional

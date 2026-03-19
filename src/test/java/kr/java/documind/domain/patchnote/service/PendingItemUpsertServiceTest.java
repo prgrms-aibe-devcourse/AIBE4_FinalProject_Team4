@@ -10,8 +10,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 
-import org.mockito.InOrder;
-
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -30,6 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -67,7 +66,9 @@ class PendingItemUpsertServiceTest {
                 PatchType.FIX,
                 status,
                 NOW,
-                0, null, null);
+                0,
+                null,
+                null);
     }
 
     @Nested
@@ -80,8 +81,9 @@ class PendingItemUpsertServiceTest {
             // Given
             PendingItemCreateRequest dto = buildDto(PendingItemStatus.PENDING);
             given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
+                            pendingItemRepository
+                                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
                     .willReturn(Optional.empty());
 
             // When
@@ -107,10 +109,13 @@ class PendingItemUpsertServiceTest {
                             PatchType.FIX,
                             PendingItemStatus.PENDING,
                             NOW.minusDays(1),
-                            0, null, null);
+                            0,
+                            null,
+                            null);
             given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
+                            pendingItemRepository
+                                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
                     .willReturn(Optional.of(existing));
 
             // When
@@ -137,10 +142,13 @@ class PendingItemUpsertServiceTest {
                             PatchType.FIX,
                             PendingItemStatus.EXCLUDED,
                             NOW.minusDays(1),
-                            0, null, null);
+                            0,
+                            null,
+                            null);
             given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
+                            pendingItemRepository
+                                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
                     .willReturn(Optional.of(excluded));
 
             // When
@@ -167,11 +175,14 @@ class PendingItemUpsertServiceTest {
                             PatchType.FIX,
                             PendingItemStatus.PENDING,
                             NOW.minusDays(1),
-                            0, null, null);
+                            0,
+                            null,
+                            null);
             existing.markSourceDeleted();
             given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
+                            pendingItemRepository
+                                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
                     .willReturn(Optional.of(existing));
 
             // When
@@ -198,10 +209,13 @@ class PendingItemUpsertServiceTest {
                             PatchType.NEW,
                             PendingItemStatus.PENDING,
                             NOW.minusDays(1),
-                            0, null, null);
+                            0,
+                            null,
+                            null);
             given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
+                            pendingItemRepository
+                                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
                     .willReturn(Optional.of(existing));
 
             // When
@@ -229,11 +243,14 @@ class PendingItemUpsertServiceTest {
                             PatchType.FIX,
                             PendingItemStatus.PENDING,
                             NOW.minusDays(1),
-                            0, null, null);
+                            0,
+                            null,
+                            null);
             completed.complete(); // PENDING → COMPLETED
             given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
+                            pendingItemRepository
+                                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
                     .willReturn(Optional.of(completed));
 
             // When
@@ -263,7 +280,8 @@ class PendingItemUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("recover: sourceType=DOCUMENT → vectorStoreManager 미호출 후 PendingItemUpsertFailedException 발생")
+        @DisplayName(
+                "recover: sourceType=DOCUMENT → vectorStoreManager 미호출 후 PendingItemUpsertFailedException 발생")
         void recoverUpsert_DOCUMENT타입_벡터삭제미호출() {
             // Given
             PendingItemCreateRequest dto =
@@ -277,7 +295,9 @@ class PendingItemUpsertServiceTest {
                             PatchType.CHANGE,
                             PendingItemStatus.PENDING,
                             NOW,
-                            0, null, null);
+                            0,
+                            null,
+                            null);
             DataAccessException cause = new DataIntegrityViolationException("DB 오류");
 
             // When & Then
@@ -323,7 +343,8 @@ class PendingItemUpsertServiceTest {
                     .isInstanceOf(RuntimeException.class);
             then(pendingItemRepository)
                     .should(never())
-                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(any(), any(), any(), anyInt());
+                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                            any(), any(), any(), anyInt());
         }
 
         @Test
@@ -332,8 +353,9 @@ class PendingItemUpsertServiceTest {
             // Given
             PendingItemCreateRequest dto = buildDto(PendingItemStatus.PENDING);
             given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
+                            pendingItemRepository
+                                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
                     .willReturn(Optional.empty());
 
             // When
@@ -344,7 +366,8 @@ class PendingItemUpsertServiceTest {
             then(vectorStoreManager).should(order).insertChunks(any(), any(), any());
             then(pendingItemRepository)
                     .should(order)
-                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(any(), any(), any(), anyInt());
+                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                            any(), any(), any(), anyInt());
         }
 
         @Test
@@ -353,8 +376,9 @@ class PendingItemUpsertServiceTest {
             // Given
             PendingItemCreateRequest dto = buildDto(PendingItemStatus.PENDING);
             given(
-                            pendingItemRepository.findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
-                                    PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
+                            pendingItemRepository
+                                    .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                                            PROJECT_ID, SourceType.ISSUE, SOURCE_ID, 0))
                     .willReturn(Optional.empty());
 
             // When

@@ -18,15 +18,6 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * PendingItem 적재 및 재시도 복구를 담당한다.
- *
- * <ul>
- *   <li>{@link #saveVectorThenUpsert} — 벡터 저장 → pending_item upsert 순서 보장
- *   <li>{@link #upsertPendingItem} — {@code @Retryable} 적용 upsert (최대 3회)
- *   <li>{@link #recoverUpsert} — 3회 실패 후 고아 벡터 정리 및 예외 전파
- * </ul>
- */
 @Slf4j
 @Service
 public class PendingItemUpsertService {
@@ -43,12 +34,6 @@ public class PendingItemUpsertService {
         this.vectorStoreManager = vectorStoreManager;
     }
 
-    /**
-     * 벡터 저장 후 pending_item을 upsert한다.
-     *
-     * <p>벡터 저장(RDBMS 트랜잭션 미참여)이 실패하면 예외를 전파하고 pending_item은 적재하지 않는다.
-     * upsert는 self-call로 AOP 프록시(@Retryable)를 경유한다.
-     */
     public void saveVectorThenUpsert(
             Long sourceId,
             List<Document> chunks,
@@ -61,12 +46,6 @@ public class PendingItemUpsertService {
         self.upsertPendingItem(dto);
     }
 
-    /**
-     * pending_item을 upsert한다.
-     *
-     * <p>기존 항목이 있으면 {@code refresh}로 갱신하고, 없으면 신규 생성한다.
-     * {@code @Retryable}로 {@link DataAccessException} 발생 시 최대 3회 재시도한다.
-     */
     @Retryable(
             retryFor = DataAccessException.class,
             maxAttempts = 3,
@@ -120,13 +99,6 @@ public class PendingItemUpsertService {
                         });
     }
 
-    /**
-     * {@link #upsertPendingItem} 3회 재시도 모두 실패 시 호출된다.
-     *
-     * <p>ISSUE 타입은 패치노트 도메인이 벡터를 직접 소유하므로 고아 벡터를 정리한다.
-     * DOCUMENT 타입은 벡터가 EtlService 소유이므로 정리하지 않는다.
-     * 정리 성공 여부와 무관하게 {@link PendingItemUpsertFailedException}을 전파한다.
-     */
     @Recover
     public void recoverUpsert(DataAccessException e, PendingItemCreateRequest dto) {
         log.error(

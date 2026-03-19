@@ -51,8 +51,9 @@ class DocumentPendingItemRollbackEventListenerTest {
         void handleDocumentDeleted_deleteForRollback_정확한인자로호출() {
             // Given
             DocumentVectorDeleteEvent event = buildEvent();
-            given(pendingItemRollbackService.deleteForRollback(
-                            PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
                     .willReturn(true);
 
             // When
@@ -69,13 +70,13 @@ class DocumentPendingItemRollbackEventListenerTest {
         void handleDocumentDeleted_deleteForRollback_true_정상완료() {
             // Given
             DocumentVectorDeleteEvent event = buildEvent();
-            given(pendingItemRollbackService.deleteForRollback(
-                            PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
                     .willReturn(true);
 
             // When & Then (예외 없이 완료)
-            assertThatCode(() -> listener.handleDocumentDeleted(event))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> listener.handleDocumentDeleted(event)).doesNotThrowAnyException();
         }
 
         @Test
@@ -83,13 +84,13 @@ class DocumentPendingItemRollbackEventListenerTest {
         void handleDocumentDeleted_deleteForRollback_false_정상완료() {
             // Given
             DocumentVectorDeleteEvent event = buildEvent();
-            given(pendingItemRollbackService.deleteForRollback(
-                            PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
                     .willReturn(false);
 
             // When & Then (예외 없이 완료)
-            assertThatCode(() -> listener.handleDocumentDeleted(event))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> listener.handleDocumentDeleted(event)).doesNotThrowAnyException();
         }
 
         @Test
@@ -97,8 +98,9 @@ class DocumentPendingItemRollbackEventListenerTest {
         void handleDocumentDeleted_pendingItem없음_deleteForRollback1회호출() {
             // Given
             DocumentVectorDeleteEvent event = buildEvent();
-            given(pendingItemRollbackService.deleteForRollback(
-                            PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
                     .willReturn(false);
 
             // When
@@ -130,8 +132,7 @@ class DocumentPendingItemRollbackEventListenerTest {
                     .deleteForRollback(PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT);
 
             // When & Then (예외가 전파되지 않아야 함)
-            assertThatCode(() -> listener.handleDocumentDeleted(event))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> listener.handleDocumentDeleted(event)).doesNotThrowAnyException();
         }
 
         @Test
@@ -144,8 +145,7 @@ class DocumentPendingItemRollbackEventListenerTest {
                     .deleteForRollback(any(), any(), any());
 
             // When & Then
-            assertThatCode(() -> listener.handleDocumentDeleted(event))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> listener.handleDocumentDeleted(event)).doesNotThrowAnyException();
         }
 
         @Test
@@ -181,9 +181,11 @@ class DocumentPendingItemRollbackEventListenerTest {
         void handleDocumentDeleted_다른projectId_격리처리() {
             // Given
             UUID otherProjectId = UUID.randomUUID();
-            DocumentVectorDeleteEvent event = new DocumentVectorDeleteEvent(otherProjectId, SOURCE_ID);
-            given(pendingItemRollbackService.deleteForRollback(
-                            otherProjectId, SOURCE_ID, SourceType.DOCUMENT))
+            DocumentVectorDeleteEvent event =
+                    new DocumentVectorDeleteEvent(otherProjectId, SOURCE_ID);
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    otherProjectId, SOURCE_ID, SourceType.DOCUMENT))
                     .willReturn(true);
 
             // When
@@ -200,8 +202,9 @@ class DocumentPendingItemRollbackEventListenerTest {
         void handleDocumentDeleted_markSourceDeleted_직접호출없음() {
             // Given
             DocumentVectorDeleteEvent event = buildEvent();
-            given(pendingItemRollbackService.deleteForRollback(
-                            PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, SOURCE_ID, SourceType.DOCUMENT))
                     .willReturn(false);
 
             // When

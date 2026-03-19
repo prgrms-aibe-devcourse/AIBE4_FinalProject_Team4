@@ -59,9 +59,9 @@ public interface DocumentMetadataRepository extends JpaRepository<DocumentMetada
      *
      * <p>diff 계산 시 직전 버전 탐색에 사용하므로 {@code Pageable}로 1건만 요청한다.
      *
-     * @param groupId   document_group.id
+     * @param groupId document_group.id
      * @param excludeId 현재 버전의 document_metadata.id (자기 자신 제외)
-     * @param pageable  {@code PageRequest.of(0, 1)} 로 직전 버전 1건만 조회
+     * @param pageable {@code PageRequest.of(0, 1)} 로 직전 버전 1건만 조회
      * @return 버전 내림차순 정렬된 이전 버전 목록 (최대 1건)
      */
     @Query(
@@ -70,7 +70,5 @@ public interface DocumentMetadataRepository extends JpaRepository<DocumentMetada
                     + "AND dm.id <> :excludeId "
                     + "ORDER BY dm.majorVersion DESC, dm.minorVersion DESC, dm.patchVersion DESC")
     List<DocumentMetadata> findPreviousVersionsInGroup(
-            @Param("groupId") Long groupId,
-            @Param("excludeId") Long excludeId,
-            Pageable pageable);
+            @Param("groupId") Long groupId, @Param("excludeId") Long excludeId, Pageable pageable);
 }

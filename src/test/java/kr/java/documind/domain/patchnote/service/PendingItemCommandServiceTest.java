@@ -15,7 +15,6 @@ import kr.java.documind.domain.patchnote.model.repository.PendingItemRepository;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,17 +37,20 @@ class PendingItemCommandServiceTest {
     private static final OffsetDateTime NOW = OffsetDateTime.now(ZoneOffset.UTC);
 
     private PendingItem buildItem(UUID projectId, PendingItemStatus status) {
-        PendingItem item = PendingItem.create(
-                projectId,
-                100L,
-                SourceType.ISSUE,
-                "테스트 이슈 제목",
-                "이슈 요약",
-                "ㅌㅅㅡ",
-                PatchType.FIX,
-                PendingItemStatus.PENDING,
-                NOW,
-                0, null, null);
+        PendingItem item =
+                PendingItem.create(
+                        projectId,
+                        100L,
+                        SourceType.ISSUE,
+                        "테스트 이슈 제목",
+                        "이슈 요약",
+                        "ㅌㅅㅡ",
+                        PatchType.FIX,
+                        PendingItemStatus.PENDING,
+                        NOW,
+                        0,
+                        null,
+                        null);
         // PENDING이 기본값이므로 EXCLUDED/COMPLETED는 상태 전이
         if (status == PendingItemStatus.EXCLUDED) {
             item.exclude();

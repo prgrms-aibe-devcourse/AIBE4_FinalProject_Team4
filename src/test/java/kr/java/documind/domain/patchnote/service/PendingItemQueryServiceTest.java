@@ -46,17 +46,20 @@ class PendingItemQueryServiceTest {
     private static final OffsetDateTime NOW = OffsetDateTime.now(ZoneOffset.UTC);
 
     private PendingItem buildItem(UUID projectId, SourceType sourceType, boolean sourceDeleted) {
-        PendingItem item = PendingItem.create(
-                projectId,
-                SOURCE_ID,
-                sourceType,
-                "패치 제목",
-                "패치 요약",
-                "ㅍㅊ",
-                PatchType.FIX,
-                PendingItemStatus.PENDING,
-                NOW,
-                0, null, null);
+        PendingItem item =
+                PendingItem.create(
+                        projectId,
+                        SOURCE_ID,
+                        sourceType,
+                        "패치 제목",
+                        "패치 요약",
+                        "ㅍㅊ",
+                        PatchType.FIX,
+                        PendingItemStatus.PENDING,
+                        NOW,
+                        0,
+                        null,
+                        null);
         if (sourceDeleted) {
             item.markSourceDeleted();
         }
@@ -72,18 +75,25 @@ class PendingItemQueryServiceTest {
     class GetFeed {
 
         @Test
-        @DisplayName("피드 조회: mode=null → PENDING으로 정규화, includeExcluded=false/includeCompleted=false 전달")
+        @DisplayName(
+                "피드 조회: mode=null → PENDING으로 정규화, includeExcluded=false/includeCompleted=false 전달")
         void getFeed_mode_null_PENDING으로정규화() {
             // Given — mode=null → FeedQuery compact constructor가 FeedMode.PENDING으로 정규화
             FeedQuery query = new FeedQuery(null, null, null, null, null, null);
-            given(pendingItemRepository.findFeed(
-                            eq(PROJECT_ID), isNull(), isNull(), isNull(), isNull(), isNull(),
-                            eq(false), eq(false)))
+            given(
+                            pendingItemRepository.findFeed(
+                                    eq(PROJECT_ID),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    eq(false),
+                                    eq(false)))
                     .willReturn(List.of());
 
             // When
-            List<PendingItemSummary> result =
-                    pendingItemQueryService.getFeed(PROJECT_ID, query);
+            List<PendingItemSummary> result = pendingItemQueryService.getFeed(PROJECT_ID, query);
 
             // Then
             assertThat(result).isEmpty();
@@ -97,9 +107,16 @@ class PendingItemQueryServiceTest {
         void getFeed_mode_EXCLUDED_includeExcluded_true() {
             // Given
             FeedQuery query = new FeedQuery(null, null, null, null, null, FeedMode.EXCLUDED);
-            given(pendingItemRepository.findFeed(
-                            eq(PROJECT_ID), isNull(), isNull(), isNull(), isNull(), isNull(),
-                            eq(true), eq(false)))
+            given(
+                            pendingItemRepository.findFeed(
+                                    eq(PROJECT_ID),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    eq(true),
+                                    eq(false)))
                     .willReturn(List.of());
 
             // When
@@ -116,9 +133,16 @@ class PendingItemQueryServiceTest {
         void getFeed_mode_COMPLETED_includeCompleted_true() {
             // Given
             FeedQuery query = new FeedQuery(null, null, null, null, null, FeedMode.COMPLETED);
-            given(pendingItemRepository.findFeed(
-                            eq(PROJECT_ID), isNull(), isNull(), isNull(), isNull(), isNull(),
-                            eq(false), eq(true)))
+            given(
+                            pendingItemRepository.findFeed(
+                                    eq(PROJECT_ID),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    eq(false),
+                                    eq(true)))
                     .willReturn(List.of());
 
             // When
@@ -136,14 +160,20 @@ class PendingItemQueryServiceTest {
             // Given
             PendingItem item = buildItem(PROJECT_ID, SourceType.ISSUE, false);
             FeedQuery query = new FeedQuery(null, null, null, null, null, FeedMode.PENDING);
-            given(pendingItemRepository.findFeed(
-                            eq(PROJECT_ID), isNull(), isNull(), isNull(), isNull(), isNull(),
-                            eq(false), eq(false)))
+            given(
+                            pendingItemRepository.findFeed(
+                                    eq(PROJECT_ID),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    isNull(),
+                                    eq(false),
+                                    eq(false)))
                     .willReturn(List.of(item));
 
             // When
-            List<PendingItemSummary> result =
-                    pendingItemQueryService.getFeed(PROJECT_ID, query);
+            List<PendingItemSummary> result = pendingItemQueryService.getFeed(PROJECT_ID, query);
 
             // Then
             assertThat(result).hasSize(1);

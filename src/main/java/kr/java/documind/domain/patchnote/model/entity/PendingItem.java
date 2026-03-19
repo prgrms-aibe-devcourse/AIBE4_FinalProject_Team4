@@ -88,8 +88,7 @@ public class PendingItem extends BaseEntity {
     private String evidence;
 
     /** 패치노트 적합도 점수 0.0~1.0 (diff 기반 항목만 non-null). */
-    @Column
-    private Double score;
+    @Column private Double score;
 
     public static PendingItem create(
             UUID projectId,
@@ -142,8 +141,7 @@ public class PendingItem extends BaseEntity {
 
     public void exclude() {
         if (this.status != PendingItemStatus.PENDING) {
-            throw new IllegalStateException(
-                    "PENDING 상태에서만 제외할 수 있습니다. 현재 상태: " + this.status);
+            throw new IllegalStateException("PENDING 상태에서만 제외할 수 있습니다. 현재 상태: " + this.status);
         }
         this.status = PendingItemStatus.EXCLUDED;
     }

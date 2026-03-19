@@ -23,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("PatchNoteOutputParser 단위 테스트")
 class PatchNoteOutputParserTest {
 
-    @Mock  private ObjectMapper objectMapper;
+    @Mock private ObjectMapper objectMapper;
     @InjectMocks private PatchNoteOutputParser parser;
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -101,10 +101,9 @@ class PatchNoteOutputParserTest {
         void parse_코드펜스없이_중괄호추출후파싱() throws JsonProcessingException {
             // Given
             String json = "{\"sections\":[]}";
-            String raw  = "여기에 텍스트가 있고 " + json + " 이후에 더 있음";
+            String raw = "여기에 텍스트가 있고 " + json + " 이후에 더 있음";
             PatchNoteDraftResponse expected = new PatchNoteDraftResponse(null, List.of(), null);
-            given(objectMapper.readValue(json, PatchNoteDraftResponse.class))
-                    .willReturn(expected);
+            given(objectMapper.readValue(json, PatchNoteDraftResponse.class)).willReturn(expected);
 
             // When
             PatchNoteDraftResponse result = parser.parse(raw);
@@ -119,8 +118,7 @@ class PatchNoteOutputParserTest {
             // Given
             String json = "{\"sections\":[{\"sectionType\":\"FIX\",\"items\":[]}]}";
             PatchNoteDraftResponse expected = singleSectionResponse();
-            given(objectMapper.readValue(json, PatchNoteDraftResponse.class))
-                    .willReturn(expected);
+            given(objectMapper.readValue(json, PatchNoteDraftResponse.class)).willReturn(expected);
 
             // When
             PatchNoteDraftResponse result = parser.parse(json);

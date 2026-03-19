@@ -12,11 +12,11 @@ import kr.java.documind.global.enums.SourceType;
  * (기본값)으로 동작한다.
  *
  * @param sourceType 소스 타입 필터 (DOCUMENT / ISSUE, null=전체)
- * @param patchType  패치 타입 필터 (NEW / CHANGE / FIX / MAINTENANCE, null=전체)
- * @param from       소스 생성일 범위 시작 (포함, null=제한없음)
- * @param to         소스 생성일 범위 종료 (미포함, null=제한없음)
- * @param keyword    검색어 — title / summary / choseong 대상 (null=전체)
- * @param mode       조회 모드 (null=PENDING 기본값)
+ * @param patchType 패치 타입 필터 (NEW / CHANGE / FIX / MAINTENANCE, null=전체)
+ * @param from 소스 생성일 범위 시작 (포함, null=제한없음)
+ * @param to 소스 생성일 범위 종료 (미포함, null=제한없음)
+ * @param keyword 검색어 — title / summary / choseong 대상 (null=전체)
+ * @param mode 조회 모드 (null=PENDING 기본값)
  */
 public record FeedQuery(
         SourceType sourceType,

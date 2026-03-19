@@ -6,11 +6,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
-
-import org.mockito.InOrder;
 
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +39,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -217,7 +216,9 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
         }
 
         @Test
@@ -232,7 +233,9 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
         }
 
         @Test
@@ -318,7 +321,9 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
         }
 
         @Test
@@ -341,7 +346,9 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
         }
     }
 
@@ -367,7 +374,9 @@ class IssueStatusChangedEventHandlerTest {
             // Then
             InOrder order = inOrder(embeddingModelClient, pendingItemUpsertService, eventPublisher);
             then(embeddingModelClient).should(order).embed(any());
-            then(pendingItemUpsertService).should(order).saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService)
+                    .should(order)
+                    .saveVectorThenUpsert(any(), any(), any(), any());
             then(eventPublisher).should(order).publishEvent(any(Object.class));
         }
     }
@@ -469,7 +478,9 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_deleteForRollback_true반환시_벡터삭제호출() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.IN_PROGRESS);
-            given(pendingItemRollbackService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(true);
 
             // When
@@ -484,7 +495,9 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_deleteForRollback_false반환시_벡터삭제미호출() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.TODO);
-            given(pendingItemRollbackService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(false);
 
             // When
@@ -499,7 +512,9 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_벡터삭제예외발생시_삼킴() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.IN_PROGRESS);
-            given(pendingItemRollbackService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(true);
             willThrow(new RuntimeException("벡터 삭제 실패"))
                     .given(vectorStoreManager)
@@ -527,7 +542,9 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_pendingItem없음_벡터삭제미호출() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.TODO);
-            given(pendingItemRollbackService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(false);
 
             // When
@@ -689,11 +706,14 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then — isInsufficient = false (댓글 ≥ 15자) → saveVectorThenUpsert 호출
-            then(pendingItemUpsertService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
         }
 
         @Test
-        @DisplayName("정보 충분성: description=null, resolutionNote=null, comment 14자 → IssueInsufficientInfoException")
+        @DisplayName(
+                "정보 충분성: description=null, resolutionNote=null, comment 14자 → IssueInsufficientInfoException")
         void handleIssueResolved_comment14자이하_정보부족_예외발생() {
             // Given — 댓글이 있어도 14자 이하이면 부족 처리
             Issue issue = sufficientIssue(null, null);

@@ -10,15 +10,15 @@ import kr.java.documind.domain.patchnote.model.enums.PatchNoteStatus;
  *
  * <p>본문({@code content})은 source 태그가 제거된 정제 컨텐츠만 포함한다.
  *
- * @param id           패치노트 ID
- * @param title        제목
- * @param content      본문 (Markdown)
+ * @param id 패치노트 ID
+ * @param title 제목
+ * @param content 본문 (Markdown)
  * @param versionLabel 버전 레이블 (예: "v1.2.0")
  * @param majorVersion major 버전
  * @param minorVersion minor 버전
  * @param patchVersion patch 버전
- * @param status       상태
- * @param createdAt    생성일시
+ * @param status 상태
+ * @param createdAt 생성일시
  */
 @Schema(description = "패치노트 상세")
 public record PatchNoteDetail(

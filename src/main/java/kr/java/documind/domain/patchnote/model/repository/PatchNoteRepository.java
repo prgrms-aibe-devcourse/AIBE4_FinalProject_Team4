@@ -15,20 +15,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
 
-    // ─────────────────────────────────────────────
-    // 단건 조회
-    // ─────────────────────────────────────────────
-
     // soft delete 제외
     Optional<PatchNote> findByIdAndDeletedAtIsNull(Long id);
 
     // 버전으로 조회 (중복 확인용)
     Optional<PatchNote> findByProjectIdAndMajorVersionAndMinorVersionAndPatchVersion(
             UUID projectId, Integer majorVersion, Integer minorVersion, Integer patchVersion);
-
-    // ─────────────────────────────────────────────
-    // 목록 조회
-    // ─────────────────────────────────────────────
 
     // 프로젝트 내 활성 패치노트 목록 (최신순)
     @Query(
@@ -52,16 +44,6 @@ public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
     List<PatchNote> findAllByProjectIdAndStatus(
             @Param("projectId") UUID projectId, @Param("status") PatchNoteStatus status);
 
-    // ─────────────────────────────────────────────
-    // 버전 중복 확인
-    // ─────────────────────────────────────────────
-
-    /**
-     * 삭제되지 않은 패치노트 중 동일 버전이 존재하는지 확인한다.
-     *
-     * <p>soft delete된 레코드({@code deletedAt IS NOT NULL})는 제외하므로,
-     * 삭제 후 동일 버전 재사용이 가능하다.
-     */
     @Query(
             """
             SELECT COUNT(p) > 0 FROM PatchNote p
@@ -76,10 +58,6 @@ public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
             @Param("majorVersion") Integer majorVersion,
             @Param("minorVersion") Integer minorVersion,
             @Param("patchVersion") Integer patchVersion);
-
-    // ─────────────────────────────────────────────
-    // soft delete
-    // ─────────────────────────────────────────────
 
     @Modifying
     @Query(
@@ -96,13 +74,6 @@ public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
             @Param("projectId") UUID projectId,
             @Param("deletedAt") OffsetDateTime deletedAt);
 
-    /**
-     * 덮어쓰기용: 버전으로 활성 패치노트를 soft delete한다.
-     *
-     * <p>엔티티를 로드하지 않고 버전 조건으로 직접 UPDATE하므로 덮어쓰기 시 불필요한 SELECT를 줄인다.
-     *
-     * @return 업데이트된 행 수 (0이면 해당 버전 없음)
-     */
     @Modifying
     @Query(
             """

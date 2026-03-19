@@ -110,8 +110,7 @@ class PatchNoteQueryServiceTest {
                     .willReturn(Optional.empty());
 
             // When / Then
-            assertThatThrownBy(
-                            () -> patchNoteQueryService.getDetail(PROJECT_ID, PATCH_NOTE_ID))
+            assertThatThrownBy(() -> patchNoteQueryService.getDetail(PROJECT_ID, PATCH_NOTE_ID))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining(String.valueOf(PATCH_NOTE_ID));
         }
@@ -125,8 +124,7 @@ class PatchNoteQueryServiceTest {
                     .willReturn(Optional.of(patchNote));
 
             // When / Then
-            assertThatThrownBy(
-                            () -> patchNoteQueryService.getDetail(PROJECT_ID, PATCH_NOTE_ID))
+            assertThatThrownBy(() -> patchNoteQueryService.getDetail(PROJECT_ID, PATCH_NOTE_ID))
                     .isInstanceOf(NotFoundException.class);
         }
     }

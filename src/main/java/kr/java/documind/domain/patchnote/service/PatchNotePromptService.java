@@ -15,18 +15,19 @@ import org.springframework.stereotype.Service;
  * 패치노트 초안 생성용 LLM 프롬프트 빌더.
  *
  * <h3>시스템 프롬프트</h3>
- * {@code classpath:prompts/patch-note-draft.st} 템플릿을 기반으로, {@link RagContext}가 보유한
- * {@link ItemContext} 목록을 구조화된 증거 블록 텍스트로 렌더링하여 {@code {context}} 자리에 삽입한다.
- * 단일 산문형 {@code contextText}를 직접 주입하던 이전 방식과 달리,
- * 항목(ref) 단위로 제목·요약·증거 블록을 분리하여 LLM이 개별 항목을 명확하게 인식하도록 구성한다.
+ *
+ * {@code classpath:prompts/patch-note-draft.st} 템플릿을 기반으로, {@link RagContext}가 보유한 {@link
+ * ItemContext} 목록을 구조화된 증거 블록 텍스트로 렌더링하여 {@code {context}} 자리에 삽입한다. 단일 산문형 {@code contextText}를 직접
+ * 주입하던 이전 방식과 달리, 항목(ref) 단위로 제목·요약·증거 블록을 분리하여 LLM이 개별 항목을 명확하게 인식하도록 구성한다.
  *
  * <h3>유저 프롬프트</h3>
- * 목표 버전 정보와 선택적 추가 지침을 담는다. 추가 지침({@code additionalPrompt})은 가장 높은 우선순위로
- * 처리되어야 함을 프롬프트 템플릿이 명시한다.
+ *
+ * 목표 버전 정보와 선택적 추가 지침을 담는다. 추가 지침({@code additionalPrompt})은 가장 높은 우선순위로 처리되어야 함을 프롬프트 템플릿이 명시한다.
  *
  * <h3>모델 출력 계약</h3>
- * 프롬프트 템플릿은 모델에게 {@code PatchNoteDraftResponse} 스키마를 따르는 JSON만 반환하도록 지시한다.
- * 인라인 소스 태그({@code {{source:N}}}) 대신 {@code sourceRefs} 배열로 참조를 구조화한다.
+ *
+ * 프롬프트 템플릿은 모델에게 {@code PatchNoteDraftResponse} 스키마를 따르는 JSON만 반환하도록 지시한다. 인라인 소스 태그({@code
+ * {{source:N}}}) 대신 {@code sourceRefs} 배열로 참조를 구조화한다.
  */
 @Slf4j
 @Service
@@ -47,9 +48,8 @@ public class PatchNotePromptService {
     /**
      * 시스템 프롬프트 생성.
      *
-     * <p>{@link RagContext#itemContexts()}가 비어 있는 경우 소스 정보 없음 메시지를 삽입한다.
-     * 그렇지 않으면 각 {@link ItemContext}를 구조화된 증거 블록 형식으로 렌더링하여 {@code {context}}
-     * 자리에 삽입한다.
+     * <p>{@link RagContext#itemContexts()}가 비어 있는 경우 소스 정보 없음 메시지를 삽입한다. 그렇지 않으면 각 {@link
+     * ItemContext}를 구조화된 증거 블록 형식으로 렌더링하여 {@code {context}} 자리에 삽입한다.
      *
      * @param ragContext 소스 컨텍스트
      * @return 완성된 시스템 프롬프트 문자열
@@ -64,9 +64,9 @@ public class PatchNotePromptService {
      *
      * <p>{@code additionalPrompt}는 가장 높은 우선순위로 처리된다. 시스템 프롬프트 템플릿도 이를 명시한다.
      *
-     * @param majorVersion     대상 버전 major
-     * @param minorVersion     대상 버전 minor
-     * @param patchVersion     대상 버전 patch
+     * @param majorVersion 대상 버전 major
+     * @param minorVersion 대상 버전 minor
+     * @param patchVersion 대상 버전 patch
      * @param additionalPrompt 추가 지침 (null 또는 공백이면 무시)
      * @return 유저 프롬프트 문자열
      */
@@ -100,6 +100,7 @@ public class PatchNotePromptService {
      * {@link ItemContext} 목록을 LLM 시스템 프롬프트에 삽입할 구조화된 증거 블록 텍스트로 렌더링한다.
      *
      * <p>렌더링 형식 (예시):
+     *
      * <pre>
      * ### ITEM: ISSUE-42 [FIX]
      * 제목: 결제 버튼 무반응 버그
@@ -153,8 +154,7 @@ public class PatchNotePromptService {
     /**
      * 단일 {@link RagEvidence}의 헤더 줄을 렌더링한다.
      *
-     * <p>역할과 메타데이터 플래그를 괄호로 표기한다.
-     * 예: {@code 증거 [역할: resolution] [플레이어영향] [수치변경]:}
+     * <p>역할과 메타데이터 플래그를 괄호로 표기한다. 예: {@code 증거 [역할: resolution] [플레이어영향] [수치변경]:}
      */
     private String renderEvidenceHeader(RagEvidence ev) {
         StringBuilder header = new StringBuilder("증거 [역할: ").append(ev.role()).append(']');

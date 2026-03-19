@@ -233,7 +233,9 @@ class DocumentMetadataServiceTest {
             assertThat(result.documentName()).isEqualTo("testDoc");
             then(documentGroupManager).should().validateGroupNameUniqueness(projectId, "개발", "그룹A");
             then(documentGroupManager).should().save(any(DocumentGroup.class));
-            then(documentVectorEventPublisher).should().createEvent(eq(projectId), eq(metadata), eq(true));
+            then(documentVectorEventPublisher)
+                    .should()
+                    .createEvent(eq(projectId), eq(metadata), eq(true));
         }
 
         @Test
@@ -327,7 +329,9 @@ class DocumentMetadataServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.documentName()).isEqualTo("testDoc");
-            then(documentVectorEventPublisher).should().createEvent(eq(projectId), eq(metadata), eq(false));
+            then(documentVectorEventPublisher)
+                    .should()
+                    .createEvent(eq(projectId), eq(metadata), eq(false));
         }
 
         @Test
@@ -461,7 +465,9 @@ class DocumentMetadataServiceTest {
 
             // Then
             assertThat(metadata.getStoredKey()).isEqualTo("stored/new-key");
-            then(documentVectorEventPublisher).should().replaceEvent(eq(projectId), eq(metadata), eq(false));
+            then(documentVectorEventPublisher)
+                    .should()
+                    .replaceEvent(eq(projectId), eq(metadata), eq(false));
         }
 
         @Test
@@ -508,7 +514,9 @@ class DocumentMetadataServiceTest {
             assertThat(metadata.getMinorVersion()).isEqualTo(1);
             assertThat(metadata.isProcessed()).isTrue();
             assertThat(metadata.getStoredKey()).isEqualTo("stored/new-key");
-            then(documentVectorEventPublisher).should().replaceEvent(eq(projectId), eq(metadata), eq(true));
+            then(documentVectorEventPublisher)
+                    .should()
+                    .replaceEvent(eq(projectId), eq(metadata), eq(true));
         }
 
         @Test
@@ -574,7 +582,9 @@ class DocumentMetadataServiceTest {
             assertThat(metadata.getMajorVersion()).isEqualTo(2);
             assertThat(metadata.getStoredKey()).isEqualTo("stored/key");
             then(documentFileStorage).should(never()).replace(any(), any());
-            then(documentVectorEventPublisher).should(never()).replaceEvent(any(), any(), anyBoolean());
+            then(documentVectorEventPublisher)
+                    .should(never())
+                    .replaceEvent(any(), any(), anyBoolean());
         }
 
         @Test

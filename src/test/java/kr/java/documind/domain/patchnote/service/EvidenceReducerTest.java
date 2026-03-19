@@ -5,7 +5,6 @@ import static org.mockito.BDDMockito.given;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import kr.java.documind.domain.patchnote.config.TokenRagProperties;
 import kr.java.documind.domain.patchnote.model.dto.ItemContext;
 import kr.java.documind.domain.patchnote.model.dto.RagContext;
@@ -25,7 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("EvidenceReducer 단위 테스트")
 class EvidenceReducerTest {
 
-    @Mock  private TokenRagProperties properties;
+    @Mock private TokenRagProperties properties;
     @InjectMocks private EvidenceReducer evidenceReducer;
 
     /** promptOverhead=100, tokenLimit=200 으로 고정 */
@@ -48,14 +47,22 @@ class EvidenceReducerTest {
     }
 
     private RagContext context(List<ItemContext> items) {
-        int totalChars = items.stream()
-                .mapToInt(ic -> {
-                    int s = ic.summary() != null ? ic.summary().length() : 0;
-                    int e = ic.evidences().stream()
-                            .mapToInt(ev -> ev.text() != null ? ev.text().length() : 0)
-                            .sum();
-                    return s + e;
-                }).sum();
+        int totalChars =
+                items.stream()
+                        .mapToInt(
+                                ic -> {
+                                    int s = ic.summary() != null ? ic.summary().length() : 0;
+                                    int e =
+                                            ic.evidences().stream()
+                                                    .mapToInt(
+                                                            ev ->
+                                                                    ev.text() != null
+                                                                            ? ev.text().length()
+                                                                            : 0)
+                                                    .sum();
+                                    return s + e;
+                                })
+                        .sum();
         int estimated = 100 + (totalChars / 3);
         boolean exceeded = estimated > 200;
         TokenEstimation te = new TokenEstimation(estimated, 200, exceeded, items.size());
@@ -90,8 +97,7 @@ class EvidenceReducerTest {
         void reduce_chunk역할제거후한도이하_chunk만제거() {
             // Given — summary 60자 + chunk 300자 → 100 + 360/3 = 220 > 200
             String longText = "a".repeat(300);
-            ItemContext ic = item("ISSUE-1", "a".repeat(60),
-                    List.of(evidence("chunk", longText)));
+            ItemContext ic = item("ISSUE-1", "a".repeat(60), List.of(evidence("chunk", longText)));
             RagContext original = context(List.of(ic));
             assertThat(original.tokenEstimation().exceeded()).isTrue();
 
@@ -108,8 +114,8 @@ class EvidenceReducerTest {
         void reduce_background역할제거_background제거됨() {
             // Given — summary 60자 + background 300자 → 초과
             String longText = "b".repeat(300);
-            ItemContext ic = item("ISSUE-1", "b".repeat(60),
-                    List.of(evidence("background", longText)));
+            ItemContext ic =
+                    item("ISSUE-1", "b".repeat(60), List.of(evidence("background", longText)));
             RagContext original = context(List.of(ic));
             assertThat(original.tokenEstimation().exceeded()).isTrue();
 
@@ -125,9 +131,13 @@ class EvidenceReducerTest {
         @DisplayName("resolution 역할 증거 — 어떤 단계에서도 제거되지 않음")
         void reduce_resolution역할_절대제거안됨() {
             // Given — summary 60자 + resolution 200자 + chunk 200자 → 초과
-            ItemContext ic = item("ISSUE-1", "c".repeat(60), List.of(
-                    evidence("resolution", "c".repeat(200)),
-                    evidence("chunk",      "c".repeat(200))));
+            ItemContext ic =
+                    item(
+                            "ISSUE-1",
+                            "c".repeat(60),
+                            List.of(
+                                    evidence("resolution", "c".repeat(200)),
+                                    evidence("chunk", "c".repeat(200))));
             RagContext original = context(List.of(ic));
             assertThat(original.tokenEstimation().exceeded()).isTrue();
 
@@ -144,12 +154,20 @@ class EvidenceReducerTest {
         void reduce_최후수단_항목당1개제한() {
             // Given — 모든 역할 제거 후에도 초과 → 두 개의 resolution 증거 → 1개로 제한
             // summary 60자 * 2개 + resolution 200자 * 2개 = (120+400)/3 ≈ 173 + 100 = 273 > 200
-            ItemContext ic1 = item("ISSUE-1", "d".repeat(60), List.of(
-                    evidence("resolution", "d".repeat(200)),
-                    evidence("resolution", "d".repeat(200))));
-            ItemContext ic2 = item("ISSUE-2", "d".repeat(60), List.of(
-                    evidence("resolution", "d".repeat(200)),
-                    evidence("resolution", "d".repeat(200))));
+            ItemContext ic1 =
+                    item(
+                            "ISSUE-1",
+                            "d".repeat(60),
+                            List.of(
+                                    evidence("resolution", "d".repeat(200)),
+                                    evidence("resolution", "d".repeat(200))));
+            ItemContext ic2 =
+                    item(
+                            "ISSUE-2",
+                            "d".repeat(60),
+                            List.of(
+                                    evidence("resolution", "d".repeat(200)),
+                                    evidence("resolution", "d".repeat(200))));
             RagContext original = context(List.of(ic1, ic2));
             assertThat(original.tokenEstimation().exceeded()).isTrue();
 
@@ -166,8 +184,7 @@ class EvidenceReducerTest {
         void reduce_감소후TokenEstimation갱신() {
             // Given — chunk 역할 제거 시 한도 이하로 내려가는 케이스
             String longText = "e".repeat(300);
-            ItemContext ic = item("ISSUE-1", "e".repeat(60),
-                    List.of(evidence("chunk", longText)));
+            ItemContext ic = item("ISSUE-1", "e".repeat(60), List.of(evidence("chunk", longText)));
             RagContext original = context(List.of(ic));
             assertThat(original.tokenEstimation().exceeded()).isTrue();
 

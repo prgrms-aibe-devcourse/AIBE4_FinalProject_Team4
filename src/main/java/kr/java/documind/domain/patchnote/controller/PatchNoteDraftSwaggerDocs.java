@@ -9,7 +9,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** PatchNoteDraftApiController Swagger 응답 명세. */
 public interface PatchNoteDraftSwaggerDocs {
 
     // POST /drafts/stream (SSE 스트리밍 초안 생성)

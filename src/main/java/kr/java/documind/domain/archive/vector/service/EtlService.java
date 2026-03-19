@@ -48,7 +48,8 @@ public class EtlService {
         return embeddingStatusSseManager.register(sourceId, currentStatus);
     }
 
-    public void process(UUID projectId, Long sourceId, String storedKey, boolean excludeFromPatchNote) {
+    public void process(
+            UUID projectId, Long sourceId, String storedKey, boolean excludeFromPatchNote) {
         Path tempFilePath = null;
         try {
             changeStatus(sourceId, EmbeddingStatus.PROCESSING);
@@ -98,7 +99,8 @@ public class EtlService {
     }
 
     private void changeStatus(Long sourceId, EmbeddingStatus status, boolean excludeFromPatchNote) {
-        eventPublisher.publishEvent(new EmbeddingStatusEvent(sourceId, status, excludeFromPatchNote));
+        eventPublisher.publishEvent(
+                new EmbeddingStatusEvent(sourceId, status, excludeFromPatchNote));
         embeddingStatusSseManager.send(sourceId, status);
     }
 

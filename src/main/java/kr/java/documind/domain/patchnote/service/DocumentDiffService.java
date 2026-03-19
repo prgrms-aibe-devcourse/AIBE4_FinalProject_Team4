@@ -16,25 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-/**
- * 문서 버전 간 청크 단위 diff를 계산한다.
- *
- * <h3>처리 흐름</h3>
- * <ol>
- *   <li>동일 document_group에서 직전 버전 조회
- *   <li>현재/이전 버전의 벡터 스토어 청크 로드 (전체, 순서 보존)
- *   <li>Jaccard 유사도 기반 청크 정렬(align)
- *   <li>유사도 임계값으로 ADDED / MODIFIED / UNCHANGED / REMOVED 분류
- * </ol>
- *
- * <h3>청크 정렬 전략</h3>
- * <ul>
- *   <li>1차: 위치 기반 — 같은 chunk_index끼리 비교
- *   <li>2차: 최대 유사도 — 위치 기반이 임계값 미달이면 전체 후보 중 가장 유사한 청크 매칭
- * </ul>
- *
- * <p>이 서비스는 외부 LLM/임베딩 API를 사용하지 않으므로 빠르고 비용이 없다.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -47,22 +28,10 @@ public class DocumentDiffService {
     static final double MODIFIED_THRESHOLD = 0.30;
 
     private final VectorStoreRepository vectorStoreRepository;
-    private final kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository
+    private final kr.java.documind.domain.archive.document.model.repository
+                    .DocumentMetadataRepository
             documentMetadataRepository;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Public API
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * 현재 문서와 직전 버전 간의 청크 diff 목록을 반환한다.
-     *
-     * <p>직전 버전이 없으면 전체 청크를 ADDED로 처리한다.
-     *
-     * @param currentDocumentId 현재 버전의 document_metadata.id
-     * @param documentGroupId   document_group.id (같은 그룹 내 이전 버전 탐색용)
-     * @return diff 결과 목록 (빈 목록 = 현재 버전 청크 없음)
-     */
     public List<ChunkDiffResult> computeDiff(Long currentDocumentId, Long documentGroupId) {
 
         // 1. 현재 버전 청크 로드
@@ -86,10 +55,7 @@ public class DocumentDiffService {
                     currentChunks.size(),
                     currentDocumentId);
             return currentChunks.stream()
-                    .map(
-                            c ->
-                                    new ChunkDiffResult(
-                                            c.chunkIndex(), c.content(), null, "ADDED", 0.0))
+                    .map(c -> new ChunkDiffResult(c.chunkIndex(), c.content(), null, "ADDED", 0.0))
                     .toList();
         }
 
@@ -109,10 +75,6 @@ public class DocumentDiffService {
         return alignAndDiff(currentChunks, previousChunks);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 내부 헬퍼
-    // ─────────────────────────────────────────────────────────────────────────
-
     private List<DocumentChunkWithMeta> loadChunks(Long documentId, SourceType sourceType) {
         List<String> contents =
                 vectorStoreRepository.findAllContentsBySourceId(documentId, sourceType);
@@ -121,12 +83,6 @@ public class DocumentDiffService {
                 .toList();
     }
 
-    /**
-     * Jaccard 유사도 기반 청크 정렬 + diff 분류.
-     *
-     * <p>각 현재 청크에 대해 아직 매칭되지 않은 이전 청크 중 유사도가 가장 높은 것을 선택한다.
-     * 매칭되지 않은 이전 청크는 REMOVED로 처리한다.
-     */
     List<ChunkDiffResult> alignAndDiff(
             List<DocumentChunkWithMeta> current, List<DocumentChunkWithMeta> previous) {
 
@@ -196,12 +152,6 @@ public class DocumentDiffService {
         return results;
     }
 
-    /**
-     * 토큰 집합 기반 Jaccard 유사도.
-     *
-     * <p>|A ∩ B| / |A ∪ B| 로 계산한다.
-     * 빈 문자열이거나 토큰이 없으면 0.0을 반환한다.
-     */
     double jaccardSimilarity(String a, String b) {
         if (a == null || b == null || a.isBlank() || b.isBlank()) {
             return 0.0;

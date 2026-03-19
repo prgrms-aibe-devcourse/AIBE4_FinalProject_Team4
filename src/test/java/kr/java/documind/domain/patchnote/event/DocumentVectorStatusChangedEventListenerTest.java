@@ -5,14 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
-
-import org.mockito.InOrder;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -36,6 +33,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -63,8 +61,7 @@ class DocumentVectorStatusChangedEventListenerTest {
     // 픽스처 헬퍼
     // ──────────────────────────────────────────────────────────────────────────
 
-    private DocumentEmbeddedEvent buildEvent(
-            boolean isNewDocument, boolean excludeFromPatchNote) {
+    private DocumentEmbeddedEvent buildEvent(boolean isNewDocument, boolean excludeFromPatchNote) {
         return new DocumentEmbeddedEvent(
                 SOURCE_ID,
                 PROJECT_ID,
@@ -79,8 +76,7 @@ class DocumentVectorStatusChangedEventListenerTest {
 
     /** 청크 조회 → 유의미성 → LLM → PatchType → 초성까지 전 구간 공통 stub */
     private void stubSuccessPath(List<String> chunks, DocumentSummaryResult summaryResult) {
-        given(vectorStoreRepository.findContentsBySourceId(
-                        SOURCE_ID, SourceType.DOCUMENT, 10))
+        given(vectorStoreRepository.findContentsBySourceId(SOURCE_ID, SourceType.DOCUMENT, 10))
                 .willReturn(chunks);
         given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
                 .willReturn(true);
@@ -179,7 +175,9 @@ class DocumentVectorStatusChangedEventListenerTest {
 
             // Then
             ArgumentCaptor<Boolean> isNewCaptor = ArgumentCaptor.forClass(Boolean.class);
-            then(meaningfulnessService).should().isMeaningful(isNewCaptor.capture(), anyString(), any());
+            then(meaningfulnessService)
+                    .should()
+                    .isMeaningful(isNewCaptor.capture(), anyString(), any());
             assertThat(isNewCaptor.getValue()).isTrue();
         }
 
@@ -195,7 +193,9 @@ class DocumentVectorStatusChangedEventListenerTest {
 
             // Then
             ArgumentCaptor<Boolean> isNewCaptor = ArgumentCaptor.forClass(Boolean.class);
-            then(meaningfulnessService).should().isMeaningful(isNewCaptor.capture(), anyString(), any());
+            then(meaningfulnessService)
+                    .should()
+                    .isMeaningful(isNewCaptor.capture(), anyString(), any());
             assertThat(isNewCaptor.getValue()).isFalse();
         }
 
@@ -312,8 +312,7 @@ class DocumentVectorStatusChangedEventListenerTest {
         void handle_dto조립_patchTypeResolver호출() {
             // Given
             DocumentEmbeddedEvent event = buildEvent(true, false);
-            DocumentSummaryResult summary =
-                    new DocumentSummaryResult("제목", "요약", "NEW", true);
+            DocumentSummaryResult summary = new DocumentSummaryResult("제목", "요약", "NEW", true);
             stubSuccessPath(List.of("청크1"), summary);
             given(patchTypeResolver.resolveFromLlmCategory("NEW")).willReturn(PatchType.NEW);
             given(choseongUtil.extract("제목")).willReturn("ㅈㅁ");
@@ -336,7 +335,9 @@ class DocumentVectorStatusChangedEventListenerTest {
                     .willReturn(List.of("청크1"));
             given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
                     .willReturn(true);
-            given(documentSummaryGenerator.generate(anyString(), anyString(), anyString(), anyList()))
+            given(
+                            documentSummaryGenerator.generate(
+                                    anyString(), anyString(), anyString(), anyList()))
                     .willReturn(summary);
             given(patchTypeResolver.resolveFromLlmCategory("CHANGE")).willReturn(PatchType.CHANGE);
             given(choseongUtil.extract("업데이트 노트")).willReturn("ㅇㄷㅇㅌ ㄴㅌ");
@@ -362,7 +363,9 @@ class DocumentVectorStatusChangedEventListenerTest {
                     .willReturn(List.of("청크1"));
             given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
                     .willReturn(true);
-            given(documentSummaryGenerator.generate(anyString(), anyString(), anyString(), anyList()))
+            given(
+                            documentSummaryGenerator.generate(
+                                    anyString(), anyString(), anyString(), anyList()))
                     .willReturn(summary);
             given(patchTypeResolver.resolveFromLlmCategory("CHANGE")).willReturn(PatchType.CHANGE);
             given(choseongUtil.extract("LLM제목")).willReturn("ㄹㄹㅁ");
@@ -383,13 +386,14 @@ class DocumentVectorStatusChangedEventListenerTest {
         void handle_dto조립_patchType_resolver반영() {
             // Given
             DocumentEmbeddedEvent event = buildEvent(true, false);
-            DocumentSummaryResult summary =
-                    new DocumentSummaryResult("제목", "요약", "NEW", true);
+            DocumentSummaryResult summary = new DocumentSummaryResult("제목", "요약", "NEW", true);
             given(vectorStoreRepository.findContentsBySourceId(SOURCE_ID, SourceType.DOCUMENT, 10))
                     .willReturn(List.of("청크1"));
             given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
                     .willReturn(true);
-            given(documentSummaryGenerator.generate(anyString(), anyString(), anyString(), anyList()))
+            given(
+                            documentSummaryGenerator.generate(
+                                    anyString(), anyString(), anyString(), anyList()))
                     .willReturn(summary);
             given(patchTypeResolver.resolveFromLlmCategory("NEW")).willReturn(PatchType.NEW);
             given(choseongUtil.extract("제목")).willReturn("ㅈㅁ");
@@ -457,9 +461,12 @@ class DocumentVectorStatusChangedEventListenerTest {
                     .willReturn(List.of("청크1"));
             given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
                     .willReturn(true);
-            given(documentSummaryGenerator.generate(anyString(), anyString(), anyString(), anyList()))
+            given(
+                            documentSummaryGenerator.generate(
+                                    anyString(), anyString(), anyString(), anyList()))
                     .willReturn(summary);
-            given(patchTypeResolver.resolveFromLlmCategory(anyString())).willReturn(PatchType.CHANGE);
+            given(patchTypeResolver.resolveFromLlmCategory(anyString()))
+                    .willReturn(PatchType.CHANGE);
             given(choseongUtil.extract(anyString())).willReturn("ㄹㄹㅁ");
 
             // When
@@ -506,8 +513,7 @@ class DocumentVectorStatusChangedEventListenerTest {
                     .upsertPendingItem(any());
 
             // When & Then
-            assertThatThrownBy(() -> listener.handle(event))
-                    .isInstanceOf(RuntimeException.class);
+            assertThatThrownBy(() -> listener.handle(event)).isInstanceOf(RuntimeException.class);
             then(eventPublisher).should(never()).publishEvent(any());
         }
     }
@@ -531,9 +537,12 @@ class DocumentVectorStatusChangedEventListenerTest {
                     .willReturn(List.of("청크1"));
             given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
                     .willReturn(true);
-            given(documentSummaryGenerator.generate(anyString(), anyString(), anyString(), anyList()))
+            given(
+                            documentSummaryGenerator.generate(
+                                    anyString(), anyString(), anyString(), anyList()))
                     .willReturn(summary);
-            given(patchTypeResolver.resolveFromLlmCategory(anyString())).willReturn(PatchType.CHANGE);
+            given(patchTypeResolver.resolveFromLlmCategory(anyString()))
+                    .willReturn(PatchType.CHANGE);
             given(choseongUtil.extract(anyString())).willReturn("ㅈㅁ");
 
             // When
@@ -591,7 +600,9 @@ class DocumentVectorStatusChangedEventListenerTest {
                     .willReturn(List.of("청크"));
             given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
                     .willReturn(true);
-            given(documentSummaryGenerator.generate(anyString(), anyString(), anyString(), anyList()))
+            given(
+                            documentSummaryGenerator.generate(
+                                    anyString(), anyString(), anyString(), anyList()))
                     .willReturn(new DocumentSummaryResult("제목", "요약", "FIX", true));
             given(patchTypeResolver.resolveFromLlmCategory(anyString())).willReturn(PatchType.FIX);
             given(choseongUtil.extract(anyString())).willReturn("ㅈㅁ");
@@ -655,13 +666,14 @@ class DocumentVectorStatusChangedEventListenerTest {
             DocumentEmbeddedEvent event = buildEvent(true, false);
             // DocumentSummaryGenerator 자체가 내부적으로 fallback을 반환하는 케이스
             DocumentSummaryResult fallbackResult =
-                    new DocumentSummaryResult(
-                            "design-doc.pdf", "design-doc.pdf", "CHANGE", true);
+                    new DocumentSummaryResult("design-doc.pdf", "design-doc.pdf", "CHANGE", true);
             given(vectorStoreRepository.findContentsBySourceId(SOURCE_ID, SourceType.DOCUMENT, 10))
                     .willReturn(List.of("청크1"));
             given(meaningfulnessService.isMeaningful(any(Boolean.class), anyString(), any()))
                     .willReturn(true);
-            given(documentSummaryGenerator.generate(anyString(), anyString(), anyString(), anyList()))
+            given(
+                            documentSummaryGenerator.generate(
+                                    anyString(), anyString(), anyString(), anyList()))
                     .willReturn(fallbackResult);
             given(patchTypeResolver.resolveFromLlmCategory("CHANGE")).willReturn(PatchType.CHANGE);
             given(choseongUtil.extract("design-doc.pdf")).willReturn("ㄷ");
@@ -670,7 +682,9 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then — pending_item upsert 호출됨
-            then(pendingItemUpsertService).should().upsertPendingItem(any(PendingItemCreateRequest.class));
+            then(pendingItemUpsertService)
+                    .should()
+                    .upsertPendingItem(any(PendingItemCreateRequest.class));
         }
     }
 }
