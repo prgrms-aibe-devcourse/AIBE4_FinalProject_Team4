@@ -31,7 +31,7 @@ public class IssueSummaryGenerator {
             String content = buildContent(issue);
             String prompt = promptUtil.render(PROMPT_FILENAME, Map.of("content", content));
 
-            ResolvedChatModel resolved = chatModelResolver.resolve(null); // 기본 모델 사용
+            ResolvedChatModel resolved = chatModelResolver.resolveForPatchNote(null);
             String response =
                     ChatClient.builder(resolved.chatModel())
                             .defaultOptions(resolved.chatOptions())

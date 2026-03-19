@@ -30,8 +30,9 @@ public class DocumentVectorEventPublisher {
     public void retryEvent(UUID projectId, DocumentMetadata documentMetadata) {
         documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
         eventPublisher.publishEvent(
-            new DocumentVectorCreateEvent(
-                projectId, documentMetadata.getId(), documentMetadata.getStoredKey()));
+                new DocumentVectorCreateEvent(
+                        projectId, documentMetadata.getId(), documentMetadata.getStoredKey(),
+                        false));
     }
 
     public void replaceEvent(UUID projectId, DocumentMetadata documentMetadata, boolean excludeFromPatchNote) {

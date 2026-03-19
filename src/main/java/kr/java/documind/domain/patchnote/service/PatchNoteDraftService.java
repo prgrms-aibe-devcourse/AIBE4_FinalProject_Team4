@@ -153,7 +153,7 @@ public class PatchNoteDraftService {
                             request.patchVersion(),
                             request.additionalPrompt());
 
-            ResolvedChatModel resolvedModel = chatModelResolver.resolve(request.modelAlias());
+            ResolvedChatModel resolvedModel = chatModelResolver.resolveForPatchNote(request.modelAlias());
 
             if (aborted.get()) return;
 

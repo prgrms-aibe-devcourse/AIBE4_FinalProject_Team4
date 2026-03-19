@@ -3,6 +3,7 @@ package kr.java.documind.domain.archive.document.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -354,9 +355,6 @@ class DocumentMetadataServiceTest {
             given(file.isEmpty()).willReturn(true);
             NewVersionDocumentUploadRequest request =
                     new NewVersionDocumentUploadRequest(1, 0, 0, null);
-            DocumentGroup group = createGroup();
-
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
             // When & Then
             assertThatThrownBy(
@@ -574,7 +572,7 @@ class DocumentMetadataServiceTest {
             assertThat(metadata.getMajorVersion()).isEqualTo(2);
             assertThat(metadata.getStoredKey()).isEqualTo("stored/key");
             then(documentFileStorage).should(never()).replace(any(), any());
-            then(documentVectorEventPublisher).should(never()).replaceEvent(any(), any());
+            then(documentVectorEventPublisher).should(never()).replaceEvent(any(), any(), anyBoolean());
         }
 
         @Test

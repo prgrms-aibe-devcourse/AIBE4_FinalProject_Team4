@@ -52,7 +52,7 @@ public class DocumentSummaryGenerator {
             String content = buildContent(documentName, documentGroupName, category, contentChunks);
             String prompt = promptUtil.render(PROMPT_FILENAME, Map.of("content", content));
 
-            ResolvedChatModel resolved = chatModelResolver.resolve(null);
+            ResolvedChatModel resolved = chatModelResolver.resolveForPatchNote(null);
             String response =
                     ChatClient.builder(resolved.chatModel())
                             .defaultOptions(resolved.chatOptions())

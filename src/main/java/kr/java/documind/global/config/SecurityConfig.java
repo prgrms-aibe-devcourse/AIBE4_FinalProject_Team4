@@ -11,6 +11,7 @@ import kr.java.documind.global.security.oauth.HttpCookieOAuth2AuthorizationReque
 import kr.java.documind.global.security.oauth.OAuth2FailureHandler;
 import kr.java.documind.global.security.oauth.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -83,7 +84,8 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(
                         auth ->
-                                auth.requestMatchers(HttpMethod.POST, "/invite/accept")
+                                auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                                        .requestMatchers(HttpMethod.POST, "/invite/accept")
                                         .authenticated()
                                         // ── 공개 페이지 / 정적 리소스 ──────────────────────
                                         .requestMatchers(HttpMethod.GET, PUBLIC_GET_PATHS)
