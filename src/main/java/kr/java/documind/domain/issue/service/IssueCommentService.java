@@ -1,8 +1,10 @@
 package kr.java.documind.domain.issue.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -242,7 +244,7 @@ public class IssueCommentService {
     }
 
     /**
-     * 멘션된 멤버 검증 (프로젝트 활성 멤버인지 확인)
+     * 멘션된 멤버 검증 (프로젝트 활성 멤버인지 확인) - 배치 조회
      *
      * @param mentionedMemberIds 멘션된 멤버 ID 목록
      * @param projectId 프로젝트 ID
@@ -253,24 +255,23 @@ public class IssueCommentService {
             return List.of();
         }
 
-        List<UUID> validatedIds = new ArrayList<>();
+        Set<UUID> validMemberIds =
+                new HashSet<>(
+                        projectMemberRepository.findValidMemberIds(
+                                projectId, mentionedMemberIds, AccountStatus.ACTIVE));
 
-        for (UUID memberId : mentionedMemberIds) {
-            boolean isProjectMember =
-                    projectMemberRepository.existsByProject_IdAndMember_IdAndStatus(
-                            projectId, memberId, AccountStatus.ACTIVE);
+        // 유효하지 않은 멘션은 로그로 기록
+        mentionedMemberIds.stream()
+                .filter(id -> !validMemberIds.contains(id))
+                .forEach(
+                        id ->
+                                log.warn(
+                                        "[IssueCommentService] 멘션 무시 (프로젝트 멤버 아님): memberId={}, projectId={}",
+                                        id,
+                                        projectId));
 
-            if (isProjectMember) {
-                validatedIds.add(memberId);
-            } else {
-                log.warn(
-                        "[IssueCommentService] 멘션 무시 (프로젝트 멤버 아님): memberId={}, projectId={}",
-                        memberId,
-                        projectId);
-            }
-        }
-
-        return validatedIds;
+        // 입력 순서 유지
+        return mentionedMemberIds.stream().filter(validMemberIds::contains).toList();
     }
 
     /**
