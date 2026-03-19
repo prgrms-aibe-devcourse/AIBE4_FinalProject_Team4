@@ -6,6 +6,7 @@ import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 
 public record IssueNotificationEvent(
+        UUID projectId,
         List<UUID> receiverIds,
         Long sourceId,
         NotificationEventType eventType,

@@ -15,25 +15,25 @@ public class NotificationCommandService {
     private final NotificationRepository notificationRepository;
 
     @Transactional
-    public void markRead(Long id, UUID memberId) {
+    public void markRead(Long id, UUID memberId, UUID projectId) {
         Notification notification =
                 notificationRepository
-                        .findByIdAndReceiverId(id, memberId)
+                        .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
                         .orElseThrow(NotificationNotFoundException::new);
         notification.markRead();
     }
 
     @Transactional
-    public void markIgnored(Long id, UUID memberId) {
+    public void markIgnored(Long id, UUID memberId, UUID projectId) {
         Notification notification =
                 notificationRepository
-                        .findByIdAndReceiverId(id, memberId)
+                        .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
                         .orElseThrow(NotificationNotFoundException::new);
         notification.markIgnored();
     }
 
     @Transactional
-    public int markAllRead(UUID memberId) {
-        return notificationRepository.markAllReadByReceiverId(memberId);
+    public int markAllRead(UUID memberId, UUID projectId) {
+        return notificationRepository.markAllReadByProjectIdAndReceiverId(projectId, memberId);
     }
 }

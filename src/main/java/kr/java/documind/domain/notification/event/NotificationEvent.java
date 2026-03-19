@@ -10,6 +10,8 @@ public sealed interface NotificationEvent
                 DocumentNotificationEvent,
                 PatchNoteNotificationEvent {
 
+    UUID projectId();
+
     List<UUID> receiverIds();
 
     Long sourceId();

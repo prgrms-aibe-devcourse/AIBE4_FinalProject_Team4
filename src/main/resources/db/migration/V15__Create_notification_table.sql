@@ -1,5 +1,6 @@
 CREATE TABLE notification (
     id          BIGSERIAL                   PRIMARY KEY,
+    project_id  UUID                        NOT NULL,
     receiver_id UUID                        NOT NULL REFERENCES member(id) ON DELETE CASCADE,
     source_id   BIGINT                      NOT NULL REFERENCES domain_source(id) ON DELETE CASCADE,
     event_type  VARCHAR(50)                 NOT NULL,
@@ -13,6 +14,10 @@ CREATE TABLE notification (
     created_at  TIMESTAMP WITH TIME ZONE   NOT NULL,
     updated_at  TIMESTAMP WITH TIME ZONE   NOT NULL
 );
+
+-- 커서 페이징 + projectId 복합 인덱스
+CREATE INDEX idx_notification_project_receiver_cursor
+    ON notification (project_id, receiver_id, id DESC);
 
 -- 목록 조회 (receiver_id + 최신순)
 CREATE INDEX idx_notification_receiver_id

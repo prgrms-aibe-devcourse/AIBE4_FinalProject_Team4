@@ -15,6 +15,7 @@ public record NotificationResponse(
         boolean isIgnored,
         String relatedUrl,
         SourceType sourceType,
+        String actionText,
         OffsetDateTime createdAt) {
 
     public static NotificationResponse from(Notification n) {
@@ -29,6 +30,7 @@ public record NotificationResponse(
                 n.isIgnored(),
                 n.getRelatedUrl(),
                 n.getSource().getSourceType(),
+                n.getEventType().getActionText(),
                 n.getCreatedAt());
     }
 }

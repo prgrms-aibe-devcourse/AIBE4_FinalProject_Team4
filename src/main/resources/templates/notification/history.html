@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/service-layout}">
+<head>
+    <title>알림 이력</title>
+</head>
+<body>
+<th:block layout:fragment="content">
+    <!--
+      Alpine.js 컴포넌트: notificationHistoryApp
+      publicId는 서버 사이드(Thymeleaf)에서 전달받아 초기화합니다.
+    -->
+    <section x-data="notificationHistoryApp" class="space-y-6">
+        <!-- Hidden input for publicId from Controller -->
+        <input type="hidden" id="publicId" th:value="${publicId}">
+
+        <div>
+            <div th:replace="~{common/fragments/ui-components :: breadcrumb('알림 이력')}"></div>
+            <h1 class="text-h1 text-docu-ink mt-3">알림 이력</h1>
+            <p class="text-sm text-docu-secondary mt-1">프로젝트의 모든 알림 내역을 확인합니다.</p>
+        </div>
+
+        <div class="card-base card-shadow p-widget-p">
+            <!-- 탭 (Alpine.js State 기반) -->
+            <div class="flex gap-1 border-b border-divider mb-4" role="tablist">
+                <template x-for="tab in ['ALL', 'LOG', 'ISSUE']" :key="tab">
+                    <button type="button" role="tab"
+                            @click="changeTab(tab === 'ALL' ? null : tab)"
+                            :aria-selected="sourceType === (tab === 'ALL' ? null : tab)"
+                            :class="sourceType === (tab === 'ALL' ? null : tab)
+                                ? 'border-docu-primary text-docu-primary'
+                                : 'border-transparent text-docu-secondary hover:text-docu-ink'"
+                            class="px-4 py-2 text-sm font-semibold rounded-t-docu-btn border-b-2 transition-colors">
+                        <span x-text="tab === 'ALL' ? '전체' : (tab === 'LOG' ? '로그' : '이슈')"></span>
+                    </button>
+                </template>
+            </div>
+
+            <!-- 알림 목록 (선언적 렌더링) -->
+            <div class="space-y-3 min-h-[300px]">
+                <template x-for="n in notifications" :key="n.id">
+                    <div class="relative bg-surface-sub rounded-docu-card border border-divider p-4 space-y-2 transition-all">
+                        <!-- 미읽음 배지 (x-show 사용) -->
+                        <span x-show="!n.isRead"
+                              class="absolute top-4 left-3 w-2 h-2 rounded-full bg-docu-danger"></span>
+
+                        <!-- 헤더 영역: 배지 및 제목 -->
+                        <div class="flex items-center gap-2 flex-wrap pl-3">
+                            <!-- 이슈 전용 배지 분기 (컨벤션 준수) -->
+                            <template x-if="n.sourceType === 'ISSUE'">
+                                <div class="flex gap-2">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-docu-primary text-white"
+                                          x-text="EVENT_LABEL[n.eventType] || n.eventType"></span>
+                                    <span x-if="n.severity"
+                                          :class="SEVERITY_CLASS[n.severity.toUpperCase()] || 'bg-divider'"
+                                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                                          x-text="n.severity"></span>
+                                </div>
+                            </template>
+                            <p class="text-sm font-semibold text-docu-ink" x-text="n.title"></p>
+                        </div>
+
+                        <!-- 본문 메시지 -->
+                        <p class="text-sm text-docu-secondary pl-3" x-text="n.message"></p>
+
+                        <!-- 액션 버튼 영역 -->
+                        <div class="flex items-center justify-end gap-2 pt-1">
+                            <!-- 이슈 버튼 (sourceType이 ISSUE일 때만) -->
+                            <template x-if="n.sourceType === 'ISSUE' && n.actionText">
+                                <button type="button" @click="window.location.href = n.relatedUrl"
+                                        class="text-xs font-semibold text-docu-primary hover:underline"
+                                        x-text="n.actionText"></button>
+                            </template>
+
+                            <!-- 공통: 무시하기 버튼 -->
+                            <button type="button" @click="ignoreNotification(n.id)"
+                                    class="text-xs text-docu-secondary hover:text-docu-danger">무시하기</button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Empty State (기존 컴포넌트 패턴 적용) -->
+                <div x-show="!isLoading && notifications.length === 0"
+                     class="py-12 text-center text-sm text-docu-secondary">
+                    알림 내역이 비어 있습니다.
+                </div>
+
+                <!-- Loading Spinner -->
+                <div x-show="isLoading" class="py-4 text-center">
+                    <span class="text-xs text-docu-secondary animate-pulse">로딩 중...</span>
+                </div>
+            </div>
+
+            <!-- 무한 스크롤 sentinel -->
+            <div id="notification-sentinel" class="h-4"></div>
+        </div>
+    </section>
+
+    <script th:inline="javascript">
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('notificationHistoryApp', () => ({
+                // ── State ─────────────────────────────────────────────────────
+                publicId: null,
+                notifications: [],
+                sourceType: null,
+                cursorId: null,
+                hasNext: true,
+                isLoading: false,
+
+                // ── Constants ─────────────────────────────────────────────────
+                EVENT_LABEL: {
+                    ISSUE_ASSIGNED: '담당자 지정',
+                    ISSUE_STATUS_CHANGED: '상태 변경',
+                    ISSUE_MENTIONED: '멘션',
+                    LOG_THRESHOLD: '로그 임계값',
+                    EMBEDDING_SUCCESS: '임베딩 완료',
+                    EMBEDDING_FAILED: '임베딩 실패',
+                    PATCHNOTE_GENERATED: '패치노트 생성'
+                },
+                SEVERITY_CLASS: {
+                    CRITICAL: 'bg-docu-danger text-white',
+                    HIGH: 'bg-docu-warning-dark text-white',
+                    MEDIUM: 'bg-docu-warning text-docu-ink',
+                    LOW: 'bg-surface-sub text-docu-secondary border border-divider'
+                },
+
+                // ── Lifecycle ─────────────────────────────────────────────────
+                async init() {
+                    this.publicId = document.getElementById('publicId')?.value;
+                    if (!this.publicId) return;
+
+                    await this.loadMore(false);
+                    this.setupInfiniteScroll();
+                },
+
+                // ── Actions ───────────────────────────────────────────────────
+                async loadMore(append = true) {
+                    if (this.isLoading || (!this.hasNext && append)) return;
+                    this.isLoading = true;
+
+                    const params = new URLSearchParams({ size: 20 });
+                    if (this.cursorId) params.set('cursorId', this.cursorId);
+                    if (this.sourceType) params.set('sourceType', this.sourceType);
+
+                    try {
+                        // 프로젝트별 API 호출 (/api/projects/{publicId}/notifications)
+                        const res = await callApi(`/api/projects/${this.publicId}/notifications?` + params.toString());
+                        if (res.success) {
+                            const data = res.data;
+                            this.notifications = append ? [...this.notifications, ...data.notifications] : data.notifications;
+                            this.cursorId = data.nextCursorId;
+                            this.hasNext = data.hasNext;
+                        }
+                    } catch (e) {
+                        window.showTopToast?.('알림 로드 중 오류가 발생했습니다.', 'danger');
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                async changeTab(type) {
+                    this.sourceType = type;
+                    this.cursorId = null;
+                    this.hasNext = true;
+                    await this.loadMore(false);
+                },
+
+                async ignoreNotification(id) {
+                    try {
+                        // 프로젝트별 무시 API 호출
+                        const res = await callApi(`/api/projects/${this.publicId}/notifications/${id}/ignore`, { method: 'PATCH' });
+                        if (res.success) {
+                            this.notifications = this.notifications.filter(n => n.id !== id);
+                        }
+                    } catch (e) {
+                        window.showTopToast?.('무시하기 처리에 실패했습니다.', 'danger');
+                    }
+                },
+
+                setupInfiniteScroll() {
+                    const observer = new IntersectionObserver((entries) => {
+                        if (entries[0].isIntersecting && !this.isLoading && this.hasNext) {
+                            this.loadMore(true);
+                        }
+                    }, { rootMargin: '200px' });
+
+                    const sentinel = document.getElementById('notification-sentinel');
+                    if (sentinel) observer.observe(sentinel);
+                }
+            }));
+        });
+    </script>
+</th:block>
+</body>
+</html>

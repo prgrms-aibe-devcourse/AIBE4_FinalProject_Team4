@@ -59,9 +59,9 @@ public class NotificationSyncListener {
 
         String sql =
                 """
-                INSERT INTO notification (receiver_id, source_id, event_type, title, message,
+                INSERT INTO notification (project_id, receiver_id, source_id, event_type, title, message,
                     severity, is_toast, is_read, is_ignored, related_url, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, false, false, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, false, false, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """;
 
         List<UUID> receivers = event.receiverIds();
@@ -71,14 +71,15 @@ public class NotificationSyncListener {
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setObject(1, receivers.get(i), Types.OTHER);
-                        ps.setLong(2, event.sourceId());
-                        ps.setString(3, event.eventType().name());
-                        ps.setString(4, event.title());
-                        ps.setString(5, event.message());
-                        ps.setString(6, severity != null ? severity.getValue() : null);
-                        ps.setBoolean(7, event.isToast());
-                        ps.setString(8, event.relatedUrl());
+                        ps.setObject(1, event.projectId(), Types.OTHER);
+                        ps.setObject(2, receivers.get(i), Types.OTHER);
+                        ps.setLong(3, event.sourceId());
+                        ps.setString(4, event.eventType().name());
+                        ps.setString(5, event.title());
+                        ps.setString(6, event.message());
+                        ps.setString(7, severity != null ? severity.getValue() : null);
+                        ps.setBoolean(8, event.isToast());
+                        ps.setString(9, event.relatedUrl());
                     }
 
                     @Override

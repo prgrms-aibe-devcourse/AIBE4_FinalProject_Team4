@@ -5,6 +5,7 @@ import java.util.UUID;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.notification.event.IssueNotificationEvent;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
+import kr.java.documind.global.annotation.ProjectId;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.repository.DomainSourceRepository;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @Profile({"dev", "test"})
 @RestController
-@RequestMapping("/api/test/notifications")
+@RequestMapping("/api/test/projects/{publicId}/notifications")
 @RequiredArgsConstructor
 public class NotificationTestController {
 
@@ -31,7 +32,8 @@ public class NotificationTestController {
 
     @PostMapping("/trigger/issue")
     @Transactional // 🚨 메인 트랜잭션 경계 설정 (AFTER_COMMIT 트리거용)
-    public ResponseEntity<String> triggerIssueNotification(@RequestParam UUID receiverId) {
+    public ResponseEntity<String> triggerIssueNotification(
+            @ProjectId UUID projectId, @RequestParam UUID receiverId) {
 
         // 1. 선행 작업: 유효한 DomainSource 영속화 (FK 제약조건 해결)
         // 팩토리 메서드를 통해 SourceType.ISSUE 타입의 엔티티를 생성합니다.
@@ -49,6 +51,7 @@ public class NotificationTestController {
 
         IssueNotificationEvent event =
                 new IssueNotificationEvent(
+                        projectId,
                         receivers,
                         validSourceId, // 🚨 방금 채번된 유효한 ID 삽입
                         NotificationEventType.ISSUE_STATUS_CHANGED,

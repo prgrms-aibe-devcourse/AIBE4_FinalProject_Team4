@@ -5,6 +5,7 @@ import java.util.UUID;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 
 public record DocumentNotificationEvent(
+        UUID projectId,
         List<UUID> receiverIds,
         Long sourceId,
         NotificationEventType eventType,

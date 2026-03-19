@@ -22,6 +22,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification extends BaseEntity {
 
+    @Column(name = "project_id", nullable = false, columnDefinition = "uuid")
+    private UUID projectId;
+
     @Column(name = "receiver_id", nullable = false, columnDefinition = "uuid")
     private UUID receiverId;
 
@@ -55,6 +58,7 @@ public class Notification extends BaseEntity {
     private String relatedUrl;
 
     private Notification(
+            UUID projectId,
             UUID receiverId,
             DomainSource source,
             NotificationEventType eventType,
@@ -63,6 +67,7 @@ public class Notification extends BaseEntity {
             String severity,
             boolean isToast,
             String relatedUrl) {
+        this.projectId = projectId;
         this.receiverId = receiverId;
         this.source = source;
         this.eventType = eventType;
@@ -76,6 +81,7 @@ public class Notification extends BaseEntity {
     }
 
     public static Notification create(
+            UUID projectId,
             UUID receiverId,
             DomainSource source,
             NotificationEventType eventType,
@@ -85,7 +91,15 @@ public class Notification extends BaseEntity {
             boolean isToast,
             String relatedUrl) {
         return new Notification(
-                receiverId, source, eventType, title, message, severity, isToast, relatedUrl);
+                projectId,
+                receiverId,
+                source,
+                eventType,
+                title,
+                message,
+                severity,
+                isToast,
+                relatedUrl);
     }
 
     public void markRead() {
