@@ -3,6 +3,7 @@ package kr.java.documind.domain.member.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.member.model.dto.ProjectMemberSimpleResponse;
@@ -43,7 +44,9 @@ public class ProjectMemberApiController {
             @Parameter(description = "검색 쿼리 (닉네임 부분 일치)", example = "김", required = true)
                     @RequestParam
                     String query,
-            @Parameter(description = "최대 결과 수", example = "10") @RequestParam(defaultValue = "10")
+            @Parameter(description = "최대 결과 수 (최대 50)", example = "10")
+                    @RequestParam(defaultValue = "10")
+                    @Max(50)
                     int limit) {
 
         List<ProjectMemberSimpleResponse> members =
