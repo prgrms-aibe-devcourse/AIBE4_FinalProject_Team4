@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -554,10 +555,9 @@ public class ProjectService {
 
         List<Member> members =
                 memberRepository.searchProjectMembersByNickname(
-                        projectId, query, AccountStatus.ACTIVE);
+                        projectId, query, AccountStatus.ACTIVE, PageRequest.of(0, limit));
 
         return members.stream()
-                .limit(limit)
                 .map(
                         m ->
                                 kr.java.documind.domain.member.model.dto.ProjectMemberSimpleResponse
