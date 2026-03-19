@@ -15,10 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDropZone('editDropZone', 'editFile');
     convertLocalDateTimes();
 
-    // 임베딩 진행중이면 SSE 구독
+    // 임베딩 상태에 따른 처리
     const embeddingStatus = document.getElementById('docEmbeddingStatus').value;
     if (embeddingStatus === 'PENDING' || embeddingStatus === 'PROCESSING') {
         subscribeEmbeddingStatus();
+    }
+    if (embeddingStatus === 'FAILED') {
+        updateRetryButton('FAILED');
     }
 });
 
@@ -147,6 +150,7 @@ function subscribeEmbeddingStatus() {
         const status = e.data;
         updateEmbeddingBadge(status);
         updateChatButton(status);
+        updateEditDeleteButtons(status);
 
         if (status === 'SUCCESS' || status === 'FAILED') {
             source.close();
@@ -165,6 +169,60 @@ function updateEmbeddingBadge(status) {
     const config = EMBEDDING_STATUS[status] || EMBEDDING_STATUS.NONE;
     badge.className = 'font-medium ' + config.classes;
     badge.textContent = config.label;
+
+    updateRetryButton(status);
+}
+
+function updateRetryButton(status) {
+    const container = document.getElementById('embeddingRetryContainer');
+    if (!container) return;
+
+    if (status === 'FAILED') {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
+async function retryEmbedding() {
+    const btn = document.getElementById('btnRetryEmbedding');
+    btn.disabled = true;
+    btn.textContent = '재시도 중...';
+
+    try {
+        const result = await callApi(
+            `/api/projects/${projectId}/documents/${documentId}/retry-embedding`,
+            { method: 'POST' }
+        );
+        if (result.success) {
+            subscribeEmbeddingStatus();
+        } else {
+            alert(result.error?.message || '임베딩 재시도에 실패했습니다.');
+            btn.disabled = false;
+            btn.textContent = '임베딩 재시도';
+        }
+    } catch (e) {
+        alert('임베딩 재시도에 실패했습니다.');
+        btn.disabled = false;
+        btn.textContent = '임베딩 재시도';
+        console.error(e);
+    }
+}
+
+function updateEditDeleteButtons(status) {
+    const btnEdit = document.getElementById('btnEdit');
+    const btnDelete = document.getElementById('btnDelete');
+    const inProgress = status === 'PENDING' || status === 'PROCESSING';
+
+    [btnEdit, btnDelete].forEach(btn => {
+        if (!btn) return;
+        btn.disabled = inProgress;
+        if (inProgress) {
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
 }
 
 function updateChatButton(status) {

@@ -159,6 +159,17 @@ public class DocumentMetadataService {
         }
     }
 
+    @Transactional
+    public void retryEmbedding(UUID projectId, Long documentId) {
+        DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
+
+        if (documentMetadata.getEmbeddingStatus() != EmbeddingStatus.FAILED) {
+            throw new BadRequestException("임베딩 실패 상태인 문서만 재시도할 수 있습니다.");
+        }
+
+        documentVectorEventPublisher.retryEvent(projectId, documentMetadata);
+    }
+
     private DocumentMetadata findMetadata(Long documentId, UUID projectId) {
         return documentMetadataManager.getByIdAndProjectId(documentId, projectId);
     }

@@ -61,6 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'openDeleteModal':
                 openDeleteModal(documentId, groupId, target.dataset.docName, target.dataset.version);
                 break;
+            case 'retryEmbedding':
+                retryEmbedding(documentId);
+                break;
         }
     });
 
@@ -530,20 +533,25 @@ function renderDocuments(groupId, documents, groupName, category) {
                     <div class="col-span-2 text-center text-xs text-docu-secondary">${formatDateTime(doc.reuploadedAt)}</div>
                     <div class="col-span-1 text-center text-xs font-medium ${doc.isProcessed ? 'text-docu-secondary' : 'text-docu-success'}">${doc.isProcessed ? 'X' : 'O'}</div>
                     <div class="col-span-1 text-center" id="embedding-status-${doc.documentId}">${renderEmbeddingBadge(doc.embeddingStatus)}</div>
-                    <div class="col-span-1 flex items-center justify-end gap-3">
+                    <div class="col-span-1 flex items-center justify-end gap-3" id="doc-actions-${doc.documentId}">
+                        ${doc.embeddingStatus === 'FAILED' ? `
+                        <button class="text-docu-secondary-dark hover:text-docu-ink" title="임베딩 재시도"
+                                data-action="retryEmbedding" data-document-id="${doc.documentId}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        </button>` : ''}
                         <button class="text-docu-primary hover:text-docu-primary-dark" title="다운로드"
                                 data-action="downloadDocument" data-document-id="${doc.documentId}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         </button>
-                        <button class="text-docu-warning hover:text-docu-warning-dark" title="수정"
-                                data-action="openEditDocument" data-document-id="${doc.documentId}" data-group-id="${groupId}"
+                        <button class="${isEmbeddingInProgress(doc.embeddingStatus) ? 'text-docu-secondary/40 cursor-not-allowed' : 'text-docu-warning hover:text-docu-warning-dark'}" title="수정"
+                                ${isEmbeddingInProgress(doc.embeddingStatus) ? 'disabled' : `data-action="openEditDocument" data-document-id="${doc.documentId}" data-group-id="${groupId}"
                                 data-group-name="${escapeAttr(groupName)}" data-category="${escapeAttr(category)}"
-                                data-version="${escapeAttr(doc.version)}" data-is-processed="${doc.isProcessed || false}">
+                                data-version="${escapeAttr(doc.version)}" data-is-processed="${doc.isProcessed || false}"`}>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                         </button>
-                        <button class="text-docu-danger hover:text-docu-danger-dark" title="삭제"
-                                data-action="openDeleteModal" data-document-id="${doc.documentId}" data-group-id="${groupId}"
-                                data-doc-name="${escapeAttr(doc.documentName + '.' + doc.extension)}" data-version="${escapeAttr(doc.version)}">
+                        <button class="${isEmbeddingInProgress(doc.embeddingStatus) ? 'text-docu-secondary/40 cursor-not-allowed' : 'text-docu-danger hover:text-docu-danger-dark'}" title="삭제"
+                                ${isEmbeddingInProgress(doc.embeddingStatus) ? 'disabled' : `data-action="openDeleteModal" data-document-id="${doc.documentId}" data-group-id="${groupId}"
+                                data-doc-name="${escapeAttr(doc.documentName + '.' + doc.extension)}" data-version="${escapeAttr(doc.version)}"`}>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
                     </div>
@@ -688,6 +696,66 @@ function renderEmbeddingBadge(status) {
     return `<span class="text-xs font-medium ${badge.classes}">${badge.label}</span>`;
 }
 
+function isEmbeddingInProgress(status) {
+    return status === 'PENDING' || status === 'PROCESSING';
+}
+
+// ==================== 임베딩 재시도 ====================
+
+async function retryEmbedding(documentId) {
+    try {
+        const result = await callApi(
+            `/api/projects/${projectId}/documents/${documentId}/retry-embedding`,
+            { method: 'POST' }
+        );
+        if (result.success) {
+            subscribeEmbeddingStatus(documentId);
+        } else {
+            alert(result.error?.message || '임베딩 재시도에 실패했습니다.');
+        }
+    } catch (e) {
+        alert('임베딩 재시도에 실패했습니다.');
+        console.error(e);
+    }
+}
+
+function updateDocActions(documentId, status) {
+    const container = document.getElementById(`doc-actions-${documentId}`);
+    if (!container) return;
+
+    const inProgress = isEmbeddingInProgress(status);
+
+    // 수정/삭제 버튼 활성화/비활성화
+    container.querySelectorAll('button[title="수정"], button[title="삭제"]').forEach(btn => {
+        if (inProgress) {
+            btn.disabled = true;
+            btn.removeAttribute('data-action');
+            btn.className = 'text-docu-secondary/40 cursor-not-allowed';
+        } else {
+            btn.disabled = false;
+            const isEdit = btn.title === '수정';
+            btn.className = isEdit ? 'text-docu-warning hover:text-docu-warning-dark' : 'text-docu-danger hover:text-docu-danger-dark';
+        }
+    });
+
+    // 재시도 버튼: FAILED일 때만 표시
+    let retryBtn = container.querySelector('button[title="임베딩 재시도"]');
+    if (status === 'FAILED') {
+        if (!retryBtn) {
+            const downloadBtn = container.querySelector('button[title="다운로드"]');
+            retryBtn = document.createElement('button');
+            retryBtn.className = 'text-docu-secondary-dark hover:text-docu-ink';
+            retryBtn.title = '임베딩 재시도';
+            retryBtn.dataset.action = 'retryEmbedding';
+            retryBtn.dataset.documentId = documentId;
+            retryBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
+            container.insertBefore(retryBtn, downloadBtn);
+        }
+    } else if (retryBtn) {
+        retryBtn.remove();
+    }
+}
+
 // ==================== 임베딩 SSE ====================
 
 function subscribeEmbeddingStatus(documentId) {
@@ -700,6 +768,8 @@ function subscribeEmbeddingStatus(documentId) {
         if (statusEl) {
             statusEl.innerHTML = renderEmbeddingBadge(status);
         }
+
+        updateDocActions(documentId, status);
 
         if (status === 'SUCCESS' || status === 'FAILED') {
             source.close();
