@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.issue.model.dto.request.ApproveRecommendationRequest;
 import kr.java.documind.domain.issue.model.dto.response.AssigneeInfo;
 import kr.java.documind.domain.issue.model.dto.response.IssueDetailResponse;
@@ -12,7 +13,6 @@ import kr.java.documind.domain.issue.model.dto.response.SimilarityResult;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.service.recommendation.IssueRecommendationService;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
-import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.global.annotation.CurrentProject;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
@@ -70,7 +70,8 @@ public class IssueRecommendationApiController {
             @Parameter(description = "이슈 ID", example = "101", required = true) @PathVariable
                     Long issueId) {
 
-        Issue recommendation = recommendationService.getRecommendationDetail(issueId, ctx.projectId());
+        Issue recommendation =
+                recommendationService.getRecommendationDetail(issueId, ctx.projectId());
 
         // 담당자 정보 조회
         AssigneeInfo assignee = null;
@@ -140,7 +141,8 @@ public class IssueRecommendationApiController {
                     Long issueId,
             @AuthenticationPrincipal CustomUserDetails authMember) {
 
-        recommendationService.rejectRecommendation(issueId, ctx.projectId(), authMember.getMemberId());
+        recommendationService.rejectRecommendation(
+                issueId, ctx.projectId(), authMember.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success("추천 이슈가 거부되었습니다."));
     }

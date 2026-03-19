@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.issue.model.dto.request.IssueAssignRequest;
 import kr.java.documind.domain.issue.model.dto.request.IssuePriorityUpdateRequest;
 import kr.java.documind.domain.issue.model.dto.request.IssueStatusUpdateRequest;
@@ -27,7 +28,6 @@ import kr.java.documind.domain.issue.service.RootCauseAnalysisService;
 import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
 import kr.java.documind.domain.issue.service.workflow.IssueManagementService;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
-import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.global.annotation.CurrentProject;
 import kr.java.documind.global.response.ApiResponse;
 import kr.java.documind.global.security.jwt.CustomUserDetails;
@@ -77,17 +77,21 @@ public class IssueManagementApiController {
 
         List<Issue> issues = issueManagementService.getIssueList(ctx.projectId(), status);
 
-        List<IssueListResponse> response = issues.stream()
-                .map(issue -> {
-                    AssigneeInfo assignee = null;
-                    if (issue.getAssigneeId() != null) {
-                        assignee = memberRepository.findById(issue.getAssigneeId())
-                                .map(AssigneeInfo::from)
-                                .orElse(null);
-                    }
-                    return IssueListResponse.from(issue, assignee);
-                })
-                .toList();
+        List<IssueListResponse> response =
+                issues.stream()
+                        .map(
+                                issue -> {
+                                    AssigneeInfo assignee = null;
+                                    if (issue.getAssigneeId() != null) {
+                                        assignee =
+                                                memberRepository
+                                                        .findById(issue.getAssigneeId())
+                                                        .map(AssigneeInfo::from)
+                                                        .orElse(null);
+                                    }
+                                    return IssueListResponse.from(issue, assignee);
+                                })
+                        .toList();
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

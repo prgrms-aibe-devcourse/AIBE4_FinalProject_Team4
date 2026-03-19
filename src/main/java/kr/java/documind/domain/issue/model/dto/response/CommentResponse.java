@@ -28,7 +28,9 @@ public record CommentResponse(
      * @return CommentResponse
      */
     public static CommentResponse from(
-            IssueComment issueComment, MemberSimpleInfo author, List<MemberSimpleInfo> mentionedMembers) {
+            IssueComment issueComment,
+            MemberSimpleInfo author,
+            List<MemberSimpleInfo> mentionedMembers) {
         return new CommentResponse(
                 issueComment.getId(),
                 issueComment.getIssueId(),

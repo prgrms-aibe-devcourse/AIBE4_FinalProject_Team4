@@ -151,12 +151,10 @@ public class ColdStorageService {
             File csvFile = exportProjectToCsv(tableName, projectId, uniqueTempDir);
 
             // 4. CSV → Parquet 변환
-            File parquetFile =
-                    convertCsvToParquet(csvFile, "game_log_" + projectId, uniqueTempDir);
+            File parquetFile = convertCsvToParquet(csvFile, "game_log_" + projectId, uniqueTempDir);
 
             // 5. Parquet → S3 업로드
-            String s3Uri =
-                    uploadParquetToS3(parquetFile, companyId, projectId, weekStartDate);
+            String s3Uri = uploadParquetToS3(parquetFile, companyId, projectId, weekStartDate);
 
             log.info("[ColdStorage] Successfully archived project {} to {}", projectId, s3Uri);
 
@@ -204,10 +202,7 @@ public class ColdStorageService {
         postgresExporter.exportTableToCsvByProject(tableName, projectId, csvFile);
 
         long fileSizeMB = csvFile.length() / (1024 * 1024);
-        log.info(
-                "[ColdStorage] CSV export completed: {} ({} MB)",
-                csvFile.getName(),
-                fileSizeMB);
+        log.info("[ColdStorage] CSV export completed: {} ({} MB)", csvFile.getName(), fileSizeMB);
 
         return csvFile;
     }
@@ -266,7 +261,8 @@ public class ColdStorageService {
                 companyId,
                 projectId);
 
-        // S3 키 생성: cold-storage/game-logs/{companyId}/{projectId}/year=2026/week=11/game_log.parquet
+        // S3 키 생성:
+        // cold-storage/game-logs/{companyId}/{projectId}/year=2026/week=11/game_log.parquet
         // ISO week-based year 사용 (연말/연초 경계 처리)
         int year = weekStartDate.get(java.time.temporal.IsoFields.WEEK_BASED_YEAR);
         int weekNumber = weekStartDate.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR);
