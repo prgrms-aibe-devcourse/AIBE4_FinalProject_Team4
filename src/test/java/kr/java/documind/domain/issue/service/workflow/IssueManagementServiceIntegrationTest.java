@@ -17,14 +17,13 @@ import kr.java.documind.domain.issue.model.repository.IssueHistoryRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.patchnote.event.IssueStatusChangedEvent;
 import kr.java.documind.global.exception.BadRequestException;
+import kr.java.documind.global.storage.FileStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import kr.java.documind.global.storage.FileStore;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -43,13 +42,14 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 @Transactional
 @RecordApplicationEvents
-@EnableAutoConfiguration(excludeName = {
-    "org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration",
-    "org.springframework.ai.autoconfigure.openai.OpenAiEmbeddingAutoConfiguration",
-    "org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration",
-    "io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration",
-    "io.awspring.cloud.autoconfigure.core.AwsAutoConfiguration"
-})
+@EnableAutoConfiguration(
+        excludeName = {
+            "org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration",
+            "org.springframework.ai.autoconfigure.openai.OpenAiEmbeddingAutoConfiguration",
+            "org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration",
+            "io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration",
+            "io.awspring.cloud.autoconfigure.core.AwsAutoConfiguration"
+        })
 @DisplayName("IssueManagementService 통합 테스트")
 @TestPropertySource(
         properties = {
@@ -71,7 +71,9 @@ class IssueManagementServiceIntegrationTest {
     @Autowired private ApplicationEvents applicationEvents;
 
     @MockBean private FileStore fileStore;
-    @MockBean(name = "openAiEmbeddingModel") private EmbeddingModel embeddingModel;
+
+    @MockBean(name = "openAiEmbeddingModel")
+    private EmbeddingModel embeddingModel;
 
     private UUID testProjectId;
     private UUID testModifierId;

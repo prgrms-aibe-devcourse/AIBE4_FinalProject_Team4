@@ -1,6 +1,5 @@
 package kr.java.documind.domain.issue.service;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,8 +11,8 @@ import kr.java.documind.domain.issue.model.dto.request.CommentCreateRequest;
 import kr.java.documind.domain.issue.model.dto.request.CommentUpdateRequest;
 import kr.java.documind.domain.issue.model.dto.response.CommentResponse;
 import kr.java.documind.domain.issue.model.dto.response.MemberSimpleInfo;
-import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
@@ -77,7 +76,8 @@ public class IssueCommentService {
                 validateMentionedMembers(request.mentionedMemberIds(), projectId);
 
         // 3. Comment 엔티티 생성
-        IssueComment issueComment = IssueComment.create(issueId, authorId, request.content(), validatedMentionIds);
+        IssueComment issueComment =
+                IssueComment.create(issueId, authorId, request.content(), validatedMentionIds);
 
         // 4. 저장
         commentRepository.save(issueComment);
@@ -228,7 +228,8 @@ public class IssueCommentService {
         }
 
         // 2. 댓글 목록 조회 (페이징, 오래된 순)
-        Page<IssueComment> page = commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId, pageable);
+        Page<IssueComment> page =
+                commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId, pageable);
 
         // 3. DTO 변환 (작성자 및 멘션 정보 포함)
         List<CommentResponse> responses =
@@ -282,8 +283,10 @@ public class IssueCommentService {
 
         // 멘션된 사용자 정보 조회
         List<MemberSimpleInfo> mentionedMembers = List.of();
-        if (issueComment.getMentionedMemberIds() != null && !issueComment.getMentionedMemberIds().isEmpty()) {
-            List<Member> members = memberRepository.findAllById(issueComment.getMentionedMemberIds());
+        if (issueComment.getMentionedMemberIds() != null
+                && !issueComment.getMentionedMemberIds().isEmpty()) {
+            List<Member> members =
+                    memberRepository.findAllById(issueComment.getMentionedMemberIds());
 
             // UUID 순서 보존을 위한 Map 사용
             Map<UUID, Member> memberMap =

@@ -166,7 +166,8 @@ public class PostgresExporter {
             return projectIds;
 
         } catch (Exception e) {
-            log.error("[PostgresExporter] Failed to get distinct project_ids from {}", tableName, e);
+            log.error(
+                    "[PostgresExporter] Failed to get distinct project_ids from {}", tableName, e);
             throw new RuntimeException("Failed to fetch distinct project_ids", e);
         }
     }
@@ -262,8 +263,7 @@ public class PostgresExporter {
                         ORDER BY occurred_at
                     ) TO STDOUT WITH (FORMAT CSV, HEADER true, DELIMITER ',', QUOTE '\"')
                     """,
-                            tableName,
-                            projectId.toString());
+                            tableName, projectId.toString());
 
             // COPY 실행
             long rowCount = copyManager.copyOut(copyQuery, writer);

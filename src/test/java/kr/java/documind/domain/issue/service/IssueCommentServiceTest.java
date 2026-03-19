@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
@@ -16,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import kr.java.documind.domain.auth.model.enums.GlobalRole;
+import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 import kr.java.documind.domain.issue.model.dto.request.CommentCreateRequest;
 import kr.java.documind.domain.issue.model.dto.request.CommentUpdateRequest;
 import kr.java.documind.domain.issue.model.dto.response.CommentResponse;
@@ -29,8 +30,6 @@ import kr.java.documind.domain.issue.model.enums.IssueType;
 import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.issue.service.workflow.IssueHistoryService;
-import kr.java.documind.domain.auth.model.enums.GlobalRole;
-import kr.java.documind.domain.auth.model.enums.OAuthProvider;
 import kr.java.documind.domain.member.model.entity.Member;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.repository.MemberRepository;
@@ -51,23 +50,17 @@ import org.springframework.test.util.ReflectionTestUtils;
 @DisplayName("IssueCommentService 단위 테스트")
 class IssueCommentServiceTest {
 
-    @Mock
-    private CommentRepository commentRepository;
+    @Mock private CommentRepository commentRepository;
 
-    @Mock
-    private IssueRepository issueRepository;
+    @Mock private IssueRepository issueRepository;
 
-    @Mock
-    private MemberRepository memberRepository;
+    @Mock private MemberRepository memberRepository;
 
-    @Mock
-    private ProjectMemberRepository projectMemberRepository;
+    @Mock private ProjectMemberRepository projectMemberRepository;
 
-    @Mock
-    private IssueHistoryService issueHistoryService;
+    @Mock private IssueHistoryService issueHistoryService;
 
-    @InjectMocks
-    private IssueCommentService issueCommentService;
+    @InjectMocks private IssueCommentService issueCommentService;
 
     private Long issueId;
     private UUID projectId;
@@ -84,42 +77,43 @@ class IssueCommentServiceTest {
         authorId = UUID.randomUUID();
         mentionedMemberId = UUID.randomUUID();
 
-        issue = Issue.builder()
-                .projectId(projectId)
-                .fingerprint("test-fingerprint")
-                .title("NullPointerException")
-                .stackKey("PlayerService.java:loadPlayer:42")
-                .issueType(IssueType.BUG)
-                .errorType(ErrorType.NULL_POINTER)
-                .status(IssueStatus.TODO)
-                .priority(IssuePriority.P2)
-                .severity(IssueSeverity.MEDIUM)
-                .severityScore(50)
-                .occurrenceCount(1)
-                .firstOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
-                .lastOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
-                .build();
+        issue =
+                Issue.builder()
+                        .projectId(projectId)
+                        .fingerprint("test-fingerprint")
+                        .title("NullPointerException")
+                        .stackKey("PlayerService.java:loadPlayer:42")
+                        .issueType(IssueType.BUG)
+                        .errorType(ErrorType.NULL_POINTER)
+                        .status(IssueStatus.TODO)
+                        .priority(IssuePriority.P2)
+                        .severity(IssueSeverity.MEDIUM)
+                        .severityScore(50)
+                        .occurrenceCount(1)
+                        .firstOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
+                        .lastOccurredAt(OffsetDateTime.now(java.time.ZoneOffset.UTC))
+                        .build();
         ReflectionTestUtils.setField(issue, "id", issueId);
 
-        author = Member.createByOAuth(
-                "author@example.com",
-                "작성자",
-                "작성자",
-                OAuthProvider.GOOGLE,
-                "google-123",
-                GlobalRole.EMPLOYEE
-        );
+        author =
+                Member.createByOAuth(
+                        "author@example.com",
+                        "작성자",
+                        "작성자",
+                        OAuthProvider.GOOGLE,
+                        "google-123",
+                        GlobalRole.EMPLOYEE);
         ReflectionTestUtils.setField(author, "id", authorId);
         ReflectionTestUtils.setField(author, "profileKey", "profile/avatar.png");
 
-        mentionedMember = Member.createByOAuth(
-                "mentioned@example.com",
-                "김철수",
-                "김철수",
-                OAuthProvider.GOOGLE,
-                "google-456",
-                GlobalRole.EMPLOYEE
-        );
+        mentionedMember =
+                Member.createByOAuth(
+                        "mentioned@example.com",
+                        "김철수",
+                        "김철수",
+                        OAuthProvider.GOOGLE,
+                        "google-456",
+                        GlobalRole.EMPLOYEE);
         ReflectionTestUtils.setField(mentionedMember, "id", mentionedMemberId);
         ReflectionTestUtils.setField(mentionedMember, "profileKey", "profile/avatar2.png");
     }
@@ -155,7 +149,8 @@ class IssueCommentServiceTest {
         assertThat(response.mentionedMembers().get(0).nickname()).isEqualTo("김철수");
 
         verify(commentRepository, times(1)).save(any(IssueComment.class));
-        verify(issueHistoryService, times(1)).saveCommentAdded(eq(issueId), eq(authorId), eq(content));
+        verify(issueHistoryService, times(1))
+                .saveCommentAdded(eq(issueId), eq(authorId), eq(content));
     }
 
     @Test
@@ -192,8 +187,10 @@ class IssueCommentServiceTest {
         when(issueRepository.findById(issueId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() ->
-                        issueCommentService.createComment(issueId, projectId, authorId, request))
+        assertThatThrownBy(
+                        () ->
+                                issueCommentService.createComment(
+                                        issueId, projectId, authorId, request))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("이슈를 찾을 수 없습니다");
     }
@@ -207,8 +204,10 @@ class IssueCommentServiceTest {
         when(issueRepository.findById(issueId)).thenReturn(Optional.of(issue));
 
         // When & Then
-        assertThatThrownBy(() ->
-                        issueCommentService.createComment(issueId, wrongProjectId, authorId, request))
+        assertThatThrownBy(
+                        () ->
+                                issueCommentService.createComment(
+                                        issueId, wrongProjectId, authorId, request))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("해당 프로젝트의 이슈가 아닙니다");
     }
@@ -251,17 +250,18 @@ class IssueCommentServiceTest {
         String newContent = "@박영희 함께 검토 부탁드립니다.";
         List<UUID> newMentions = List.of(newMentionId);
 
-        IssueComment existingComment = IssueComment.create(issueId, authorId, originalContent, originalMentions);
+        IssueComment existingComment =
+                IssueComment.create(issueId, authorId, originalContent, originalMentions);
         ReflectionTestUtils.setField(existingComment, "id", commentId);
 
-        Member newMentionedMember = Member.createByOAuth(
-                "park@example.com",
-                "박영희",
-                "박영희",
-                OAuthProvider.GOOGLE,
-                "google-789",
-                GlobalRole.EMPLOYEE
-        );
+        Member newMentionedMember =
+                Member.createByOAuth(
+                        "park@example.com",
+                        "박영희",
+                        "박영희",
+                        OAuthProvider.GOOGLE,
+                        "google-789",
+                        GlobalRole.EMPLOYEE);
         ReflectionTestUtils.setField(newMentionedMember, "id", newMentionId);
 
         CommentUpdateRequest request = new CommentUpdateRequest(newContent, newMentions);
@@ -299,8 +299,10 @@ class IssueCommentServiceTest {
         when(issueRepository.findById(issueId)).thenReturn(Optional.of(issue));
 
         // When & Then
-        assertThatThrownBy(() ->
-                        issueCommentService.updateComment(commentId, issueId, projectId, otherUserId, request))
+        assertThatThrownBy(
+                        () ->
+                                issueCommentService.updateComment(
+                                        commentId, issueId, projectId, otherUserId, request))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("자신이 작성한 댓글만 수정할 수 있습니다");
     }
@@ -319,8 +321,10 @@ class IssueCommentServiceTest {
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
         // When & Then
-        assertThatThrownBy(() ->
-                        issueCommentService.updateComment(commentId, wrongIssueId, projectId, authorId, request))
+        assertThatThrownBy(
+                        () ->
+                                issueCommentService.updateComment(
+                                        commentId, wrongIssueId, projectId, authorId, request))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("해당 이슈의 댓글이 아닙니다");
     }
@@ -356,8 +360,10 @@ class IssueCommentServiceTest {
         when(issueRepository.findById(issueId)).thenReturn(Optional.of(issue));
 
         // When & Then
-        assertThatThrownBy(() ->
-                        issueCommentService.deleteComment(commentId, issueId, projectId, otherUserId))
+        assertThatThrownBy(
+                        () ->
+                                issueCommentService.deleteComment(
+                                        commentId, issueId, projectId, otherUserId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("자신이 작성한 댓글만 삭제할 수 있습니다");
     }
@@ -378,8 +384,9 @@ class IssueCommentServiceTest {
         lenient().when(memberRepository.findById(authorId)).thenReturn(Optional.of(author));
 
         // When
-        var response = issueCommentService.getComments(
-                issueId, projectId, org.springframework.data.domain.PageRequest.of(0, 20));
+        var response =
+                issueCommentService.getComments(
+                        issueId, projectId, org.springframework.data.domain.PageRequest.of(0, 20));
 
         // Then
         assertThat(response).isNotNull();
@@ -395,9 +402,12 @@ class IssueCommentServiceTest {
         when(issueRepository.findById(issueId)).thenReturn(Optional.of(issue));
 
         // When & Then
-        assertThatThrownBy(() ->
-                        issueCommentService.getComments(
-                                issueId, wrongProjectId, org.springframework.data.domain.PageRequest.of(0, 20)))
+        assertThatThrownBy(
+                        () ->
+                                issueCommentService.getComments(
+                                        issueId,
+                                        wrongProjectId,
+                                        org.springframework.data.domain.PageRequest.of(0, 20)))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("해당 프로젝트의 이슈가 아닙니다");
     }

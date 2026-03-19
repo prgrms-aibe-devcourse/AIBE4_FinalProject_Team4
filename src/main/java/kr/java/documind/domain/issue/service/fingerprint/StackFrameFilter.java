@@ -24,7 +24,8 @@ public class StackFrameFilter {
     // Unity 스택 트레이스 프레임 파싱 패턴
     // 예: "PlayerInventory.AddItem (Item item) (at Assets/Scripts/PlayerInventory.cs:45)"
     private static final Pattern UNITY_FRAME_PATTERN =
-            Pattern.compile("([a-zA-Z0-9_]+)\\.([a-zA-Z0-9_<>$]+)\\s+\\([^)]*\\)\\s+\\(at\\s+([^:)]+):?(\\d+)?\\)");
+            Pattern.compile(
+                    "([a-zA-Z0-9_]+)\\.([a-zA-Z0-9_<>$]+)\\s+\\([^)]*\\)\\s+\\(at\\s+([^:)]+):?(\\d+)?\\)");
 
     // 애플리케이션 프레임 패턴 (프로젝트별 수정 필요)
     private static final List<String> APP_PACKAGE_PREFIXES =

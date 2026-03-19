@@ -32,7 +32,7 @@ public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
     public Page<AffectedPlayerResponse> findAffectedPlayersByFingerprint(
             String fingerprint, UUID projectId, Pageable pageable) {
 
-                QGameLog gameLog = QGameLog.gameLog;
+        QGameLog gameLog = QGameLog.gameLog;
 
         // 집계 쿼리
         JPAQuery<Tuple> query =
@@ -88,7 +88,7 @@ public class GameLogRepositoryImpl implements GameLogRepositoryCustom {
     public List<OccurrenceTrendResponse> findOccurrenceTrendByFingerprint(
             String fingerprint, UUID projectId, OffsetDateTime startDate, OffsetDateTime endDate) {
 
-                QGameLog gameLog = QGameLog.gameLog;
+        QGameLog gameLog = QGameLog.gameLog;
 
         // DATE(occurred_at) 함수를 사용하여 날짜별로 그룹화
         List<Tuple> results =

@@ -93,13 +93,14 @@ class IssueStatusChangedEventHandlerTest {
     }
 
     private Issue sufficientIssue(String description, String resolutionNote) {
-        Issue issue = Issue.builder()
-                .projectId(PROJECT_ID)
-                .title("테스트 이슈 제목")
-                .description(description)
-                .resolutionNote(resolutionNote)
-                .fingerprint("fp-test")
-                .build();
+        Issue issue =
+                Issue.builder()
+                        .projectId(PROJECT_ID)
+                        .title("테스트 이슈 제목")
+                        .description(description)
+                        .resolutionNote(resolutionNote)
+                        .fingerprint("fp-test")
+                        .build();
         ReflectionTestUtils.setField(issue, "id", ISSUE_ID);
         return issue;
     }

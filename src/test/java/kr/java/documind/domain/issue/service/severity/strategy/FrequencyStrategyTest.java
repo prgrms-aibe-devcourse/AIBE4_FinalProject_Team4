@@ -35,7 +35,9 @@ class FrequencyStrategyTest {
 
     @Mock private UserCountTracker userCountTracker;
 
-    @Mock private kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository logJdbcRepository;
+    @Mock
+    private kr.java.documind.domain.logprocessor.model.repository.LogJdbcRepository
+            logJdbcRepository;
 
     @InjectMocks private FrequencyStrategy strategy;
 
@@ -57,12 +59,14 @@ class FrequencyStrategyTest {
 
         // LogJdbcRepository Mock 기본 동작 설정 (occurrence count 반환)
         // 각 테스트에서 issue의 occurrenceCount를 반환하도록 설정
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
-                        any(), any(), any(), any()))
-                .willAnswer(invocation -> {
-                    // 기본값 반환 (각 테스트에서 필요시 재정의)
-                    return 0L;
-                });
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willAnswer(
+                        invocation -> {
+                            // 기본값 반환 (각 테스트에서 필요시 재정의)
+                            return 0L;
+                        });
     }
 
     private SeverityProperties.Threshold createThreshold(double rate, int score) {
@@ -82,7 +86,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 10,000건 → 에러율 10%
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(1000L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(1000L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
@@ -102,7 +109,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 10,000건 → 에러율 7%
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(700L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(700L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
@@ -122,7 +132,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 10,000건 → 에러율 3%
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(300L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(300L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
@@ -142,7 +155,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 10,000건 → 에러율 1.5%
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(150L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(150L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
@@ -162,7 +178,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 10,000건 → 에러율 0.7%
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(70L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(70L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
@@ -182,7 +201,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 10,000건 → 에러율 0.2%
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(20L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(20L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
@@ -202,7 +224,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 10,000건 → 에러율 0.03%
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(3L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(3L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // when
@@ -222,7 +247,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 데이터 없음 (Redis 장애 등)
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(100L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(100L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(0L);
 
         // when
@@ -242,7 +270,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 데이터 없음
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(100L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(100L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(0L);
 
         // when
@@ -263,7 +294,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 5,000건 → 에러율 10%
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(500L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(500L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(5000L);
 
         // when
@@ -309,7 +343,10 @@ class FrequencyStrategyTest {
         GameLog log = createGameLog();
 
         // 전체 로그 10,000건 → 에러율 3%
-        given(logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(any(), any(), any(), any())).willReturn(300L);
+        given(
+                        logJdbcRepository.countByProjectIdAndFingerprintAndOccurredAtBetween(
+                                any(), any(), any(), any()))
+                .willReturn(300L);
         given(userCountTracker.getTotalLogsInTimeRange(any(), any(), any())).willReturn(10000L);
 
         // calculate() 먼저 호출하여 cachedErrorRate 설정

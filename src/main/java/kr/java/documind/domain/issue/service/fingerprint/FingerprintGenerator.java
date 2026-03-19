@@ -201,8 +201,7 @@ public class FingerprintGenerator {
 
         // Java 스타일 ("at ") 또는 Unity 스타일 ("(at Assets/..." 또는 "Class.Method (...) (at ...)")
         boolean hasJavaFrames = archive.contains("at ");
-        boolean hasUnityFrames = archive.contains("(at Assets/") ||
-                                  archive.contains("(at <");
+        boolean hasUnityFrames = archive.contains("(at Assets/") || archive.contains("(at <");
 
         if (!hasJavaFrames && !hasUnityFrames) {
             return null;
@@ -225,8 +224,10 @@ public class FingerprintGenerator {
                 stackTrace.append(line).append("\n");
             }
             // 첫 줄이 아닌 경우, Unity 프레임으로 추정되는 패턴
-            else if (!trimmed.isEmpty() && trimmed.contains(".") &&
-                     trimmed.contains("(") && trimmed.contains(") (at ")) {
+            else if (!trimmed.isEmpty()
+                    && trimmed.contains(".")
+                    && trimmed.contains("(")
+                    && trimmed.contains(") (at ")) {
                 stackTrace.append(line).append("\n");
                 inStackTrace = true;
             }
