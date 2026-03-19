@@ -113,7 +113,7 @@ async function submitUpload() {
     hideModalError('uploadError');
 
     const groupName = document.getElementById('uploadGroupName').value.trim();
-    const category = document.getElementById('uploadCategory').value;
+    const category = document.getElementById('uploadCategory').value.trim();
     const majorVersion = parseInt(document.getElementById('uploadMajor').value);
     const minorVersion = parseInt(document.getElementById('uploadMinor').value);
     const patchVersion = parseInt(document.getElementById('uploadPatch').value);
@@ -121,7 +121,7 @@ async function submitUpload() {
     const fileInput = document.getElementById('uploadFile');
 
     if (!groupName) { showModalError('uploadError', '그룹명을 입력해주세요.'); return; }
-    if (!category || !category.trim()) { showModalError('uploadError', '카테고리를 선택하거나 입력해주세요.'); return; }
+    if (!category) { showModalError('uploadError', '카테고리를 선택하거나 입력해주세요.'); return; }
     if (!fileInput.files.length) { showModalError('uploadError', '파일을 선택해주세요.'); return; }
 
     const requestData = { groupName, category, majorVersion, minorVersion, patchVersion, isProcessed };
@@ -592,33 +592,6 @@ function goToPage(page) {
 
 // ==================== 유틸리티 ====================
 
-function formatDateTime(dateTimeStr) {
-    if (!dateTimeStr) return '-';
-    const dt = new Date(dateTimeStr);
-    const y = dt.getFullYear();
-    const m = String(dt.getMonth() + 1).padStart(2, '0');
-    const d = String(dt.getDate()).padStart(2, '0');
-    const h = String(dt.getHours()).padStart(2, '0');
-    const min = String(dt.getMinutes()).padStart(2, '0');
-    return `${y}-${m}-${d} ${h}:${min}`;
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-function escapeAttr(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&amp;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;');
-}
-
 function downloadDocument(documentId) {
     window.location.href = `/api/projects/${projectId}/documents/${documentId}/download`;
 }
@@ -710,36 +683,18 @@ document.addEventListener('click', (e) => {
 
 // ==================== 임베딩 배지 ====================
 
-const EMBEDDING_BADGE = {
-    NONE:       { classes: 'text-docu-secondary', label: '-' },
-    PENDING:    { classes: 'text-docu-secondary', label: '대기' },
-    PROCESSING: { classes: 'text-docu-primary', label: '진행중' },
-    SUCCESS:    { classes: 'text-docu-success', label: '성공' },
-    FAILED:     { classes: 'text-docu-danger', label: '실패' },
-};
-
 function renderEmbeddingBadge(status) {
-    const badge = EMBEDDING_BADGE[status] || EMBEDDING_BADGE.NONE;
+    const badge = EMBEDDING_STATUS[status] || EMBEDDING_STATUS.NONE;
     return `<span class="text-xs font-medium ${badge.classes}">${badge.label}</span>`;
 }
 
-// ==================== 임베딩 SSE + 토스트 ====================
-
-const TOAST_CONFIG = {
-    PENDING:    { bg: 'bg-surface-sub', border: 'border-divider', text: 'text-docu-ink', icon: '⏳', message: '임베딩 대기중...' },
-    PROCESSING: { bg: 'bg-docu-primary-light', border: 'border-docu-primary', text: 'text-docu-primary-dark', icon: '⚙️', message: '임베딩 진행중...' },
-    SUCCESS:    { bg: 'bg-docu-success-light', border: 'border-docu-success', text: 'text-docu-success-dark', icon: '✅', message: '임베딩 완료' },
-    FAILED:     { bg: 'bg-docu-danger-light', border: 'border-docu-danger', text: 'text-docu-danger-dark', icon: '❌', message: '임베딩 실패' },
-};
+// ==================== 임베딩 SSE ====================
 
 function subscribeEmbeddingStatus(documentId) {
-    showEmbeddingToast('PENDING');
-
     const source = new EventSource(`/api/projects/${projectId}/documents/${documentId}/embedding-status`);
 
     source.addEventListener('embedding-status', (e) => {
         const status = e.data;
-        showEmbeddingToast(status);
 
         const statusEl = document.getElementById(`embedding-status-${documentId}`);
         if (statusEl) {
@@ -748,32 +703,10 @@ function subscribeEmbeddingStatus(documentId) {
 
         if (status === 'SUCCESS' || status === 'FAILED') {
             source.close();
-            if (status === 'SUCCESS') {
-                setTimeout(hideEmbeddingToast, 3000);
-            }
         }
     });
 
     source.onerror = () => {
         source.close();
-        hideEmbeddingToast();
     };
-}
-
-function showEmbeddingToast(status) {
-    const toast = document.getElementById('embeddingToast');
-    const icon = document.getElementById('embeddingToastIcon');
-    const message = document.getElementById('embeddingToastMessage');
-    const config = TOAST_CONFIG[status];
-    if (!config) return;
-
-    toast.classList.remove('hidden');
-    toast.className = `rounded-lg border px-3 py-1.5 flex items-center gap-2 transition-all ${config.bg} ${config.border}`;
-    icon.textContent = config.icon;
-    message.textContent = config.message;
-    message.className = `text-sm font-medium ${config.text}`;
-}
-
-function hideEmbeddingToast() {
-    document.getElementById('embeddingToast').classList.add('hidden');
 }

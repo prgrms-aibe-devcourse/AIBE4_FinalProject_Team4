@@ -57,9 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 scopeDetailSelect.innerHTML = `<option value="" disabled selected>${emptyLabel}</option>`;
                 scopeDetailSelect.disabled = true;
             } else {
-                scopeDetailSelect.innerHTML = items
-                    .map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`)
-                    .join('');
+                scopeDetailSelect.innerHTML = '';
+                items.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    scopeDetailSelect.appendChild(opt);
+                });
                 scopeDetailSelect.disabled = false;
             }
 
