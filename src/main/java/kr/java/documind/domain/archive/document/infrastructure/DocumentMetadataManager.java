@@ -1,5 +1,6 @@
 package kr.java.documind.domain.archive.document.infrastructure;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +12,6 @@ import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.document.model.repository.DocumentMetadataRepository;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
-import java.time.OffsetDateTime;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.NotFoundException;
@@ -88,12 +88,24 @@ public class DocumentMetadataManager {
             String storedKey,
             EmbeddingStatus embeddingStatus,
             OffsetDateTime uploadedAt) {
-        DomainSource domainSource = domainSourceRepository.save(DomainSource.create(SourceType.DOCUMENT));
+        DomainSource domainSource =
+                domainSourceRepository.save(DomainSource.create(SourceType.DOCUMENT));
         String choseong = choseongUtil.extract(documentName);
-        DocumentMetadata metadata = DocumentMetadata.create(
-                domainSource, group, documentName, choseong, extension,
-                majorVersion, minorVersion, patchVersion,
-                hash, size, storedKey, embeddingStatus, uploadedAt);
+        DocumentMetadata metadata =
+                DocumentMetadata.create(
+                        domainSource,
+                        group,
+                        documentName,
+                        choseong,
+                        extension,
+                        majorVersion,
+                        minorVersion,
+                        patchVersion,
+                        hash,
+                        size,
+                        storedKey,
+                        embeddingStatus,
+                        uploadedAt);
         return documentMetadataRepository.save(metadata);
     }
 

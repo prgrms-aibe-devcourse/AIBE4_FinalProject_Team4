@@ -167,7 +167,12 @@ public class DocumentMetadata {
     }
 
     public void updateFile(
-            String documentName, String choseong, String extension, String hash, long size, String storedKey) {
+            String documentName,
+            String choseong,
+            String extension,
+            String hash,
+            long size,
+            String storedKey) {
         this.documentName = documentName;
         this.choseong = choseong;
         this.extension = extension;

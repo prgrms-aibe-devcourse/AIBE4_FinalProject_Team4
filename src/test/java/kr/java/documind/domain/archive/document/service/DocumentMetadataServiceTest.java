@@ -222,9 +222,10 @@ class DocumentMetadataServiceTest {
             given(documentMetadataManager.existsByProjectIdAndHash(projectId, "newHash"))
                     .willReturn(false);
             given(documentFileStorage.store(file)).willReturn(storedFile());
-            given(documentMetadataManager.createMetadata(
-                    eq(group), any(), any(), anyInt(), anyInt(), anyInt(),
-                    any(), anyLong(), any(), any(), any()))
+            given(
+                            documentMetadataManager.createMetadata(
+                                    eq(group), any(), any(), anyInt(), anyInt(), anyInt(), any(),
+                                    anyLong(), any(), any(), any()))
                     .willReturn(metadata);
 
             // When
@@ -320,9 +321,10 @@ class DocumentMetadataServiceTest {
             given(documentMetadataManager.existsByProjectIdAndHash(projectId, "newHash"))
                     .willReturn(false);
             given(documentFileStorage.store(file)).willReturn(storedFile());
-            given(documentMetadataManager.createMetadata(
-                    eq(group), any(), any(), anyInt(), anyInt(), anyInt(),
-                    any(), anyLong(), any(), any(), any()))
+            given(
+                            documentMetadataManager.createMetadata(
+                                    eq(group), any(), any(), anyInt(), anyInt(), anyInt(), any(),
+                                    anyLong(), any(), any(), any()))
                     .willReturn(metadata);
 
             // When
@@ -468,8 +470,15 @@ class DocumentMetadataServiceTest {
             documentMetadataService.updateDocument(projectId, documentId, request, file);
 
             // Then
-            then(documentMetadataManager).should().updateFile(
-                    eq(metadata), eq("testDoc"), eq("pdf"), eq("newHash"), eq(1024L), eq("stored/new-key"));
+            then(documentMetadataManager)
+                    .should()
+                    .updateFile(
+                            eq(metadata),
+                            eq("testDoc"),
+                            eq("pdf"),
+                            eq("newHash"),
+                            eq(1024L),
+                            eq("stored/new-key"));
             then(documentVectorEventPublisher)
                     .should()
                     .replaceEvent(eq(projectId), eq(metadata), eq(false));
@@ -499,8 +508,9 @@ class DocumentMetadataServiceTest {
             // Then
             assertThat(metadata.getMajorVersion()).isEqualTo(2);
             assertThat(metadata.getMinorVersion()).isEqualTo(1);
-            then(documentMetadataManager).should().updateFile(
-                    eq(metadata), any(), any(), any(), anyLong(), any());
+            then(documentMetadataManager)
+                    .should()
+                    .updateFile(eq(metadata), any(), any(), any(), anyLong(), any());
             then(documentVectorEventPublisher)
                     .should()
                     .replaceEvent(eq(projectId), eq(metadata), eq(true));
