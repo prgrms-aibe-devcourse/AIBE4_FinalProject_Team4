@@ -8,16 +8,19 @@ import kr.java.documind.domain.archive.document.model.repository.DocumentGroupSu
 import kr.java.documind.domain.archive.document.model.vo.DocumentGroupSummaryResult;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
+import kr.java.documind.global.util.ChoseongUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 @RequiredArgsConstructor
 public class DocumentGroupManager {
 
     private final DocumentGroupRepository documentGroupRepository;
+    private final ChoseongUtil choseongUtil;
 
     public DocumentGroup getByIdAndProjectId(Long groupId, UUID projectId) {
         return documentGroupRepository
@@ -31,6 +34,17 @@ public class DocumentGroupManager {
                 .map(this::toDocumentGroupSummaryResult);
     }
 
+    public Page<DocumentGroupSummaryResult> findGroupSummaries(
+            UUID projectId, String keyword, Pageable pageable) {
+        if (!StringUtils.hasText(keyword)) {
+            return findGroupSummaries(projectId, pageable);
+        }
+        String choseong = choseongUtil.extract(keyword);
+        return documentGroupRepository
+                .findGroupSummariesByProjectIdAndKeyword(projectId, keyword, choseong, pageable)
+                .map(this::toDocumentGroupSummaryResult);
+    }
+
     public List<String> findDistinctGroupNames(UUID projectId) {
         return documentGroupRepository.findDistinctGroupNamesByProjectId(projectId);
     }
@@ -39,12 +53,14 @@ public class DocumentGroupManager {
         return documentGroupRepository.findDistinctCategoriesByProjectId(projectId);
     }
 
-    public void validateGroupNameUniqueness(UUID projectId, String category, String groupName) {
-        if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                projectId, category, groupName)) {
-            throw new ConflictException(
-                    String.format("문서 그룹명(%s)이 카테고리(%s)에 이미 존재합니다.", groupName, category));
-        }
+    public DocumentGroup createGroup(UUID projectId, String category, String groupName) {
+        String choseong = choseongUtil.extract(groupName);
+        return DocumentGroup.create(projectId, category, groupName, choseong);
+    }
+
+    public void updateGroupName(DocumentGroup group, String groupName) {
+        String choseong = choseongUtil.extract(groupName);
+        group.updateGroupName(groupName, choseong);
     }
 
     public DocumentGroup save(DocumentGroup group) {
@@ -53,6 +69,14 @@ public class DocumentGroupManager {
 
     public void delete(DocumentGroup group) {
         documentGroupRepository.delete(group);
+    }
+
+    public void validateGroupNameUniqueness(UUID projectId, String category, String groupName) {
+        if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
+                projectId, category, groupName)) {
+            throw new ConflictException(
+                    String.format("문서 그룹명(%s)이 카테고리(%s)에 이미 존재합니다.", groupName, category));
+        }
     }
 
     private DocumentGroupSummaryResult toDocumentGroupSummaryResult(DocumentGroupSummary summary) {

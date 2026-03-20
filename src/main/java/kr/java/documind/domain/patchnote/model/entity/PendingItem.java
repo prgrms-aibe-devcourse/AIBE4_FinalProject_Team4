@@ -22,8 +22,8 @@ import lombok.NoArgsConstructor;
         name = "pending_item",
         uniqueConstraints = {
             @UniqueConstraint(
-                    name = "uk_pending_item_project_source",
-                    columnNames = {"project_id", "source_type", "source_id"})
+                    name = "uk_pending_item_project_source_change",
+                    columnNames = {"project_id", "source_type", "source_id", "change_index"})
         },
         indexes = {
             @Index(name = "idx_pending_item_project_status", columnList = "project_id, status"),
@@ -32,7 +32,10 @@ import lombok.NoArgsConstructor;
                     columnList = "project_id, source_created_at"),
             @Index(
                     name = "idx_pending_item_project_patch_type",
-                    columnList = "project_id, patch_type")
+                    columnList = "project_id, patch_type"),
+            @Index(
+                    name = "idx_pending_item_source_change",
+                    columnList = "project_id, source_type, source_id, change_index")
             // 아래 인덱스는 JPA 미지원 → V11 마이그레이션에서 관리
             // - idx_pending_item_title_bigm     (GIN, pg_bigm)
             // - idx_pending_item_summary_bigm   (GIN, pg_bigm)
@@ -76,6 +79,17 @@ public class PendingItem extends BaseEntity {
     @Column(name = "source_created_at", nullable = false, columnDefinition = "TIMESTAMPTZ")
     private OffsetDateTime sourceCreatedAt;
 
+    /** 동일 소스 내 변경 순번. ISSUE = 0 고정, DOCUMENT diff = candidate.chunkIndex. */
+    @Column(name = "change_index", nullable = false)
+    private int changeIndex;
+
+    /** RAG 컨텍스트 삽입용 이전↔현재 텍스트 요약 (diff 기반 항목만 non-null). */
+    @Column(columnDefinition = "text")
+    private String evidence;
+
+    /** 패치노트 적합도 점수 0.0~1.0 (diff 기반 항목만 non-null). */
+    @Column private Double score;
+
     public static PendingItem create(
             UUID projectId,
             Long sourceId,
@@ -85,7 +99,10 @@ public class PendingItem extends BaseEntity {
             String choseong,
             PatchType patchType,
             PendingItemStatus status,
-            OffsetDateTime sourceCreatedAt) {
+            OffsetDateTime sourceCreatedAt,
+            int changeIndex,
+            String evidence,
+            Double score) {
         PendingItem pendingItem = new PendingItem();
         pendingItem.projectId = projectId;
         pendingItem.sourceId = sourceId;
@@ -97,6 +114,9 @@ public class PendingItem extends BaseEntity {
         pendingItem.status = status;
         pendingItem.sourceDeleted = false;
         pendingItem.sourceCreatedAt = sourceCreatedAt;
+        pendingItem.changeIndex = changeIndex;
+        pendingItem.evidence = evidence;
+        pendingItem.score = score;
         return pendingItem;
     }
 
@@ -107,15 +127,22 @@ public class PendingItem extends BaseEntity {
             String summary,
             String choseong,
             PatchType patchType,
-            OffsetDateTime sourceCreatedAt) {
+            OffsetDateTime sourceCreatedAt,
+            String evidence,
+            Double score) {
         this.title = title;
         this.summary = summary;
         this.choseong = choseong != null ? choseong : "";
         this.patchType = patchType;
         this.sourceCreatedAt = sourceCreatedAt;
+        this.evidence = evidence;
+        this.score = score;
     }
 
     public void exclude() {
+        if (this.status != PendingItemStatus.PENDING) {
+            throw new IllegalStateException("PENDING 상태에서만 제외할 수 있습니다. 현재 상태: " + this.status);
+        }
         this.status = PendingItemStatus.EXCLUDED;
     }
 

@@ -103,7 +103,7 @@ public class IssueChunkDocumentBuilder {
         Map<String, Object> metadata = new HashMap<>();
 
         metadata.put("document_id", buildDocumentId(source.issueId(), draft));
-        metadata.put("project_id", source.projectId().toString());
+        metadata.put("project_id", source.projectId());
         metadata.put("source_type", "ISSUE");
         metadata.put("source_id", source.issueId());
 

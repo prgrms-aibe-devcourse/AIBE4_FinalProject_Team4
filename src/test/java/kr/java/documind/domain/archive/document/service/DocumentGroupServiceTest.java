@@ -46,7 +46,7 @@ class DocumentGroupServiceTest {
     private final Long groupId = 1L;
 
     private DocumentGroup createGroup(String category, String groupName) {
-        return DocumentGroup.create(projectId, category, groupName);
+        return DocumentGroup.create(projectId, category, groupName, "");
     }
 
     private DocumentMetadata createMetadata(DocumentGroup group) {
@@ -55,6 +55,7 @@ class DocumentGroupServiceTest {
                 domainSource,
                 group,
                 "testDoc",
+                "ㅌㅅㄷ",
                 "pdf",
                 1,
                 0,
@@ -62,7 +63,6 @@ class DocumentGroupServiceTest {
                 "abc123hash",
                 1024L,
                 "stored/key",
-                false,
                 EmbeddingStatus.NONE,
                 OffsetDateTime.now(ZoneOffset.UTC));
     }
@@ -145,22 +145,21 @@ class DocumentGroupServiceTest {
             documentGroupService.updateGroupName(projectId, groupId, "새그룹");
 
             // Then
-            assertThat(group.getGroupName()).isEqualTo("새그룹");
+            then(documentGroupManager).should().updateGroupName(group, "새그룹");
         }
 
         @Test
-        @DisplayName("동일 이름으로 변경 시 ConflictException")
-        void updateGroupName_SameName_ThrowsConflictException() {
+        @DisplayName("동일 이름으로 변경 시 변경 없이 무시")
+        void updateGroupName_SameName_DoesNothing() {
             // Given
             DocumentGroup group = createGroup("개발", "기존그룹");
             given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
-            // When & Then
-            assertThatThrownBy(
-                            () -> documentGroupService.updateGroupName(projectId, groupId, "기존그룹"))
-                    .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("동일");
+            // When
+            documentGroupService.updateGroupName(projectId, groupId, "기존그룹");
 
+            // Then
+            assertThat(group.getGroupName()).isEqualTo("기존그룹");
             then(documentGroupManager)
                     .should(never())
                     .validateGroupNameUniqueness(any(), any(), any());
@@ -177,23 +176,24 @@ class DocumentGroupServiceTest {
             documentGroupService.updateGroupName(projectId, groupId, "  새그룹  ");
 
             // Then
-            assertThat(group.getGroupName()).isEqualTo("새그룹");
+            then(documentGroupManager).should().updateGroupName(group, "새그룹");
         }
 
         @Test
-        @DisplayName("공백만 있는 입력이 trim 후 기존 이름과 동일하면 ConflictException")
-        void updateGroupName_WhitespaceAroundSameName_ThrowsConflictException() {
+        @DisplayName("공백만 있는 입력이 trim 후 기존 이름과 동일하면 변경 없이 무시")
+        void updateGroupName_WhitespaceAroundSameName_DoesNothing() {
             // Given
             DocumentGroup group = createGroup("개발", "기존그룹");
             given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
-            // When & Then
-            assertThatThrownBy(
-                            () ->
-                                    documentGroupService.updateGroupName(
-                                            projectId, groupId, "  기존그룹  "))
-                    .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("동일");
+            // When
+            documentGroupService.updateGroupName(projectId, groupId, "  기존그룹  ");
+
+            // Then
+            assertThat(group.getGroupName()).isEqualTo("기존그룹");
+            then(documentGroupManager)
+                    .should(never())
+                    .validateGroupNameUniqueness(any(), any(), any());
         }
 
         @Test
@@ -233,17 +233,17 @@ class DocumentGroupServiceTest {
         }
 
         @Test
-        @DisplayName("동일 카테고리로 변경 시 ConflictException")
-        void updateCategory_SameCategory_ThrowsConflictException() {
+        @DisplayName("동일 카테고리로 변경 시 변경 없이 무시")
+        void updateCategory_SameCategory_DoesNothing() {
             // Given
             DocumentGroup group = createGroup("개발", "그룹A");
             given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
-            // When & Then
-            assertThatThrownBy(() -> documentGroupService.updateCategory(projectId, groupId, "개발"))
-                    .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("동일");
+            // When
+            documentGroupService.updateCategory(projectId, groupId, "개발");
 
+            // Then
+            assertThat(group.getCategory()).isEqualTo("개발");
             then(documentGroupManager)
                     .should(never())
                     .validateGroupNameUniqueness(any(), any(), any());
@@ -264,17 +264,20 @@ class DocumentGroupServiceTest {
         }
 
         @Test
-        @DisplayName("공백만 있는 입력이 trim 후 기존 카테고리와 동일하면 ConflictException")
-        void updateCategory_WhitespaceAroundSameCategory_ThrowsConflictException() {
+        @DisplayName("공백만 있는 입력이 trim 후 기존 카테고리와 동일하면 변경 없이 무시")
+        void updateCategory_WhitespaceAroundSameCategory_DoesNothing() {
             // Given
             DocumentGroup group = createGroup("개발", "그룹A");
             given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
-            // When & Then
-            assertThatThrownBy(
-                            () -> documentGroupService.updateCategory(projectId, groupId, "  개발  "))
-                    .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("동일");
+            // When
+            documentGroupService.updateCategory(projectId, groupId, "  개발  ");
+
+            // Then
+            assertThat(group.getCategory()).isEqualTo("개발");
+            then(documentGroupManager)
+                    .should(never())
+                    .validateGroupNameUniqueness(any(), any(), any());
         }
 
         @Test

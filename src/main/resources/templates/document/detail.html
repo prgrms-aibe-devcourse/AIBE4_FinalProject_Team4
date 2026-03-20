@@ -80,7 +80,7 @@
                     </h3>
                     <dl class="space-y-4 text-sm">
                         <div class="flex justify-between">
-                            <dt class="text-docu-secondary">그룹명</dt>
+                            <dt class="text-docu-secondary">대분류명</dt>
                             <dd class="text-docu-ink font-medium" th:text="${document.groupName}">-</dd>
                         </div>
                         <div class="flex justify-between">
@@ -97,18 +97,13 @@
                             <dt class="text-docu-secondary">버전</dt>
                             <dd class="text-docu-ink font-medium" th:text="${document.version}">-</dd>
                         </div>
-                        <div class="flex justify-between">
-                            <dt class="text-docu-secondary">패치노트 반영</dt>
-                            <dd th:class="${document.isProcessed} ? 'font-medium text-docu-secondary' : 'font-medium text-docu-success'"
-                                th:text="${document.isProcessed} ? 'X' : 'O'">-</dd>
-                        </div>
                         <div class="flex justify-between" th:switch="${document.embeddingStatus.name()}">
                             <dt class="text-docu-secondary">임베딩</dt>
                             <dd id="embeddingStatusBadge" th:case="'SUCCESS'" class="font-medium text-docu-success">성공</dd>
                             <dd id="embeddingStatusBadge" th:case="'FAILED'" class="font-medium text-docu-danger">실패</dd>
                             <dd id="embeddingStatusBadge" th:case="'PROCESSING'" class="font-medium text-docu-primary">진행중</dd>
                             <dd id="embeddingStatusBadge" th:case="'PENDING'" class="font-medium text-docu-secondary">대기</dd>
-                            <dd id="embeddingStatusBadge" th:case="*" class="font-medium text-docu-secondary">-</dd>
+                            <dd id="embeddingStatusBadge" th:case="*" class="font-medium text-docu-secondary">미지원</dd>
                         </div>
                         <div id="embeddingRetryContainer" class="hidden">
                             <button id="btnRetryEmbedding" onclick="retryEmbedding()"
@@ -182,7 +177,6 @@
         <input type="hidden" id="docVersion" th:value="${document.version}">
         <input type="hidden" id="docGroupName" th:value="${document.groupName}">
         <input type="hidden" id="docCategory" th:value="${document.category}">
-        <input type="hidden" id="docIsProcessed" th:value="${document.isProcessed}">
         <input type="hidden" id="docEmbeddingStatus" th:value="${document.embeddingStatus.name()}">
 
         <div th:replace="~{document/fragments/modals :: editModal}"></div>
@@ -192,8 +186,8 @@
 </th:block>
 
 <th:block layout:fragment="scripts">
-    <script th:src="@{/js/archive/common.js}"></script>
-    <script th:src="@{/js/archive/detail.js}"></script>
+    <script th:src="@{/js/document/common.js}"></script>
+    <script th:src="@{/js/document/detail.js}"></script>
 </th:block>
 </body>
 </html>

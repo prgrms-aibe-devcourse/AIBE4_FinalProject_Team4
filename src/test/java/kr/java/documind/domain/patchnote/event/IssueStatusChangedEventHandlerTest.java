@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
@@ -16,16 +17,20 @@ import java.util.UUID;
 import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClient;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
+import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.patchnote.exception.IssueInsufficientInfoException;
 import kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException;
 import kr.java.documind.domain.patchnote.infrastructure.IssueSummaryGenerator;
+import kr.java.documind.domain.patchnote.model.dto.IssueChunkingSource;
 import kr.java.documind.domain.patchnote.model.dto.IssueSummaryResult;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
 import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.domain.patchnote.service.IssueChunkingService;
-import kr.java.documind.domain.patchnote.service.PendingItemService;
+import kr.java.documind.domain.patchnote.service.PendingItemRollbackService;
+import kr.java.documind.domain.patchnote.service.PendingItemUpsertService;
 import kr.java.documind.domain.patchnote.util.PatchTypeResolver;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.util.ChoseongUtil;
@@ -34,6 +39,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -48,11 +54,13 @@ class IssueStatusChangedEventHandlerTest {
     @InjectMocks private IssueStatusChangedEventHandler handler;
 
     @Mock private IssueRepository issueRepository;
+    @Mock private CommentRepository commentRepository;
     @Mock private IssueChunkingService issueChunkingService;
     @Mock private EmbeddingModelClient embeddingModelClient;
     @Mock private VectorStoreManager vectorStoreManager;
     @Mock private IssueSummaryGenerator issueSummaryGenerator;
-    @Mock private PendingItemService pendingItemService;
+    @Mock private PendingItemUpsertService pendingItemUpsertService;
+    @Mock private PendingItemRollbackService pendingItemRollbackService;
     @Mock private PatchTypeResolver patchTypeResolver;
     @Mock private ChoseongUtil choseongUtil;
     @Mock private ApplicationEventPublisher eventPublisher;
@@ -105,9 +113,10 @@ class IssueStatusChangedEventHandlerTest {
         return issue;
     }
 
-    /** 성공 경로 공통 stubbing */
+    /** 성공 경로 공통 stubbing (댓글 없음) */
     private void stubSuccessPath(Issue issue) {
         given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
+        given(commentRepository.findByIssueIdOrderByCreatedAtAsc(ISSUE_ID)).willReturn(List.of());
         given(issueChunkingService.buildChunks(any())).willReturn(List.of(new Document("청크 텍스트")));
         given(embeddingModelClient.embed(any()))
                 .willReturn(List.of(new float[] {0.1f, 0.2f, 0.3f}));
@@ -207,7 +216,9 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
         }
 
         @Test
@@ -222,7 +233,9 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
         }
 
         @Test
@@ -251,7 +264,7 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("성공 흐름: excludeFromPatchNote=false → 이벤트 status=PENDING")
         void handleIssueResolved_excludeFromPatchNote_false_PENDING상태로생성() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -267,7 +280,7 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("성공 흐름: excludeFromPatchNote=true → 이벤트 status=EXCLUDED")
         void handleIssueResolved_excludeFromPatchNote_true_EXCLUDED상태로생성() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             IssueStatusChangedEvent event = resolvedEvent(true);
 
@@ -283,7 +296,7 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("성공 흐름: saveVectorThenUpsert 완료 후 IssuePendingItemCreatedEvent 1회 발행")
         void handleIssueResolved_성공시_IssuePendingItemCreatedEvent발행() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -294,6 +307,23 @@ class IssueStatusChangedEventHandlerTest {
             IssuePendingItemCreatedEvent published = captureCreatedEvent();
             assertThat(published.issueId()).isEqualTo(ISSUE_ID);
             assertThat(published.projectId()).isEqualTo(PROJECT_ID);
+        }
+
+        @Test
+        @DisplayName("성공 흐름: excludeFromPatchNote=true 이어도 saveVectorThenUpsert 호출됨")
+        void handleIssueResolved_excludeFromPatchNote_true_saveVectorThenUpsert호출됨() {
+            // Given
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
+            stubSuccessPath(issue);
+            IssueStatusChangedEvent event = resolvedEvent(true);
+
+            // When
+            handler.handleIssueResolved(event);
+
+            // Then
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
         }
 
         @Test
@@ -309,14 +339,45 @@ class IssueStatusChangedEventHandlerTest {
                             false,
                             ACTOR_ID,
                             null);
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
 
             // When (NPE 없이 완료)
             handler.handleIssueResolved(event);
 
             // Then
-            then(pendingItemService).should().saveVectorThenUpsert(any(), any(), any(), any());
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // handleIssueResolved() — 처리 순서 보장
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("handleIssueResolved() - 처리 순서 보장")
+    class HandleIssueResolvedOrder {
+
+        @Test
+        @DisplayName("순서 보장: embed → saveVectorThenUpsert → publishEvent 순서로 호출")
+        void handleIssueResolved_InOrder_embed_save_publish() {
+            // Given
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
+            stubSuccessPath(issue);
+            IssueStatusChangedEvent event = resolvedEvent(false);
+
+            // When
+            handler.handleIssueResolved(event);
+
+            // Then
+            InOrder order = inOrder(embeddingModelClient, pendingItemUpsertService, eventPublisher);
+            then(embeddingModelClient).should(order).embed(any());
+            then(pendingItemUpsertService)
+                    .should(order)
+                    .saveVectorThenUpsert(any(), any(), any(), any());
+            then(eventPublisher).should(order).publishEvent(any(Object.class));
         }
     }
 
@@ -332,10 +393,10 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("실패 전파: saveVectorThenUpsert RuntimeException → 예외 전파, 성공 이벤트 미발행")
         void handleIssueResolved_벡터저장실패시_RuntimeException전파_성공이벤트미발행() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             willThrow(new RuntimeException("벡터 저장 실패"))
-                    .given(pendingItemService)
+                    .given(pendingItemUpsertService)
                     .saveVectorThenUpsert(any(), any(), any(), any());
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -349,10 +410,10 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("실패 전파: PendingItemUpsertFailedException → 그대로 전파")
         void handleIssueResolved_PendingItemUpsertFailedException_전파() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             willThrow(new PendingItemUpsertFailedException(ISSUE_ID))
-                    .given(pendingItemService)
+                    .given(pendingItemUpsertService)
                     .saveVectorThenUpsert(any(), any(), any(), any());
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -388,7 +449,7 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueRollback(event);
 
             // Then
-            then(pendingItemService).should(never()).deleteForRollback(any(), any(), any());
+            then(pendingItemRollbackService).should(never()).deleteForRollback(any(), any(), any());
         }
 
         @Test
@@ -409,7 +470,7 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueRollback(event);
 
             // Then
-            then(pendingItemService).should(never()).deleteForRollback(any(), any(), any());
+            then(pendingItemRollbackService).should(never()).deleteForRollback(any(), any(), any());
         }
 
         @Test
@@ -417,7 +478,9 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_deleteForRollback_true반환시_벡터삭제호출() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.IN_PROGRESS);
-            given(pendingItemService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(true);
 
             // When
@@ -432,7 +495,9 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_deleteForRollback_false반환시_벡터삭제미호출() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.TODO);
-            given(pendingItemService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(false);
 
             // When
@@ -443,12 +508,29 @@ class IssueStatusChangedEventHandlerTest {
         }
 
         @Test
+        @DisplayName("롤백 처리: vectorStoreManager.deleteBySourceId 예외 발생 → 전파되지 않음")
+        void handleIssueRollback_벡터삭제예외발생시_삼킴() {
+            // Given
+            IssueStatusChangedEvent event = rollbackEvent(IssueStatus.IN_PROGRESS);
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+                    .willReturn(true);
+            willThrow(new RuntimeException("벡터 삭제 실패"))
+                    .given(vectorStoreManager)
+                    .deleteBySourceId(ISSUE_ID, SourceType.ISSUE);
+
+            // When & Then (예외 전파 없음)
+            handler.handleIssueRollback(event);
+        }
+
+        @Test
         @DisplayName("롤백 예외 삼킴: deleteForRollback 예외 발생 → 전파되지 않음")
         void handleIssueRollback_예외발생시_삼킴() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.IN_PROGRESS);
             willThrow(new RuntimeException("DB 오류"))
-                    .given(pendingItemService)
+                    .given(pendingItemRollbackService)
                     .deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE);
 
             // When & Then (예외 전파 없음)
@@ -460,7 +542,9 @@ class IssueStatusChangedEventHandlerTest {
         void handleIssueRollback_pendingItem없음_벡터삭제미호출() {
             // Given
             IssueStatusChangedEvent event = rollbackEvent(IssueStatus.TODO);
-            given(pendingItemService.deleteForRollback(PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
+            given(
+                            pendingItemRollbackService.deleteForRollback(
+                                    PROJECT_ID, ISSUE_ID, SourceType.ISSUE))
                     .willReturn(false);
 
             // When
@@ -473,6 +557,43 @@ class IssueStatusChangedEventHandlerTest {
 
     // ──────────────────────────────────────────────────────────────────────────
     // handleIssueDeleted()
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("handleIssueDeleted()")
+    class HandleIssueDeleted {
+
+        @Test
+        @DisplayName("이슈 삭제: markSourceDeleted 정확한 인자로 호출")
+        void handleIssueDeleted_markSourceDeleted_호출() {
+            // Given
+            IssueDeletedEvent event =
+                    new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
+
+            // When
+            handler.handleIssueDeleted(event);
+
+            // Then
+            then(pendingItemRollbackService)
+                    .should()
+                    .markSourceDeleted(PROJECT_ID, ISSUE_ID, SourceType.ISSUE);
+        }
+
+        @Test
+        @DisplayName("이슈 삭제 예외 삼킴: markSourceDeleted 예외 발생 → 전파되지 않음")
+        void handleIssueDeleted_예외발생시_삼킴() {
+            // Given
+            IssueDeletedEvent event =
+                    new IssueDeletedEvent(ISSUE_ID, PROJECT_ID, ACTOR_ID, Instant.now());
+            willThrow(new RuntimeException("DB 오류"))
+                    .given(pendingItemRollbackService)
+                    .markSourceDeleted(PROJECT_ID, ISSUE_ID, SourceType.ISSUE);
+
+            // When & Then (예외 전파 없음)
+            handler.handleIssueDeleted(event);
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // 프로젝트 격리 검증
     // ──────────────────────────────────────────────────────────────────────────
@@ -499,7 +620,7 @@ class IssueStatusChangedEventHandlerTest {
                     Issue.builder()
                             .projectId(otherProjectId)
                             .title("다른 프로젝트 이슈")
-                            .description("충분한 설명 텍스트입니다")
+                            .description("충분한 설명: 이슈 내용입니다")
                             .fingerprint("fp-other")
                             .build();
             ReflectionTestUtils.setField(issue, "id", ISSUE_ID);
@@ -536,7 +657,7 @@ class IssueStatusChangedEventHandlerTest {
         @DisplayName("중복 이벤트: 동일 이슈 RESOLVED 이벤트 2회 수신 → saveVectorThenUpsert 2회 호출")
         void handleIssueResolved_중복이벤트_saveVectorThenUpsert2회호출() {
             // Given
-            Issue issue = sufficientIssue("충분한 설명 텍스트입니다", null);
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
             IssueStatusChangedEvent event = resolvedEvent(false);
 
@@ -545,31 +666,108 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then — upsert 내부에서 기존 항목 refresh 처리
-            then(pendingItemService)
+            then(pendingItemUpsertService)
                     .should(times(2))
                     .saveVectorThenUpsert(any(), any(), any(), any());
         }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 이슈 댓글 관련 테스트 — 댓글 기능 구현 후 활성화
+    // 이슈 댓글 관련 테스트
     // ──────────────────────────────────────────────────────────────────────────
 
-    // TODO: 이슈 댓글 기능 구현 후 활성화
-    //
-    // @Test
-    // @DisplayName("정보 충분성: description=null, resolutionNote=null, comment>=15자 → 정보 충분으로 진행")
-    // void handleIssueResolved_comment만있는이슈_정보충분_진행() {
-    //     // Given — description, resolutionNote 없고 comment만 있는 경우
-    //     // IssueComment 연동 후 handler에서 comments를 로드하여 isInsufficient 판정에 반영
-    //     // 댓글 기능 구현 후 IssueComment 연동 시 활성화
-    // }
+    @Nested
+    @DisplayName("handleIssueResolved() - 이슈 댓글 연동")
+    class HandleIssueResolvedComment {
 
-    // TODO: 이슈 댓글 기능 구현 후 활성화
-    //
-    // @Test
-    // @DisplayName("청크 생성: comment 청크의 chunk_contains_resolution=false 확인")
-    // void handleIssueResolved_comment청크_metadata검증() {
-    //     // IssueChunkDocumentBuilder가 comment 청크에 chunk_contains_resolution=false 설정하는지 검증
-    // }
+        @Test
+        @DisplayName("정보 충분성: description=null, resolutionNote=null, comment>=15자 → 정보 충분으로 진행")
+        void handleIssueResolved_comment만있는이슈_정보충분_진행() {
+            // Given — description, resolutionNote 없고 comment만 있는 경우
+            Issue issue = sufficientIssue(null, null);
+            IssueComment comment =
+                    IssueComment.create(ISSUE_ID, UUID.randomUUID(), "A".repeat(15), List.of());
+            ReflectionTestUtils.setField(comment, "id", 100L);
+
+            given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
+            given(commentRepository.findByIssueIdOrderByCreatedAtAsc(ISSUE_ID))
+                    .willReturn(List.of(comment));
+            given(issueChunkingService.buildChunks(any()))
+                    .willReturn(List.of(new Document("청크 텍스트")));
+            given(embeddingModelClient.embed(any()))
+                    .willReturn(List.of(new float[] {0.1f, 0.2f, 0.3f}));
+            given(issueSummaryGenerator.generate(any()))
+                    .willReturn(new IssueSummaryResult("플레이어 친화적 제목", "요약입니다"));
+            given(patchTypeResolver.resolveFromIssueType(any())).willReturn(PatchType.FIX);
+            given(choseongUtil.extract(any())).willReturn("ㅍㄹㅇ");
+            IssueStatusChangedEvent event = resolvedEvent(false);
+
+            // When
+            handler.handleIssueResolved(event);
+
+            // Then — isInsufficient = false (댓글 ≥ 15자) → saveVectorThenUpsert 호출
+            then(pendingItemUpsertService)
+                    .should()
+                    .saveVectorThenUpsert(any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName(
+                "정보 충분성: description=null, resolutionNote=null, comment 14자 → IssueInsufficientInfoException")
+        void handleIssueResolved_comment14자이하_정보부족_예외발생() {
+            // Given — 댓글이 있어도 14자 이하이면 부족 처리
+            Issue issue = sufficientIssue(null, null);
+            IssueComment shortComment =
+                    IssueComment.create(ISSUE_ID, UUID.randomUUID(), "A".repeat(14), List.of());
+            ReflectionTestUtils.setField(shortComment, "id", 101L);
+
+            given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
+            given(commentRepository.findByIssueIdOrderByCreatedAtAsc(ISSUE_ID))
+                    .willReturn(List.of(shortComment));
+            IssueStatusChangedEvent event = resolvedEvent(false);
+
+            // When & Then
+            assertThatThrownBy(() -> handler.handleIssueResolved(event))
+                    .isInstanceOf(IssueInsufficientInfoException.class);
+        }
+
+        @Test
+        @DisplayName("청크 생성: 댓글 포함 시 buildChunks에 전달되는 IssueChunkingSource에 comments가 포함됨")
+        void handleIssueResolved_comment청크_metadata검증() {
+            // Given — description 있는 이슈 + 댓글 1개
+            //   IssueChunkDocumentBuilder는 comment 청크 draft에 isResolutionLike()=false를 설정하여
+            //   chunk_contains_resolution=false 메타데이터를 부여함 (IssueChunkDraft.isResolutionLike 참조)
+            Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
+            String commentContent = "댓글로 남긴 해결 참고 내용입니다";
+            IssueComment comment =
+                    IssueComment.create(ISSUE_ID, UUID.randomUUID(), commentContent, List.of());
+            ReflectionTestUtils.setField(comment, "id", 200L);
+
+            given(issueRepository.findById(ISSUE_ID)).willReturn(Optional.of(issue));
+            given(commentRepository.findByIssueIdOrderByCreatedAtAsc(ISSUE_ID))
+                    .willReturn(List.of(comment));
+            given(issueChunkingService.buildChunks(any()))
+                    .willReturn(List.of(new Document("청크 텍스트")));
+            given(embeddingModelClient.embed(any()))
+                    .willReturn(List.of(new float[] {0.1f, 0.2f, 0.3f}));
+            given(issueSummaryGenerator.generate(any()))
+                    .willReturn(new IssueSummaryResult("플레이어 친화적 제목", "요약입니다"));
+            given(patchTypeResolver.resolveFromIssueType(any())).willReturn(PatchType.FIX);
+            given(choseongUtil.extract(any())).willReturn("ㅍㄹㅇ");
+            IssueStatusChangedEvent event = resolvedEvent(false);
+
+            // When
+            handler.handleIssueResolved(event);
+
+            // Then — buildChunks에 전달된 IssueChunkingSource의 comments 필드 검증
+            ArgumentCaptor<IssueChunkingSource> captor =
+                    ArgumentCaptor.forClass(IssueChunkingSource.class);
+            then(issueChunkingService).should().buildChunks(captor.capture());
+            IssueChunkingSource capturedSource = captor.getValue();
+
+            assertThat(capturedSource.comments()).hasSize(1);
+            assertThat(capturedSource.comments().get(0).commentId()).isEqualTo(200L);
+            assertThat(capturedSource.comments().get(0).content()).isEqualTo(commentContent);
+        }
+    }
 }
