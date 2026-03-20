@@ -19,6 +19,9 @@ public class BackpressureManager {
 
     private final MeterRegistry meterRegistry;
 
+    @Value("${worker.backpressure.enabled:true}")
+    private boolean enabled;
+
     @Value("${worker.backpressure.warn-threshold-ms}")
     private long warnThresholdMs;
 
@@ -71,6 +74,9 @@ public class BackpressureManager {
     }
 
     public void recordLatency(long latencyMs) {
+        if (!enabled) {
+            return; // Backpressure 비활성화 시 기록하지 않음
+        }
         avgLatencyMs = EMA_ALPHA * latencyMs + (1 - EMA_ALPHA) * avgLatencyMs;
         adjustBatchSize(latencyMs);
         log.debug(
@@ -109,6 +115,9 @@ public class BackpressureManager {
     }
 
     public long getSleepMillis() {
+        if (!enabled) {
+            return 0; // Backpressure 비활성화 시 대기 없음
+        }
         if (avgLatencyMs >= criticalThresholdMs) {
             return criticalSleepMs;
         }
@@ -133,6 +142,13 @@ public class BackpressureManager {
     }
 
     public int getCurrentBatchSize() {
+        if (!enabled) {
+            return maxBatchSize; // Backpressure 비활성화 시 최대 배치 크기 사용
+        }
         return currentBatchSize;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 }
