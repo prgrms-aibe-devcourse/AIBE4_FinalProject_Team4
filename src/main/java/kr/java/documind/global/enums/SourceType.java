@@ -2,5 +2,6 @@ package kr.java.documind.global.enums;
 
 public enum SourceType {
     DOCUMENT,
-    ISSUE
+    ISSUE,
+    LOG
 }

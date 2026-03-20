@@ -46,7 +46,7 @@ class DocumentGroupServiceTest {
     private final Long groupId = 1L;
 
     private DocumentGroup createGroup(String category, String groupName) {
-        return DocumentGroup.create(projectId, category, groupName);
+        return DocumentGroup.create(projectId, category, groupName, "");
     }
 
     private DocumentMetadata createMetadata(DocumentGroup group) {

@@ -27,6 +27,13 @@ public class DocumentGroupService {
                 .map(DocumentGroupResponse::from);
     }
 
+    public Page<DocumentGroupResponse> getDocumentGroups(
+            UUID projectId, String keyword, Pageable pageable) {
+        return documentGroupManager
+                .findGroupSummaries(projectId, keyword, pageable)
+                .map(DocumentGroupResponse::from);
+    }
+
     public List<DocumentMetadataResponse> getDocumentsByGroup(UUID projectId, Long groupId) {
         DocumentGroup group = getDocumentGroup(groupId, projectId);
         return documentMetadataManager.findVersionsByGroup(group).stream()
@@ -46,7 +53,8 @@ public class DocumentGroupService {
         documentGroupManager.validateGroupNameUniqueness(
                 group.getProjectId(), group.getCategory(), normalizedGroupName);
 
-        group.updateGroupName(normalizedGroupName);
+        group.updateGroupName(
+                normalizedGroupName, documentGroupManager.extractChoseong(normalizedGroupName));
     }
 
     @Transactional

@@ -1,9 +1,24 @@
 const projectId = document.getElementById('projectId').value;
 let currentPage = 0;
 const pageSize = 10;
+let currentKeyword = '';
+let searchDebounceTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     loadGroups(currentPage);
+
+    // 검색어 입력 (초성 + pg-bigm — 서버에서 처리)
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                currentKeyword = e.target.value.trim();
+                currentPage = 0;
+                loadGroups(currentPage);
+            }, 300);
+        });
+    }
 
     document.getElementById('btnNewDocument').addEventListener('click', () => {
         resetUploadModal();
@@ -381,9 +396,9 @@ async function restoreExpandedGroups(groupIds) {
 async function loadGroups(page) {
     const expandedIds = getExpandedGroupIds();
     try {
-        const result = await callApi(
-            `/api/projects/${projectId}/groups?page=${page}&size=${pageSize}`
-        );
+        let url = `/api/projects/${projectId}/groups?page=${page}&size=${pageSize}`;
+        if (currentKeyword) url += `&keyword=${encodeURIComponent(currentKeyword)}`;
+        const result = await callApi(url);
         if (result.success) {
             renderGroups(result.data);
             renderPagination(result.meta);

@@ -42,11 +42,21 @@ public class ChatModelResolver {
     public ResolvedChatModel resolve(String alias) {
         String target =
                 (alias != null && !alias.isBlank()) ? alias : supportedChatModels.defaultModel();
+        return resolveByAlias(target);
+    }
 
-        ChatModelInfo modelInfo = findByAlias(target);
+    public ResolvedChatModel resolveForPatchNote(String alias) {
+        String target =
+                (alias != null && !alias.isBlank())
+                        ? alias
+                        : supportedChatModels.patchnoteDefaultModel();
+        return resolveByAlias(target);
+    }
+
+    private ResolvedChatModel resolveByAlias(String alias) {
+        ChatModelInfo modelInfo = findByAlias(alias);
         ChatModel chatModel = getChatModel(modelInfo.provider());
         ChatOptions chatOptions = buildOptions(modelInfo);
-
         return new ResolvedChatModel(chatModel, chatOptions);
     }
 

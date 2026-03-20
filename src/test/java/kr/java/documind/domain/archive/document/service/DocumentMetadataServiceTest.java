@@ -3,6 +3,7 @@ package kr.java.documind.domain.archive.document.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -29,6 +30,7 @@ import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
+import kr.java.documind.global.util.ChoseongUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,6 +50,7 @@ class DocumentMetadataServiceTest {
     @Mock private DocumentMetadataManager documentMetadataManager;
     @Mock private DocumentFileStorage documentFileStorage;
     @Mock private DocumentVectorEventPublisher documentVectorEventPublisher;
+    @Mock private ChoseongUtil choseongUtil;
     @InjectMocks private DocumentMetadataService documentMetadataService;
 
     private final UUID projectId = UUID.randomUUID();
@@ -55,7 +58,7 @@ class DocumentMetadataServiceTest {
     private final Long groupId = 1L;
 
     private DocumentGroup createGroup() {
-        return DocumentGroup.create(projectId, "개발", "그룹A");
+        return DocumentGroup.create(projectId, "개발", "그룹A", "ㄱㄹA");
     }
 
     private DocumentMetadata createMetadata(DocumentGroup group) {
@@ -209,7 +212,7 @@ class DocumentMetadataServiceTest {
         void uploadDocumentWithNewGroup_ValidRequest_CreatesGroupAndMetadata() {
             // Given
             MultipartFile file = mockFile("testDoc.pdf");
-            DocumentUploadRequest request = new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, null);
+            DocumentUploadRequest request = new DocumentUploadRequest("그룹A", "개발", 1, 0, 0, true);
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
@@ -230,6 +233,9 @@ class DocumentMetadataServiceTest {
             assertThat(result.documentName()).isEqualTo("testDoc");
             then(documentGroupManager).should().validateGroupNameUniqueness(projectId, "개발", "그룹A");
             then(documentGroupManager).should().save(any(DocumentGroup.class));
+            then(documentVectorEventPublisher)
+                    .should()
+                    .createEvent(eq(projectId), eq(metadata), eq(true));
         }
 
         @Test
@@ -300,7 +306,7 @@ class DocumentMetadataServiceTest {
             // Given
             MultipartFile file = mockFile("testDoc.pdf");
             NewVersionDocumentUploadRequest request =
-                    new NewVersionDocumentUploadRequest(2, 0, 0, null);
+                    new NewVersionDocumentUploadRequest(2, 0, 0, false);
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
@@ -323,6 +329,9 @@ class DocumentMetadataServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.documentName()).isEqualTo("testDoc");
+            then(documentVectorEventPublisher)
+                    .should()
+                    .createEvent(eq(projectId), eq(metadata), eq(false));
         }
 
         @Test
@@ -352,9 +361,6 @@ class DocumentMetadataServiceTest {
             given(file.isEmpty()).willReturn(true);
             NewVersionDocumentUploadRequest request =
                     new NewVersionDocumentUploadRequest(1, 0, 0, null);
-            DocumentGroup group = createGroup();
-
-            given(documentGroupManager.getByIdAndProjectId(groupId, projectId)).willReturn(group);
 
             // When & Then
             assertThatThrownBy(
@@ -459,7 +465,9 @@ class DocumentMetadataServiceTest {
 
             // Then
             assertThat(metadata.getStoredKey()).isEqualTo("stored/new-key");
-            then(documentVectorEventPublisher).should().replaceEvent(eq(projectId), eq(metadata));
+            then(documentVectorEventPublisher)
+                    .should()
+                    .replaceEvent(eq(projectId), eq(metadata), eq(false));
         }
 
         @Test
@@ -506,6 +514,9 @@ class DocumentMetadataServiceTest {
             assertThat(metadata.getMinorVersion()).isEqualTo(1);
             assertThat(metadata.isProcessed()).isTrue();
             assertThat(metadata.getStoredKey()).isEqualTo("stored/new-key");
+            then(documentVectorEventPublisher)
+                    .should()
+                    .replaceEvent(eq(projectId), eq(metadata), eq(true));
         }
 
         @Test
@@ -571,7 +582,9 @@ class DocumentMetadataServiceTest {
             assertThat(metadata.getMajorVersion()).isEqualTo(2);
             assertThat(metadata.getStoredKey()).isEqualTo("stored/key");
             then(documentFileStorage).should(never()).replace(any(), any());
-            then(documentVectorEventPublisher).should(never()).replaceEvent(any(), any());
+            then(documentVectorEventPublisher)
+                    .should(never())
+                    .replaceEvent(any(), any(), anyBoolean());
         }
 
         @Test
@@ -619,7 +632,7 @@ class DocumentMetadataServiceTest {
 
             // Then
             then(documentFileStorage).should().deleteOnCommit("stored/key");
-            then(documentVectorEventPublisher).should().deleteEvent(metadata.getId());
+            then(documentVectorEventPublisher).should().deleteEvent(projectId, metadata.getId());
             then(documentMetadataManager).should().delete(metadata);
             then(documentGroupManager).should(never()).delete(any());
         }

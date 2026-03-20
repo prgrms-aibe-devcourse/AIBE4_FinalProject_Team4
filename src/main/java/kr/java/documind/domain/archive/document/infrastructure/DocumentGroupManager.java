@@ -8,16 +8,19 @@ import kr.java.documind.domain.archive.document.model.repository.DocumentGroupSu
 import kr.java.documind.domain.archive.document.model.vo.DocumentGroupSummaryResult;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
+import kr.java.documind.global.util.ChoseongUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 @RequiredArgsConstructor
 public class DocumentGroupManager {
 
     private final DocumentGroupRepository documentGroupRepository;
+    private final ChoseongUtil choseongUtil;
 
     public DocumentGroup getByIdAndProjectId(Long groupId, UUID projectId) {
         return documentGroupRepository
@@ -29,6 +32,21 @@ public class DocumentGroupManager {
         return documentGroupRepository
                 .findGroupSummariesByProjectId(projectId, pageable)
                 .map(this::toDocumentGroupSummaryResult);
+    }
+
+    public Page<DocumentGroupSummaryResult> findGroupSummaries(
+            UUID projectId, String keyword, Pageable pageable) {
+        if (!StringUtils.hasText(keyword)) {
+            return findGroupSummaries(projectId, pageable);
+        }
+        String choseong = choseongUtil.extract(keyword);
+        return documentGroupRepository
+                .findGroupSummariesByProjectIdAndKeyword(projectId, keyword, choseong, pageable)
+                .map(this::toDocumentGroupSummaryResult);
+    }
+
+    public String extractChoseong(String text) {
+        return choseongUtil.extract(text);
     }
 
     public List<String> findDistinctGroupNames(UUID projectId) {
