@@ -23,6 +23,7 @@ public class DocumentVectorEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleVectorCreate(DocumentVectorCreateEvent event) {
         etlService.process(
+                event.publicId(),
                 event.projectId(),
                 event.memberId(),
                 event.sourceId(),
@@ -35,6 +36,7 @@ public class DocumentVectorEventListener {
     public void handleVectorReplace(DocumentVectorReplaceEvent event) {
         vectorStoreManager.deleteBySourceId(event.sourceId(), SourceType.DOCUMENT);
         etlService.process(
+                event.publicId(),
                 event.projectId(),
                 event.memberId(),
                 event.sourceId(),

@@ -7,8 +7,6 @@ import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.vector.event.EmbeddingCompletedEvent;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
-import kr.java.documind.domain.auth.model.entity.Project;
-import kr.java.documind.domain.auth.model.repository.ProjectRepository;
 import kr.java.documind.domain.notification.event.DocumentNotificationEvent;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 import kr.java.documind.domain.patchnote.event.DocumentEmbeddedEvent;
@@ -25,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class EmbeddingCompletedEventHandler {
 
     private final DocumentMetadataManager documentMetadataManager;
-    private final ProjectRepository projectRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @EventListener
@@ -36,20 +33,14 @@ public class EmbeddingCompletedEventHandler {
             return;
         }
 
-        String publicId = resolvePublicId(event);
-        publishNotification(event, metadata, publicId);
+        publishNotification(event, metadata);
 
         if (event.status() == EmbeddingStatus.SUCCESS) {
             publishDocumentEmbeddedEvent(metadata, event.excludeFromPatchNote());
         }
     }
 
-    private String resolvePublicId(EmbeddingCompletedEvent event) {
-        return projectRepository.findById(event.projectId()).map(Project::getPublicId).orElse(null);
-    }
-
-    private void publishNotification(
-            EmbeddingCompletedEvent event, DocumentMetadata metadata, String publicId) {
+    private void publishNotification(EmbeddingCompletedEvent event, DocumentMetadata metadata) {
         boolean isSuccess = event.status() == EmbeddingStatus.SUCCESS;
         NotificationEventType eventType =
                 isSuccess
@@ -62,15 +53,13 @@ public class EmbeddingCompletedEventHandler {
                         ? String.format("'%s' 문서의 임베딩이 완료되었습니다.", metadata.getDocumentName())
                         : String.format("'%s' 문서의 임베딩이 실패했습니다.", metadata.getDocumentName());
 
-        String relatedUrl = null;
-        if (publicId != null) {
-            relatedUrl =
-                    isSuccess
-                            ? String.format("/projects/%s/documents/%d", publicId, metadata.getId())
-                            : String.format(
-                                    "/projects/%s/documents/%d/retry-embedding",
-                                    publicId, metadata.getId());
-        }
+        String relatedUrl =
+                isSuccess
+                        ? String.format(
+                                "/projects/%s/documents/%d", event.publicId(), metadata.getId())
+                        : String.format(
+                                "/projects/%s/documents/%d/retry-embedding",
+                                event.publicId(), metadata.getId());
 
         eventPublisher.publishEvent(
                 new DocumentNotificationEvent(

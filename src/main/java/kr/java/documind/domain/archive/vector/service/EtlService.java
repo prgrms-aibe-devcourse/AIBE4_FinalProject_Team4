@@ -50,6 +50,7 @@ public class EtlService {
     }
 
     public void process(
+            String publicId,
             UUID projectId,
             UUID memberId,
             Long sourceId,
@@ -89,7 +90,12 @@ public class EtlService {
             if (finalStatus != null) {
                 eventPublisher.publishEvent(
                         new EmbeddingCompletedEvent(
-                                projectId, memberId, sourceId, finalStatus, excludeFromPatchNote));
+                                publicId,
+                                projectId,
+                                memberId,
+                                sourceId,
+                                finalStatus,
+                                excludeFromPatchNote));
             }
         }
     }

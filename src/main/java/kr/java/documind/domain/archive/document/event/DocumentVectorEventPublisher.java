@@ -15,6 +15,7 @@ public class DocumentVectorEventPublisher {
     private final ApplicationEventPublisher eventPublisher;
 
     public void createEvent(
+            String publicId,
             UUID projectId,
             UUID memberId,
             DocumentMetadata documentMetadata,
@@ -23,6 +24,7 @@ public class DocumentVectorEventPublisher {
             documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
             eventPublisher.publishEvent(
                     new DocumentVectorCreateEvent(
+                            publicId,
                             projectId,
                             memberId,
                             documentMetadata.getId(),
@@ -31,10 +33,12 @@ public class DocumentVectorEventPublisher {
         }
     }
 
-    public void retryEvent(UUID projectId, UUID memberId, DocumentMetadata documentMetadata) {
+    public void retryEvent(
+            String publicId, UUID projectId, UUID memberId, DocumentMetadata documentMetadata) {
         documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
         eventPublisher.publishEvent(
                 new DocumentVectorCreateEvent(
+                        publicId,
                         projectId,
                         memberId,
                         documentMetadata.getId(),
@@ -43,6 +47,7 @@ public class DocumentVectorEventPublisher {
     }
 
     public void replaceEvent(
+            String publicId,
             UUID projectId,
             UUID memberId,
             DocumentMetadata documentMetadata,
@@ -51,6 +56,7 @@ public class DocumentVectorEventPublisher {
             documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
             eventPublisher.publishEvent(
                     new DocumentVectorReplaceEvent(
+                            publicId,
                             projectId,
                             memberId,
                             documentMetadata.getId(),

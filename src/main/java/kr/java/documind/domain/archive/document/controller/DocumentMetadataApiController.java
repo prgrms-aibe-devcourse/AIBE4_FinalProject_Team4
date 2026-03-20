@@ -49,7 +49,11 @@ public class DocumentMetadataApiController {
             @RequestPart("file") MultipartFile file) {
         DocumentMetadataResponse response =
                 documentMetadataService.uploadDocumentWithNewGroup(
-                        context.projectId(), context.actorMemberId(), request, file);
+                        context.publicId(),
+                        context.projectId(),
+                        context.actorMemberId(),
+                        request,
+                        file);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
@@ -75,7 +79,12 @@ public class DocumentMetadataApiController {
             @RequestPart("request") @Valid DocumentUpdateRequest request,
             @RequestPart(value = "file", required = false) MultipartFile file) {
         documentMetadataService.updateDocument(
-                context.projectId(), context.actorMemberId(), documentId, request, file);
+                context.publicId(),
+                context.projectId(),
+                context.actorMemberId(),
+                documentId,
+                request,
+                file);
         return ApiResponse.success();
     }
 
@@ -102,7 +111,7 @@ public class DocumentMetadataApiController {
     public ApiResponse<Void> retryEmbedding(
             @CurrentProject ProjectRequestContext context, @PathVariable Long documentId) {
         documentMetadataService.retryEmbedding(
-                context.projectId(), context.actorMemberId(), documentId);
+                context.publicId(), context.projectId(), context.actorMemberId(), documentId);
         return ApiResponse.success();
     }
 

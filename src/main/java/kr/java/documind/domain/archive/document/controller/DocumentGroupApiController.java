@@ -68,7 +68,12 @@ public class DocumentGroupApiController {
             @RequestPart("file") MultipartFile file) {
         DocumentMetadataResponse response =
                 documentMetadataService.uploadDocumentToGroup(
-                        context.projectId(), context.actorMemberId(), groupId, request, file);
+                        context.publicId(),
+                        context.projectId(),
+                        context.actorMemberId(),
+                        groupId,
+                        request,
+                        file);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
