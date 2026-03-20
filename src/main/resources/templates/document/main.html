@@ -7,10 +7,12 @@
     <title>문서 관리</title>
 </head>
 <body>
-<main layout:fragment="content" class="flex-1 p-8">
+<th:block layout:fragment="content">
+
+    <section class="space-y-6">
 
     <!-- 검색 + 새 파일 업로드 -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between">
         <div class="relative w-96">
             <svg class="w-5 h-5 text-docu-secondary absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <input type="text" id="searchInput" placeholder="파일 또는 대분류명 검색"
@@ -48,7 +50,7 @@
     </div>
 
     <!-- 페이지네이션 -->
-    <div class="flex items-center justify-between mt-6">
+    <div class="flex items-center justify-between">
         <div id="pageInfo" class="text-sm text-docu-secondary"></div>
         <div id="pagination" class="flex items-center gap-1"></div>
     </div>
@@ -134,9 +136,9 @@
                 </div>
                 <!-- 패치노트에서 제외 -->
                 <div class="mb-2 flex items-start gap-3 p-4 bg-surface-sub rounded-docu-btn">
-                    <input type="checkbox" id="uploadIsProcessed" class="mt-0.5 w-4 h-4 rounded border-divider text-docu-primary focus:ring-docu-primary">
+                    <input type="checkbox" id="uploadExcludeFromPatchNote" class="mt-0.5 w-4 h-4 rounded border-divider text-docu-primary focus:ring-docu-primary">
                     <div>
-                        <label for="uploadIsProcessed" class="text-sm font-semibold text-docu-ink cursor-pointer">패치노트에서 제외</label>
+                        <label for="uploadExcludeFromPatchNote" class="text-sm font-semibold text-docu-ink cursor-pointer">패치노트에서 제외</label>
                         <p class="text-xs text-docu-secondary mt-0.5">체크 시 해당 문서는 패치노트의 <span class="text-docu-primary font-medium">[업데이트 피드]</span>에 반영되지 않습니다.</p>
                         <p class="text-xs text-docu-secondary mt-0.5">※ PDF 파일만 패치노트에 반영되며, 그 외 형식은 체크 여부와 관계없이 자동으로 제외됩니다.</p>
                     </div>
@@ -218,9 +220,9 @@
                 </div>
                 <!-- 패치노트에서 제외 -->
                 <div class="mb-2 flex items-start gap-3 p-4 bg-surface-sub rounded-docu-btn">
-                    <input type="checkbox" id="newVersionIsProcessed" class="mt-0.5 w-4 h-4 rounded border-divider text-docu-primary focus:ring-docu-primary">
+                    <input type="checkbox" id="newVersionExcludeFromPatchNote" class="mt-0.5 w-4 h-4 rounded border-divider text-docu-primary focus:ring-docu-primary">
                     <div>
-                        <label for="newVersionIsProcessed" class="text-sm font-semibold text-docu-ink cursor-pointer">패치노트에서 제외</label>
+                        <label for="newVersionExcludeFromPatchNote" class="text-sm font-semibold text-docu-ink cursor-pointer">패치노트에서 제외</label>
                         <p class="text-xs text-docu-secondary mt-0.5">체크 시 해당 문서는 패치노트의 <span class="text-docu-primary font-medium">[업데이트 피드]</span>에 반영되지 않습니다.</p>
                         <p class="text-xs text-docu-secondary mt-0.5">※ PDF 파일만 패치노트에 반영되며, 그 외 형식은 체크 여부와 관계없이 자동으로 제외됩니다.</p>
                     </div>
@@ -237,7 +239,9 @@
     <div th:replace="~{document/fragments/modals :: editModal}"></div>
     <div th:replace="~{document/fragments/modals :: deleteModal}"></div>
 
-</main>
+    </section>
+
+</th:block>
 
 <th:block layout:fragment="scripts">
     <script th:src="@{/js/document/common.js}"></script>

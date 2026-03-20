@@ -23,5 +23,5 @@ public record DocumentUploadRequest(
                 @Min(value = 0, message = "버전은 0 이상이어야 합니다.")
                 @Max(value = 999, message = "버전은 999 이하여야 합니다.")
                 Integer patchVersion,
-        Boolean isProcessed)
+        Boolean excludeFromPatchNote)
         implements VersionFields {}

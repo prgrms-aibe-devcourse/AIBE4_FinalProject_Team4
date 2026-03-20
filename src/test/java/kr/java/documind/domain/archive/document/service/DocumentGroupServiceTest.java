@@ -55,6 +55,7 @@ class DocumentGroupServiceTest {
                 domainSource,
                 group,
                 "testDoc",
+                "ㅌㅅㄷ",
                 "pdf",
                 1,
                 0,
@@ -62,7 +63,6 @@ class DocumentGroupServiceTest {
                 "abc123hash",
                 1024L,
                 "stored/key",
-                false,
                 EmbeddingStatus.NONE,
                 OffsetDateTime.now(ZoneOffset.UTC));
     }
@@ -145,7 +145,7 @@ class DocumentGroupServiceTest {
             documentGroupService.updateGroupName(projectId, groupId, "새그룹");
 
             // Then
-            assertThat(group.getGroupName()).isEqualTo("새그룹");
+            then(documentGroupManager).should().updateGroupName(group, "새그룹");
         }
 
         @Test
@@ -176,7 +176,7 @@ class DocumentGroupServiceTest {
             documentGroupService.updateGroupName(projectId, groupId, "  새그룹  ");
 
             // Then
-            assertThat(group.getGroupName()).isEqualTo("새그룹");
+            then(documentGroupManager).should().updateGroupName(group, "새그룹");
         }
 
         @Test

@@ -177,7 +177,6 @@
         <input type="hidden" id="docVersion" th:value="${document.version}">
         <input type="hidden" id="docGroupName" th:value="${document.groupName}">
         <input type="hidden" id="docCategory" th:value="${document.category}">
-        <input type="hidden" id="docIsProcessed" th:value="${document.isProcessed}">
         <input type="hidden" id="docEmbeddingStatus" th:value="${document.embeddingStatus.name()}">
 
         <div th:replace="~{document/fragments/modals :: editModal}"></div>
