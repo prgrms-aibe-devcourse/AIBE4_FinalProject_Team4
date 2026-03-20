@@ -48,9 +48,9 @@ public class IssueNotificationService {
      */
     public void notifyNewIssue(Issue issue) {
         IssueAlertRuleKey ruleKey = mapSeverityToRuleKey(issue.getSeverity());
-        List<UUID> receivers = getReceiversForRule(issue.getProjectId(), ruleKey);
+        ReceiverInfo info = getReceiversForRule(issue.getProjectId(), ruleKey);
 
-        if (receivers.isEmpty()) {
+        if (info.receivers().isEmpty()) {
             log.debug(
                     "[IssueNotification] No receivers for new issue notification. issueId={}, severity={}",
                     issue.getId(),
@@ -58,17 +58,16 @@ public class IssueNotificationService {
             return;
         }
 
-        String publicId = getProjectPublicId(issue.getProjectId());
         IssueNotificationEvent event =
                 new IssueNotificationEvent(
                         issue.getProjectId(),
-                        receivers,
+                        info.receivers(),
                         issue.getId(),
                         NotificationEventType.ISSUE_CREATED,
                         "[신규 이슈] " + issue.getTitle(),
                         String.format(
                                 "%s 심각도 이슈가 생성되었습니다.", issue.getSeverity().getValue()),
-                        buildIssueUrl(publicId, issue.getId()),
+                        buildIssueUrl(info.publicId(), issue.getId()),
                         true, // toast 알림
                         issue.getSeverity());
 
@@ -76,7 +75,7 @@ public class IssueNotificationService {
         log.info(
                 "[IssueNotification] New issue notification sent. issueId={}, receiverCount={}",
                 issue.getId(),
-                receivers.size());
+                info.receivers().size());
     }
 
     /**
@@ -229,10 +228,10 @@ public class IssueNotificationService {
      *
      * @param projectId 프로젝트 ID
      * @param ruleKey 알림 규칙 키
-     * @return 알림을 받을 멤버 ID 목록
+     * @return 수신자 정보 (멤버 ID 목록 + publicId)
      */
-    private List<UUID> getReceiversForRule(UUID projectId, IssueAlertRuleKey ruleKey) {
-        // 프로젝트 조회
+    private ReceiverInfo getReceiversForRule(UUID projectId, IssueAlertRuleKey ruleKey) {
+        // 프로젝트 조회 (1회만)
         Project project =
                 projectRepository
                         .findById(projectId)
@@ -256,14 +255,21 @@ public class IssueNotificationService {
                         .collect(Collectors.toMap(IssueAlertRule::getMemberId, r -> r));
 
         // 알림 규칙 필터링
-        return allMembers.stream()
-                .filter(
-                        memberId -> {
-                            IssueAlertRule rule = ruleMap.get(memberId);
-                            return rule == null || rule.isEnabled(ruleKey); // 규칙 미설정 시 기본값 true
-                        })
-                .toList();
+        List<UUID> receivers =
+                allMembers.stream()
+                        .filter(
+                                memberId -> {
+                                    IssueAlertRule rule = ruleMap.get(memberId);
+                                    return rule == null
+                                            || rule.isEnabled(ruleKey); // 규칙 미설정 시 기본값 true
+                                })
+                        .toList();
+
+        return new ReceiverInfo(receivers, project.getPublicId());
     }
+
+    /** 수신자 정보 (멤버 ID 목록 + publicId) */
+    private record ReceiverInfo(List<UUID> receivers, String publicId) {}
 
     /**
      * 알림 규칙 활성화 여부 확인
