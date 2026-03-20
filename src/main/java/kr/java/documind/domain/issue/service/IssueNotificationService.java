@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import kr.java.documind.domain.auth.model.entity.Project;
+import kr.java.documind.domain.auth.model.repository.ProjectRepository;
 import kr.java.documind.domain.issue.event.IssueNotificationEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.entity.IssueAlertRule;
@@ -12,8 +14,6 @@ import kr.java.documind.domain.issue.model.enums.IssueAlertRuleKey;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueAlertRuleRepository;
-import kr.java.documind.domain.auth.model.entity.Project;
-import kr.java.documind.domain.auth.model.repository.ProjectRepository;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
@@ -73,8 +73,7 @@ public class IssueNotificationService {
                         issue.getId(),
                         NotificationEventType.ISSUE_CREATED,
                         "[신규 이슈] " + issue.getTitle(),
-                        String.format(
-                                "%s 심각도 이슈가 생성되었습니다.", issue.getSeverity().getValue()),
+                        String.format("%s 심각도 이슈가 생성되었습니다.", issue.getSeverity().getValue()),
                         buildIssueUrl(info.publicId(), issue.getId()),
                         true, // toast 알림
                         issue.getSeverity());
@@ -250,7 +249,8 @@ public class IssueNotificationService {
 
         // 프로젝트 전체 활성 멤버 조회
         List<UUID> allMembers =
-                projectMemberRepository.findByProjectAndStatusFetchMember(project, AccountStatus.ACTIVE)
+                projectMemberRepository
+                        .findByProjectAndStatusFetchMember(project, AccountStatus.ACTIVE)
                         .stream()
                         .map(pm -> pm.getMember().getId())
                         .toList();
@@ -259,8 +259,7 @@ public class IssueNotificationService {
         List<IssueAlertRule> rules =
                 alertRuleRepository.findByProjectIdAndMemberIdIn(projectId, allMembers);
         Map<UUID, IssueAlertRule> ruleMap =
-                rules.stream()
-                        .collect(Collectors.toMap(IssueAlertRule::getMemberId, r -> r));
+                rules.stream().collect(Collectors.toMap(IssueAlertRule::getMemberId, r -> r));
 
         // 알림 규칙 필터링
         List<UUID> receivers =
@@ -320,10 +319,7 @@ public class IssueNotificationService {
      * @return Public ID
      */
     private String getProjectPublicId(UUID projectId) {
-        return projectRepository
-                .findById(projectId)
-                .map(Project::getPublicId)
-                .orElse("unknown");
+        return projectRepository.findById(projectId).map(Project::getPublicId).orElse("unknown");
     }
 
     /**

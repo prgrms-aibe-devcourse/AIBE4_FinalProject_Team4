@@ -349,6 +349,11 @@ class IssueNotificationServiceTest {
 
     private Member createTestMember(String email, String name, String nickname) {
         return Member.createByOAuth(
-                email, name, nickname, OAuthProvider.GITHUB, "test-provider-id", GlobalRole.EMPLOYEE);
+                email,
+                name,
+                nickname,
+                OAuthProvider.GITHUB,
+                "test-provider-id",
+                GlobalRole.EMPLOYEE);
     }
 }
