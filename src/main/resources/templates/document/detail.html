@@ -97,11 +97,6 @@
                             <dt class="text-docu-secondary">버전</dt>
                             <dd class="text-docu-ink font-medium" th:text="${document.version}">-</dd>
                         </div>
-                        <div class="flex justify-between">
-                            <dt class="text-docu-secondary">패치노트 반영</dt>
-                            <dd th:class="${document.isProcessed} ? 'font-medium text-docu-secondary' : 'font-medium text-docu-success'"
-                                th:text="${document.isProcessed} ? 'X' : 'O'">-</dd>
-                        </div>
                         <div class="flex justify-between" th:switch="${document.embeddingStatus.name()}">
                             <dt class="text-docu-secondary">임베딩</dt>
                             <dd id="embeddingStatusBadge" th:case="'SUCCESS'" class="font-medium text-docu-success">성공</dd>

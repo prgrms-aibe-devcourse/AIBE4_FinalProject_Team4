@@ -535,8 +535,7 @@ function renderDocuments(groupId, documents, groupName, category) {
                 <div class="col-span-1 text-center">확장자</div>
                 <div class="col-span-2 text-center">처음 업로드일시</div>
                 <div class="col-span-2 text-center">마지막 수정일시</div>
-                <div class="col-span-1 text-center">패치노트</div>
-                <div class="col-span-1 text-center">임베딩</div>
+                <div class="col-span-2 text-center">임베딩</div>
                 <div class="col-span-1"></div>
             </div>
             ${documents.map(doc => `
@@ -552,8 +551,7 @@ function renderDocuments(groupId, documents, groupName, category) {
                     <div class="col-span-1 text-center text-xs text-docu-secondary uppercase">${escapeHtml(doc.extension)}</div>
                     <div class="col-span-2 text-center text-xs text-docu-secondary">${formatDateTime(doc.uploadedAt)}</div>
                     <div class="col-span-2 text-center text-xs text-docu-secondary">${formatDateTime(doc.reuploadedAt)}</div>
-                    <div class="col-span-1 text-center text-xs font-medium ${doc.isProcessed ? 'text-docu-secondary' : 'text-docu-success'}">${doc.isProcessed ? 'X' : 'O'}</div>
-                    <div class="col-span-1 text-center" id="embedding-status-${doc.documentId}">${renderEmbeddingBadge(doc.embeddingStatus)}</div>
+                    <div class="col-span-2 text-center" id="embedding-status-${doc.documentId}">${renderEmbeddingBadge(doc.embeddingStatus)}</div>
                     <div class="col-span-1 flex items-center justify-end gap-3" id="doc-actions-${doc.documentId}">
                         ${doc.embeddingStatus === 'FAILED' ? `
                         <button class="text-docu-secondary-dark hover:text-docu-ink" title="임베딩 재시도"
