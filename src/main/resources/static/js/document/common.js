@@ -149,7 +149,7 @@ function escapeAttr(str) {
 // ==================== 임베딩 상태 배지 ====================
 
 const EMBEDDING_STATUS = {
-    NONE:       { classes: 'text-docu-secondary', label: '-' },
+    NONE:       { classes: 'text-docu-secondary', label: '미지원' },
     PENDING:    { classes: 'text-docu-secondary', label: '대기' },
     PROCESSING: { classes: 'text-docu-primary', label: '진행중' },
     SUCCESS:    { classes: 'text-docu-success', label: '성공' },
@@ -158,7 +158,7 @@ const EMBEDDING_STATUS = {
 
 // ==================== 카테고리 칩 선택 ====================
 
-const CHIP_INACTIVE = ['border-divider', 'text-docu-secondary', 'bg-surface-card'];
+const CHIP_INACTIVE = ['border-divider', 'text-docu-secondary', 'bg-surface-card', 'hover:border-docu-primary', 'hover:text-docu-primary'];
 const CHIP_ACTIVE = ['border-docu-primary', 'bg-docu-primary', 'text-white', 'font-medium', 'shadow-sm'];
 
 function selectCategory(chipEl, inputId) {

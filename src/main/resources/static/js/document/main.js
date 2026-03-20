@@ -138,7 +138,7 @@ async function submitUpload() {
     const isProcessed = document.getElementById('uploadIsProcessed').checked;
     const fileInput = document.getElementById('uploadFile');
 
-    if (!groupName) { showModalError('uploadError', '그룹명을 입력해주세요.'); return; }
+    if (!groupName) { showModalError('uploadError', '대분류명을 입력해주세요.'); return; }
     if (!category) { showModalError('uploadError', '카테고리를 선택하거나 입력해주세요.'); return; }
     if (!fileInput.files.length) { showModalError('uploadError', '파일을 선택해주세요.'); return; }
 
@@ -190,7 +190,7 @@ function openAddVersion(groupId, latestVersion) {
     document.getElementById('newVersionPatch').value = vParts[2] || '0';
     document.getElementById('newVersionLatestHint').textContent = `(최신버전: ${latestVersion || 'v1.0.0'})`;
 
-    // 그룹 행에서 그룹명/카테고리 추출
+    // 대분류 행에서 대분류명/카테고리 추출
     const groupRow = document.querySelector(`[data-group-id="${groupId}"]`);
     if (groupRow) {
         const groupName = groupRow.querySelector('.font-semibold')?.textContent || '';
@@ -377,7 +377,7 @@ function updateCollapseAllButton() {
     btn.classList.toggle('hidden', !hasExpanded);
 }
 
-// ==================== 그룹/문서 로딩 ====================
+// ==================== 대분류/문서 로딩 ====================
 
 function getExpandedGroupIds() {
     return [...document.querySelectorAll('[id^="docs-"]:not(.hidden)')]
@@ -404,11 +404,11 @@ async function loadGroups(page) {
             renderPagination(result.meta);
             await restoreExpandedGroups(expandedIds);
         } else {
-            alert(result.error?.message || '그룹 목록을 불러오는데 실패했습니다.');
+            alert(result.error?.message || '대분류 목록을 불러오는데 실패했습니다.');
         }
     } catch (e) {
-        alert('그룹 목록을 불러오는데 실패했습니다.');
-        console.error('그룹 목록 조회 실패', e);
+        alert('대분류 목록을 불러오는데 실패했습니다.');
+        console.error('대분류 목록 조회 실패', e);
     }
 }
 
@@ -425,17 +425,17 @@ function renderGroups(groups) {
     emptyState.classList.add('hidden');
     container.innerHTML = groups.map(group => `
         <div class="border-b border-divider last:border-b-0" data-group-id="${group.groupId}">
-            <!-- 그룹 행 -->
+            <!-- 대분류 행 -->
             <div class="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-surface-sub">
                 <div class="col-span-4 flex items-center gap-2">
                     <svg class="w-5 h-5 text-docu-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <!-- 그룹명 표시 모드 -->
+                    <!-- 대분류명 표시 모드 -->
                     <span id="groupName-display-${group.groupId}" class="font-semibold text-docu-ink cursor-pointer hover:text-docu-primary"
                           data-action="toggleDocuments" data-group-id="${group.groupId}">${escapeHtml(group.groupName)}</span>
-                    <button data-action="startEditGroupName" data-group-id="${group.groupId}" data-group-name="${escapeAttr(group.groupName)}" class="text-docu-warning hover:text-docu-warning-dark" title="그룹명 수정">
+                    <button data-action="startEditGroupName" data-group-id="${group.groupId}" data-group-name="${escapeAttr(group.groupName)}" class="text-docu-warning hover:text-docu-warning-dark" title="대분류명 수정">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     </button>
-                    <!-- 그룹명 수정 모드 -->
+                    <!-- 대분류명 수정 모드 -->
                     <div id="groupName-edit-${group.groupId}" class="hidden flex items-center gap-1">
                         <input type="text" id="groupName-input-${group.groupId}" value="${escapeAttr(group.groupName)}"
                                class="form-input w-48 px-2 py-1"
@@ -509,7 +509,7 @@ async function toggleDocuments(groupId) {
         return;
     }
 
-    // 그룹 행에서 그룹명/카테고리 추출
+    // 대분류 행에서 대분류명/카테고리 추출
     const groupRow = document.querySelector(`[data-group-id="${groupId}"]`);
     const groupName = groupRow?.querySelector('.font-semibold')?.textContent?.trim() || '';
     const category = groupRow?.querySelector('.bg-surface-muted')?.textContent?.trim() || '';
@@ -550,8 +550,7 @@ function renderDocuments(groupId, documents, groupName, category) {
                 <div class="col-span-1 text-center">확장자</div>
                 <div class="col-span-2 text-center">처음 업로드일시</div>
                 <div class="col-span-2 text-center">마지막 수정일시</div>
-                <div class="col-span-1 text-center">패치노트</div>
-                <div class="col-span-1 text-center">임베딩</div>
+                <div class="col-span-2 text-center">임베딩</div>
                 <div class="col-span-1"></div>
             </div>
             ${documents.map(doc => `
@@ -567,8 +566,7 @@ function renderDocuments(groupId, documents, groupName, category) {
                     <div class="col-span-1 text-center text-xs text-docu-secondary uppercase">${escapeHtml(doc.extension)}</div>
                     <div class="col-span-2 text-center text-xs text-docu-secondary">${formatDateTime(doc.uploadedAt)}</div>
                     <div class="col-span-2 text-center text-xs text-docu-secondary">${formatDateTime(doc.reuploadedAt)}</div>
-                    <div class="col-span-1 text-center text-xs font-medium ${doc.isProcessed ? 'text-docu-secondary' : 'text-docu-success'}">${doc.isProcessed ? 'X' : 'O'}</div>
-                    <div class="col-span-1 text-center" id="embedding-status-${doc.documentId}">${renderEmbeddingBadge(doc.embeddingStatus)}</div>
+                    <div class="col-span-2 text-center" id="embedding-status-${doc.documentId}">${renderEmbeddingBadge(doc.embeddingStatus)}</div>
                     <div class="col-span-1 flex items-center justify-end gap-3" id="doc-actions-${doc.documentId}">
                         ${doc.embeddingStatus === 'FAILED' ? `
                         <button class="text-docu-secondary-dark hover:text-docu-ink" title="임베딩 재시도"
@@ -642,7 +640,7 @@ function downloadDocument(documentId) {
     window.location.href = `/api/projects/${projectId}/documents/${documentId}/download`;
 }
 
-// ==================== 그룹명 인라인 수정 ====================
+// ==================== 대분류명 인라인 수정 ====================
 
 function startEditGroupName(groupId, currentName) {
     // 표시 모드 숨기고 수정 모드 표시
@@ -675,10 +673,10 @@ async function submitGroupName(groupId) {
         if (result.success) {
             loadGroups(currentPage);
         } else {
-            alert(result.error?.message || '그룹명 수정에 실패했습니다.');
+            alert(result.error?.message || '대분류명 수정에 실패했습니다.');
         }
     } catch (e) {
-        alert('그룹명 수정에 실패했습니다.');
+        alert('대분류명 수정에 실패했습니다.');
         console.error(e);
     }
 }

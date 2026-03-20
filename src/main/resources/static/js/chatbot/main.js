@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const items = res.data ?? [];
 
             if (items.length === 0) {
-                const emptyLabel = type === 'group' ? '그룹이 없습니다' : '카테고리가 없습니다';
+                const emptyLabel = type === 'group' ? '대분류가 없습니다' : '카테고리가 없습니다';
                 scopeDetailSelect.innerHTML = `<option value="" disabled selected>${emptyLabel}</option>`;
                 scopeDetailSelect.disabled = true;
             } else {
