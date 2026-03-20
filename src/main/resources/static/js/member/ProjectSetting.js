@@ -287,27 +287,30 @@ function previewProjectIcon(input) {
     reader.readAsDataURL(_pendingProjectIconFile);
 }
 
-
-function copyApiKey() {
-    const display = document.getElementById('api-key-display');
-    if (!display) return;
-
-    navigator.clipboard.writeText(display.textContent.trim())
-        .then(() => showTopToast('클립보드에 복사되었습니다.', 'success'))
-        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.', 'danger'));
-}
+const TARGET_KEY_TYPE = 'INGEST';
 
 async function reissueApiKey() {
     if (!confirm('API 키를 재발급하면 기존 키는 즉시 폐기됩니다.\n계속하시겠습니까?')) return;
 
     try {
-        const body = await callApi(`/api/projects/${_PS.publicId}/api-keys`, {
+        const response = await callApi(`/api/projects/${_PS.publicId}/api-keys/reissue`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keyType: TARGET_KEY_TYPE })
         });
-        if (body.success) {
-            showApiKeyRevealModal(body.data.plainKey);
+
+        if (response.success) {
+            const newPlainKey = response.data?.ingestApiKey?.plainKey;
+
+            if (!newPlainKey) {
+                console.error('Payload 파싱 에러 - Response Data:', response.data);
+                alert('서버로부터 올바른 API 키를 응답받지 못했습니다.');
+                return;
+            }
+
+            showApiKeyRevealModal(newPlainKey);
         } else {
-            alert(body.error?.message ?? 'API 키 발급에 실패했습니다.');
+            alert(response.error?.message ?? 'API 키 발급에 실패했습니다.');
         }
     } catch (err) {
         alert(err.message);
@@ -344,14 +347,21 @@ async function toggleApiKey(currentStatus) {
     if (!confirm(`API 키를 ${action}하시겠습니까?`)) return;
 
     try {
-        const body = await callApi(`/api/projects/${_PS.publicId}/api-keys/status`, {
+        const response = await callApi(`/api/projects/${_PS.publicId}/api-keys/status`, {
             method: 'PATCH',
-            body: JSON.stringify({ status: newStatus }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                keyType: TARGET_KEY_TYPE,
+                status: newStatus
+            }),
         });
-        if (body.success) {
+
+        if (response.success) {
             window.location.reload();
         } else {
-            alert(body.error?.message ?? `API 키 ${action}에 실패했습니다.`);
+            alert(response.error?.message ?? `API 키 ${action}에 실패했습니다.`);
         }
     } catch (err) {
         alert(err.message);
