@@ -17,10 +17,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import kr.java.documind.domain.archive.document.event.DocumentVectorEventPublisher;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentFileStorage;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentGroupManager;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
-import kr.java.documind.domain.archive.document.infrastructure.DocumentVectorEventPublisher;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUploadRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.NewVersionDocumentUploadRequest;
@@ -54,6 +54,8 @@ class DocumentMetadataServiceTest {
     @InjectMocks private DocumentMetadataService documentMetadataService;
 
     private final UUID projectId = UUID.randomUUID();
+    private final UUID memberId = UUID.randomUUID();
+    private final String publicId = "test-public-id";
     private final Long documentId = 1L;
     private final Long groupId = 1L;
 
@@ -230,7 +232,8 @@ class DocumentMetadataServiceTest {
 
             // When
             var result =
-                    documentMetadataService.uploadDocumentWithNewGroup(projectId, request, file);
+                    documentMetadataService.uploadDocumentWithNewGroup(
+                            publicId, projectId, memberId, request, file);
 
             // Then
             assertThat(result.documentName()).isEqualTo("testDoc");
@@ -238,7 +241,7 @@ class DocumentMetadataServiceTest {
             then(documentGroupManager).should().save(group);
             then(documentVectorEventPublisher)
                     .should()
-                    .createEvent(eq(projectId), eq(metadata), eq(true));
+                    .createEvent(eq(publicId), eq(projectId), eq(memberId), eq(metadata), eq(true));
         }
 
         @Test
@@ -256,7 +259,7 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.uploadDocumentWithNewGroup(
-                                            projectId, request, file))
+                                            publicId, projectId, memberId, request, file))
                     .isInstanceOf(ConflictException.class);
         }
 
@@ -278,7 +281,7 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.uploadDocumentWithNewGroup(
-                                            projectId, request, file))
+                                            publicId, projectId, memberId, request, file))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("동일한 내용");
         }
@@ -295,7 +298,7 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.uploadDocumentWithNewGroup(
-                                            projectId, request, file))
+                                            publicId, projectId, memberId, request, file))
                     .isInstanceOf(BadRequestException.class);
         }
     }
@@ -330,14 +333,15 @@ class DocumentMetadataServiceTest {
             // When
             var result =
                     documentMetadataService.uploadDocumentToGroup(
-                            projectId, groupId, request, file);
+                            publicId, projectId, memberId, groupId, request, file);
 
             // Then
             assertThat(result).isNotNull();
             assertThat(result.documentName()).isEqualTo("testDoc");
             then(documentVectorEventPublisher)
                     .should()
-                    .createEvent(eq(projectId), eq(metadata), eq(false));
+                    .createEvent(
+                            eq(publicId), eq(projectId), eq(memberId), eq(metadata), eq(false));
         }
 
         @Test
@@ -355,7 +359,7 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.uploadDocumentToGroup(
-                                            projectId, groupId, request, file))
+                                            publicId, projectId, memberId, groupId, request, file))
                     .isInstanceOf(NotFoundException.class);
         }
 
@@ -372,7 +376,7 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.uploadDocumentToGroup(
-                                            projectId, groupId, request, file))
+                                            publicId, projectId, memberId, groupId, request, file))
                     .isInstanceOf(BadRequestException.class);
         }
 
@@ -396,7 +400,7 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.uploadDocumentToGroup(
-                                            projectId, groupId, request, file))
+                                            publicId, projectId, memberId, groupId, request, file))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("동일한 내용");
         }
@@ -417,7 +421,7 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.uploadDocumentToGroup(
-                                            projectId, groupId, request, file))
+                                            publicId, projectId, memberId, groupId, request, file))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("이미 존재하는 버전");
         }
@@ -441,7 +445,8 @@ class DocumentMetadataServiceTest {
                     .willReturn(false);
 
             // When
-            documentMetadataService.updateDocument(projectId, documentId, request, null);
+            documentMetadataService.updateDocument(
+                    publicId, projectId, memberId, documentId, request, null);
 
             // Then
             assertThat(metadata.getMajorVersion()).isEqualTo(2);
@@ -467,7 +472,8 @@ class DocumentMetadataServiceTest {
             given(documentFileStorage.replace("stored/key", file)).willReturn(storedFile());
 
             // When
-            documentMetadataService.updateDocument(projectId, documentId, request, file);
+            documentMetadataService.updateDocument(
+                    publicId, projectId, memberId, documentId, request, file);
 
             // Then
             then(documentMetadataManager)
@@ -481,7 +487,8 @@ class DocumentMetadataServiceTest {
                             eq("stored/new-key"));
             then(documentVectorEventPublisher)
                     .should()
-                    .replaceEvent(eq(projectId), eq(metadata), eq(false));
+                    .replaceEvent(
+                            eq(publicId), eq(projectId), eq(memberId), eq(metadata), eq(false));
         }
 
         @Test
@@ -503,7 +510,8 @@ class DocumentMetadataServiceTest {
             given(documentFileStorage.replace("stored/key", file)).willReturn(storedFile());
 
             // When
-            documentMetadataService.updateDocument(projectId, documentId, request, file);
+            documentMetadataService.updateDocument(
+                    publicId, projectId, memberId, documentId, request, file);
 
             // Then
             assertThat(metadata.getMajorVersion()).isEqualTo(2);
@@ -513,7 +521,8 @@ class DocumentMetadataServiceTest {
                     .updateFile(eq(metadata), any(), any(), any(), anyLong(), any());
             then(documentVectorEventPublisher)
                     .should()
-                    .replaceEvent(eq(projectId), eq(metadata), eq(true));
+                    .replaceEvent(
+                            eq(publicId), eq(projectId), eq(memberId), eq(metadata), eq(true));
         }
 
         @Test
@@ -531,7 +540,12 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.updateDocument(
-                                            projectId, documentId, request, null))
+                                            publicId,
+                                            projectId,
+                                            memberId,
+                                            documentId,
+                                            request,
+                                            null))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("동일");
         }
@@ -552,7 +566,12 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.updateDocument(
-                                            projectId, documentId, request, null))
+                                            publicId,
+                                            projectId,
+                                            memberId,
+                                            documentId,
+                                            request,
+                                            null))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("이미 존재하는 버전");
         }
@@ -573,7 +592,8 @@ class DocumentMetadataServiceTest {
                     .willReturn(false);
 
             // When
-            documentMetadataService.updateDocument(projectId, documentId, request, file);
+            documentMetadataService.updateDocument(
+                    publicId, projectId, memberId, documentId, request, file);
 
             // Then
             assertThat(metadata.getMajorVersion()).isEqualTo(2);
@@ -581,7 +601,7 @@ class DocumentMetadataServiceTest {
             then(documentFileStorage).should(never()).replace(any(), any());
             then(documentVectorEventPublisher)
                     .should(never())
-                    .replaceEvent(any(), any(), anyBoolean());
+                    .replaceEvent(any(), any(), any(), any(), anyBoolean());
         }
 
         @Test
@@ -603,7 +623,12 @@ class DocumentMetadataServiceTest {
             assertThatThrownBy(
                             () ->
                                     documentMetadataService.updateDocument(
-                                            projectId, documentId, request, file))
+                                            publicId,
+                                            projectId,
+                                            memberId,
+                                            documentId,
+                                            request,
+                                            file))
                     .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("동일한 내용");
         }

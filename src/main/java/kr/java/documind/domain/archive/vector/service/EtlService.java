@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import kr.java.documind.domain.archive.vector.event.EmbeddingStatusEvent;
+import kr.java.documind.domain.archive.vector.event.EmbeddingCompletedEvent;
+import kr.java.documind.domain.archive.vector.event.EmbeddingStatusUpdateEvent;
 import kr.java.documind.domain.archive.vector.infrastructure.DocumentChunker;
 import kr.java.documind.domain.archive.vector.infrastructure.DocumentContentExtractor;
 import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClient;
@@ -49,8 +50,14 @@ public class EtlService {
     }
 
     public void process(
-            UUID projectId, Long sourceId, String storedKey, boolean excludeFromPatchNote) {
+            String publicId,
+            UUID projectId,
+            UUID memberId,
+            Long sourceId,
+            String storedKey,
+            boolean excludeFromPatchNote) {
         Path tempFilePath = null;
+        EmbeddingStatus finalStatus = null;
         try {
             changeStatus(sourceId, EmbeddingStatus.PROCESSING);
             tempFilePath = createTempFile(storedKey);
@@ -61,6 +68,7 @@ public class EtlService {
             if (chunks.isEmpty()) {
                 log.warn("[ETL] 추출된 텍스트가 없습니다 - sourceId: {}", sourceId);
                 changeStatus(sourceId, EmbeddingStatus.FAILED);
+                finalStatus = EmbeddingStatus.FAILED;
                 return;
             }
 
@@ -70,13 +78,25 @@ public class EtlService {
             List<float[]> embeddings = embeddingModelClient.embed(texts);
             vectorStoreManager.insertChunks(sourceId, chunks, embeddings);
 
-            changeStatus(sourceId, EmbeddingStatus.SUCCESS, excludeFromPatchNote);
+            changeStatus(sourceId, EmbeddingStatus.SUCCESS);
+            finalStatus = EmbeddingStatus.SUCCESS;
         } catch (Exception e) {
             log.error("[ETL] 벡터화 실패 - sourceId: {}", sourceId, e);
             cleanupVectors(sourceId);
             changeStatus(sourceId, EmbeddingStatus.FAILED);
+            finalStatus = EmbeddingStatus.FAILED;
         } finally {
             deleteTempFile(tempFilePath);
+            if (finalStatus != null) {
+                eventPublisher.publishEvent(
+                        new EmbeddingCompletedEvent(
+                                publicId,
+                                projectId,
+                                memberId,
+                                sourceId,
+                                finalStatus,
+                                excludeFromPatchNote));
+            }
         }
     }
 
@@ -94,13 +114,7 @@ public class EtlService {
     }
 
     private void changeStatus(Long sourceId, EmbeddingStatus status) {
-        eventPublisher.publishEvent(new EmbeddingStatusEvent(sourceId, status));
-        embeddingStatusSseManager.send(sourceId, status);
-    }
-
-    private void changeStatus(Long sourceId, EmbeddingStatus status, boolean excludeFromPatchNote) {
-        eventPublisher.publishEvent(
-                new EmbeddingStatusEvent(sourceId, status, excludeFromPatchNote));
+        eventPublisher.publishEvent(new EmbeddingStatusUpdateEvent(sourceId, status));
         embeddingStatusSseManager.send(sourceId, status);
     }
 
