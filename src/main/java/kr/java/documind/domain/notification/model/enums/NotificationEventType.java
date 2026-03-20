@@ -7,7 +7,8 @@ public enum NotificationEventType {
     LOG_THRESHOLD(null),
     EMBEDDING_SUCCESS("문서 보기 >"),
     EMBEDDING_FAILED("다시 시도 >"),
-    PATCHNOTE_GENERATED("패치노트 작성하기 >");
+    PATCHNOTE_DOC_GENERATED("패치노트 작성하기 >"),
+    PATCHNOTE_ISSUE_GENERATED("패치노트 작성하기 >");
 
     private final String actionText;
 

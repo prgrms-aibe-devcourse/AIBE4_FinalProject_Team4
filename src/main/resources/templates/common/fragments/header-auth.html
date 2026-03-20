@@ -129,22 +129,50 @@
 
                 <!-- 알림 목록 루프 (x-for) -->
                 <template x-for="n in notifications" :key="n.id">
-                    <!-- Intersection Observer 연동을 위한 data-id 및 x-init 바인딩 -->
                     <li :data-id="n.id"
                         x-init="!n.isRead ? observer.observe($el) : null"
                         @click="handleNotificationClick(n)"
                         role="menuitem"
-                        tabindex="-1"
-                        class="relative flex items-start gap-3 px-4 py-3 hover:bg-surface-sub cursor-pointer transition-colors">
+                        class="relative flex flex-col gap-2.5 px-4 py-3.5 hover:bg-surface-sub cursor-pointer transition-colors border-b border-divider">
 
-                        <!-- 미읽음 표시 점 -->
-                        <span x-show="!n.isRead"
-                              class="absolute left-2 top-4 w-1.5 h-1.5 rounded-full bg-docu-danger"></span>
+                        <!-- 헤더 영역: [출처 배지 + 이벤트 배지 + 미읽음 점 + 시간] -->
+                        <div class="flex items-center justify-between pl-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <!-- 미읽음 표시 점 -->
+                                <span x-show="!n.isRead"
+                                      class="w-1.5 h-1.5 rounded-full bg-docu-danger"
+                                      aria-hidden="true"></span>
 
-                        <div class="flex-1 min-w-0 pl-2">
-                            <p class="text-sm font-semibold text-docu-ink truncate" x-text="n.title"></p>
-                            <p class="text-xs text-docu-secondary mt-0.5 line-clamp-2" x-text="n.message"></p>
-                            <span class="text-[10px] text-divider mt-1 block" x-text="n.createdAt"></span>
+                                <!-- 소스 타입 배지 -->
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-surface-sub text-docu-secondary-dark border border-divider"
+                                      x-text="n.sourceType"></span>
+
+                                <!-- 이벤트 타입 배지 -->
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-docu-primary-light text-docu-primary border border-docu-primary-light"
+                                      x-text="n.eventType"></span>
+                            </div>
+
+                            <!-- 시간 정보 -->
+                            <span class="text-[10px] text-gray-400 font-medium"
+                                  x-text="formatTime(n.createdAt)"></span>
+                        </div>
+
+                        <!-- 본문 영역: 메시지 제목 + 본문 -->
+                        <div class="pl-1">
+                            <p class="text-sm font-semibold text-docu-ink truncate"
+                               x-text="n.title"></p>
+                            <p class="text-xs text-docu-ink leading-relaxed line-clamp-2"
+                               x-text="n.message"></p>
+                        </div>
+
+                        <!-- 푸터 영역: 액션 버튼 (소스 URL 이동) -->
+                        <div class="pl-1 pt-1">
+                            <template x-if="n.relatedUrl && n.relatedUrl !== '#'">
+                                <div class="flex items-center gap-1 text-[11px] font-bold text-docu-primary hover:text-docu-primary-dark transition-colors">
+                                    <!-- n.actionText는 백엔드 Enum에서 정의된 텍스트 -->
+                                    <span x-text="n.actionText || '확인하기 >'"></span>
+                                </div>
+                            </template>
                         </div>
                     </li>
                 </template>

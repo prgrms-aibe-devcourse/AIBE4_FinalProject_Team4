@@ -209,5 +209,29 @@ document.addEventListener('alpine:init', () => {
                 console.error('[Notification] Batch read update failed:', error);
             }
         },
+
+        // ── Helpers ───────────────────────────────────────────────────
+        formatTime(utcString) {
+            if (!utcString) return '';
+
+            const date = new Date(utcString); // 브라우저가 자동으로 Local Timezone(KST)으로 파싱
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffMins < 1) return '방금 전';
+            if (diffMins < 60) return `${diffMins}분 전`;
+            if (diffHours < 24) return `${diffHours}시간 전`;
+            if (diffDays < 7) return `${diffDays}일 전`;
+
+            // 7일 이상 지났다면 날짜와 시간 표시 (예: 03-20 14:30)
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${month}-${day} ${hours}:${minutes}`;
+        },
     }));
 });
