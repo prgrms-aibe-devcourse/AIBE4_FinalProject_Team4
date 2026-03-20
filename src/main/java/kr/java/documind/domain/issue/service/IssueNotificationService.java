@@ -2,9 +2,12 @@ package kr.java.documind.domain.issue.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import kr.java.documind.domain.issue.event.IssueNotificationEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
+import kr.java.documind.domain.issue.model.entity.IssueAlertRule;
 import kr.java.documind.domain.issue.model.enums.IssueAlertRuleKey;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
@@ -245,8 +248,21 @@ public class IssueNotificationService {
                         .map(pm -> pm.getMember().getId())
                         .toList();
 
+        // 모든 알림 규칙을 한 번에 조회 (N+1 방지)
+        List<IssueAlertRule> rules =
+                alertRuleRepository.findByProjectIdAndMemberIdIn(projectId, allMembers);
+        Map<UUID, IssueAlertRule> ruleMap =
+                rules.stream()
+                        .collect(Collectors.toMap(IssueAlertRule::getMemberId, r -> r));
+
         // 알림 규칙 필터링
-        return allMembers.stream().filter(memberId -> isRuleEnabled(projectId, memberId, ruleKey)).toList();
+        return allMembers.stream()
+                .filter(
+                        memberId -> {
+                            IssueAlertRule rule = ruleMap.get(memberId);
+                            return rule == null || rule.isEnabled(ruleKey); // 규칙 미설정 시 기본값 true
+                        })
+                .toList();
     }
 
     /**
