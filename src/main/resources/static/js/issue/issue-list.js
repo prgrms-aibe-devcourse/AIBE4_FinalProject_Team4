@@ -817,8 +817,8 @@ async function submitStatusChange() {
 function getStatusBadge(status) {
     const statusMap = {
         TODO: { label: '대기중', class: 'badge-status-pending' },
-        IN_PROGRESS: { label: '처리중', class: 'badge-status-active' },
-        RESOLVED: { label: '해결됨', class: 'badge-status-selected' }
+        IN_PROGRESS: { label: '처리중', class: 'badge-base bg-docu-primary text-white border-docu-primary-dark' },
+        RESOLVED: { label: '해결됨', class: 'badge-base bg-docu-success text-white border-docu-success-dark' }
     };
     const { label, class: badgeClass } = statusMap[status] || { label: status, class: 'badge-default' };
     return `<span class="${badgeClass}">${label}</span>`;
@@ -903,8 +903,8 @@ function getRecommendationStatusBadge(status) {
     const statusMap = {
         RECOMMENDED: { label: '추천 대기', class: 'badge-event-suggest' },
         TODO: { label: '대기중', class: 'badge-status-pending' },
-        IN_PROGRESS: { label: '처리중', class: 'badge-status-active' },
-        RESOLVED: { label: '해결됨', class: 'badge-status-selected' },
+        IN_PROGRESS: { label: '처리중', class: 'badge-base bg-docu-primary text-white border-docu-primary-dark' },
+        RESOLVED: { label: '해결됨', class: 'badge-base bg-docu-success text-white border-docu-success-dark' },
         REJECTED: { label: '거부됨', class: 'badge-default' }
     };
     const { label, class: badgeClass } = statusMap[status] || { label: status, class: 'badge-default' };
@@ -969,13 +969,48 @@ function getPriorityBadge(priority) {
     }
 
     const priorityMap = {
-        P1: { label: 'P1 긴급', class: 'badge-severity-critical' },
-        P2: { label: 'P2 높음', class: 'badge-severity-high' },
-        P3: { label: 'P3 보통', class: 'badge-severity-medium' },
-        P4: { label: 'P4 낮음', class: 'badge-severity-low' }
+        P1: {
+            label: 'P1 긴급',
+            borderColor: 'border-docu-danger',
+            textColor: 'text-docu-danger',
+            dotColor: 'bg-docu-danger',
+            shadow: 'shadow-docu-danger'
+        },
+        P2: {
+            label: 'P2 높음',
+            borderColor: 'border-docu-primary',
+            textColor: 'text-docu-primary-dark',
+            dotColor: 'bg-docu-primary',
+            shadow: 'shadow-docu-primary'
+        },
+        P3: {
+            label: 'P3 보통',
+            borderColor: 'border-docu-warning',
+            textColor: 'text-docu-warning-dark',
+            dotColor: 'bg-docu-warning',
+            shadow: 'shadow-docu-warning'
+        },
+        P4: {
+            label: 'P4 낮음',
+            borderColor: 'border-docu-success',
+            textColor: 'text-docu-success-dark',
+            dotColor: 'bg-docu-success',
+            shadow: 'shadow-docu-success'
+        }
     };
-    const { label, class: badgeClass } = priorityMap[priority] || { label: priority, class: 'badge-default' };
-    return `<span class="${badgeClass}">${label}</span>`;
+    const config = priorityMap[priority] || {
+        label: priority,
+        borderColor: 'border-divider',
+        textColor: 'text-gray-600',
+        dotColor: 'bg-gray-400',
+        shadow: 'shadow-docu-sm'
+    };
+    return `
+        <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 ${config.borderColor} ${config.textColor} bg-surface-card ${config.shadow} transition-transform hover:-translate-y-0.5 focus-ring">
+            <span class="w-2 h-2 rounded-full ${config.dotColor}" aria-hidden="true"></span>
+            <span>${config.label}</span>
+        </button>
+    `;
 }
 
 function getAssigneeDisplay(assignee) {
