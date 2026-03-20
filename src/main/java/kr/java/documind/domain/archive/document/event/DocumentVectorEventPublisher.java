@@ -1,9 +1,6 @@
-package kr.java.documind.domain.archive.document.infrastructure;
+package kr.java.documind.domain.archive.document.event;
 
 import java.util.UUID;
-import kr.java.documind.domain.archive.document.event.DocumentVectorCreateEvent;
-import kr.java.documind.domain.archive.document.event.DocumentVectorDeleteEvent;
-import kr.java.documind.domain.archive.document.event.DocumentVectorReplaceEvent;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.global.enums.AllowedFileType;
@@ -18,35 +15,44 @@ public class DocumentVectorEventPublisher {
     private final ApplicationEventPublisher eventPublisher;
 
     public void createEvent(
-            UUID projectId, DocumentMetadata documentMetadata, boolean excludeFromPatchNote) {
+            UUID projectId,
+            UUID memberId,
+            DocumentMetadata documentMetadata,
+            boolean excludeFromPatchNote) {
         if (isEmbeddable(documentMetadata.getExtension())) {
             documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
             eventPublisher.publishEvent(
                     new DocumentVectorCreateEvent(
                             projectId,
+                            memberId,
                             documentMetadata.getId(),
                             documentMetadata.getStoredKey(),
                             excludeFromPatchNote));
         }
     }
 
-    public void retryEvent(UUID projectId, DocumentMetadata documentMetadata) {
+    public void retryEvent(UUID projectId, UUID memberId, DocumentMetadata documentMetadata) {
         documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
         eventPublisher.publishEvent(
                 new DocumentVectorCreateEvent(
                         projectId,
+                        memberId,
                         documentMetadata.getId(),
                         documentMetadata.getStoredKey(),
                         false));
     }
 
     public void replaceEvent(
-            UUID projectId, DocumentMetadata documentMetadata, boolean excludeFromPatchNote) {
+            UUID projectId,
+            UUID memberId,
+            DocumentMetadata documentMetadata,
+            boolean excludeFromPatchNote) {
         if (isEmbeddable(documentMetadata.getExtension())) {
             documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
             eventPublisher.publishEvent(
                     new DocumentVectorReplaceEvent(
                             projectId,
+                            memberId,
                             documentMetadata.getId(),
                             documentMetadata.getStoredKey(),
                             excludeFromPatchNote));

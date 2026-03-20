@@ -7,7 +7,7 @@ import java.util.UUID;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentFileStorage;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentGroupManager;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
-import kr.java.documind.domain.archive.document.infrastructure.DocumentVectorEventPublisher;
+import kr.java.documind.domain.archive.document.event.DocumentVectorEventPublisher;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUpdateRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.DocumentUploadRequest;
 import kr.java.documind.domain.archive.document.model.dto.request.NewVersionDocumentUploadRequest;
@@ -62,7 +62,7 @@ public class DocumentMetadataService {
 
     @Transactional
     public DocumentMetadataResponse uploadDocumentWithNewGroup(
-            UUID projectId, DocumentUploadRequest request, MultipartFile file) {
+            UUID projectId, UUID memberId, DocumentUploadRequest request, MultipartFile file) {
         validateFile(file);
 
         String category = normalizeText(request.category());
@@ -75,12 +75,13 @@ public class DocumentMetadataService {
                         documentGroupManager.createGroup(projectId, category, groupName));
 
         return saveFileAndCreateMetadata(
-                projectId, group, file, request, request.excludeFromPatchNote());
+                projectId, memberId, group, file, request, request.excludeFromPatchNote());
     }
 
     @Transactional
     public DocumentMetadataResponse uploadDocumentToGroup(
             UUID projectId,
+            UUID memberId,
             Long groupId,
             NewVersionDocumentUploadRequest request,
             MultipartFile file) {
@@ -91,12 +92,16 @@ public class DocumentMetadataService {
         validateVersionUniqueness(group, request);
 
         return saveFileAndCreateMetadata(
-                projectId, group, file, request, request.excludeFromPatchNote());
+                projectId, memberId, group, file, request, request.excludeFromPatchNote());
     }
 
     @Transactional
     public void updateDocument(
-            UUID projectId, Long documentId, DocumentUpdateRequest request, MultipartFile file) {
+            UUID projectId,
+            UUID memberId,
+            Long documentId,
+            DocumentUpdateRequest request,
+            MultipartFile file) {
         DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
 
         if (file != null && !file.isEmpty()) {
@@ -123,7 +128,13 @@ public class DocumentMetadataService {
 
         if (fileChanged) {
             validateHashUniqueness(newHash, group.getProjectId());
-            replaceFile(projectId, documentMetadata, file, newHash, request.excludeFromPatchNote());
+            replaceFile(
+                    projectId,
+                    memberId,
+                    documentMetadata,
+                    file,
+                    newHash,
+                    request.excludeFromPatchNote());
         }
 
         if (versionChanged) {
@@ -152,14 +163,14 @@ public class DocumentMetadataService {
     }
 
     @Transactional
-    public void retryEmbedding(UUID projectId, Long documentId) {
+    public void retryEmbedding(UUID projectId, UUID memberId, Long documentId) {
         DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
 
         if (documentMetadata.getEmbeddingStatus() != EmbeddingStatus.FAILED) {
             throw new BadRequestException("임베딩 실패 상태인 문서만 재시도할 수 있습니다.");
         }
 
-        documentVectorEventPublisher.retryEvent(projectId, documentMetadata);
+        documentVectorEventPublisher.retryEvent(projectId, memberId, documentMetadata);
     }
 
     private DocumentMetadata findMetadata(Long documentId, UUID projectId) {
@@ -196,6 +207,7 @@ public class DocumentMetadataService {
 
     private DocumentMetadataResponse saveFileAndCreateMetadata(
             UUID projectId,
+            UUID memberId,
             DocumentGroup group,
             MultipartFile file,
             VersionFields version,
@@ -220,7 +232,8 @@ public class DocumentMetadataService {
 
         boolean effectiveExclude =
                 resolveExcludeFromPatchNote(storedFile.extension(), excludeFromPatchNote);
-        documentVectorEventPublisher.createEvent(projectId, documentMetadata, effectiveExclude);
+        documentVectorEventPublisher.createEvent(
+                projectId, memberId, documentMetadata, effectiveExclude);
 
         return DocumentMetadataResponse.from(documentMetadata);
     }
@@ -235,6 +248,7 @@ public class DocumentMetadataService {
 
     private void replaceFile(
             UUID projectId,
+            UUID memberId,
             DocumentMetadata documentMetadata,
             MultipartFile file,
             String newHash,
@@ -252,7 +266,8 @@ public class DocumentMetadataService {
 
         boolean effectiveExclude =
                 resolveExcludeFromPatchNote(storedFile.extension(), excludeFromPatchNote);
-        documentVectorEventPublisher.replaceEvent(projectId, documentMetadata, effectiveExclude);
+        documentVectorEventPublisher.replaceEvent(
+                projectId, memberId, documentMetadata, effectiveExclude);
     }
 
     private boolean resolveExcludeFromPatchNote(String extension, Boolean excludeFromPatchNote) {
