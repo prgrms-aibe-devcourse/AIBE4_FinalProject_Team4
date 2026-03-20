@@ -3,7 +3,7 @@ package kr.java.documind.domain.archive.document.event;
 import java.time.OffsetDateTime;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
-import kr.java.documind.domain.archive.vector.event.EmbeddingStatusEvent;
+import kr.java.documind.domain.archive.vector.event.EmbeddingStatusUpdateEvent;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.domain.patchnote.event.DocumentEmbeddedEvent;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class EmbeddingStatusUpdateListener {
 
     @EventListener
     @Transactional
-    public void handle(EmbeddingStatusEvent event) {
+    public void handle(EmbeddingStatusUpdateEvent event) {
         documentMetadataManager.updateEmbeddingStatusIfExists(event.sourceId(), event.status());
 
         if (event.status() == EmbeddingStatus.SUCCESS) {
