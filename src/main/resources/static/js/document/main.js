@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const action = target.dataset.action;
         const groupId = Number(target.dataset.groupId);
         const documentId = Number(target.dataset.documentId);
-
+maideta
         switch (action) {
             case 'startEditGroupName':
                 startEditGroupName(groupId, target.dataset.groupName);
