@@ -175,24 +175,17 @@ function renderGroupingInfo(issue) {
     container.innerHTML = `
         <div class="space-y-3 text-sm">
             <div>
-                <label class="block text-xs font-semibold text-docu-secondary mb-1">에러 분류</label>
-                <p class="text-docu-ink">Fingerprint</p>
-                <p class="text-xs text-docu-secondary font-mono mt-1">${issue.fingerprint ? issue.fingerprint.substring(0, 16) + '...' : 'N/A'}</p>
+                <label class="block text-xs font-semibold text-docu-secondary mb-1">오류 발생 위치</label>
+                <p class="text-docu-ink font-mono text-xs">${issue.stackKey || 'N/A'}</p>
             </div>
             <div>
                 <label class="block text-xs font-semibold text-docu-secondary mb-1">에러 타입</label>
                 <p class="text-docu-ink">${issue.errorType || 'UNKNOWN'}</p>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-docu-secondary mb-1">스택트레이스</label>
-                <p class="text-docu-secondary">${issue.stackKey ? '분석 완료' : 'N/A'}</p>
-            </div>
-            ${issue.similarityResults && issue.similarityResults.length > 0 ? `
-            <div>
                 <label class="block text-xs font-semibold text-docu-secondary mb-1">유사 이슈</label>
-                <p class="text-docu-ink">${issue.similarityResults.length}건 발견</p>
+                <p class="text-docu-ink">${issue.similarityResults && issue.similarityResults.length > 0 ? `${issue.similarityResults.length}건 발견` : '0건'}</p>
             </div>
-            ` : ''}
         </div>
     `;
 }
@@ -800,18 +793,53 @@ function renderMetaInfo(issue) {
         `;
     }
 
-    // 우선순위 표시
+    // 우선순위 표시 (severity-button 스타일)
     const priorityInfoEl = document.getElementById('priorityInfo');
     priorityInfoEl.dataset.priority = issue.priority || '';
     if (issue.priority) {
         const priorityMap = {
-            P1: { label: 'P1 긴급', color: 'bg-surface-secondary text-docu-danger' },
-            P2: { label: 'P2 높음', color: 'bg-surface-secondary text-orange-700' },
-            P3: { label: 'P3 보통', color: 'bg-yellow-100 text-yellow-700' },
-            P4: { label: 'P4 낮음', color: 'bg-gray-100 text-docu-ink' }
+            P1: {
+                label: 'P1 긴급',
+                borderColor: 'border-docu-danger',
+                textColor: 'text-docu-danger',
+                dotColor: 'bg-docu-danger',
+                shadow: 'shadow-docu-danger'
+            },
+            P2: {
+                label: 'P2 높음',
+                borderColor: 'border-docu-primary',
+                textColor: 'text-docu-primary-dark',
+                dotColor: 'bg-docu-primary',
+                shadow: 'shadow-docu-primary'
+            },
+            P3: {
+                label: 'P3 보통',
+                borderColor: 'border-docu-warning',
+                textColor: 'text-docu-warning-dark',
+                dotColor: 'bg-docu-warning',
+                shadow: 'shadow-docu-warning'
+            },
+            P4: {
+                label: 'P4 낮음',
+                borderColor: 'border-docu-success',
+                textColor: 'text-docu-success-dark',
+                dotColor: 'bg-docu-success',
+                shadow: 'shadow-docu-success'
+            }
         };
-        const { label, color } = priorityMap[issue.priority] || { label: issue.priority, color: 'bg-gray-100 text-docu-ink' };
-        priorityInfoEl.innerHTML = `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;
+        const priority = priorityMap[issue.priority] || {
+            label: issue.priority,
+            borderColor: 'border-divider',
+            textColor: 'text-gray-600',
+            dotColor: 'bg-gray-400',
+            shadow: 'shadow-docu-sm'
+        };
+        priorityInfoEl.innerHTML = `
+            <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 ${priority.borderColor} ${priority.textColor} bg-surface-card ${priority.shadow} transition-transform hover:-translate-y-0.5 focus-ring">
+                <span class="w-2 h-2 rounded-full ${priority.dotColor}" aria-hidden="true"></span>
+                <span>${priority.label}</span>
+            </button>
+        `;
     } else {
         priorityInfoEl.innerHTML = '<span class="text-xs text-docu-tertiary">미설정</span>';
     }

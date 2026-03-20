@@ -108,7 +108,9 @@
         <input type="hidden" id="publicId" th:value="${publicId}">
         <input type="hidden" id="projectId" th:value="${projectId}">
 
-        <!-- ==================== 추천 상세 모달 ==================== -->
+    </section>
+
+    <!-- ==================== 추천 상세 모달 ==================== -->
         <div id="recommendationDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center" onclick="if(event.target === this) closeModal('recommendationDetailModal')">
             <div class="card-modal w-full max-w-6xl max-h-[90vh] flex flex-col">
                 <!-- 헤더 -->
@@ -272,7 +274,7 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                             </svg>
-                            상세 분석
+                            상세 분석 리포트
                         </button>
                     </div>
                 </div>
@@ -341,8 +343,6 @@
                 </div>
             </div>
         </div>
-
-    </section>
 
 </th:block>
 
