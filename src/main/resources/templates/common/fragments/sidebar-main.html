@@ -222,7 +222,7 @@
             </a>
 
             <!-- 패치노트 -->
-            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/patch-notes' : '#'}"
+            <a th:href="${activeProject != null ? '/projects/' + activeProject + '/patch-note/pending-items' : '#'}"
                th:classappend="${activeMenu == 'patch-notes'} ? 'sidebar-link-active' : (${activeProject == null} ? 'text-gray-300 pointer-events-none cursor-not-allowed' : 'sidebar-link-idle')"
                class="sidebar-link"
                th:attr="aria-current=${activeMenu == 'patch-notes' ? 'page' : null},

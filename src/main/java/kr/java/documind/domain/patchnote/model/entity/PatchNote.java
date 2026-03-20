@@ -82,20 +82,25 @@ public class PatchNote extends BaseEntity {
         return patchNote;
     }
 
-    public void updateContent(String title, String content) {
-        if (this.status == PatchNoteStatus.DELETED) {
-            throw new IllegalStateException("삭제된 패치노트는 수정할 수 없습니다.");
-        }
-        this.title = title;
-        this.content = content;
-    }
+    // ── 미사용 메서드 (TODO 미구현 기능) ────────────────────────────────────
+    // 아래 두 메서드는 현재 대응 API가 없어 호출되지 않는다.
+    // 유저 시나리오상 PatchNoteStatus는 DRAFT / DELETED만 사용한다.
+    // 향후 편집·발행 기능 추가 시 주석을 해제하고 API 엔드포인트를 함께 구현한다.
 
-    public void publish() {
-        if (this.status != PatchNoteStatus.DRAFT) {
-            throw new IllegalStateException("DRAFT 상태에서만 발행할 수 있습니다. 현재 상태: " + this.status);
-        }
-        this.status = PatchNoteStatus.PUBLISHED;
-    }
+    // public void updateContent(String title, String content) {
+    //     if (this.status == PatchNoteStatus.DELETED) {
+    //         throw new IllegalStateException("삭제된 패치노트는 수정할 수 없습니다.");
+    //     }
+    //     this.title = title;
+    //     this.content = content;
+    // }
+
+    // public void publish() {
+    //     if (this.status != PatchNoteStatus.DRAFT) {
+    //         throw new IllegalStateException("DRAFT 상태에서만 발행할 수 있습니다. 현재 상태: " + this.status);
+    //     }
+    //     this.status = PatchNoteStatus.PUBLISHED;
+    // }
 
     public void softDelete() {
         if (this.status == PatchNoteStatus.DELETED) {
@@ -113,9 +118,7 @@ public class PatchNote extends BaseEntity {
         return this.status == PatchNoteStatus.DRAFT;
     }
 
-    public boolean isPublished() {
-        return this.status == PatchNoteStatus.PUBLISHED;
-    }
+    // public boolean isPublished() { return this.status == PatchNoteStatus.PUBLISHED; }
 
     public boolean isDeleted() {
         return this.status == PatchNoteStatus.DELETED;

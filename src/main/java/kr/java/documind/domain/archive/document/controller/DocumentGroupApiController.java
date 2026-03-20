@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,9 +42,11 @@ public class DocumentGroupApiController {
 
     @GetMapping
     public ApiResponse<List<DocumentGroupResponse>> getDocumentGroups(
-            @ProjectId UUID projectId, @PageableDefault(sort = "groupName") Pageable pageable) {
+            @ProjectId UUID projectId,
+            @RequestParam(required = false) String keyword,
+            @PageableDefault(sort = "groupName") Pageable pageable) {
         Page<DocumentGroupResponse> groups =
-                documentGroupService.getDocumentGroups(projectId, pageable);
+                documentGroupService.getDocumentGroups(projectId, keyword, pageable);
         return PageResponses.of(groups);
     }
 

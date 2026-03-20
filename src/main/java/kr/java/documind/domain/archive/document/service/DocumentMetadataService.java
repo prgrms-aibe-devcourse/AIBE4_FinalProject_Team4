@@ -21,6 +21,7 @@ import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
+import kr.java.documind.global.util.ChoseongUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class DocumentMetadataService {
 
     private final DocumentFileStorage documentFileStorage;
     private final DocumentVectorEventPublisher documentVectorEventPublisher;
+    private final ChoseongUtil choseongUtil;
 
     public DocumentDetailResponse getDocumentDetail(UUID projectId, Long documentId) {
         DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
@@ -73,7 +75,9 @@ public class DocumentMetadataService {
         documentGroupManager.validateGroupNameUniqueness(projectId, category, groupName);
 
         DocumentGroup group =
-                documentGroupManager.save(DocumentGroup.create(projectId, category, groupName));
+                documentGroupManager.save(
+                        DocumentGroup.create(
+                                projectId, category, groupName, choseongUtil.extract(groupName)));
 
         return saveFileAndCreateMetadata(projectId, group, file, request, isProcessed);
     }
@@ -127,7 +131,7 @@ public class DocumentMetadataService {
 
         if (fileChanged) {
             validateHashUniqueness(newHash, group.getProjectId());
-            replaceFile(projectId, documentMetadata, file, newHash);
+            replaceFile(projectId, documentMetadata, file, newHash, isProcessed);
         }
 
         if (versionChanged) {
@@ -150,7 +154,7 @@ public class DocumentMetadataService {
         boolean isLastDocument = documentMetadataManager.countByGroup(group) == 1;
 
         documentFileStorage.deleteOnCommit(documentMetadata.getStoredKey());
-        documentVectorEventPublisher.deleteEvent(documentMetadata.getId());
+        documentVectorEventPublisher.deleteEvent(projectId, documentMetadata.getId());
 
         documentMetadataManager.delete(documentMetadata);
 
@@ -226,7 +230,7 @@ public class DocumentMetadataService {
                                 EmbeddingStatus.NONE,
                                 OffsetDateTime.now(ZoneOffset.UTC)));
 
-        documentVectorEventPublisher.createEvent(projectId, documentMetadata);
+        documentVectorEventPublisher.createEvent(projectId, documentMetadata, isProcessed);
 
         return DocumentMetadataResponse.from(documentMetadata);
     }
@@ -244,7 +248,11 @@ public class DocumentMetadataService {
     }
 
     private void replaceFile(
-            UUID projectId, DocumentMetadata documentMetadata, MultipartFile file, String newHash) {
+            UUID projectId,
+            DocumentMetadata documentMetadata,
+            MultipartFile file,
+            String newHash,
+            boolean excludeFromPatchNote) {
         DocumentFileStorage.StoredDocumentFile storedFile =
                 documentFileStorage.replace(documentMetadata.getStoredKey(), file);
 
@@ -255,6 +263,7 @@ public class DocumentMetadataService {
                 storedFile.size(),
                 storedFile.storedKey());
 
-        documentVectorEventPublisher.replaceEvent(projectId, documentMetadata);
+        documentVectorEventPublisher.replaceEvent(
+                projectId, documentMetadata, excludeFromPatchNote);
     }
 }

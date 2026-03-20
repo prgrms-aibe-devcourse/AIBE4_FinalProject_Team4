@@ -47,7 +47,7 @@ public class SidebarMenuResolver {
             case ISSUES -> activeProject != null ? "/projects/" + activeProject + "/issues" : "#";
 
             case PATCH_NOTES -> activeProject != null
-                    ? "/projects/" + activeProject + "/patch-notes"
+                    ? "/projects/" + activeProject + "/patch-note/pending-items"
                     : "#";
 
             case ALERTS -> activeProject != null ? "/projects/" + activeProject + "/alerts" : "#";

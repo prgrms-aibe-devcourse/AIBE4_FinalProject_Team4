@@ -1,10 +1,9 @@
 package kr.java.documind.domain.patchnote.service;
 
 import java.util.List;
-import java.util.UUID;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException;
-import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateDto;
+import kr.java.documind.domain.patchnote.model.dto.PendingItemCreateRequest;
 import kr.java.documind.domain.patchnote.model.entity.PendingItem;
 import kr.java.documind.domain.patchnote.model.repository.PendingItemRepository;
 import kr.java.documind.global.enums.SourceType;
@@ -21,14 +20,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-public class PendingItemService {
+public class PendingItemUpsertService {
 
     private final PendingItemRepository pendingItemRepository;
     private final VectorStoreManager vectorStoreManager;
 
-    @Lazy @Autowired private PendingItemService self;
+    /** self-invocation으로 @Retryable AOP 프록시를 경유하기 위한 자기 참조 */
+    @Lazy @Autowired private PendingItemUpsertService self;
 
-    public PendingItemService(
+    public PendingItemUpsertService(
             PendingItemRepository pendingItemRepository, VectorStoreManager vectorStoreManager) {
         this.pendingItemRepository = pendingItemRepository;
         this.vectorStoreManager = vectorStoreManager;
@@ -38,7 +38,7 @@ public class PendingItemService {
             Long sourceId,
             List<Document> chunks,
             List<float[]> embeddings,
-            PendingItemCreateDto dto) {
+            PendingItemCreateRequest dto) {
         // 1. 벡터 저장 (RDBMS 트랜잭션 미참여) — 실패 시 예외 전파, pending_item 미적재
         vectorStoreManager.insertChunks(sourceId, chunks, embeddings);
 
@@ -51,10 +51,10 @@ public class PendingItemService {
             maxAttempts = 3,
             backoff = @Backoff(delay = 500, multiplier = 2))
     @Transactional
-    public void upsertPendingItem(PendingItemCreateDto dto) {
+    public void upsertPendingItem(PendingItemCreateRequest dto) {
         pendingItemRepository
-                .findByProjectIdAndSourceTypeAndSourceId(
-                        dto.projectId(), dto.sourceType(), dto.sourceId())
+                .findByProjectIdAndSourceTypeAndSourceIdAndChangeIndex(
+                        dto.projectId(), dto.sourceType(), dto.sourceId(), dto.changeIndex())
                 .ifPresentOrElse(
                         existing -> {
                             existing.refresh(
@@ -62,10 +62,14 @@ public class PendingItemService {
                                     dto.summary(),
                                     dto.choseong(),
                                     dto.patchType(),
-                                    dto.sourceCreatedAt());
+                                    dto.sourceCreatedAt(),
+                                    dto.evidence(),
+                                    dto.score());
                             log.debug(
-                                    "[PendingItem] refresh 완료 - sourceId: {}, sourceType: {}, 유지된 status: {}",
+                                    "[PendingItem] refresh 완료 - sourceId: {}, changeIndex: {},"
+                                            + " sourceType: {}, 유지된 status: {}",
                                     dto.sourceId(),
+                                    dto.changeIndex(),
                                     dto.sourceType(),
                                     existing.getStatus());
                         },
@@ -80,18 +84,23 @@ public class PendingItemService {
                                             dto.choseong(),
                                             dto.patchType(),
                                             dto.status(),
-                                            dto.sourceCreatedAt());
+                                            dto.sourceCreatedAt(),
+                                            dto.changeIndex(),
+                                            dto.evidence(),
+                                            dto.score());
                             pendingItemRepository.save(item);
                             log.debug(
-                                    "[PendingItem] 신규 생성 완료 - sourceId: {}, sourceType: {}, status: {}",
+                                    "[PendingItem] 신규 생성 완료 - sourceId: {}, changeIndex: {},"
+                                            + " sourceType: {}, status: {}",
                                     dto.sourceId(),
+                                    dto.changeIndex(),
                                     dto.sourceType(),
                                     dto.status());
                         });
     }
 
     @Recover
-    public void recoverUpsert(DataAccessException e, PendingItemCreateDto dto) {
+    public void recoverUpsert(DataAccessException e, PendingItemCreateRequest dto) {
         log.error(
                 "[PendingItem] upsert 3회 재시도 모두 실패 — sourceId: {}, sourceType: {}",
                 dto.sourceId(),
@@ -117,39 +126,5 @@ public class PendingItemService {
         }
         // 호출 측이 PENDING_ITEM_UPSERT_FAILED 알림 이벤트를 발행할 수 있도록 예외를 전파한다.
         throw new PendingItemUpsertFailedException(dto.sourceId());
-    }
-
-    @Transactional
-    public boolean deleteForRollback(UUID projectId, Long sourceId, SourceType sourceType) {
-        return pendingItemRepository
-                .findByProjectIdAndSourceTypeAndSourceId(projectId, sourceType, sourceId)
-                .map(
-                        item -> {
-                            if (item.isCompleted()) {
-                                // 이미 패치노트에 사용된 항목 — 원본 삭제 플래그만 처리
-                                item.markSourceDeleted();
-                                log.debug(
-                                        "[PendingItem] COMPLETED 항목 sourceDeleted 처리 - sourceId: {}, sourceType: {}",
-                                        sourceId,
-                                        sourceType);
-                                return false; // 벡터 삭제 불필요
-                            } else {
-                                // PENDING / EXCLUDED → hard delete
-                                pendingItemRepository.delete(item);
-                                log.debug(
-                                        "[PendingItem] {} 항목 hard delete - sourceId: {}, sourceType: {}",
-                                        item.getStatus(),
-                                        sourceId,
-                                        sourceType);
-                                return true; // 벡터도 삭제 필요
-                            }
-                        })
-                .orElse(false); // 항목 없음
-    }
-
-    @Transactional
-    public void markSourceDeleted(UUID projectId, Long sourceId, SourceType sourceType) {
-        pendingItemRepository.markSourceDeleted(projectId, sourceType, sourceId);
-        log.debug("[PendingItem] 원본 삭제 처리 - sourceId: {}, sourceType: {}", sourceId, sourceType);
     }
 }

@@ -15,20 +15,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
 
-    // ─────────────────────────────────────────────
-    // 단건 조회
-    // ─────────────────────────────────────────────
-
     // soft delete 제외
     Optional<PatchNote> findByIdAndDeletedAtIsNull(Long id);
 
     // 버전으로 조회 (중복 확인용)
     Optional<PatchNote> findByProjectIdAndMajorVersionAndMinorVersionAndPatchVersion(
             UUID projectId, Integer majorVersion, Integer minorVersion, Integer patchVersion);
-
-    // ─────────────────────────────────────────────
-    // 목록 조회
-    // ─────────────────────────────────────────────
 
     // 프로젝트 내 활성 패치노트 목록 (최신순)
     @Query(
@@ -52,16 +44,20 @@ public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
     List<PatchNote> findAllByProjectIdAndStatus(
             @Param("projectId") UUID projectId, @Param("status") PatchNoteStatus status);
 
-    // ─────────────────────────────────────────────
-    // 버전 중복 확인
-    // ─────────────────────────────────────────────
-
-    boolean existsByProjectIdAndMajorVersionAndMinorVersionAndPatchVersion(
-            UUID projectId, Integer majorVersion, Integer minorVersion, Integer patchVersion);
-
-    // ─────────────────────────────────────────────
-    // soft delete
-    // ─────────────────────────────────────────────
+    @Query(
+            """
+            SELECT COUNT(p) > 0 FROM PatchNote p
+            WHERE p.projectId    = :projectId
+              AND p.majorVersion = :majorVersion
+              AND p.minorVersion = :minorVersion
+              AND p.patchVersion = :patchVersion
+              AND p.deletedAt IS NULL
+            """)
+    boolean existsByVersionAndNotDeleted(
+            @Param("projectId") UUID projectId,
+            @Param("majorVersion") Integer majorVersion,
+            @Param("minorVersion") Integer minorVersion,
+            @Param("patchVersion") Integer patchVersion);
 
     @Modifying
     @Query(
@@ -76,6 +72,25 @@ public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
     int softDelete(
             @Param("id") Long id,
             @Param("projectId") UUID projectId,
+            @Param("deletedAt") OffsetDateTime deletedAt);
+
+    @Modifying
+    @Query(
+            """
+            UPDATE PatchNote p
+            SET p.status    = 'DELETED',
+                p.deletedAt = :deletedAt
+            WHERE p.projectId    = :projectId
+              AND p.majorVersion = :majorVersion
+              AND p.minorVersion = :minorVersion
+              AND p.patchVersion = :patchVersion
+              AND p.deletedAt IS NULL
+            """)
+    int softDeleteByVersion(
+            @Param("projectId") UUID projectId,
+            @Param("majorVersion") Integer majorVersion,
+            @Param("minorVersion") Integer minorVersion,
+            @Param("patchVersion") Integer patchVersion,
             @Param("deletedAt") OffsetDateTime deletedAt);
 
     // 다건 soft delete

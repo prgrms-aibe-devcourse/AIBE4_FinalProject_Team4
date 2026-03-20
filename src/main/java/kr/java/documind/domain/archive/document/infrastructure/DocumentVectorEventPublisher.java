@@ -17,12 +17,16 @@ public class DocumentVectorEventPublisher {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public void createEvent(UUID projectId, DocumentMetadata documentMetadata) {
+    public void createEvent(
+            UUID projectId, DocumentMetadata documentMetadata, boolean excludeFromPatchNote) {
         if (isEmbeddable(documentMetadata.getExtension())) {
             documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
             eventPublisher.publishEvent(
                     new DocumentVectorCreateEvent(
-                            projectId, documentMetadata.getId(), documentMetadata.getStoredKey()));
+                            projectId,
+                            documentMetadata.getId(),
+                            documentMetadata.getStoredKey(),
+                            excludeFromPatchNote));
         }
     }
 
@@ -30,23 +34,30 @@ public class DocumentVectorEventPublisher {
         documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
         eventPublisher.publishEvent(
                 new DocumentVectorCreateEvent(
-                        projectId, documentMetadata.getId(), documentMetadata.getStoredKey()));
+                        projectId,
+                        documentMetadata.getId(),
+                        documentMetadata.getStoredKey(),
+                        false));
     }
 
-    public void replaceEvent(UUID projectId, DocumentMetadata documentMetadata) {
+    public void replaceEvent(
+            UUID projectId, DocumentMetadata documentMetadata, boolean excludeFromPatchNote) {
         if (isEmbeddable(documentMetadata.getExtension())) {
             documentMetadata.changeEmbeddingStatus(EmbeddingStatus.PENDING);
             eventPublisher.publishEvent(
                     new DocumentVectorReplaceEvent(
-                            projectId, documentMetadata.getId(), documentMetadata.getStoredKey()));
+                            projectId,
+                            documentMetadata.getId(),
+                            documentMetadata.getStoredKey(),
+                            excludeFromPatchNote));
         } else {
             documentMetadata.changeEmbeddingStatus(EmbeddingStatus.NONE);
-            deleteEvent(documentMetadata.getId());
+            deleteEvent(projectId, documentMetadata.getId());
         }
     }
 
-    public void deleteEvent(Long documentId) {
-        eventPublisher.publishEvent(new DocumentVectorDeleteEvent(documentId));
+    public void deleteEvent(UUID projectId, Long documentId) {
+        eventPublisher.publishEvent(new DocumentVectorDeleteEvent(projectId, documentId));
     }
 
     private boolean isEmbeddable(String extension) {

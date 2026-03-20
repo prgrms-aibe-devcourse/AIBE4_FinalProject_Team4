@@ -29,6 +29,14 @@ public class VectorStoreRepository {
             "SELECT content FROM vector_store WHERE source_id = ? AND metadata->>'source_type' = ?"
                     + " ORDER BY COALESCE((metadata->>'chunk_index')::int, 0) LIMIT ?";
 
+    private static final String FIND_ALL_CONTENTS_BY_SOURCE_ID_SQL =
+            "SELECT content FROM vector_store WHERE source_id = ? AND metadata->>'source_type' = ?"
+                    + " ORDER BY COALESCE((metadata->>'chunk_index')::int, 0)";
+
+    private static final String UPDATE_AFFECTS_PLAYER_SQL =
+            "UPDATE vector_store SET metadata = metadata || jsonb_build_object('affects_player', ?::boolean)"
+                    + " WHERE source_id = ? AND metadata->>'source_type' = ?";
+
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
@@ -63,6 +71,35 @@ public class VectorStoreRepository {
     public List<String> findContentsBySourceId(Long sourceId, SourceType sourceType, int limit) {
         return jdbcTemplate.queryForList(
                 FIND_CONTENTS_BY_SOURCE_ID_SQL, String.class, sourceId, sourceType.name(), limit);
+    }
+
+    /**
+     * 해당 소스의 모든 벡터 청크 텍스트를 chunk_index 오름차순으로 반환한다.
+     *
+     * <p>LIMIT 없이 전체를 가져오므로 문서 버전 간 diff 계산 등 순서 보존이 필요한 경우에 사용한다.
+     *
+     * @param sourceId 대상 소스 ID
+     * @param sourceType 소스 타입 (DOCUMENT)
+     * @return chunk_index 오름차순 정렬된 청크 텍스트 목록
+     */
+    public List<String> findAllContentsBySourceId(Long sourceId, SourceType sourceType) {
+        return jdbcTemplate.queryForList(
+                FIND_ALL_CONTENTS_BY_SOURCE_ID_SQL, String.class, sourceId, sourceType.name());
+    }
+
+    /**
+     * 해당 소스의 모든 벡터 청크 메타데이터에 {@code affects_player} 필드를 upsert한다.
+     *
+     * <p>PostgreSQL {@code jsonb ||} 연산자로 기존 메타데이터를 유지하면서 키만 덮어쓴다. reranking 쿼리에서 {@code
+     * metadata->>'affects_player'} 필터로 활용된다.
+     *
+     * @param sourceId 대상 소스 ID
+     * @param sourceType 소스 타입 (DOCUMENT)
+     * @param affectsPlayer 유저 직접 영향 여부 (LLM isUserFacing)
+     */
+    public void updateAffectsPlayerBySourceId(
+            Long sourceId, SourceType sourceType, boolean affectsPlayer) {
+        jdbcTemplate.update(UPDATE_AFFECTS_PLAYER_SQL, affectsPlayer, sourceId, sourceType.name());
     }
 
     private String toJsonb(Map<String, Object> metadata) {

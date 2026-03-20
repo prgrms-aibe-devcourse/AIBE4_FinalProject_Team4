@@ -1,13 +1,15 @@
 package kr.java.documind.domain.patchnote.event;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record DocumentEmbeddedEvent(
         Long sourceId,
         UUID projectId,
+        Long documentGroupId,
         String documentName,
         String documentGroupName,
         String category,
         boolean isNewDocument,
-        Instant occurredAt) {}
+        boolean excludeFromPatchNote,
+        OffsetDateTime sourceCreatedAt) {}
