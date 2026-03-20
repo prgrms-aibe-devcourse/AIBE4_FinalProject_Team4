@@ -79,9 +79,6 @@ public class DocumentMetadata {
     @Column(nullable = false)
     private String storedKey;
 
-    @Column(nullable = false)
-    private boolean isProcessed;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EmbeddingStatus embeddingStatus;
@@ -112,7 +109,6 @@ public class DocumentMetadata {
             String hash,
             long size,
             String storedKey,
-            boolean isProcessed,
             EmbeddingStatus embeddingStatus,
             OffsetDateTime uploadedAt) {
         this.domainSource = domainSource;
@@ -126,7 +122,6 @@ public class DocumentMetadata {
         this.hash = hash;
         this.size = size;
         this.storedKey = storedKey;
-        this.isProcessed = isProcessed;
         this.embeddingStatus = embeddingStatus;
         this.uploadedAt = uploadedAt;
     }
@@ -135,6 +130,7 @@ public class DocumentMetadata {
             DomainSource domainSource,
             DocumentGroup documentGroup,
             String documentName,
+            String choseong,
             String extension,
             int majorVersion,
             int minorVersion,
@@ -142,14 +138,13 @@ public class DocumentMetadata {
             String hash,
             long size,
             String storedKey,
-            boolean isProcessed,
             EmbeddingStatus embeddingStatus,
             OffsetDateTime uploadedAt) {
         return new DocumentMetadata(
                 domainSource,
                 documentGroup,
                 documentName,
-                "초성",
+                choseong,
                 extension,
                 majorVersion,
                 minorVersion,
@@ -157,7 +152,6 @@ public class DocumentMetadata {
                 hash,
                 size,
                 storedKey,
-                isProcessed,
                 embeddingStatus,
                 uploadedAt);
     }
@@ -173,17 +167,13 @@ public class DocumentMetadata {
     }
 
     public void updateFile(
-            String documentName, String extension, String hash, long size, String storedKey) {
+            String documentName, String choseong, String extension, String hash, long size, String storedKey) {
         this.documentName = documentName;
-        this.choseong = "초성수정";
+        this.choseong = choseong;
         this.extension = extension;
         this.hash = hash;
         this.size = size;
         this.storedKey = storedKey;
-    }
-
-    public void changeProcessed(boolean isProcessed) {
-        this.isProcessed = isProcessed;
     }
 
     public void changeEmbeddingStatus(EmbeddingStatus embeddingStatus) {

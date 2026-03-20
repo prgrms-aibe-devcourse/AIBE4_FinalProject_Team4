@@ -26,6 +26,7 @@ class DocumentMetadataTest {
                 DomainSource.create(SourceType.DOCUMENT),
                 createGroup(),
                 "testDoc",
+                "ㅌㅅㄷ",
                 "pdf",
                 1,
                 0,
@@ -33,7 +34,6 @@ class DocumentMetadataTest {
                 "abc123hash",
                 1024L,
                 "stored/key",
-                false,
                 EmbeddingStatus.NONE,
                 OffsetDateTime.now(ZoneOffset.UTC));
     }
@@ -56,6 +56,7 @@ class DocumentMetadataTest {
                             domainSource,
                             group,
                             "문서이름",
+                            "ㅁㅅㅇㄹ",
                             "pdf",
                             2,
                             1,
@@ -63,7 +64,6 @@ class DocumentMetadataTest {
                             "hashValue",
                             2048L,
                             "stored/test-key",
-                            true,
                             EmbeddingStatus.PENDING,
                             uploadedAt);
 
@@ -71,6 +71,7 @@ class DocumentMetadataTest {
             assertThat(metadata.getDomainSource()).isEqualTo(domainSource);
             assertThat(metadata.getDocumentGroup()).isEqualTo(group);
             assertThat(metadata.getDocumentName()).isEqualTo("문서이름");
+            assertThat(metadata.getChoseong()).isEqualTo("ㅁㅅㅇㄹ");
             assertThat(metadata.getExtension()).isEqualTo("pdf");
             assertThat(metadata.getMajorVersion()).isEqualTo(2);
             assertThat(metadata.getMinorVersion()).isEqualTo(1);
@@ -78,7 +79,6 @@ class DocumentMetadataTest {
             assertThat(metadata.getHash()).isEqualTo("hashValue");
             assertThat(metadata.getSize()).isEqualTo(2048L);
             assertThat(metadata.getStoredKey()).isEqualTo("stored/test-key");
-            assertThat(metadata.isProcessed()).isTrue();
             assertThat(metadata.getEmbeddingStatus()).isEqualTo(EmbeddingStatus.PENDING);
             assertThat(metadata.getUploadedAt()).isEqualTo(uploadedAt);
         }
@@ -141,7 +141,7 @@ class DocumentMetadataTest {
         void updateFile_UpdatesAllFileFields() {
             DocumentMetadata metadata = createMetadata();
 
-            metadata.updateFile("newDoc", "docx", "newHash", 4096L, "stored/new-key");
+            metadata.updateFile("newDoc", "ㄴㄷ", "docx", "newHash", 4096L, "stored/new-key");
 
             assertThat(metadata.getDocumentName()).isEqualTo("newDoc");
             assertThat(metadata.getExtension()).isEqualTo("docx");
@@ -156,37 +156,10 @@ class DocumentMetadataTest {
             DocumentMetadata metadata = createMetadata();
             String originalChoseong = metadata.getChoseong();
 
-            metadata.updateFile("새문서", "pdf", "newHash", 2048L, "stored/new-key");
+            metadata.updateFile("새문서", "ㅅㅁㅅ", "pdf", "newHash", 2048L, "stored/new-key");
 
             assertThat(metadata.getChoseong()).isNotNull();
             assertThat(metadata.getChoseong()).isNotEqualTo(originalChoseong);
-        }
-    }
-
-    @Nested
-    @DisplayName("changeProcessed")
-    class ChangeProcessed {
-
-        @Test
-        @DisplayName("false에서 true로 변경")
-        void changeProcessed_FalseToTrue() {
-            DocumentMetadata metadata = createMetadata();
-            assertThat(metadata.isProcessed()).isFalse();
-
-            metadata.changeProcessed(true);
-
-            assertThat(metadata.isProcessed()).isTrue();
-        }
-
-        @Test
-        @DisplayName("true에서 false로 변경")
-        void changeProcessed_TrueToFalse() {
-            DocumentMetadata metadata = createMetadata();
-            metadata.changeProcessed(true);
-
-            metadata.changeProcessed(false);
-
-            assertThat(metadata.isProcessed()).isFalse();
         }
     }
 

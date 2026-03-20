@@ -45,10 +45,6 @@ public class DocumentGroupManager {
                 .map(this::toDocumentGroupSummaryResult);
     }
 
-    public String extractChoseong(String text) {
-        return choseongUtil.extract(text);
-    }
-
     public List<String> findDistinctGroupNames(UUID projectId) {
         return documentGroupRepository.findDistinctGroupNamesByProjectId(projectId);
     }
@@ -57,12 +53,14 @@ public class DocumentGroupManager {
         return documentGroupRepository.findDistinctCategoriesByProjectId(projectId);
     }
 
-    public void validateGroupNameUniqueness(UUID projectId, String category, String groupName) {
-        if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
-                projectId, category, groupName)) {
-            throw new ConflictException(
-                    String.format("문서 그룹명(%s)이 카테고리(%s)에 이미 존재합니다.", groupName, category));
-        }
+    public DocumentGroup createGroup(UUID projectId, String category, String groupName) {
+        String choseong = choseongUtil.extract(groupName);
+        return DocumentGroup.create(projectId, category, groupName, choseong);
+    }
+
+    public void updateGroupName(DocumentGroup group, String groupName) {
+        String choseong = choseongUtil.extract(groupName);
+        group.updateGroupName(groupName, choseong);
     }
 
     public DocumentGroup save(DocumentGroup group) {
@@ -71,6 +69,14 @@ public class DocumentGroupManager {
 
     public void delete(DocumentGroup group) {
         documentGroupRepository.delete(group);
+    }
+
+    public void validateGroupNameUniqueness(UUID projectId, String category, String groupName) {
+        if (documentGroupRepository.existsByProjectIdAndCategoryAndGroupName(
+                projectId, category, groupName)) {
+            throw new ConflictException(
+                    String.format("문서 그룹명(%s)이 카테고리(%s)에 이미 존재합니다.", groupName, category));
+        }
     }
 
     private DocumentGroupSummaryResult toDocumentGroupSummaryResult(DocumentGroupSummary summary) {

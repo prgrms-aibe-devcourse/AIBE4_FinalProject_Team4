@@ -18,10 +18,8 @@ import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
 import kr.java.documind.domain.archive.document.model.vo.DocumentDownloadResult;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
-import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
-import kr.java.documind.global.util.ChoseongUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -39,7 +37,6 @@ public class DocumentMetadataService {
 
     private final DocumentFileStorage documentFileStorage;
     private final DocumentVectorEventPublisher documentVectorEventPublisher;
-    private final ChoseongUtil choseongUtil;
 
     public DocumentDetailResponse getDocumentDetail(UUID projectId, Long documentId) {
         DocumentMetadata documentMetadata = findMetadata(documentId, projectId);
@@ -70,16 +67,15 @@ public class DocumentMetadataService {
 
         String category = normalizeText(request.category());
         String groupName = normalizeText(request.groupName());
-        boolean isProcessed = Boolean.TRUE.equals(request.isProcessed());
 
         documentGroupManager.validateGroupNameUniqueness(projectId, category, groupName);
 
         DocumentGroup group =
                 documentGroupManager.save(
-                        DocumentGroup.create(
-                                projectId, category, groupName, choseongUtil.extract(groupName)));
+                        documentGroupManager.createGroup(projectId, category, groupName));
 
-        return saveFileAndCreateMetadata(projectId, group, file, request, isProcessed);
+        return saveFileAndCreateMetadata(
+                projectId, group, file, request, request.excludeFromPatchNote());
     }
 
     @Transactional
@@ -91,11 +87,11 @@ public class DocumentMetadataService {
         validateFile(file);
 
         DocumentGroup group = documentGroupManager.getByIdAndProjectId(groupId, projectId);
-        boolean isProcessed = Boolean.TRUE.equals(request.isProcessed());
 
         validateVersionUniqueness(group, request);
 
-        return saveFileAndCreateMetadata(projectId, group, file, request, isProcessed);
+        return saveFileAndCreateMetadata(
+                projectId, group, file, request, request.excludeFromPatchNote());
     }
 
     @Transactional
@@ -107,19 +103,15 @@ public class DocumentMetadataService {
             validateFile(file);
         }
 
-        boolean isProcessed = Boolean.TRUE.equals(request.isProcessed());
-
         boolean versionChanged =
                 documentMetadata.getMajorVersion() != request.majorVersion()
                         || documentMetadata.getMinorVersion() != request.minorVersion()
                         || documentMetadata.getPatchVersion() != request.patchVersion();
 
-        boolean processedChanged = documentMetadata.isProcessed() != isProcessed;
-
         String newHash = computeHashIfChanged(documentMetadata, file);
         boolean fileChanged = newHash != null;
 
-        if (!versionChanged && !fileChanged && !processedChanged) {
+        if (!versionChanged && !fileChanged) {
             throw new ConflictException("문서 정보가 현재와 동일합니다.");
         }
 
@@ -131,16 +123,12 @@ public class DocumentMetadataService {
 
         if (fileChanged) {
             validateHashUniqueness(newHash, group.getProjectId());
-            replaceFile(projectId, documentMetadata, file, newHash, isProcessed);
+            replaceFile(projectId, documentMetadata, file, newHash, request.excludeFromPatchNote());
         }
 
         if (versionChanged) {
             documentMetadata.updateVersion(
                     request.majorVersion(), request.minorVersion(), request.patchVersion());
-        }
-
-        if (processedChanged) {
-            documentMetadata.changeProcessed(isProcessed);
         }
 
         documentMetadata.markModified();
@@ -202,41 +190,39 @@ public class DocumentMetadataService {
         }
     }
 
+    private String normalizeText(String value) {
+        return value == null ? null : value.trim();
+    }
+
     private DocumentMetadataResponse saveFileAndCreateMetadata(
             UUID projectId,
             DocumentGroup group,
             MultipartFile file,
             VersionFields version,
-            boolean isProcessed) {
+            Boolean excludeFromPatchNote) {
         String hash = documentFileStorage.computeHash(file);
         validateHashUniqueness(hash, group.getProjectId());
 
         DocumentFileStorage.StoredDocumentFile storedFile = documentFileStorage.store(file);
-        DomainSource domainSource = documentMetadataManager.createDomainSource();
         DocumentMetadata documentMetadata =
-                documentMetadataManager.save(
-                        DocumentMetadata.create(
-                                domainSource,
-                                group,
-                                storedFile.displayName(),
-                                storedFile.extension(),
-                                version.majorVersion(),
-                                version.minorVersion(),
-                                version.patchVersion(),
-                                hash,
-                                storedFile.size(),
-                                storedFile.storedKey(),
-                                isProcessed,
-                                EmbeddingStatus.NONE,
-                                OffsetDateTime.now(ZoneOffset.UTC)));
+                documentMetadataManager.createMetadata(
+                        group,
+                        storedFile.displayName(),
+                        storedFile.extension(),
+                        version.majorVersion(),
+                        version.minorVersion(),
+                        version.patchVersion(),
+                        hash,
+                        storedFile.size(),
+                        storedFile.storedKey(),
+                        EmbeddingStatus.NONE,
+                        OffsetDateTime.now(ZoneOffset.UTC));
 
-        documentVectorEventPublisher.createEvent(projectId, documentMetadata, isProcessed);
+        boolean effectiveExclude =
+                resolveExcludeFromPatchNote(storedFile.extension(), excludeFromPatchNote);
+        documentVectorEventPublisher.createEvent(projectId, documentMetadata, effectiveExclude);
 
         return DocumentMetadataResponse.from(documentMetadata);
-    }
-
-    private String normalizeText(String value) {
-        return value == null ? null : value.trim();
     }
 
     private String computeHashIfChanged(DocumentMetadata documentMetadata, MultipartFile file) {
@@ -256,14 +242,23 @@ public class DocumentMetadataService {
         DocumentFileStorage.StoredDocumentFile storedFile =
                 documentFileStorage.replace(documentMetadata.getStoredKey(), file);
 
-        documentMetadata.updateFile(
+        documentMetadataManager.updateFile(
+                documentMetadata,
                 storedFile.displayName(),
                 storedFile.extension(),
                 newHash,
                 storedFile.size(),
                 storedFile.storedKey());
 
-        documentVectorEventPublisher.replaceEvent(
-                projectId, documentMetadata, excludeFromPatchNote);
+        boolean effectiveExclude =
+                resolveExcludeFromPatchNote(storedFile.extension(), excludeFromPatchNote);
+        documentVectorEventPublisher.replaceEvent(projectId, documentMetadata, effectiveExclude);
+    }
+
+    private boolean resolveExcludeFromPatchNote(String extension, Boolean excludeFromPatchNote) {
+        if (!"pdf".equalsIgnoreCase(extension)) {
+            return true;
+        }
+        return Boolean.TRUE.equals(excludeFromPatchNote);
     }
 }

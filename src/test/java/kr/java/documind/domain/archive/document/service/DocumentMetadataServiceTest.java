@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -30,7 +32,6 @@ import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.ConflictException;
 import kr.java.documind.global.exception.NotFoundException;
-import kr.java.documind.global.util.ChoseongUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,6 @@ class DocumentMetadataServiceTest {
     @Mock private DocumentMetadataManager documentMetadataManager;
     @Mock private DocumentFileStorage documentFileStorage;
     @Mock private DocumentVectorEventPublisher documentVectorEventPublisher;
-    @Mock private ChoseongUtil choseongUtil;
     @InjectMocks private DocumentMetadataService documentMetadataService;
 
     private final UUID projectId = UUID.randomUUID();
@@ -67,6 +67,7 @@ class DocumentMetadataServiceTest {
                 domainSource,
                 group,
                 "testDoc",
+                "ㅌㅅㄷ",
                 "pdf",
                 1,
                 0,
@@ -74,7 +75,6 @@ class DocumentMetadataServiceTest {
                 "abc123hash",
                 1024L,
                 "stored/key",
-                false,
                 EmbeddingStatus.NONE,
                 OffsetDateTime.now(ZoneOffset.UTC));
     }
@@ -216,14 +216,16 @@ class DocumentMetadataServiceTest {
             DocumentGroup group = createGroup();
             DocumentMetadata metadata = createMetadata(group);
 
-            given(documentGroupManager.save(any(DocumentGroup.class))).willReturn(group);
+            given(documentGroupManager.createGroup(projectId, "개발", "그룹A")).willReturn(group);
+            given(documentGroupManager.save(group)).willReturn(group);
             given(documentFileStorage.computeHash(file)).willReturn("newHash");
             given(documentMetadataManager.existsByProjectIdAndHash(projectId, "newHash"))
                     .willReturn(false);
             given(documentFileStorage.store(file)).willReturn(storedFile());
-            given(documentMetadataManager.createDomainSource())
-                    .willReturn(DomainSource.create(SourceType.DOCUMENT));
-            given(documentMetadataManager.save(any(DocumentMetadata.class))).willReturn(metadata);
+            given(documentMetadataManager.createMetadata(
+                    eq(group), any(), any(), anyInt(), anyInt(), anyInt(),
+                    any(), anyLong(), any(), any(), any()))
+                    .willReturn(metadata);
 
             // When
             var result =
@@ -232,7 +234,7 @@ class DocumentMetadataServiceTest {
             // Then
             assertThat(result.documentName()).isEqualTo("testDoc");
             then(documentGroupManager).should().validateGroupNameUniqueness(projectId, "개발", "그룹A");
-            then(documentGroupManager).should().save(any(DocumentGroup.class));
+            then(documentGroupManager).should().save(group);
             then(documentVectorEventPublisher)
                     .should()
                     .createEvent(eq(projectId), eq(metadata), eq(true));
@@ -265,7 +267,8 @@ class DocumentMetadataServiceTest {
             DocumentUploadRequest request = new DocumentUploadRequest("그룹B", "개발", 1, 0, 0, null);
             DocumentGroup group = createGroup();
 
-            given(documentGroupManager.save(any(DocumentGroup.class))).willReturn(group);
+            given(documentGroupManager.createGroup(projectId, "개발", "그룹B")).willReturn(group);
+            given(documentGroupManager.save(group)).willReturn(group);
             given(documentFileStorage.computeHash(file)).willReturn("duplicateHash");
             given(documentMetadataManager.existsByProjectIdAndHash(projectId, "duplicateHash"))
                     .willReturn(true);
@@ -317,9 +320,10 @@ class DocumentMetadataServiceTest {
             given(documentMetadataManager.existsByProjectIdAndHash(projectId, "newHash"))
                     .willReturn(false);
             given(documentFileStorage.store(file)).willReturn(storedFile());
-            given(documentMetadataManager.createDomainSource())
-                    .willReturn(DomainSource.create(SourceType.DOCUMENT));
-            given(documentMetadataManager.save(any(DocumentMetadata.class))).willReturn(metadata);
+            given(documentMetadataManager.createMetadata(
+                    eq(group), any(), any(), anyInt(), anyInt(), anyInt(),
+                    any(), anyLong(), any(), any(), any()))
+                    .willReturn(metadata);
 
             // When
             var result =
@@ -464,32 +468,15 @@ class DocumentMetadataServiceTest {
             documentMetadataService.updateDocument(projectId, documentId, request, file);
 
             // Then
-            assertThat(metadata.getStoredKey()).isEqualTo("stored/new-key");
+            then(documentMetadataManager).should().updateFile(
+                    eq(metadata), eq("testDoc"), eq("pdf"), eq("newHash"), eq(1024L), eq("stored/new-key"));
             then(documentVectorEventPublisher)
                     .should()
                     .replaceEvent(eq(projectId), eq(metadata), eq(false));
         }
 
         @Test
-        @DisplayName("isProcessed만 변경")
-        void updateDocument_ProcessedOnly_ChangesProcessed() {
-            // Given
-            DocumentGroup group = createGroup();
-            DocumentMetadata metadata = createMetadata(group);
-            DocumentUpdateRequest request = new DocumentUpdateRequest(1, 0, 0, true);
-
-            given(documentMetadataManager.getByIdAndProjectId(documentId, projectId))
-                    .willReturn(metadata);
-
-            // When
-            documentMetadataService.updateDocument(projectId, documentId, request, null);
-
-            // Then
-            assertThat(metadata.isProcessed()).isTrue();
-        }
-
-        @Test
-        @DisplayName("복합 변경 (버전 + 파일 + isProcessed)")
+        @DisplayName("복합 변경 (버전 + 파일)")
         void updateDocument_AllChanged_UpdatesAll() {
             // Given
             DocumentGroup group = createGroup();
@@ -512,8 +499,8 @@ class DocumentMetadataServiceTest {
             // Then
             assertThat(metadata.getMajorVersion()).isEqualTo(2);
             assertThat(metadata.getMinorVersion()).isEqualTo(1);
-            assertThat(metadata.isProcessed()).isTrue();
-            assertThat(metadata.getStoredKey()).isEqualTo("stored/new-key");
+            then(documentMetadataManager).should().updateFile(
+                    eq(metadata), any(), any(), any(), anyLong(), any());
             then(documentVectorEventPublisher)
                     .should()
                     .replaceEvent(eq(projectId), eq(metadata), eq(true));
