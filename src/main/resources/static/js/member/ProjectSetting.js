@@ -391,7 +391,13 @@ async function changeRole(selectElement) {
         const msg = "프로젝트 권한을 '구성원'으로 변경하시겠습니까?\n\n" +
                     "구성원 권한으로 변경되면 프로젝트 세부사항 변경, API 키 관리,\n" +
                     "멤버 초대 및 관리 기능을 더 이상 사용할 수 없게 됩니다.";
-        if (!confirm(msg)) {
+
+        const isConfirmed = await openDocuConfirm(
+            '권한 변경',
+            msg
+        );
+
+        if (!isConfirmed) {
             selectElement.value = 'MANAGER'; // 취소 시 원래 값으로 복원
             return;
         }
@@ -418,7 +424,13 @@ async function changeRole(selectElement) {
 }
 
 async function removeMember(memberId, memberName) {
-    if (!confirm(`'${memberName}' 님을 프로젝트에서 제거하시겠습니까?`)) return;
+    const isConfirmed = await openDocuConfirm(
+        '구성원 제거',
+        `'${memberName}' 님을 프로젝트에서 제거하시겠습니까?`,
+        true
+    );
+
+    if (!isConfirmed) return;
 
     try {
         const body = await callApi(`/api/projects/${_PS.publicId}/members/${memberId}`, {
@@ -504,9 +516,13 @@ document.getElementById('invite-modal')?.addEventListener('click', (e) => {
 });
 
 async function leaveProject() {
-    if (!confirm(
-        '정말 이 프로젝트에서 나가시겠습니까?\n' +
-        '접근 권한이 즉시 소멸됩니다.')) return;
+    const isConfirmed = await openDocuConfirm(
+        '프로젝트 나가기',
+        '정말 이 프로젝트에서 나가시겠습니까?\n' + '접근 권한이 즉시 소멸됩니다.',
+        true
+    );
+
+    if (!isConfirmed) return;
 
     try {
         const body = await callApi(`/api/projects/${_PS.publicId}/members/me`, {
