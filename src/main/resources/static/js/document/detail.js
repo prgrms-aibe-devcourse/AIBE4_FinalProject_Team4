@@ -8,7 +8,6 @@ const currentDoc = {
     version: document.getElementById('docVersion').value,
     groupName: document.getElementById('docGroupName').value,
     category: document.getElementById('docCategory').value,
-    excludeFromPatchNote: document.getElementById('docExcludeFromPatchNote').value === 'true'
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,7 +50,7 @@ document.getElementById('btnEdit').addEventListener('click', () => {
     document.getElementById('editPatch').value = vParts[2] || '0';
     document.getElementById('editVersionHint').textContent = `(현재버전: ${currentDoc.version})`;
 
-    document.getElementById('editExcludeFromPatchNote').checked = currentDoc.excludeFromPatchNote;
+    document.getElementById('editExcludeFromPatchNote').checked = false;
     document.getElementById('editFileToggle').checked = false;
     document.getElementById('editFileArea').classList.add('hidden');
     document.getElementById('editFile').value = '';
@@ -103,6 +102,7 @@ async function submitEdit() {
 // ==================== 삭제 ====================
 
 document.getElementById('btnDelete').addEventListener('click', () => {
+    hideModalError('deleteError');
     const fileName = currentDoc.documentName + '.' + currentDoc.extension;
     document.getElementById('deleteDocInfo').textContent = `${fileName} (${currentDoc.version})`;
     openModal('deleteModal');
@@ -122,10 +122,10 @@ async function confirmDelete() {
             window.location.href = `/projects/${projectId}/groups`;
             return;
         } else {
-            alert(result.error?.message || '문서 삭제에 실패했습니다.');
+            showModalError('deleteError', result.error?.message || '문서 삭제에 실패했습니다.');
         }
     } catch (e) {
-        alert('문서 삭제에 실패했습니다.');
+        showModalError('deleteError', '문서 삭제에 실패했습니다.');
         console.error(e);
     }
     stopLoading(btn);

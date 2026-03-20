@@ -330,6 +330,7 @@ async function submitEdit() {
 let deleteTarget = { documentId: null, groupId: null };
 
 function openDeleteModal(documentId, groupId, docName, version) {
+    hideModalError('deleteError');
     deleteTarget = { documentId, groupId };
     document.getElementById('deleteDocInfo').textContent = `${docName} (${version})`;
     openModal('deleteModal');
@@ -349,10 +350,10 @@ async function confirmDelete() {
             loadGroups(currentPage);
             return;
         } else {
-            alert(result.error?.message || '문서 삭제에 실패했습니다.');
+            showModalError('deleteError', result.error?.message || '문서 삭제에 실패했습니다.');
         }
     } catch (e) {
-        alert('문서 삭제에 실패했습니다.');
+        showModalError('deleteError', '문서 삭제에 실패했습니다.');
         console.error(e);
     }
     stopLoading(btn);
@@ -432,7 +433,7 @@ function renderGroups(groups) {
                     <!-- 대분류명 표시 모드 -->
                     <span id="groupName-display-${group.groupId}" class="font-semibold text-docu-ink cursor-pointer hover:text-docu-primary"
                           data-action="toggleDocuments" data-group-id="${group.groupId}">${escapeHtml(group.groupName)}</span>
-                    <button data-action="startEditGroupName" data-group-id="${group.groupId}" data-group-name="${escapeAttr(group.groupName)}" class="text-docu-warning hover:text-docu-warning-dark" title="대분류명 수정">
+                    <button id="groupName-editBtn-${group.groupId}" data-action="startEditGroupName" data-group-id="${group.groupId}" data-group-name="${escapeAttr(group.groupName)}" class="text-docu-warning hover:text-docu-warning-dark" title="대분류명 수정">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     </button>
                     <!-- 대분류명 수정 모드 -->
@@ -581,7 +582,7 @@ function renderDocuments(groupId, documents, groupName, category) {
                                 ${isEmbeddingInProgress(doc.embeddingStatus) ? 'disabled' : ''}
                                 data-action="openEditDocument" data-document-id="${doc.documentId}" data-group-id="${groupId}"
                                 data-group-name="${escapeAttr(groupName)}" data-category="${escapeAttr(category)}"
-                                data-version="${escapeAttr(doc.version)}" data-is-processed="${doc.excludeFromPatchNote || false}">
+                                data-version="${escapeAttr(doc.version)}" data-exclude-from-patch-note="${doc.excludeFromPatchNote || false}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                         </button>
                         <button class="${isEmbeddingInProgress(doc.embeddingStatus) ? 'text-docu-secondary/40 cursor-not-allowed' : 'text-docu-danger hover:text-docu-danger-dark'}" title="삭제"
@@ -595,6 +596,12 @@ function renderDocuments(groupId, documents, groupName, category) {
             `).join('')}
         </div>
     `;
+
+    documents.forEach(doc => {
+        if (isEmbeddingInProgress(doc.embeddingStatus)) {
+            subscribeEmbeddingStatus(doc.documentId);
+        }
+    });
 }
 
 // ==================== 페이지네이션 ====================
@@ -645,7 +652,7 @@ function downloadDocument(documentId) {
 function startEditGroupName(groupId, currentName) {
     // 표시 모드 숨기고 수정 모드 표시
     document.getElementById(`groupName-display-${groupId}`).classList.add('hidden');
-    document.getElementById(`groupName-display-${groupId}`).nextElementSibling.classList.add('hidden'); // 연필 버튼
+    document.getElementById(`groupName-editBtn-${groupId}`).classList.add('hidden');
     const editDiv = document.getElementById(`groupName-edit-${groupId}`);
     editDiv.classList.remove('hidden');
     const input = document.getElementById(`groupName-input-${groupId}`);
@@ -657,7 +664,7 @@ function startEditGroupName(groupId, currentName) {
 function cancelEditGroupName(groupId, originalName) {
     document.getElementById(`groupName-edit-${groupId}`).classList.add('hidden');
     document.getElementById(`groupName-display-${groupId}`).classList.remove('hidden');
-    document.getElementById(`groupName-display-${groupId}`).nextElementSibling.classList.remove('hidden');
+    document.getElementById(`groupName-editBtn-${groupId}`).classList.remove('hidden');
 }
 
 async function submitGroupName(groupId) {
