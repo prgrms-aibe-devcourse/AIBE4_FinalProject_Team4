@@ -7,7 +7,7 @@ import kr.java.documind.domain.notification.event.DocumentNotificationEvent;
 import kr.java.documind.domain.notification.event.IssueNotificationEvent;
 import kr.java.documind.domain.notification.event.LogNotificationEvent;
 import kr.java.documind.domain.notification.event.NotificationEvent;
-import kr.java.documind.domain.notification.event.PatchNoteNotificationEvent;
+import kr.java.documind.domain.patchnote.event.PatchNoteNotificationEvent;
 import kr.java.documind.domain.notification.infrastructure.NotificationSseManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

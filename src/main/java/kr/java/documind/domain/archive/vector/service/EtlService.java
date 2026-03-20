@@ -16,6 +16,7 @@ import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClien
 import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingStatusSseManager;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
+import kr.java.documind.domain.patchnote.infrastructure.DocumentEmbeddedEventPublisher;
 import kr.java.documind.global.enums.SourceType;
 import kr.java.documind.global.exception.StorageException;
 import kr.java.documind.global.storage.FileStore;
@@ -43,6 +44,7 @@ public class EtlService {
 
     private final ApplicationEventPublisher eventPublisher;
     private final EmbeddingStatusSseManager embeddingStatusSseManager;
+    private final DocumentEmbeddedEventPublisher documentEmbeddedEventPublisher;
 
     public SseEmitter subscribeEmbeddingStatus(Long sourceId, EmbeddingStatus currentStatus) {
         return embeddingStatusSseManager.register(sourceId, currentStatus);
@@ -70,7 +72,11 @@ public class EtlService {
             List<float[]> embeddings = embeddingModelClient.embed(texts);
             vectorStoreManager.insertChunks(sourceId, chunks, embeddings);
 
-            changeStatus(sourceId, EmbeddingStatus.SUCCESS, excludeFromPatchNote);
+            changeStatus(sourceId, EmbeddingStatus.SUCCESS);
+
+            documentEmbeddedEventPublisher.publishDocumentEmbeddedEvent(
+                    sourceId, excludeFromPatchNote);
+
         } catch (Exception e) {
             log.error("[ETL] 벡터화 실패 - sourceId: {}", sourceId, e);
             cleanupVectors(sourceId);
@@ -95,12 +101,6 @@ public class EtlService {
 
     private void changeStatus(Long sourceId, EmbeddingStatus status) {
         eventPublisher.publishEvent(new EmbeddingStatusEvent(sourceId, status));
-        embeddingStatusSseManager.send(sourceId, status);
-    }
-
-    private void changeStatus(Long sourceId, EmbeddingStatus status, boolean excludeFromPatchNote) {
-        eventPublisher.publishEvent(
-                new EmbeddingStatusEvent(sourceId, status, excludeFromPatchNote));
         embeddingStatusSseManager.send(sourceId, status);
     }
 

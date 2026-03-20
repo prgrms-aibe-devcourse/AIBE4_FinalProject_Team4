@@ -9,7 +9,7 @@ import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
-import kr.java.documind.domain.patchnote.event.IssueStatusChangedEvent;
+import kr.java.documind.domain.issue.event.IssueStatusChangedEvent;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;

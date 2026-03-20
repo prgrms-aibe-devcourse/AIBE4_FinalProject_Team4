@@ -1,4 +1,4 @@
-package kr.java.documind.domain.patchnote.event;
+package kr.java.documind.domain.issue.event;
 
 import java.time.Instant;
 import java.util.UUID;

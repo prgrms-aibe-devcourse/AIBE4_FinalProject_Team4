@@ -1,4 +1,4 @@
-package kr.java.documind.domain.patchnote.event;
+package kr.java.documind.domain.archive.vector.event;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

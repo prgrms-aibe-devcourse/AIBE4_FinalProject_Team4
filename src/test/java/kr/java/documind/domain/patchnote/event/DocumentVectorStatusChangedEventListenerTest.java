@@ -15,6 +15,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+
+import kr.java.documind.domain.archive.vector.event.DocumentEmbeddedEvent;
 import kr.java.documind.domain.archive.vector.model.repository.VectorStoreRepository;
 import kr.java.documind.domain.patchnote.exception.DocumentEmbeddingEmptyException;
 import kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException;

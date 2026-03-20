@@ -15,7 +15,7 @@ import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.enums.IssueType;
 import kr.java.documind.domain.issue.model.repository.IssueHistoryRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
-import kr.java.documind.domain.patchnote.event.IssueStatusChangedEvent;
+import kr.java.documind.domain.issue.event.IssueStatusChangedEvent;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.storage.FileStore;
 import org.junit.jupiter.api.BeforeEach;

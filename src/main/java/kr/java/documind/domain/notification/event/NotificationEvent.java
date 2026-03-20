@@ -4,11 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 
-public sealed interface NotificationEvent
-        permits IssueNotificationEvent,
-                LogNotificationEvent,
-                DocumentNotificationEvent,
-                PatchNoteNotificationEvent {
+public interface NotificationEvent {
 
     UUID projectId();
 
