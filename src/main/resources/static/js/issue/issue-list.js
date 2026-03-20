@@ -345,10 +345,10 @@ function renderRecommendationDetail(rec, members) {
                 <label class="block text-sm font-semibold text-docu-ink mb-3">심각도</label>
                 <div class="grid grid-cols-2 gap-2">
                     ${[
-                        { level: 'CRITICAL', label: 'P1 긴급', borderColor: 'border-docu-danger', textColor: 'text-docu-danger', dotColor: 'bg-docu-danger', shadow: 'shadow-docu-danger' },
-                        { level: 'HIGH', label: 'P2 높음', borderColor: 'border-docu-primary', textColor: 'text-docu-primary-dark', dotColor: 'bg-docu-primary', shadow: 'shadow-docu-primary' },
-                        { level: 'MEDIUM', label: 'P3 보통', borderColor: 'border-docu-warning', textColor: 'text-docu-warning-dark', dotColor: 'bg-docu-warning', shadow: 'shadow-docu-warning' },
-                        { level: 'LOW', label: 'P4 낮음', borderColor: 'border-docu-success', textColor: 'text-docu-success-dark', dotColor: 'bg-docu-success', shadow: 'shadow-docu-success' }
+                        { level: 'CRITICAL', label: 'CRITICAL', borderColor: 'border-docu-danger', textColor: 'text-docu-danger', dotColor: 'bg-docu-danger', shadow: 'shadow-docu-danger' },
+                        { level: 'HIGH', label: 'HIGH', borderColor: 'border-docu-primary', textColor: 'text-docu-primary-dark', dotColor: 'bg-docu-primary', shadow: 'shadow-docu-primary' },
+                        { level: 'MEDIUM', label: 'MEDIUM', borderColor: 'border-docu-warning', textColor: 'text-docu-warning-dark', dotColor: 'bg-docu-warning', shadow: 'shadow-docu-warning' },
+                        { level: 'LOW', label: 'LOW', borderColor: 'border-docu-success', textColor: 'text-docu-success-dark', dotColor: 'bg-docu-success', shadow: 'shadow-docu-success' }
                     ].map(({ level, label, borderColor, textColor, dotColor, shadow }) => {
                         const isActive = rec.severity === level;
                         return `
