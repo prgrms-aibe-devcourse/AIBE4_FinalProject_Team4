@@ -9,7 +9,6 @@ public record DocumentMetadataResponse(
         String documentName,
         String extension,
         String version,
-        boolean isProcessed,
         EmbeddingStatus embeddingStatus,
         OffsetDateTime uploadedAt,
         OffsetDateTime reuploadedAt) {
@@ -20,7 +19,6 @@ public record DocumentMetadataResponse(
                 metadata.getDocumentName(),
                 metadata.getExtension(),
                 metadata.getVersionString(),
-                metadata.isProcessed(),
                 metadata.getEmbeddingStatus(),
                 metadata.getUploadedAt(),
                 metadata.getReuploadedAt());
