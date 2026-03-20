@@ -245,56 +245,6 @@
         <input type="hidden" id="projectId" th:value="${projectId}">
         <input type="hidden" id="issueId" th:value="${issueId}">
 
-        <!-- ==================== 상태 변경 모달 ==================== -->
-        <div id="statusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-            <div class="absolute inset-0 bg-black/40" onclick="closeModal('statusModal')"></div>
-            <div class="card-modal w-full max-w-md">
-                <div class="flex items-center justify-between px-8 pt-8 pb-4">
-                    <h2 class="text-xl font-bold text-docu-ink">상태 변경</h2>
-                    <button onclick="closeModal('statusModal')" class="text-docu-tertiary hover:text-docu-secondary">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                </div>
-                <div class="px-8 pb-4">
-                    <div id="statusError" class="hidden mb-4 p-3 bg-surface-secondary border border-divider rounded-lg text-sm text-docu-danger"></div>
-                    <div class="mb-5">
-                        <label class="block text-sm font-semibold text-docu-ink mb-2">변경할 상태 <span class="text-docu-danger">*</span></label>
-                        <select id="newStatus" class="form-select">
-                            <option value="">선택하세요</option>
-                            <option value="TODO">대기중</option>
-                            <option value="IN_PROGRESS">처리중</option>
-                            <option value="RESOLVED">해결됨</option>
-                        </select>
-                    </div>
-
-                    <!-- 해결됨 선택 시 표시되는 옵션 -->
-                    <div id="resolvedOptions" class="hidden space-y-4">
-                        <!-- 해결 방법 설명 -->
-                        <div>
-                            <label class="block text-sm font-semibold text-docu-ink mb-2">해결 방법 (선택)</label>
-                            <textarea id="resolutionNote" rows="4"
-                                      class="form-textarea resize-none"
-                                      placeholder="이슈를 어떻게 해결했는지 설명하세요 (선택사항)"></textarea>
-                            <p class="text-xs text-docu-secondary mt-1">예: 사용자 프로필 조회 전 null 체크 로직 추가</p>
-                        </div>
-
-                        <!-- 패치노트 포함 옵션 -->
-                        <div class="flex items-start gap-3 p-4 bg-surface-secondary border border-divider rounded-lg">
-                            <input type="checkbox" id="shouldIncludeInPatchNote" class="mt-0.5 w-4 h-4 rounded border-divider text-docu-primary focus:ring-docu-primary">
-                            <div class="flex-1">
-                                <label for="shouldIncludeInPatchNote" class="text-sm font-semibold text-docu-ink cursor-pointer">패치노트에 포함</label>
-                                <p class="text-xs text-docu-secondary mt-0.5">해결된 이슈를 패치노트에 반영합니다.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
-                    <button onclick="closeModal('statusModal')" class="btn-secondary">취소</button>
-                    <button onclick="submitStatusChange()" class="btn-primary">변경</button>
-                </div>
-            </div>
-        </div>
-
         <!-- 댓글 섹션 -->
         <div class="card-base card-shadow p-widget-p">
             <h3 class="text-h3 text-docu-ink mb-4">댓글 <span id="commentCount" class="text-docu-tertiary">(0)</span></h3>
@@ -336,6 +286,58 @@
         </div>
 
     </section>
+
+    <!-- ==================== 상태 변경 모달 ==================== -->
+    <div id="statusModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onclick="if(event.target === this) closeModal('statusModal')">
+        <div class="card-modal w-full max-w-md">
+        <!-- 헤더 -->
+        <div class="flex items-center justify-between px-8 pt-8 pb-4">
+                <h2 class="text-xl font-bold text-docu-ink">상태 변경</h2>
+                <button onclick="closeModal('statusModal')" class="text-docu-tertiary hover:text-docu-secondary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+        </div>
+        <!-- 본문 -->
+        <div class="px-8 pb-4">
+                <div id="statusError" class="hidden mb-4 p-3 bg-surface-secondary border border-divider rounded-lg text-sm text-docu-danger"></div>
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-docu-ink mb-2">변경할 상태 <span class="text-docu-danger">*</span></label>
+                    <select id="newStatus" class="form-select">
+                        <option value="">선택하세요</option>
+                        <option value="TODO">대기중</option>
+                        <option value="IN_PROGRESS">처리중</option>
+                        <option value="RESOLVED">해결됨</option>
+                    </select>
+                </div>
+
+                <!-- 해결됨 선택 시 표시되는 옵션 -->
+                <div id="resolvedOptions" class="hidden space-y-4">
+                    <!-- 해결 방법 설명 -->
+                    <div>
+                        <label class="block text-sm font-semibold text-docu-ink mb-2">해결 방법 (선택)</label>
+                        <textarea id="resolutionNote" rows="4"
+                                  class="form-textarea resize-none"
+                                  placeholder="이슈를 어떻게 해결했는지 설명하세요 (선택사항)"></textarea>
+                        <p class="text-xs text-docu-secondary mt-1">예: 사용자 프로필 조회 전 null 체크 로직 추가</p>
+                    </div>
+
+                    <!-- 패치노트 포함 옵션 -->
+                    <div class="flex items-start gap-3 p-4 bg-surface-secondary border border-divider rounded-lg">
+                        <input type="checkbox" id="shouldIncludeInPatchNote" class="mt-0.5 w-4 h-4 rounded border-divider text-docu-primary focus:ring-docu-primary">
+                        <div class="flex-1">
+                            <label for="shouldIncludeInPatchNote" class="text-sm font-semibold text-docu-ink cursor-pointer">패치노트에 포함</label>
+                            <p class="text-xs text-docu-secondary mt-0.5">해결된 이슈를 패치노트에 반영합니다.</p>
+                        </div>
+                    </div>
+                </div>
+        </div>
+            <!-- 하단 버튼 -->
+            <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-divider">
+                <button onclick="closeModal('statusModal')" class="btn-secondary">취소</button>
+                <button onclick="submitStatusChange()" class="btn-primary">변경</button>
+            </div>
+        </div>
+    </div>
 
 </th:block>
 
