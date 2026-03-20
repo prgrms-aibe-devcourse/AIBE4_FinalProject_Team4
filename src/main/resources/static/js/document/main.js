@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 openEditDocument(
                     documentId, groupId,
                     target.dataset.groupName, target.dataset.category,
-                    target.dataset.version, target.dataset.isProcessed === 'true'
+                    target.dataset.version, target.dataset.excludeFromPatchNote === 'true'
                 );
                 break;
             case 'openDeleteModal':
@@ -109,7 +109,7 @@ function resetUploadModal() {
     document.getElementById('uploadFile').value = '';
     document.getElementById('uploadFileInfo').classList.add('hidden');
     document.getElementById('uploadDropZone').classList.remove('hidden');
-    document.getElementById('uploadIsProcessed').checked = false;
+    document.getElementById('uploadExcludeFromPatchNote').checked = false;
     hideModalError('uploadError');
 }
 
@@ -135,14 +135,14 @@ async function submitUpload() {
     const majorVersion = parseInt(document.getElementById('uploadMajor').value);
     const minorVersion = parseInt(document.getElementById('uploadMinor').value);
     const patchVersion = parseInt(document.getElementById('uploadPatch').value);
-    const isProcessed = document.getElementById('uploadIsProcessed').checked;
+    const excludeFromPatchNote = document.getElementById('uploadExcludeFromPatchNote').checked;
     const fileInput = document.getElementById('uploadFile');
 
     if (!groupName) { showModalError('uploadError', '대분류명을 입력해주세요.'); return; }
     if (!category) { showModalError('uploadError', '카테고리를 선택하거나 입력해주세요.'); return; }
     if (!fileInput.files.length) { showModalError('uploadError', '파일을 선택해주세요.'); return; }
 
-    const requestData = { groupName, category, majorVersion, minorVersion, patchVersion, isProcessed };
+    const requestData = { groupName, category, majorVersion, minorVersion, patchVersion, excludeFromPatchNote };
     const formData = new FormData();
     formData.append('request', new Blob([JSON.stringify(requestData)], { type: 'application/json' }));
     formData.append('file', fileInput.files[0]);
@@ -181,7 +181,7 @@ function openAddVersion(groupId, latestVersion) {
     document.getElementById('newVersionFile').value = '';
     document.getElementById('newVersionFileInfo').classList.add('hidden');
     document.getElementById('newVersionDropZone').classList.remove('hidden');
-    document.getElementById('newVersionIsProcessed').checked = false;
+    document.getElementById('newVersionExcludeFromPatchNote').checked = false;
 
     // 최신 버전 파싱 → 기본값 세팅
     const vParts = (latestVersion || 'v1.0.0').replace('v', '').split('.');
@@ -223,12 +223,12 @@ async function submitNewVersion() {
     const majorVersion = parseInt(document.getElementById('newVersionMajor').value);
     const minorVersion = parseInt(document.getElementById('newVersionMinor').value);
     const patchVersion = parseInt(document.getElementById('newVersionPatch').value);
-    const isProcessed = document.getElementById('newVersionIsProcessed').checked;
+    const excludeFromPatchNote = document.getElementById('newVersionExcludeFromPatchNote').checked;
     const fileInput = document.getElementById('newVersionFile');
 
     if (!fileInput.files.length) { showModalError('newVersionError', '파일을 선택해주세요.'); return; }
 
-    const requestData = { majorVersion, minorVersion, patchVersion, isProcessed };
+    const requestData = { majorVersion, minorVersion, patchVersion, excludeFromPatchNote };
     const formData = new FormData();
     formData.append('request', new Blob([JSON.stringify(requestData)], { type: 'application/json' }));
     formData.append('file', fileInput.files[0]);
@@ -261,7 +261,7 @@ async function submitNewVersion() {
 
 // ==================== 파일 수정 ====================
 
-function openEditDocument(documentId, groupId, groupName, category, version, isProcessed) {
+function openEditDocument(documentId, groupId, groupName, category, version, excludeFromPatchNote) {
     hideModalError('editError');
     document.getElementById('editDocumentId').value = documentId;
     document.getElementById('editGroupId').value = groupId;
@@ -275,7 +275,7 @@ function openEditDocument(documentId, groupId, groupName, category, version, isP
     document.getElementById('editPatch').value = vParts[2] || '0';
     document.getElementById('editVersionHint').textContent = `(현재버전: ${currentVersion})`;
 
-    document.getElementById('editIsProcessed').checked = isProcessed || false;
+    document.getElementById('editExcludeFromPatchNote').checked = excludeFromPatchNote || false;
     document.getElementById('editFileToggle').checked = false;
     document.getElementById('editFileArea').classList.add('hidden');
     document.getElementById('editFile').value = '';
@@ -292,11 +292,11 @@ async function submitEdit() {
     const majorVersion = parseInt(document.getElementById('editMajor').value);
     const minorVersion = parseInt(document.getElementById('editMinor').value);
     const patchVersion = parseInt(document.getElementById('editPatch').value);
-    const isProcessed = document.getElementById('editIsProcessed').checked;
+    const excludeFromPatchNote = document.getElementById('editExcludeFromPatchNote').checked;
     const fileInput = document.getElementById('editFile');
     const fileEnabled = document.getElementById('editFileToggle').checked;
 
-    const requestData = { majorVersion, minorVersion, patchVersion, isProcessed };
+    const requestData = { majorVersion, minorVersion, patchVersion, excludeFromPatchNote };
     const formData = new FormData();
     formData.append('request', new Blob([JSON.stringify(requestData)], { type: 'application/json' }));
     if (fileEnabled && fileInput.files.length > 0) {
@@ -581,7 +581,7 @@ function renderDocuments(groupId, documents, groupName, category) {
                                 ${isEmbeddingInProgress(doc.embeddingStatus) ? 'disabled' : ''}
                                 data-action="openEditDocument" data-document-id="${doc.documentId}" data-group-id="${groupId}"
                                 data-group-name="${escapeAttr(groupName)}" data-category="${escapeAttr(category)}"
-                                data-version="${escapeAttr(doc.version)}" data-is-processed="${doc.isProcessed || false}">
+                                data-version="${escapeAttr(doc.version)}" data-is-processed="${doc.excludeFromPatchNote || false}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                         </button>
                         <button class="${isEmbeddingInProgress(doc.embeddingStatus) ? 'text-docu-secondary/40 cursor-not-allowed' : 'text-docu-danger hover:text-docu-danger-dark'}" title="삭제"
