@@ -773,6 +773,21 @@
                     </div>
                 </div>
 
+                <!-- 공통 비동기 다목적 모달 (Confirm / Prompt 통합) -->
+                <div id="docu-async-modal-wrapper" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div th:replace="~{common/fragments/ui-components :: modal-shell('docu-async-modal', '알림', '')}">
+                        <th:block th:fragment="modal-body">
+                            <div class="py-2 space-y-4">
+                                <p id="docu-async-message" class="text-sm text-docu-ink whitespace-pre-line"></p>
+                                <!-- Prompt 모드에서만 보여질 입력창 (기본은 hidden) -->
+                                <input type="text" id="docu-async-input"
+                                       class="hidden w-full px-3 py-2 bg-surface-base border border-divider rounded-docu-btn text-sm text-docu-ink focus:border-docu-primary focus:ring-1 focus:ring-docu-primary outline-none transition-all"
+                                       autocomplete="off" />
+                            </div>
+                        </th:block>
+                    </div>
+                </div>
+
                 <script th:src="@{/js/member/Auth.js}"></script>
                 <script th:inline="javascript">
                     /*<![CDATA[*/

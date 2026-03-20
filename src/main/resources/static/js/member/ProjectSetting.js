@@ -290,7 +290,13 @@ function previewProjectIcon(input) {
 const TARGET_KEY_TYPE = 'INGEST';
 
 async function reissueApiKey() {
-    if (!confirm('API 키를 재발급하면 기존 키는 즉시 폐기됩니다.\n계속하시겠습니까?')) return;
+    const isConfirmed = await openDocuConfirm(
+        'API 키 재발급',
+        'API 키를 재발급하면 기존 키는 즉시 폐기됩니다.\n이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?',
+        true
+    );
+
+    if (!isConfirmed) return;
 
     try {
         const response = await callApi(`/api/projects/${_PS.publicId}/api-keys/reissue`, {
@@ -343,8 +349,15 @@ async function toggleApiKey(currentStatus) {
     const isActive  = currentStatus === 'ACTIVE';
     const action    = isActive ? '정지' : '활성화';
     const newStatus = isActive ? 'SUSPENDED' : 'ACTIVE';
+    const isDanger  = isActive;
 
-    if (!confirm(`API 키를 ${action}하시겠습니까?`)) return;
+    const isConfirmed = await openDocuConfirm(
+        `API 키 ${action}`,
+        `API 키를 ${action}하시겠습니까?`,
+        isDanger
+    );
+
+    if (!isConfirmed) return;
 
     try {
         const response = await callApi(`/api/projects/${_PS.publicId}/api-keys/status`, {
@@ -511,27 +524,143 @@ async function leaveProject() {
 }
 
 async function deleteProject() {
-    const confirmInput = prompt(
-        '프로젝트를 삭제하면 관련된 모든 로그, 문서, 벡터 데이터가 영구 삭제됩니다.\n' +
-        `계속하려면 프로젝트 이름 "${_PS.projectName}" 을 정확히 입력하세요.`
+    const targetName = _PS.projectName;
+    const warningMsg = `프로젝트를 삭제하면 관련된 모든 로그, 문서, 벡터 데이터가 영구 삭제됩니다.\n계속하려면 프로젝트 이름 "${targetName}" 을(를) 정확히 입력하세요.`;
+    
+    const confirmInput = await openDocuPrompt(
+        '프로젝트 영구 삭제',
+        warningMsg,
+        targetName, // placeholder로 예상 입력값 힌트 제공
+        true
     );
+
     if (confirmInput === null) return;
-    if (confirmInput !== _PS.projectName) {
-        alert('프로젝트 이름이 일치하지 않습니다. 삭제가 취소되었습니다.');
+
+    if (confirmInput !== targetName) {
+        if (typeof showTopToast === 'function') {
+            showTopToast('프로젝트 이름이 일치하지 않습니다. 삭제가 취소되었습니다.', 'danger');
+        } else {
+            alert('프로젝트 이름이 일치하지 않습니다. 삭제가 취소되었습니다.');
+        }
         return;
     }
 
     try {
-        const body = await callApi(`/api/projects/${_PS.publicId}`, {
+        const response = await callApi(`/api/projects/${_PS.publicId}`, {
             method: 'DELETE',
         });
-        if (body.success) {
-            sessionStorage.setItem('successMessage', '프로젝트가 삭제되었습니다.');
+
+        if (response.success) {
+            sessionStorage.setItem('successMessage', '프로젝트가 성공적으로 삭제되었습니다.');
             window.location.href = '/member/dashboard';
         } else {
-            alert(body.error?.message ?? '프로젝트 삭제에 실패했습니다.');
+            alert(response.error?.message ?? '프로젝트 삭제에 실패했습니다.');
         }
     } catch (err) {
         alert(err.message);
     }
+}
+
+function openDocuConfirm(title, message, isDanger = false) {
+    return new Promise((resolve) => {
+        const wrapper = document.getElementById('docu-async-modal-wrapper');
+        const messageEl = document.getElementById('docu-async-message');
+        const inputEl = document.getElementById('docu-async-input');
+        const titleEl = document.getElementById('docu-async-modal-title');
+        const closeBtn = wrapper.querySelector('button[aria-label="모달 닫기"]');
+        const footerBtns = wrapper.querySelectorAll('.border-t.border-divider button');
+        const cancelBtn = footerBtns[0];
+        const proceedBtn = footerBtns[1];
+
+        if (inputEl) inputEl.classList.add('hidden');
+
+        if (messageEl) messageEl.textContent = message;
+        if (titleEl && title) titleEl.textContent = title;
+
+        if (isDanger) {
+            proceedBtn.classList.remove('btn-primary');
+            proceedBtn.classList.add('btn-danger');
+        } else {
+            proceedBtn.classList.remove('btn-danger');
+            proceedBtn.classList.add('btn-primary');
+        }
+        proceedBtn.textContent = '확인';
+
+        wrapper.classList.remove('hidden');
+
+        const handleProceed = () => { cleanup(); resolve(true); };
+        const handleCancel = () => { cleanup(); resolve(false); };
+
+        const cleanup = () => {
+            wrapper.classList.add('hidden');
+            if (proceedBtn) proceedBtn.removeEventListener('click', handleProceed);
+            if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
+            if (closeBtn) closeBtn.removeEventListener('click', handleCancel);
+        };
+
+        if (proceedBtn) proceedBtn.addEventListener('click', handleProceed);
+        if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+        if (closeBtn) closeBtn.addEventListener('click', handleCancel);
+    });
+}
+
+function openDocuPrompt(title, message, placeholder = '', isDanger = false) {
+    return new Promise((resolve) => {
+        const wrapper = document.getElementById('docu-async-modal-wrapper');
+        const messageEl = document.getElementById('docu-async-message');
+        const inputEl = document.getElementById('docu-async-input');
+        const titleEl = document.getElementById('docu-async-modal-title');
+        const closeBtn = wrapper.querySelector('button[aria-label="모달 닫기"]');
+        const footerBtns = wrapper.querySelectorAll('.border-t.border-divider button');
+        const cancelBtn = footerBtns[0];
+        const proceedBtn = footerBtns[1];
+
+        if (inputEl) {
+            inputEl.classList.remove('hidden');
+            inputEl.value = '';
+            inputEl.placeholder = placeholder;
+        }
+
+        if (messageEl) messageEl.textContent = message;
+        if (titleEl && title) titleEl.textContent = title;
+
+        if (isDanger) {
+            proceedBtn.classList.remove('btn-primary');
+            proceedBtn.classList.add('btn-danger');
+            proceedBtn.textContent = '삭제 반영';
+        } else {
+            proceedBtn.classList.remove('btn-danger');
+            proceedBtn.classList.add('btn-primary');
+            proceedBtn.textContent = '확인';
+        }
+
+        wrapper.classList.remove('hidden');
+        if (inputEl) setTimeout(() => inputEl.focus(), 50); // 모달 오픈 후 포커스 획득
+
+        const handleProceed = () => {
+            const val = inputEl ? inputEl.value.trim() : null;
+            cleanup(); resolve(val);
+        };
+        const handleCancel = () => { cleanup(); resolve(null); };
+
+        const handleEnter = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleProceed();
+            }
+        };
+
+        const cleanup = () => {
+            wrapper.classList.add('hidden');
+            if (proceedBtn) proceedBtn.removeEventListener('click', handleProceed);
+            if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
+            if (closeBtn) closeBtn.removeEventListener('click', handleCancel);
+            if (inputEl) inputEl.removeEventListener('keypress', handleEnter);
+        };
+
+        if (proceedBtn) proceedBtn.addEventListener('click', handleProceed);
+        if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+        if (closeBtn) closeBtn.addEventListener('click', handleCancel);
+        if (inputEl) inputEl.addEventListener('keypress', handleEnter);
+    });
 }
