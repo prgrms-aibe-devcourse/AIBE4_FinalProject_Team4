@@ -5,7 +5,7 @@ import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
 import kr.java.documind.domain.notification.model.dto.request.IssueAlertRuleUpdateRequest;
 import kr.java.documind.domain.notification.model.dto.response.IssueAlertRuleResponse;
 import kr.java.documind.domain.notification.model.enums.IssueAlertRuleKey;
-import kr.java.documind.domain.notification.service.IssueAlertRuleServcie;
+import kr.java.documind.domain.notification.service.IssueAlertRuleService;
 import kr.java.documind.domain.notification.service.NotificationCommandService;
 import kr.java.documind.domain.notification.service.NotificationQueryService;
 import kr.java.documind.global.annotation.CurrentProject;
@@ -28,7 +28,7 @@ public class IssueAlertRuleApiController {
 
     private final NotificationQueryService queryService;
     private final NotificationCommandService commandService;
-    private final IssueAlertRuleServcie alertRuleServcie;
+    private final IssueAlertRuleService alertRuleServcie;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<IssueAlertRuleResponse>>> getRules(

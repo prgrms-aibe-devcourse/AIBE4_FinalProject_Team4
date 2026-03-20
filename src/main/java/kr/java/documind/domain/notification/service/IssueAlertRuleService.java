@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class IssueAlertRuleServcie {
+public class IssueAlertRuleService {
 
     private final IssueAlertRuleRepository issueAlertRuleRepository;
 
