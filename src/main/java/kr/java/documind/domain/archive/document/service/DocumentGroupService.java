@@ -7,7 +7,6 @@ import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataM
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentGroupResponse;
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetadataResponse;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
-import kr.java.documind.global.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,7 +40,7 @@ public class DocumentGroupService {
         String normalizedGroupName = normalizeText(groupName);
 
         if (group.getGroupName().equals(normalizedGroupName)) {
-            throw new ConflictException("문서 그룹명이 현재와 동일합니다.");
+            return;
         }
 
         documentGroupManager.validateGroupNameUniqueness(
@@ -56,7 +55,7 @@ public class DocumentGroupService {
         String normalizedCategory = normalizeText(category);
 
         if (group.getCategory().equals(normalizedCategory)) {
-            throw new ConflictException("문서 카테고리가 현재와 동일합니다.");
+            return;
         }
 
         documentGroupManager.validateGroupNameUniqueness(
