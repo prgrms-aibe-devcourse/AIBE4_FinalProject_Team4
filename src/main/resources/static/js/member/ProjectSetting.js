@@ -310,16 +310,16 @@ async function reissueApiKey() {
 
             if (!newPlainKey) {
                 console.error('Payload 파싱 에러 - Response Data:', response.data);
-                alert('서버로부터 올바른 API 키를 응답받지 못했습니다.');
+                showTopToast('서버로부터 올바른 API 키를 응답받지 못했습니다.');
                 return;
             }
 
             showApiKeyRevealModal(newPlainKey);
         } else {
-            alert(response.error?.message ?? 'API 키 발급에 실패했습니다.');
+            showTopToast(response.error?.message ?? 'API 키 발급에 실패했습니다.');
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
 }
 
@@ -374,10 +374,10 @@ async function toggleApiKey(currentStatus) {
         if (response.success) {
             window.location.reload();
         } else {
-            alert(response.error?.message ?? `API 키 ${action}에 실패했습니다.`);
+            showTopToast(response.error?.message ?? `API 키 ${action}에 실패했습니다.`);
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
 }
 
@@ -403,16 +403,16 @@ async function changeRole(selectElement) {
             body: JSON.stringify({ role: newRole }),
         });
         if (body.success) {
-            alert('권한이 변경되었습니다.');
+            showTopToast('권한이 변경되었습니다.');
             if (isMe) {
                 location.reload(); // 자신의 권한이 바뀌었으므로 새로고침
             }
         } else {
-            alert(body.error?.message ?? '역할 변경에 실패했습니다.');
+            showTopToast(body.error?.message ?? '역할 변경에 실패했습니다.');
             selectElement.value = newRole === 'MANAGER' ? 'MEMBER' : 'MANAGER'; // API 실패 시 원래 값으로 복원
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
         selectElement.value = newRole === 'MANAGER' ? 'MEMBER' : 'MANAGER'; // API 실패 시 원래 값으로 복원
     }
 }
@@ -427,10 +427,10 @@ async function removeMember(memberId, memberName) {
         if (body.success) {
             window.location.reload();
         } else {
-            alert(body.error?.message ?? '멤버 제거에 실패했습니다.');
+            showTopToast(body.error?.message ?? '멤버 제거에 실패했습니다.');
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
 }
 
@@ -516,17 +516,17 @@ async function leaveProject() {
             sessionStorage.setItem('successMessage', '프로젝트에서 나갔습니다.');
             window.location.href = '/member/dashboard';
         } else {
-            alert(body.error?.message ?? '프로젝트 나가기에 실패했습니다.');
+            showTopToast(body.error?.message ?? '프로젝트 나가기에 실패했습니다.');
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
 }
 
 async function deleteProject() {
     const targetName = _PS.projectName;
     const warningMsg = `프로젝트를 삭제하면 관련된 모든 로그, 문서, 벡터 데이터가 영구 삭제됩니다.\n계속하려면 프로젝트 이름 "${targetName}" 을(를) 정확히 입력하세요.`;
-    
+
     const confirmInput = await openDocuPrompt(
         '프로젝트 영구 삭제',
         warningMsg,
@@ -537,11 +537,7 @@ async function deleteProject() {
     if (confirmInput === null) return;
 
     if (confirmInput !== targetName) {
-        if (typeof showTopToast === 'function') {
-            showTopToast('프로젝트 이름이 일치하지 않습니다. 삭제가 취소되었습니다.', 'danger');
-        } else {
-            alert('프로젝트 이름이 일치하지 않습니다. 삭제가 취소되었습니다.');
-        }
+        showTopToast('프로젝트 이름이 일치하지 않습니다. 삭제가 취소되었습니다.', 'danger');
         return;
     }
 
@@ -554,10 +550,10 @@ async function deleteProject() {
             sessionStorage.setItem('successMessage', '프로젝트가 성공적으로 삭제되었습니다.');
             window.location.href = '/member/dashboard';
         } else {
-            alert(response.error?.message ?? '프로젝트 삭제에 실패했습니다.');
+            showTopToast(response.error?.message ?? '프로젝트 삭제에 실패했습니다.');
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
 }
 
