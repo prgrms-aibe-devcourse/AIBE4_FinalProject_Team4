@@ -47,6 +47,14 @@ public class IssueNotificationService {
      * @param issue 생성된 이슈
      */
     public void notifyNewIssue(Issue issue) {
+        // severity가 null인 경우 알림 생략
+        if (issue.getSeverity() == null) {
+            log.warn(
+                    "[IssueNotification] Severity is null, skipping notification. issueId={}",
+                    issue.getId());
+            return;
+        }
+
         IssueAlertRuleKey ruleKey = mapSeverityToRuleKey(issue.getSeverity());
         ReceiverInfo info = getReceiversForRule(issue.getProjectId(), ruleKey);
 
@@ -289,10 +297,14 @@ public class IssueNotificationService {
     /**
      * 심각도를 알림 규칙 키로 매핑
      *
-     * @param severity 이슈 심각도
+     * @param severity 이슈 심각도 (null이 아니어야 함)
      * @return 알림 규칙 키
+     * @throws IllegalArgumentException severity가 null인 경우
      */
     private IssueAlertRuleKey mapSeverityToRuleKey(IssueSeverity severity) {
+        if (severity == null) {
+            throw new IllegalArgumentException("Severity cannot be null");
+        }
         return switch (severity) {
             case CRITICAL -> IssueAlertRuleKey.SEVERITY_CRITICAL;
             case HIGH -> IssueAlertRuleKey.SEVERITY_HIGH;
