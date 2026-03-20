@@ -53,6 +53,24 @@
         </span>
     </div>
 
+    <a href="/my/profile"
+       class="shrink-0 rounded-docu-btn transition-transform
+              active:translate-x-[2px] active:translate-y-[2px]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-offset-2"
+       th:aria-label="${userViewContext.headerInfo?.name() != null ? userViewContext.headerInfo.name() + ' 프로필 페이지로 이동' : '프로필 페이지로 이동'}"
+       title="프로필">
+        <img th:if="${userViewContext.headerInfo?.profileImageUrl() != null}"
+             th:src="${userViewContext.headerInfo.profileImageUrl()}"
+             th:alt="${userViewContext.headerInfo?.name() != null ? userViewContext.headerInfo.name() + ' 프로필 이미지' : '프로필 이미지'}"
+             class="w-9 h-9 object-cover border-2 border-divider shadow-docu-sm bg-surface-base rounded-full"/>
+        <div th:unless="${userViewContext.headerInfo?.profileImageUrl() != null}"
+             class="w-9 h-9 bg-docu-primary border-2 border-divider shadow-docu-sm flex items-center justify-center rounded-full"
+             th:aria-label="${userViewContext.headerInfo?.name() != null ? userViewContext.headerInfo.name() + ' 프로필 이미지 없음' : '기본 프로필 이미지'}">
+            <span th:text="${userViewContext.headerInfo?.profileFallbackLetter() ?: 'U'}"
+                  class="text-white text-sm font-bold">U</span>
+        </div>
+    </a>
+
     <div class="relative"
          x-data="notificationApp()"
          @click.outside="isOpen = false"
@@ -133,24 +151,6 @@
             </ul>
         </div>
     </div>
-
-    <a href="/my/profile"
-       class="shrink-0 rounded-docu-btn transition-transform
-              active:translate-x-[2px] active:translate-y-[2px]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary focus-visible:ring-offset-2"
-       th:aria-label="${userViewContext.headerInfo?.name() != null ? userViewContext.headerInfo.name() + ' 프로필 페이지로 이동' : '프로필 페이지로 이동'}"
-       title="프로필">
-        <img th:if="${userViewContext.headerInfo?.profileImageUrl() != null}"
-             th:src="${userViewContext.headerInfo.profileImageUrl()}"
-             th:alt="${userViewContext.headerInfo?.name() != null ? userViewContext.headerInfo.name() + ' 프로필 이미지' : '프로필 이미지'}"
-             class="w-9 h-9 object-cover border-2 border-divider shadow-docu-sm bg-surface-base rounded-full"/>
-        <div th:unless="${userViewContext.headerInfo?.profileImageUrl() != null}"
-             class="w-9 h-9 bg-docu-primary border-2 border-divider shadow-docu-sm flex items-center justify-center rounded-full"
-             th:aria-label="${userViewContext.headerInfo?.name() != null ? userViewContext.headerInfo.name() + ' 프로필 이미지 없음' : '기본 프로필 이미지'}">
-            <span th:text="${userViewContext.headerInfo?.profileFallbackLetter() ?: 'U'}"
-                  class="text-white text-sm font-bold">U</span>
-        </div>
-    </a>
 
     <button type="button"
             data-logout-open
