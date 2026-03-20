@@ -345,19 +345,18 @@ function renderRecommendationDetail(rec, members) {
                 <label class="block text-sm font-semibold text-docu-ink mb-3">심각도</label>
                 <div class="grid grid-cols-2 gap-2">
                     ${[
-                        { level: 'CRITICAL', label: 'P1 긴급' },
-                        { level: 'HIGH', label: 'P2 높음' },
-                        { level: 'MEDIUM', label: 'P3 보통' },
-                        { level: 'LOW', label: 'P4 낮음' }
-                    ].map(({ level, label }) => {
+                        { level: 'CRITICAL', label: 'P1 긴급', borderColor: 'border-docu-danger', textColor: 'text-docu-danger', dotColor: 'bg-docu-danger', shadow: 'shadow-docu-danger' },
+                        { level: 'HIGH', label: 'P2 높음', borderColor: 'border-docu-primary', textColor: 'text-docu-primary-dark', dotColor: 'bg-docu-primary', shadow: 'shadow-docu-primary' },
+                        { level: 'MEDIUM', label: 'P3 보통', borderColor: 'border-docu-warning', textColor: 'text-docu-warning-dark', dotColor: 'bg-docu-warning', shadow: 'shadow-docu-warning' },
+                        { level: 'LOW', label: 'P4 낮음', borderColor: 'border-docu-success', textColor: 'text-docu-success-dark', dotColor: 'bg-docu-success', shadow: 'shadow-docu-success' }
+                    ].map(({ level, label, borderColor, textColor, dotColor, shadow }) => {
                         const isActive = rec.severity === level;
-                        const colors = {
-                            CRITICAL: 'bg-docu-danger text-white',
-                            HIGH: 'bg-docu-warning text-white',
-                            MEDIUM: 'bg-docu-warning text-white',
-                            LOW: 'bg-surface-sub text-docu-ink'
-                        };
-                        return `<div class="px-3 py-2 ${isActive ? colors[level] : 'bg-surface-sub text-docu-tertiary'} rounded-lg text-center text-sm font-medium">${label}</div>`;
+                        return `
+                            <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 ${isActive ? borderColor + ' ' + textColor + ' bg-surface-card ' + shadow : 'border-divider text-docu-tertiary bg-surface-card'} transition-transform hover:-translate-y-0.5 focus-ring">
+                                <span class="w-2 h-2 rounded-full ${isActive ? dotColor : 'bg-gray-300'}" aria-hidden="true"></span>
+                                <span>${label}</span>
+                            </button>
+                        `;
                     }).join('')}
                 </div>
                 <p class="text-xs text-docu-secondary mt-2">심각도 점수: ${rec.severityScore}점</p>
@@ -827,13 +826,48 @@ function getStatusBadge(status) {
 
 function getSeverityBadge(severity, score) {
     const severityMap = {
-        LOW: { label: 'LOW', class: 'badge-severity-low' },
-        MEDIUM: { label: 'MEDIUM', class: 'badge-severity-medium' },
-        HIGH: { label: 'HIGH', class: 'badge-severity-high' },
-        CRITICAL: { label: 'CRITICAL', class: 'badge-severity-critical' }
+        LOW: {
+            label: 'LOW',
+            borderColor: 'border-docu-success',
+            textColor: 'text-docu-success-dark',
+            dotColor: 'bg-docu-success',
+            shadow: 'shadow-docu-success'
+        },
+        MEDIUM: {
+            label: 'MEDIUM',
+            borderColor: 'border-docu-warning',
+            textColor: 'text-docu-warning-dark',
+            dotColor: 'bg-docu-warning',
+            shadow: 'shadow-docu-warning'
+        },
+        HIGH: {
+            label: 'HIGH',
+            borderColor: 'border-docu-primary',
+            textColor: 'text-docu-primary-dark',
+            dotColor: 'bg-docu-primary',
+            shadow: 'shadow-docu-primary'
+        },
+        CRITICAL: {
+            label: 'CRITICAL',
+            borderColor: 'border-docu-danger',
+            textColor: 'text-docu-danger',
+            dotColor: 'bg-docu-danger',
+            shadow: 'shadow-docu-danger'
+        }
     };
-    const { label, class: badgeClass } = severityMap[severity] || { label: severity, class: 'badge-default' };
-    return `<span class="${badgeClass}">${label}</span>`;
+    const config = severityMap[severity] || {
+        label: severity,
+        borderColor: 'border-divider',
+        textColor: 'text-gray-600',
+        dotColor: 'bg-gray-400',
+        shadow: 'shadow-docu-sm'
+    };
+    return `
+        <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 ${config.borderColor} ${config.textColor} bg-surface-card ${config.shadow} transition-transform hover:-translate-y-0.5 focus-ring">
+            <span class="w-2 h-2 rounded-full ${config.dotColor}" aria-hidden="true"></span>
+            <span>${config.label}</span>
+        </button>
+    `;
 }
 
 function formatDateTime(dateTimeStr) {
