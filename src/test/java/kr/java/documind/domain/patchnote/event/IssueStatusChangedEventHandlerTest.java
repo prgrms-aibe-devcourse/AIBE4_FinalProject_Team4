@@ -16,6 +16,8 @@ import java.util.Optional;
 import java.util.UUID;
 import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClient;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
+import kr.java.documind.domain.issue.event.IssueDeletedEvent;
+import kr.java.documind.domain.issue.event.IssueStatusChangedEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;

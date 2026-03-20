@@ -1,7 +1,8 @@
-package kr.java.documind.domain.notification.event;
+package kr.java.documind.domain.patchnote.event;
 
 import java.util.List;
 import java.util.UUID;
+import kr.java.documind.domain.notification.event.NotificationEvent;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 
 public record PatchNoteNotificationEvent(

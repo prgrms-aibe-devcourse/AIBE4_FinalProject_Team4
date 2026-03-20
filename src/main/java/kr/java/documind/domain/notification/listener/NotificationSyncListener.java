@@ -10,7 +10,7 @@ import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.notification.event.DocumentNotificationEvent;
 import kr.java.documind.domain.notification.event.LogNotificationEvent;
 import kr.java.documind.domain.notification.event.NotificationEvent;
-import kr.java.documind.domain.notification.event.PatchNoteNotificationEvent;
+import kr.java.documind.domain.patchnote.event.PatchNoteNotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
