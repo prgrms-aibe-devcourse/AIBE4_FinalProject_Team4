@@ -287,30 +287,39 @@ function previewProjectIcon(input) {
     reader.readAsDataURL(_pendingProjectIconFile);
 }
 
-
-function copyApiKey() {
-    const display = document.getElementById('api-key-display');
-    if (!display) return;
-
-    navigator.clipboard.writeText(display.textContent.trim())
-        .then(() => showTopToast('클립보드에 복사되었습니다.', 'success'))
-        .catch(() => showTopToast('복사에 실패했습니다. 직접 선택 후 복사해 주세요.', 'danger'));
-}
+const TARGET_KEY_TYPE = 'INGEST';
 
 async function reissueApiKey() {
-    if (!confirm('API 키를 재발급하면 기존 키는 즉시 폐기됩니다.\n계속하시겠습니까?')) return;
+    const isConfirmed = await openDocuConfirm(
+        'API 키 재발급',
+        'API 키를 재발급하면 기존 키는 즉시 폐기됩니다.\n이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?',
+        true
+    );
+
+    if (!isConfirmed) return;
 
     try {
-        const body = await callApi(`/api/projects/${_PS.publicId}/api-keys`, {
+        const response = await callApi(`/api/projects/${_PS.publicId}/api-keys/reissue`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keyType: TARGET_KEY_TYPE })
         });
-        if (body.success) {
-            showApiKeyRevealModal(body.data.plainKey);
+
+        if (response.success) {
+            const newPlainKey = response.data?.ingestApiKey?.plainKey;
+
+            if (!newPlainKey) {
+                console.error('Payload 파싱 에러 - Response Data:', response.data);
+                showTopToast('서버로부터 올바른 API 키를 응답받지 못했습니다.');
+                return;
+            }
+
+            showApiKeyRevealModal(newPlainKey);
         } else {
-            alert(body.error?.message ?? 'API 키 발급에 실패했습니다.');
+            showTopToast(response.error?.message ?? 'API 키 발급에 실패했습니다.');
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
 }
 
@@ -340,21 +349,35 @@ async function toggleApiKey(currentStatus) {
     const isActive  = currentStatus === 'ACTIVE';
     const action    = isActive ? '정지' : '활성화';
     const newStatus = isActive ? 'SUSPENDED' : 'ACTIVE';
+    const isDanger  = isActive;
 
-    if (!confirm(`API 키를 ${action}하시겠습니까?`)) return;
+    const isConfirmed = await openDocuConfirm(
+        `API 키 ${action}`,
+        `API 키를 ${action}하시겠습니까?`,
+        isDanger
+    );
+
+    if (!isConfirmed) return;
 
     try {
-        const body = await callApi(`/api/projects/${_PS.publicId}/api-keys/status`, {
+        const response = await callApi(`/api/projects/${_PS.publicId}/api-keys/status`, {
             method: 'PATCH',
-            body: JSON.stringify({ status: newStatus }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                keyType: TARGET_KEY_TYPE,
+                status: newStatus
+            }),
         });
-        if (body.success) {
+
+        if (response.success) {
             window.location.reload();
         } else {
-            alert(body.error?.message ?? `API 키 ${action}에 실패했습니다.`);
+            showTopToast(response.error?.message ?? `API 키 ${action}에 실패했습니다.`);
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
 }
 
@@ -368,7 +391,13 @@ async function changeRole(selectElement) {
         const msg = "프로젝트 권한을 '구성원'으로 변경하시겠습니까?\n\n" +
                     "구성원 권한으로 변경되면 프로젝트 세부사항 변경, API 키 관리,\n" +
                     "멤버 초대 및 관리 기능을 더 이상 사용할 수 없게 됩니다.";
-        if (!confirm(msg)) {
+
+        const isConfirmed = await openDocuConfirm(
+            '권한 변경',
+            msg
+        );
+
+        if (!isConfirmed) {
             selectElement.value = 'MANAGER'; // 취소 시 원래 값으로 복원
             return;
         }
@@ -380,22 +409,28 @@ async function changeRole(selectElement) {
             body: JSON.stringify({ role: newRole }),
         });
         if (body.success) {
-            alert('권한이 변경되었습니다.');
+            showTopToast('권한이 변경되었습니다.');
             if (isMe) {
                 location.reload(); // 자신의 권한이 바뀌었으므로 새로고침
             }
         } else {
-            alert(body.error?.message ?? '역할 변경에 실패했습니다.');
+            showTopToast(body.error?.message ?? '역할 변경에 실패했습니다.');
             selectElement.value = newRole === 'MANAGER' ? 'MEMBER' : 'MANAGER'; // API 실패 시 원래 값으로 복원
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
         selectElement.value = newRole === 'MANAGER' ? 'MEMBER' : 'MANAGER'; // API 실패 시 원래 값으로 복원
     }
 }
 
 async function removeMember(memberId, memberName) {
-    if (!confirm(`'${memberName}' 님을 프로젝트에서 제거하시겠습니까?`)) return;
+    const isConfirmed = await openDocuConfirm(
+        '구성원 제거',
+        `'${memberName}' 님을 프로젝트에서 제거하시겠습니까?`,
+        true
+    );
+
+    if (!isConfirmed) return;
 
     try {
         const body = await callApi(`/api/projects/${_PS.publicId}/members/${memberId}`, {
@@ -404,10 +439,10 @@ async function removeMember(memberId, memberName) {
         if (body.success) {
             window.location.reload();
         } else {
-            alert(body.error?.message ?? '멤버 제거에 실패했습니다.');
+            showTopToast(body.error?.message ?? '멤버 제거에 실패했습니다.');
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
 }
 
@@ -481,9 +516,13 @@ document.getElementById('invite-modal')?.addEventListener('click', (e) => {
 });
 
 async function leaveProject() {
-    if (!confirm(
-        '정말 이 프로젝트에서 나가시겠습니까?\n' +
-        '접근 권한이 즉시 소멸됩니다.')) return;
+    const isConfirmed = await openDocuConfirm(
+        '프로젝트 나가기',
+        '정말 이 프로젝트에서 나가시겠습니까?\n' + '접근 권한이 즉시 소멸됩니다.',
+        true
+    );
+
+    if (!isConfirmed) return;
 
     try {
         const body = await callApi(`/api/projects/${_PS.publicId}/members/me`, {
@@ -493,35 +532,147 @@ async function leaveProject() {
             sessionStorage.setItem('successMessage', '프로젝트에서 나갔습니다.');
             window.location.href = '/member/dashboard';
         } else {
-            alert(body.error?.message ?? '프로젝트 나가기에 실패했습니다.');
+            showTopToast(body.error?.message ?? '프로젝트 나가기에 실패했습니다.');
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
 }
 
 async function deleteProject() {
-    const confirmInput = prompt(
-        '프로젝트를 삭제하면 관련된 모든 로그, 문서, 벡터 데이터가 영구 삭제됩니다.\n' +
-        `계속하려면 프로젝트 이름 "${_PS.projectName}" 을 정확히 입력하세요.`
+    const targetName = _PS.projectName;
+    const warningMsg = `프로젝트를 삭제하면 관련된 모든 로그, 문서, 벡터 데이터가 영구 삭제됩니다.\n계속하려면 프로젝트 이름 "${targetName}" 을(를) 정확히 입력하세요.`;
+
+    const confirmInput = await openDocuPrompt(
+        '프로젝트 영구 삭제',
+        warningMsg,
+        targetName, // placeholder로 예상 입력값 힌트 제공
+        true
     );
+
     if (confirmInput === null) return;
-    if (confirmInput !== _PS.projectName) {
-        alert('프로젝트 이름이 일치하지 않습니다. 삭제가 취소되었습니다.');
+
+    if (confirmInput !== targetName) {
+        showTopToast('프로젝트 이름이 일치하지 않습니다. 삭제가 취소되었습니다.', 'danger');
         return;
     }
 
     try {
-        const body = await callApi(`/api/projects/${_PS.publicId}`, {
+        const response = await callApi(`/api/projects/${_PS.publicId}`, {
             method: 'DELETE',
         });
-        if (body.success) {
-            sessionStorage.setItem('successMessage', '프로젝트가 삭제되었습니다.');
+
+        if (response.success) {
+            sessionStorage.setItem('successMessage', '프로젝트가 성공적으로 삭제되었습니다.');
             window.location.href = '/member/dashboard';
         } else {
-            alert(body.error?.message ?? '프로젝트 삭제에 실패했습니다.');
+            showTopToast(response.error?.message ?? '프로젝트 삭제에 실패했습니다.');
         }
     } catch (err) {
-        alert(err.message);
+        showTopToast(err.message);
     }
+}
+
+function openDocuConfirm(title, message, isDanger = false) {
+    return new Promise((resolve) => {
+        const wrapper = document.getElementById('docu-async-modal-wrapper');
+        const messageEl = document.getElementById('docu-async-message');
+        const inputEl = document.getElementById('docu-async-input');
+        const titleEl = document.getElementById('docu-async-modal-title');
+        const closeBtn = wrapper.querySelector('button[aria-label="모달 닫기"]');
+        const footerBtns = wrapper.querySelectorAll('.border-t.border-divider button');
+        const cancelBtn = footerBtns[0];
+        const proceedBtn = footerBtns[1];
+
+        if (inputEl) inputEl.classList.add('hidden');
+
+        if (messageEl) messageEl.textContent = message;
+        if (titleEl && title) titleEl.textContent = title;
+
+        if (isDanger) {
+            proceedBtn.classList.remove('btn-primary');
+            proceedBtn.classList.add('btn-danger');
+        } else {
+            proceedBtn.classList.remove('btn-danger');
+            proceedBtn.classList.add('btn-primary');
+        }
+        proceedBtn.textContent = '확인';
+
+        wrapper.classList.remove('hidden');
+
+        const handleProceed = () => { cleanup(); resolve(true); };
+        const handleCancel = () => { cleanup(); resolve(false); };
+
+        const cleanup = () => {
+            wrapper.classList.add('hidden');
+            if (proceedBtn) proceedBtn.removeEventListener('click', handleProceed);
+            if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
+            if (closeBtn) closeBtn.removeEventListener('click', handleCancel);
+        };
+
+        if (proceedBtn) proceedBtn.addEventListener('click', handleProceed);
+        if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+        if (closeBtn) closeBtn.addEventListener('click', handleCancel);
+    });
+}
+
+function openDocuPrompt(title, message, placeholder = '', isDanger = false) {
+    return new Promise((resolve) => {
+        const wrapper = document.getElementById('docu-async-modal-wrapper');
+        const messageEl = document.getElementById('docu-async-message');
+        const inputEl = document.getElementById('docu-async-input');
+        const titleEl = document.getElementById('docu-async-modal-title');
+        const closeBtn = wrapper.querySelector('button[aria-label="모달 닫기"]');
+        const footerBtns = wrapper.querySelectorAll('.border-t.border-divider button');
+        const cancelBtn = footerBtns[0];
+        const proceedBtn = footerBtns[1];
+
+        if (inputEl) {
+            inputEl.classList.remove('hidden');
+            inputEl.value = '';
+            inputEl.placeholder = placeholder;
+        }
+
+        if (messageEl) messageEl.textContent = message;
+        if (titleEl && title) titleEl.textContent = title;
+
+        if (isDanger) {
+            proceedBtn.classList.remove('btn-primary');
+            proceedBtn.classList.add('btn-danger');
+            proceedBtn.textContent = '삭제 반영';
+        } else {
+            proceedBtn.classList.remove('btn-danger');
+            proceedBtn.classList.add('btn-primary');
+            proceedBtn.textContent = '확인';
+        }
+
+        wrapper.classList.remove('hidden');
+        if (inputEl) setTimeout(() => inputEl.focus(), 50); // 모달 오픈 후 포커스 획득
+
+        const handleProceed = () => {
+            const val = inputEl ? inputEl.value.trim() : null;
+            cleanup(); resolve(val);
+        };
+        const handleCancel = () => { cleanup(); resolve(null); };
+
+        const handleEnter = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleProceed();
+            }
+        };
+
+        const cleanup = () => {
+            wrapper.classList.add('hidden');
+            if (proceedBtn) proceedBtn.removeEventListener('click', handleProceed);
+            if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
+            if (closeBtn) closeBtn.removeEventListener('click', handleCancel);
+            if (inputEl) inputEl.removeEventListener('keydown', handleEnter);
+        };
+
+        if (proceedBtn) proceedBtn.addEventListener('click', handleProceed);
+        if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+        if (closeBtn) closeBtn.addEventListener('click', handleCancel);
+        if (inputEl) inputEl.addEventListener('keydown', handleEnter);
+    });
 }

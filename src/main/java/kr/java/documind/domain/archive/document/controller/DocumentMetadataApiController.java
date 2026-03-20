@@ -10,6 +10,8 @@ import kr.java.documind.domain.archive.document.model.vo.DocumentDownloadResult;
 import kr.java.documind.domain.archive.document.service.DocumentMetadataService;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.domain.archive.vector.service.EtlService;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
+import kr.java.documind.global.annotation.CurrentProject;
 import kr.java.documind.global.annotation.ProjectId;
 import kr.java.documind.global.annotation.RequireProjectMember;
 import kr.java.documind.global.response.ApiResponse;
@@ -42,11 +44,16 @@ public class DocumentMetadataApiController {
     @PostMapping
     @RequireProjectMember
     public ResponseEntity<ApiResponse<DocumentMetadataResponse>> uploadDocumentWithNewGroup(
-            @ProjectId UUID projectId,
+            @CurrentProject ProjectRequestContext context,
             @RequestPart("request") @Valid DocumentUploadRequest request,
             @RequestPart("file") MultipartFile file) {
         DocumentMetadataResponse response =
-                documentMetadataService.uploadDocumentWithNewGroup(projectId, request, file);
+                documentMetadataService.uploadDocumentWithNewGroup(
+                        context.publicId(),
+                        context.projectId(),
+                        context.actorMemberId(),
+                        request,
+                        file);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
@@ -67,11 +74,17 @@ public class DocumentMetadataApiController {
     @PatchMapping("/{documentId}")
     @RequireProjectMember
     public ApiResponse<Void> updateDocument(
-            @ProjectId UUID projectId,
+            @CurrentProject ProjectRequestContext context,
             @PathVariable Long documentId,
             @RequestPart("request") @Valid DocumentUpdateRequest request,
             @RequestPart(value = "file", required = false) MultipartFile file) {
-        documentMetadataService.updateDocument(projectId, documentId, request, file);
+        documentMetadataService.updateDocument(
+                context.publicId(),
+                context.projectId(),
+                context.actorMemberId(),
+                documentId,
+                request,
+                file);
         return ApiResponse.success();
     }
 
@@ -96,8 +109,9 @@ public class DocumentMetadataApiController {
     @PostMapping("/{documentId}/retry-embedding")
     @RequireProjectMember
     public ApiResponse<Void> retryEmbedding(
-            @ProjectId UUID projectId, @PathVariable Long documentId) {
-        documentMetadataService.retryEmbedding(projectId, documentId);
+            @CurrentProject ProjectRequestContext context, @PathVariable Long documentId) {
+        documentMetadataService.retryEmbedding(
+                context.publicId(), context.projectId(), context.actorMemberId(), documentId);
         return ApiResponse.success();
     }
 
