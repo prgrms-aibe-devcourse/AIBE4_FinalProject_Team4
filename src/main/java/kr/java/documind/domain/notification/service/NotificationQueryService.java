@@ -34,7 +34,6 @@ public class NotificationQueryService {
     }
 
     public long getUnreadCount(UUID projectId, UUID memberId) {
-        return notificationRepository.countByProjectIdAndReceiverIdAndIsReadFalseAndIsIgnoredFalse(
-                projectId, memberId);
+        return notificationRepository.countUnread(projectId, memberId);
     }
 }

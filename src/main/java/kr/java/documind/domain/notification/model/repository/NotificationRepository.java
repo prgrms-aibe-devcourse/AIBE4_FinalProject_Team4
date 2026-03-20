@@ -12,8 +12,12 @@ import org.springframework.data.repository.query.Param;
 public interface NotificationRepository
         extends JpaRepository<Notification, Long>, NotificationRepositoryCustom {
 
-    long countByProjectIdAndReceiverIdAndIsReadFalseAndIsIgnoredFalse(
-            UUID projectId, UUID receiverId);
+    @Query("SELECT COUNT(n) FROM Notification n "
+            + "WHERE n.receiverId = :receiverId "
+            + "AND (:projectId IS NULL OR n.projectId = :projectId) "
+            + "AND n.isRead = false AND n.isIgnored = false")
+    long countUnread(@Param("projectId") UUID projectId, @Param("receiverId") UUID receiverId);
+
 
     Optional<Notification> findByIdAndReceiverIdAndProjectId(
             Long id, UUID receiverId, UUID projectId);
