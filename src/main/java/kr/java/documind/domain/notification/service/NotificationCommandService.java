@@ -19,13 +19,15 @@ public class NotificationCommandService {
     public void markRead(Long id, UUID memberId, UUID projectId) {
         Notification notification;
         if (projectId != null) {
-            notification = notificationRepository
-                    .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
-                    .orElseThrow(NotificationNotFoundException::new);
+            notification =
+                    notificationRepository
+                            .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
+                            .orElseThrow(NotificationNotFoundException::new);
         } else {
-            notification = notificationRepository
-                    .findByIdAndReceiverId(id, memberId)
-                    .orElseThrow(NotificationNotFoundException::new);
+            notification =
+                    notificationRepository
+                            .findByIdAndReceiverId(id, memberId)
+                            .orElseThrow(NotificationNotFoundException::new);
         }
         notification.markRead();
     }
@@ -34,13 +36,15 @@ public class NotificationCommandService {
     public void markIgnored(Long id, UUID memberId, UUID projectId) {
         Notification notification;
         if (projectId != null) {
-            notification = notificationRepository
-                    .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
-                    .orElseThrow(NotificationNotFoundException::new);
+            notification =
+                    notificationRepository
+                            .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
+                            .orElseThrow(NotificationNotFoundException::new);
         } else {
-            notification = notificationRepository
-                    .findByIdAndReceiverId(id, memberId)
-                    .orElseThrow(NotificationNotFoundException::new);
+            notification =
+                    notificationRepository
+                            .findByIdAndReceiverId(id, memberId)
+                            .orElseThrow(NotificationNotFoundException::new);
         }
         notification.markIgnored();
     }
