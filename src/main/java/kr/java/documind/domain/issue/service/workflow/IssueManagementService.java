@@ -9,6 +9,7 @@ import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
+import kr.java.documind.domain.issue.service.IssueNotificationService;
 import kr.java.documind.domain.patchnote.event.IssueStatusChangedEvent;
 import kr.java.documind.global.exception.BadRequestException;
 import kr.java.documind.global.exception.NotFoundException;
@@ -32,6 +33,7 @@ public class IssueManagementService {
     private final IssueWorkflowValidator workflowValidator;
     private final IssueHistoryService historyService;
     private final ApplicationEventPublisher eventPublisher;
+    private final IssueNotificationService notificationService;
 
     /**
      * 이슈 담당자 지정
@@ -64,6 +66,11 @@ public class IssueManagementService {
 
         // 이력 저장
         historyService.saveAssigneeChange(issueId, modifierId, beforeAssigneeId, assigneeId);
+
+        // 담당자 변경 알림 발송
+        if (assigneeId != null) {
+            notificationService.notifyAssigneeChange(issue, assigneeId);
+        }
     }
 
     /**
@@ -118,6 +125,9 @@ public class IssueManagementService {
                         modifierId,
                         Instant.now());
         eventPublisher.publishEvent(statusChangedEvent);
+
+        // 상태 변경 알림 발송
+        notificationService.notifyStatusChange(issue, beforeStatus, newStatus);
     }
 
     /**
