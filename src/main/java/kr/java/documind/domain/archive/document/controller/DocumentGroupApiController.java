@@ -10,6 +10,8 @@ import kr.java.documind.domain.archive.document.model.dto.response.DocumentGroup
 import kr.java.documind.domain.archive.document.model.dto.response.DocumentMetadataResponse;
 import kr.java.documind.domain.archive.document.service.DocumentGroupService;
 import kr.java.documind.domain.archive.document.service.DocumentMetadataService;
+import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
+import kr.java.documind.global.annotation.CurrentProject;
 import kr.java.documind.global.annotation.ProjectId;
 import kr.java.documind.global.annotation.RequireProjectMember;
 import kr.java.documind.global.response.ApiResponse;
@@ -60,12 +62,13 @@ public class DocumentGroupApiController {
 
     @PostMapping("/{groupId}/documents")
     public ResponseEntity<ApiResponse<DocumentMetadataResponse>> uploadDocumentToGroup(
-            @ProjectId UUID projectId,
+            @CurrentProject ProjectRequestContext context,
             @PathVariable Long groupId,
             @RequestPart("request") @Valid NewVersionDocumentUploadRequest request,
             @RequestPart("file") MultipartFile file) {
         DocumentMetadataResponse response =
-                documentMetadataService.uploadDocumentToGroup(projectId, groupId, request, file);
+                documentMetadataService.uploadDocumentToGroup(
+                        context.projectId(), context.actorMemberId(), groupId, request, file);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
