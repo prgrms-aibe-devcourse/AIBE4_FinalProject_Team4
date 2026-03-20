@@ -71,6 +71,115 @@
         </div>
     </a>
 
+    <div class="relative"
+         x-data="notificationApp()"
+         @click.outside="isOpen = false"
+         x-cloak>
+
+        <!-- 알림 종 버튼 -->
+        <button type="button"
+                id="notification-menu-button"
+                @click="toggleDropdown()"
+                class="relative w-9 h-9 flex items-center justify-center rounded-docu-btn border-2 border-docu-ink bg-surface-base text-docu-ink shadow-docu-sm transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-docu-primary"
+                aria-label="알림"
+                aria-haspopup="true"
+                :aria-expanded="isOpen">
+
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+
+            <!-- 배지: x-show와 x-text로 실시간 바인딩 -->
+            <span x-show="unreadCount > 0"
+                  x-text="unreadCount > 99 ? '99+' : unreadCount"
+                  class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-docu-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none border border-white">
+        </span>
+        </button>
+
+        <!-- 알림 드롭다운 -->
+        <!-- Alpine 3.x 단축 속성(Shorthand) 적용으로 IDE 경고 제거 및 가독성 향상 -->
+        <div x-show="isOpen"
+             x-transition.duration.200ms.ease-out
+             x-transition.scale.95
+             x-transition.opacity
+             class="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-surface-card border border-divider rounded-docu-card shadow-docu-card z-[100] overflow-hidden"
+             role="menu"
+             aria-orientation="vertical"
+             aria-labelledby="notification-menu-button">
+
+            <div class="flex items-center justify-between px-4 py-3 border-b border-divider bg-surface-base">
+                <span class="text-sm font-bold text-docu-ink">최근 알림</span>
+                <button @click="markAllAsRead()"
+                        class="text-xs text-docu-secondary hover:text-docu-primary transition-colors"
+                        role="menuitem">
+                    모두 읽음
+                </button>
+            </div>
+
+            <ul class="max-h-[400px] overflow-y-auto divide-y divide-divider" role="none">
+                <!-- 로딩 상태 -->
+                <template x-if="isLoading">
+                    <li class="px-4 py-8 text-center text-sm text-docu-secondary" role="none">로딩 중...</li>
+                </template>
+
+                <!-- 빈 상태 -->
+                <template x-if="!isLoading && notifications.length === 0">
+                    <li class="px-4 py-8 text-center text-sm text-docu-secondary" role="none">새로운 알림이 없습니다.</li>
+                </template>
+
+                <!-- 알림 목록 루프 (x-for) -->
+                <template x-for="n in notifications" :key="n.id">
+                    <li :data-id="n.id"
+                        x-init="!n.isRead ? observer.observe($el) : null"
+                        @click="handleNotificationClick(n)"
+                        role="menuitem"
+                        class="relative flex flex-col gap-2.5 px-4 py-3.5 hover:bg-surface-sub cursor-pointer transition-colors border-b border-divider">
+
+                        <!-- 헤더 영역: [출처 배지 + 이벤트 배지 + 미읽음 점 + 시간] -->
+                        <div class="flex items-center justify-between pl-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <!-- 미읽음 표시 점 -->
+                                <span x-show="!n.isRead"
+                                      class="w-1.5 h-1.5 rounded-full bg-docu-danger"
+                                      aria-hidden="true"></span>
+
+                                <!-- 소스 타입 배지 -->
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-surface-sub text-docu-secondary-dark border border-divider"
+                                      x-text="n.sourceType"></span>
+
+                                <!-- 이벤트 타입 배지 -->
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-docu-primary-light text-docu-primary border border-docu-primary-light"
+                                      x-text="n.eventType"></span>
+                            </div>
+
+                            <!-- 시간 정보 -->
+                            <span class="text-[10px] text-gray-400 font-medium"
+                                  x-text="formatTime(n.createdAt)"></span>
+                        </div>
+
+                        <!-- 본문 영역: 메시지 제목 + 본문 -->
+                        <div class="pl-1">
+                            <p class="text-sm font-semibold text-docu-ink truncate"
+                               x-text="n.title"></p>
+                            <p class="text-xs text-docu-ink leading-relaxed line-clamp-2"
+                               x-text="n.message"></p>
+                        </div>
+
+                        <!-- 푸터 영역: 액션 버튼 (소스 URL 이동) -->
+                        <div class="pl-1 pt-1">
+                            <template x-if="n.relatedUrl && n.relatedUrl !== '#'">
+                                <div class="flex items-center gap-1 text-[11px] font-bold text-docu-primary hover:text-docu-primary-dark transition-colors">
+                                    <!-- n.actionText는 백엔드 Enum에서 정의된 텍스트 -->
+                                    <span x-text="n.actionText || '확인하기 >'"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+        </div>
+    </div>
+
     <button type="button"
             data-logout-open
             aria-haspopup="dialog"

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/service-layout}">
+<head>
+    <title>알림</title>
+</head>
+<body>
+<th:block layout:fragment="content">
+    <!-- Alpine.js 컴포넌트 -->
+    <section x-data="notificationHistoryApp" class="space-y-6">
+        <input type="hidden" id="publicId" th:value="${publicId}">
+
+        <!-- 헤더 영역 -->
+        <div>
+            <div th:replace="~{common/fragments/ui-components :: breadcrumb('알림')}"></div>
+            <h1 class="text-h1 text-docu-ink mt-3">알림 설정 및 이력</h1>
+            <p class="text-sm text-docu-secondary mt-1">프로젝트의 알림 수신 규칙을 설정하고 모든 알림 내역을 확인합니다.</p>
+        </div>
+
+        <!-- 메인 탭 (알림 규칙 vs 발생 이력) -->
+        <div class="flex border-b border-divider mb-6" role="tablist">
+            <button type="button" role="tab"
+                    @click="mainTab = 'RULES'"
+                    :class="mainTab === 'RULES'
+                        ? 'px-4 py-2.5 text-sm font-semibold text-docu-primary border-b-3 border-docu-primary transition-colors focus-ring'
+                        : 'px-4 py-2.5 text-sm text-docu-secondary border-b-3 border-transparent hover:text-docu-ink hover:border-divider transition-colors focus-ring'">
+                알림 규칙
+            </button>
+            <button type="button" role="tab"
+                    @click="mainTab = 'HISTORY'"
+                    :class="mainTab === 'HISTORY'
+                        ? 'px-4 py-2.5 text-sm font-semibold text-docu-primary border-b-3 border-docu-primary transition-colors focus-ring'
+                        : 'px-4 py-2.5 text-sm text-docu-secondary border-b-3 border-transparent hover:text-docu-ink hover:border-divider transition-colors focus-ring'">
+                발생 이력
+            </button>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- 1. 알림 규칙 (RULES) 뷰 -->
+        <!-- ========================================================= -->
+        <div x-show="mainTab === 'RULES'" x-cloak class="space-y-10">
+
+            <!-- (1) 로그 알림 섹션 -->
+            <section>
+                <div class="flex justify-between items-end mb-4">
+                    <h2 class="text-h2 text-docu-ink">로그 알림</h2>
+                    <button type="button" class="btn-primary btn-sm flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        새 경보 만들기
+                    </button>
+                </div>
+                <div class="card-base card-shadow p-8 flex flex-col items-center justify-center min-h-[160px] bg-surface-sub border-dashed">
+                    <span class="text-2xl mb-2">📊</span>
+                    <p class="text-sm text-docu-secondary">아직 등록된 커스텀 로그 경보 규칙이 없습니다.</p>
+                </div>
+            </section>
+
+            <!-- (2) 이슈 추천 심각도 알림 섹션 -->
+            <section>
+                <h2 class="text-h2 text-docu-ink mb-4">이슈 추천 심각도 알림</h2>
+                <div class="card-base card-shadow overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-surface-sub border-b border-divider text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4 w-1/3">RULE NAME / ORIGIN</th>
+                            <th class="px-6 py-4 w-1/2">CONDITION</th>
+                            <th class="px-6 py-4 w-1/6 text-right">STATUS</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-divider">
+                        <template x-for="rule in severityRules" :key="rule.ruleKey">
+                            <tr class="hover:bg-surface-hover transition-colors">
+                                <td class="px-6 py-5 font-bold text-sm text-docu-ink" x-text="rule.name"></td>
+                                <td class="px-6 py-5 text-sm text-gray-500 font-mono" x-text="rule.condition"></td>
+                                <td class="px-6 py-5 text-right">
+                                    <label class="inline-flex items-center gap-2.5 cursor-pointer select-none justify-end w-full">
+                                            <span class="text-sm font-semibold transition-colors"
+                                                  :class="rule.active ? 'text-docu-success' : 'text-gray-400'"
+                                                  x-text="rule.active ? 'Active' : 'Paused'"></span>
+                                        <div class="relative flex-shrink-0">
+                                            <input type="checkbox" x-model="rule.active" @change="updateRuleStatus(rule)" class="sr-only peer">
+                                            <div class="w-9 h-5 bg-gray-200 rounded-full transition-colors peer-checked:bg-docu-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                                        </div>
+                                    </label>
+                                </td>
+                            </tr>
+                        </template>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- (3) 이슈 알림 섹션 -->
+            <section>
+                <h2 class="text-h2 text-docu-ink mb-4">이슈 알림</h2>
+                <div class="card-base card-shadow overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-surface-sub border-b border-divider text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4 w-1/3">RULE NAME / ORIGIN</th>
+                            <th class="px-6 py-4 w-1/2">CONDITION</th>
+                            <th class="px-6 py-4 w-1/6 text-right">STATUS</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-divider">
+                        <template x-for="rule in issueRules" :key="rule.ruleKey">
+                            <tr class="hover:bg-surface-hover transition-colors">
+                                <td class="px-6 py-5 font-bold text-sm text-docu-ink" x-text="rule.name"></td>
+                                <td class="px-6 py-5 text-sm text-gray-500" x-text="rule.condition"></td>
+                                <td class="px-6 py-5 text-right">
+                                    <label class="inline-flex items-center gap-2.5 cursor-pointer select-none justify-end w-full">
+                                            <span class="text-sm font-semibold transition-colors"
+                                                  :class="rule.active ? 'text-docu-success' : 'text-gray-400'"
+                                                  x-text="rule.active ? 'Active' : 'Paused'"></span>
+                                        <div class="relative flex-shrink-0">
+                                            <input type="checkbox" x-model="rule.active" @change="updateRuleStatus(rule)" class="sr-only peer">
+                                            <div class="w-9 h-5 bg-gray-200 rounded-full transition-colors peer-checked:bg-docu-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                                        </div>
+                                    </label>
+                                </td>
+                            </tr>
+                        </template>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- 2. 발생 이력 (HISTORY) 뷰 -->
+        <!-- ========================================================= -->
+        <div x-show="mainTab === 'HISTORY'" x-cloak class="card-base card-shadow p-widget-p relative">
+
+            <!-- 새 알림 플로팅 버튼 (기존 로직 유지) -->
+            <div x-show="hasNewAlert"
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="-translate-y-4 opacity-0"
+                 x-transition:enter-end="translate-y-0 opacity-100"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="translate-y-0 opacity-100"
+                 x-transition:leave-end="-translate-y-4 opacity-0"
+                 class="absolute top-4 left-1/2 -translate-x-1/2 z-[60]"
+                 style="display: none;">
+                <button @click="refreshList()"
+                        class="badge-event-new shadow-docu-card px-4 py-2 hover:-translate-y-0.5 transition-transform flex items-center gap-2">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-docu-primary opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-docu-primary-dark"></span>
+                    </span>
+                    새로운 알림이 도착했습니다. 클릭하여 확인
+                </button>
+            </div>
+
+            <!-- 서브 탭 (ALL, LOG, ISSUE) -->
+            <div class="flex gap-1 border-b border-divider mb-4" role="tablist">
+                <template x-for="tab in ['ALL', 'LOG', 'ISSUE']" :key="tab">
+                    <button type="button" role="tab"
+                            @click="changeTab(tab === 'ALL' ? null : tab)"
+                            :aria-selected="sourceType === (tab === 'ALL' ? null : tab)"
+                            :class="sourceType === (tab === 'ALL' ? null : tab)
+                                ? 'border-docu-primary text-docu-primary'
+                                : 'border-transparent text-docu-secondary hover:text-docu-ink'"
+                            class="px-4 py-2 text-sm font-semibold rounded-t-docu-btn border-b-2 transition-colors">
+                        <span x-text="tab === 'ALL' ? '전체' : (tab === 'LOG' ? '로그' : '이슈')"></span>
+                    </button>
+                </template>
+            </div>
+
+            <!-- 알림 목록 (선언적 렌더링) -->
+            <div class="space-y-4 min-h-[300px]">
+                <template x-for="n in notifications" :key="n.id">
+
+                    <div :data-id="n.id"
+                         x-init="!n.isRead ? readObserver.observe($el) : null"
+                         class="card-base card-shadow-sm p-4 hover:shadow-docu-card transition-shadow bg-surface-card relative">
+
+                        <!-- 헤더 영역: 뱃지 및 발생 시간 -->
+                        <div class="flex items-start justify-between gap-3 mb-2">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <!-- 이벤트 타입 배지 -->
+                                <span class="badge-base"
+                                      :class="n.sourceType === 'ISSUE' ? 'bg-docu-primary-light text-docu-primary border-docu-primary' : 'bg-gray-100 text-gray-600 border-gray-300'"
+                                      x-text="EVENT_LABEL[n.eventType] || n.eventType"></span>
+
+                                <!-- 심각도 배지 -->
+                                <template x-if="n.severity">
+                                    <span class="badge-base uppercase tracking-wide"
+                                          :class="SEVERITY_CLASS[n.severity.toUpperCase()] || 'bg-divider'"
+                                          x-text="n.severity"></span>
+                                </template>
+
+                                <!-- 미읽음 배지 -->
+                                <span x-show="!n.isRead"
+                                      class="w-1.5 h-1.5 rounded-full bg-docu-danger transition-opacity duration-300"
+                                      aria-hidden="true"></span>
+                                <span x-show="!n.isRead" class="sr-only">읽지 않은 알림</span>
+                            </div>
+
+                            <!-- 시간 정보 -->
+                            <span x-text="formatTime(n.createdAt)" class="text-xs text-gray-400 flex-shrink-0 mt-0.5"></span>
+                        </div>
+
+                        <!-- 본문 영역: 제목 및 상세 내용 -->
+                        <p x-text="n.title" class="text-sm font-semibold text-docu-ink mb-1 leading-snug"></p>
+                        <p x-text="n.message" class="text-xs text-gray-500 mb-3 leading-relaxed line-clamp-2"></p>
+
+                        <!-- 푸터 영역: 액션 버튼 배치 -->
+                        <div class="flex items-center justify-end gap-3 border-t border-divider pt-3 mt-1">
+                            <!-- 관련 링크 이동 버튼 -->
+                            <template x-if="n.relatedUrl && n.actionText">
+                                <a :href="n.relatedUrl" x-text="n.actionText"
+                                   class="text-xs font-semibold text-docu-primary hover:underline rounded-docu-btn focus-ring">
+                                </a>
+                            </template>
+
+                            <!-- 무시하기 버튼 -->
+                            <button type="button"
+                                    @click="ignoreNotification(n.id)"
+                                    class="text-xs text-gray-400 hover:text-docu-ink transition-colors rounded-docu-btn focus-ring">
+                                무시하기
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="!isLoading && notifications.length === 0" class="py-12 text-center text-sm text-docu-secondary">
+                    알림 내역이 비어 있습니다.
+                </div>
+
+                <!-- Loading Spinner -->
+                <div x-show="isLoading" class="py-4 text-center">
+                    <span class="text-xs text-docu-secondary animate-pulse">로딩 중...</span>
+                </div>
+            </div>
+
+            <!-- 무한 스크롤 sentinel -->
+            <div id="notification-sentinel" class="h-4"></div>
+        </div>
+    </section>
+
+    <script th:inline="javascript">
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('notificationHistoryApp', () => ({
+                // ── State ─────────────────────────────────────────────────────
+                publicId: null,
+                mainTab: 'RULES',
+
+                // [이력 관련 State]
+                notifications: [],
+                sourceType: null,
+                cursorId: null,
+                hasNext: true,
+                isLoading: false,
+                hasNewAlert: false,
+                pendingReadIds: new Set(),
+                readTimeout: null,
+                readObserver: null,
+
+                // 알림 규칙 설정 State (API 로드)
+                severityRules: [],
+                issueRules: [],
+                isRulesLoading: false,
+
+                // ── Constants ─────────────────────────────────────────────────
+                EVENT_LABEL: {
+                    ISSUE_ASSIGNED: '담당자 지정',
+                    ISSUE_STATUS_CHANGED: '상태 변경',
+                    ISSUE_MENTIONED: '멘션',
+                    LOG_THRESHOLD: '로그 임계값',
+                    EMBEDDING_SUCCESS: '임베딩 완료',
+                    EMBEDDING_FAILED: '임베딩 실패',
+                    PATCHNOTE_GENERATED: '패치노트 생성'
+                },
+                SEVERITY_CLASS: {
+                    CRITICAL: 'bg-docu-danger text-white',
+                    HIGH: 'bg-docu-warning-dark text-white',
+                    MEDIUM: 'bg-docu-warning text-docu-ink',
+                    LOW: 'bg-surface-sub text-docu-secondary border border-divider'
+                },
+
+                // ── Helpers ───────────────────────────────────────────────────
+                formatTime(utcString) {
+                    if (!utcString) return '';
+
+                    const date = new Date(utcString); // 브라우저가 자동으로 Local Timezone(KST)으로 파싱
+                    const now = new Date();
+                    const diffMs = now - date;
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const diffHours = Math.floor(diffMins / 60);
+                    const diffDays = Math.floor(diffHours / 24);
+
+                    if (diffMins < 1) return '방금 전';
+                    if (diffMins < 60) return `${diffMins}분 전`;
+                    if (diffHours < 24) return `${diffHours}시간 전`;
+                    if (diffDays < 7) return `${diffDays}일 전`;
+
+                    // 7일 이상 지났다면 날짜와 시간 표시 (예: 03-20 14:30)
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    return `${month}-${day} ${hours}:${minutes}`;
+                },
+
+                // ── Lifecycle ─────────────────────────────────────────────────
+                async init() {
+                    this.publicId = document.getElementById('publicId')?.value;
+                    if (!this.publicId) return;
+
+                    await this.loadRules();
+
+                    // 이력 탭 관련 초기화
+                    this.setupImpressionObserver();
+                    await this.loadMore(false);
+                    this.setupInfiniteScroll();
+
+                    // 전역 알림 구독
+                    window.addEventListener('docu-new-notification', (e) => {
+                        const payload = e.detail;
+                        if (!payload.projectId || payload.projectId === this.publicId) {
+                            this.hasNewAlert = true;
+                        }
+                    });
+                },
+
+                // ── Actions ───────────────────────────────────────────────────
+                async loadRules() {
+                    this.isRulesLoading = true;
+                    try {
+                        const res = await callApi(`/api/projects/${this.publicId}/issue-alert-rules`);
+                        if (res.success) {
+                            const all = res.data;
+                            this.severityRules = all.filter(r => r.category === 'SEVERITY');
+                            this.issueRules = all.filter(r => r.category === 'ISSUE_EVENT');
+                        }
+                    } finally {
+                        this.isRulesLoading = false;
+                    }
+                },
+
+                async updateRuleStatus(rule) {
+                    const prev = !rule.active;
+                    try {
+                        await callApi(
+                            `/api/projects/${this.publicId}/issue-alert-rules/${rule.ruleKey}`,
+                            { method: 'PATCH', body: JSON.stringify({ active: rule.active }) }
+                        );
+                    } catch (e) {
+                        rule.active = prev;
+                        window.showTopToast?.('설정 저장에 실패했습니다.', 'danger');
+                    }
+                },
+                async loadMore(append = true) {
+                    if (this.isLoading || (!this.hasNext && append)) return;
+                    this.isLoading = true;
+                    const params = new URLSearchParams({ size: 20 });
+                    if (this.cursorId) params.set('cursorId', this.cursorId);
+                    if (this.sourceType) params.set('sourceType', this.sourceType);
+                    try {
+                        const res = await callApi(`/api/projects/${this.publicId}/notifications?` + params.toString());
+                        if (res.success) {
+                            const data = res.data;
+                            this.notifications = append ? [...this.notifications, ...data.notifications] : data.notifications;
+                            this.cursorId = data.nextCursorId;
+                            this.hasNext = data.hasNext;
+                        }
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                async changeTab(type) {
+                    this.sourceType = type;
+                    this.cursorId = null;
+                    this.hasNext = true;
+                    await this.loadMore(false);
+                },
+                async ignoreNotification(id) {
+                    try {
+                        const res = await callApi(`/api/projects/${this.publicId}/notifications/${id}/ignore`, { method: 'PATCH' });
+                        if (res.success) {
+                            this.notifications = this.notifications.filter(n => n.id !== id);
+                        }
+                    } catch (e) { }
+                },
+                async refreshList() {
+                    this.hasNewAlert = false;
+                    this.cursorId = null;
+                    this.hasNext = true;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setTimeout(async () => {
+                        this.notifications = [];
+                        await this.loadMore(false);
+                    }, 300);
+                },
+                setupImpressionObserver() {
+                    this.readObserver = new IntersectionObserver((entries) => {
+                        let hasNewReads = false;
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const id = parseInt(entry.target.dataset.id, 10);
+                                const noti = this.notifications.find(n => n.id === id);
+                                if (noti && !noti.isRead && !this.pendingReadIds.has(id)) {
+                                    this.pendingReadIds.add(id);
+                                    hasNewReads = true;
+                                    this.readObserver.unobserve(entry.target);
+                                    setTimeout(() => { noti.isRead = true; }, 2500);
+                                }
+                            }
+                        });
+                        if (hasNewReads) {
+                            clearTimeout(this.readTimeout);
+                            this.readTimeout = setTimeout(() => this.flushPendingReads(), 500);
+                        }
+                    }, { threshold: 0.5 });
+                },
+                async flushPendingReads() {
+                    if (this.pendingReadIds.size === 0) return;
+                    const idsToUpdate = Array.from(this.pendingReadIds);
+                    this.pendingReadIds.clear();
+                    try {
+                        await callApi('/api/notifications/read-batch', { method: 'PATCH', body: JSON.stringify(idsToUpdate) });
+                    } catch (error) { }
+                },
+                setupInfiniteScroll() {
+                    const observer = new IntersectionObserver((entries) => {
+                        if (entries[0].isIntersecting && !this.isLoading && this.hasNext && this.mainTab === 'HISTORY') {
+                            this.loadMore(true);
+                        }
+                    }, { rootMargin: '200px' });
+                    const sentinel = document.getElementById('notification-sentinel');
+                    if (sentinel) observer.observe(sentinel);
+                }
+            }));
+        });
+    </script>
+</th:block>
+</body>
+</html>
