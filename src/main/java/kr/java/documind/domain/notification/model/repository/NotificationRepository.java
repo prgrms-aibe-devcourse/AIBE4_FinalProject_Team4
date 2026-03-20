@@ -18,6 +18,8 @@ public interface NotificationRepository
     Optional<Notification> findByIdAndReceiverIdAndProjectId(
             Long id, UUID receiverId, UUID projectId);
 
+    Optional<Notification> findByIdAndReceiverId(Long id, UUID receiverId);
+
     // 동적 벌크 업데이트 (projectId가 null이면 전역 읽음 처리)
     @Modifying(clearAutomatically = true)
     @Query(

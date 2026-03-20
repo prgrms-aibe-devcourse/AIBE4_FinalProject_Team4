@@ -17,19 +17,31 @@ public class NotificationCommandService {
 
     @Transactional
     public void markRead(Long id, UUID memberId, UUID projectId) {
-        Notification notification =
-                notificationRepository
-                        .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
-                        .orElseThrow(NotificationNotFoundException::new);
+        Notification notification;
+        if (projectId != null) {
+            notification = notificationRepository
+                    .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
+                    .orElseThrow(NotificationNotFoundException::new);
+        } else {
+            notification = notificationRepository
+                    .findByIdAndReceiverId(id, memberId)
+                    .orElseThrow(NotificationNotFoundException::new);
+        }
         notification.markRead();
     }
 
     @Transactional
     public void markIgnored(Long id, UUID memberId, UUID projectId) {
-        Notification notification =
-                notificationRepository
-                        .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
-                        .orElseThrow(NotificationNotFoundException::new);
+        Notification notification;
+        if (projectId != null) {
+            notification = notificationRepository
+                    .findByIdAndReceiverIdAndProjectId(id, memberId, projectId)
+                    .orElseThrow(NotificationNotFoundException::new);
+        } else {
+            notification = notificationRepository
+                    .findByIdAndReceiverId(id, memberId)
+                    .orElseThrow(NotificationNotFoundException::new);
+        }
         notification.markIgnored();
     }
 
