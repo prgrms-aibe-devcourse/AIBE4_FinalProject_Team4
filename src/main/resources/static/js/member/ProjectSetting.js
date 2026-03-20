@@ -651,12 +651,12 @@ function openDocuPrompt(title, message, placeholder = '', isDanger = false) {
             if (proceedBtn) proceedBtn.removeEventListener('click', handleProceed);
             if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
             if (closeBtn) closeBtn.removeEventListener('click', handleCancel);
-            if (inputEl) inputEl.removeEventListener('keypress', handleEnter);
+            if (inputEl) inputEl.removeEventListener('keydown', handleEnter);
         };
 
         if (proceedBtn) proceedBtn.addEventListener('click', handleProceed);
         if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
         if (closeBtn) closeBtn.addEventListener('click', handleCancel);
-        if (inputEl) inputEl.addEventListener('keypress', handleEnter);
+        if (inputEl) inputEl.addEventListener('keydown', handleEnter);
     });
 }
