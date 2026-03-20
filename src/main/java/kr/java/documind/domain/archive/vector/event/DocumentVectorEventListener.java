@@ -24,6 +24,7 @@ public class DocumentVectorEventListener {
     public void handleVectorCreate(DocumentVectorCreateEvent event) {
         etlService.process(
                 event.projectId(),
+                event.memberId(),
                 event.sourceId(),
                 event.storedKey(),
                 event.excludeFromPatchNote());
@@ -35,6 +36,7 @@ public class DocumentVectorEventListener {
         vectorStoreManager.deleteBySourceId(event.sourceId(), SourceType.DOCUMENT);
         etlService.process(
                 event.projectId(),
+                event.memberId(),
                 event.sourceId(),
                 event.storedKey(),
                 event.excludeFromPatchNote());
