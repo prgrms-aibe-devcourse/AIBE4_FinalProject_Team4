@@ -1,11 +1,11 @@
-package kr.java.documind.domain.notification.controller;
+package kr.java.documind.domain.issue.controller;
 
 import java.util.List;
 import kr.java.documind.domain.auth.model.dto.ProjectRequestContext;
-import kr.java.documind.domain.notification.model.dto.request.IssueAlertRuleUpdateRequest;
-import kr.java.documind.domain.notification.model.dto.response.IssueAlertRuleResponse;
-import kr.java.documind.domain.notification.model.enums.IssueAlertRuleKey;
-import kr.java.documind.domain.notification.service.IssueAlertRuleService;
+import kr.java.documind.domain.issue.model.dto.request.IssueAlertRuleUpdateRequest;
+import kr.java.documind.domain.issue.model.dto.response.IssueAlertRuleResponse;
+import kr.java.documind.domain.issue.model.enums.IssueAlertRuleKey;
+import kr.java.documind.domain.issue.service.IssueAlertRuleService;
 import kr.java.documind.domain.notification.service.NotificationCommandService;
 import kr.java.documind.domain.notification.service.NotificationQueryService;
 import kr.java.documind.global.annotation.CurrentProject;

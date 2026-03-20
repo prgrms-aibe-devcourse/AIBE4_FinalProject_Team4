@@ -1,6 +1,6 @@
-package kr.java.documind.domain.notification.model.dto.response;
+package kr.java.documind.domain.issue.model.dto.response;
 
-import kr.java.documind.domain.notification.model.enums.IssueAlertRuleKey;
+import kr.java.documind.domain.issue.model.enums.IssueAlertRuleKey;
 
 public record IssueAlertRuleResponse(
         String ruleKey, String name, String condition, String category, boolean active) {

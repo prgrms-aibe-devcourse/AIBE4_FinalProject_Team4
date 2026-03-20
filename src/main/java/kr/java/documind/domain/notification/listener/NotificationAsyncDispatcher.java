@@ -2,9 +2,9 @@ package kr.java.documind.domain.notification.listener;
 
 import java.util.HashMap;
 import java.util.Map;
+import kr.java.documind.domain.issue.event.IssueNotificationEvent;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.notification.event.DocumentNotificationEvent;
-import kr.java.documind.domain.notification.event.IssueNotificationEvent;
 import kr.java.documind.domain.notification.event.LogNotificationEvent;
 import kr.java.documind.domain.notification.event.NotificationEvent;
 import kr.java.documind.domain.notification.event.PatchNoteNotificationEvent;

@@ -1,8 +1,9 @@
-package kr.java.documind.domain.notification.event;
+package kr.java.documind.domain.issue.event;
 
 import java.util.List;
 import java.util.UUID;
 import kr.java.documind.domain.issue.model.enums.IssueSeverity;
+import kr.java.documind.domain.notification.event.NotificationEvent;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 
 public record IssueNotificationEvent(

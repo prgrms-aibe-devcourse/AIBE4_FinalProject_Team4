@@ -1,4 +1,4 @@
-package kr.java.documind.domain.notification.model.enums;
+package kr.java.documind.domain.issue.model.enums;
 
 public enum IssueAlertRuleKey {
     SEVERITY_CRITICAL("CRITICAL 심각도 이슈", "issue.severity == CRITICAL", RuleCategory.SEVERITY),
