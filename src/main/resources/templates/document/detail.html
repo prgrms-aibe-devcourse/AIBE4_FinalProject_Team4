@@ -80,7 +80,7 @@
                     </h3>
                     <dl class="space-y-4 text-sm">
                         <div class="flex justify-between">
-                            <dt class="text-docu-secondary">그룹명</dt>
+                            <dt class="text-docu-secondary">대분류명</dt>
                             <dd class="text-docu-ink font-medium" th:text="${document.groupName}">-</dd>
                         </div>
                         <div class="flex justify-between">
@@ -192,8 +192,8 @@
 </th:block>
 
 <th:block layout:fragment="scripts">
-    <script th:src="@{/js/archive/common.js}"></script>
-    <script th:src="@{/js/archive/detail.js}"></script>
+    <script th:src="@{/js/document/common.js}"></script>
+    <script th:src="@{/js/document/detail.js}"></script>
 </th:block>
 </body>
 </html>

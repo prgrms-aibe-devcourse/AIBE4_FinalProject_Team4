@@ -13,7 +13,7 @@
     <div class="flex items-center justify-between mb-6">
         <div class="relative w-96">
             <svg class="w-5 h-5 text-docu-secondary absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input type="text" id="searchInput" placeholder="파일 또는 그룹명 검색"
+            <input type="text" id="searchInput" placeholder="파일 또는 대분류명 검색"
                    class="form-input pl-10">
         </div>
         <button id="btnNewDocument" class="btn-primary">
@@ -22,11 +22,11 @@
         </button>
     </div>
 
-    <!-- 그룹 목록 테이블 -->
+    <!-- 대분류 목록 테이블 -->
     <div class="card-base overflow-hidden">
         <!-- 테이블 헤더 -->
         <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-surface-sub border-b border-divider text-sm font-medium text-docu-secondary">
-            <div class="col-span-4">그룹명</div>
+            <div class="col-span-4">대분류명</div>
             <div class="col-span-2 text-center">카테고리</div>
             <div class="col-span-2 text-center">최신 버전</div>
             <div class="col-span-2 text-center">파일 수</div>
@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <!-- 그룹 목록 (JS에서 렌더링) -->
+        <!-- 대분류 목록 (JS에서 렌더링) -->
         <div id="groupList"></div>
 
         <!-- 데이터 없음 -->
@@ -70,10 +70,10 @@
             <!-- 본문 -->
             <div class="flex-1 overflow-y-auto px-6 py-5">
                 <div id="uploadError" class="hidden mb-4 p-3 bg-docu-danger-light border border-docu-danger rounded-docu-btn text-sm text-docu-danger"></div>
-                <!-- 그룹명 -->
+                <!-- 대분류명 -->
                 <div class="mb-5">
-                    <label class="form-label mb-2">그룹명 <span class="text-docu-danger">*</span></label>
-                    <input type="text" id="uploadGroupName" placeholder="그룹명을 입력하세요"
+                    <label class="form-label mb-2">대분류명 <span class="text-docu-danger">*</span></label>
+                    <input type="text" id="uploadGroupName" placeholder="ex. 2026년 디자인 팀 기획서, 아키텍처 모음집, 문서 작성 메뉴얼"
                            class="form-input">
                 </div>
                 <!-- 카테고리 -->
@@ -81,13 +81,13 @@
                     <label class="form-label mb-2">카테고리 <span class="text-docu-danger">*</span></label>
                     <div class="flex flex-wrap gap-2 mb-2">
                         <button type="button" onclick="selectCategory(this, 'uploadCategory')"
-                                class="px-4 py-1.5 text-sm rounded-full border border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary transition-all cursor-pointer select-none category-chip">기획서</button>
+                                class="px-4 py-1.5 text-sm rounded-full border transition-all cursor-pointer select-none category-chip border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary">기획서</button>
                         <button type="button" onclick="selectCategory(this, 'uploadCategory')"
-                                class="px-4 py-1.5 text-sm rounded-full border border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary transition-all cursor-pointer select-none category-chip">보고서</button>
+                                class="px-4 py-1.5 text-sm rounded-full border transition-all cursor-pointer select-none category-chip border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary">보고서</button>
                         <button type="button" onclick="selectCategory(this, 'uploadCategory')"
-                                class="px-4 py-1.5 text-sm rounded-full border border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary transition-all cursor-pointer select-none category-chip">기술문서</button>
+                                class="px-4 py-1.5 text-sm rounded-full border transition-all cursor-pointer select-none category-chip border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary">기술문서</button>
                         <button type="button" onclick="selectCategory(this, 'uploadCategory')"
-                                class="px-4 py-1.5 text-sm rounded-full border border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary transition-all cursor-pointer select-none category-chip">기타</button>
+                                class="px-4 py-1.5 text-sm rounded-full border transition-all cursor-pointer select-none category-chip border-divider text-docu-secondary bg-surface-card hover:border-docu-primary hover:text-docu-primary">기타</button>
                     </div>
                     <input type="text" id="uploadCategory"
                            placeholder="또는 직접 입력하세요"
@@ -164,9 +164,9 @@
             <div class="flex-1 overflow-y-auto px-6 py-5">
                 <div id="newVersionError" class="hidden mb-4 p-3 bg-docu-danger-light border border-docu-danger rounded-docu-btn text-sm text-docu-danger"></div>
                 <input type="hidden" id="newVersionGroupId">
-                <!-- 그룹명 (비활성화) -->
+                <!-- 대분류명 (비활성화) -->
                 <div class="mb-5">
-                    <label class="form-label mb-2">그룹명 <span class="text-docu-danger">*</span></label>
+                    <label class="form-label mb-2">대분류명 <span class="text-docu-danger">*</span></label>
                     <input type="text" id="newVersionGroupName" disabled
                            class="form-input form-disabled">
                 </div>
@@ -238,8 +238,8 @@
 </main>
 
 <th:block layout:fragment="scripts">
-    <script th:src="@{/js/archive/common.js}"></script>
-    <script th:src="@{/js/archive/main.js}"></script>
+    <script th:src="@{/js/document/common.js}"></script>
+    <script th:src="@{/js/document/main.js}"></script>
 </th:block>
 </body>
 </html>
