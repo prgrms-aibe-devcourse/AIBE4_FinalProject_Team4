@@ -43,6 +43,31 @@ cold-storage:
     s3-prefix: cold-storage/game-logs  # S3 저장 경로 접두사
     temp-dir: ${java.io.tmpdir}/cold-storage  # 임시 파일 디렉토리
 
+# 로그 워커 설정
+worker:
+  # 배치 처리 on/off
+  batch:
+    enabled: ${WORKER_BATCH_ENABLED:true}  # 배치 처리 활성화 (false 시 단건 처리)
+
+  # Backpressure on/off
+  backpressure:
+    enabled: ${WORKER_BACKPRESSURE_ENABLED:true}  # Backpressure 활성화 (false 시 비활성화)
+
+# 파티션 관리 설정
+partition:
+  storage:
+    # Hot Storage: 최근 N주 (SSD)
+    hot-weeks: ${PARTITION_HOT_WEEKS:1}
+    # Warm Storage: N주 이후 Cold 전환 (HDD)
+    warm-weeks: ${PARTITION_WARM_WEEKS:4}
+  tablespace:
+    # Hot Storage Tablespace (SSD)
+    hot: ${PARTITION_HOT_TABLESPACE:hot_storage}
+    # Warm Storage Tablespace (HDD)
+    warm: ${PARTITION_WARM_TABLESPACE:warm_storage}
+    # 기본 Tablespace (개발 환경)
+    default: ${PARTITION_DEFAULT_TABLESPACE:pg_default}
+
 # 이슈 심각도 계산 설정
 issue:
     severity:

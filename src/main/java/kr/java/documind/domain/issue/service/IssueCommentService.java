@@ -49,6 +49,7 @@ public class IssueCommentService {
     private final ProjectMemberRepository projectMemberRepository;
     private final IssueHistoryService issueHistoryService;
     private final FileStore fileStore;
+    private final IssueNotificationService notificationService;
 
     /**
      * 댓글 생성
@@ -93,9 +94,8 @@ public class IssueCommentService {
         // 5. 타임라인 기록 저장
         issueHistoryService.saveCommentAdded(issueId, authorId, issueComment.getContent());
 
-        // 6. (향후) 이벤트 발행 - 알림 발송
-        // eventPublisher.publish(new CommentCreatedEvent(comment.getId(), issueId, authorId,
-        // validatedMentionIds));
+        // 6. 댓글/멘션 알림 발송
+        notificationService.notifyComment(issue, authorId, validatedMentionIds);
 
         // 7. 응답 생성
         return buildCommentResponse(issueComment);

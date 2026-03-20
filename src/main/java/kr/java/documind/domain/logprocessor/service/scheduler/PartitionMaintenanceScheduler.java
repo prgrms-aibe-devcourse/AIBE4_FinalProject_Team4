@@ -12,6 +12,7 @@ import javax.sql.DataSource;
 import kr.java.documind.domain.logprocessor.service.coldstorage.ColdStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,20 +41,25 @@ public class PartitionMaintenanceScheduler {
     private final Environment environment;
     private JdbcTemplate jdbcTemplate;
 
-    /** Hot Storage: 최근 1주 (7일) - SSD */
-    private static final int HOT_STORAGE_WEEKS = 1;
+    /** Hot Storage: 최근 N주 (SSD) */
+    @Value("${partition.storage.hot-weeks}")
+    private int hotStorageWeeks;
 
-    /** Warm Storage: 1~4주 (7~28일) - HDD */
-    private static final int WARM_STORAGE_WEEKS = 4;
+    /** Warm Storage: N주 이후 Cold 전환 (HDD) */
+    @Value("${partition.storage.warm-weeks}")
+    private int warmStorageWeeks;
 
     /** Hot Storage Tablespace 이름 */
-    private static final String HOT_TABLESPACE = "hot_storage";
+    @Value("${partition.tablespace.hot}")
+    private String hotTablespace;
 
     /** Warm Storage Tablespace 이름 */
-    private static final String WARM_TABLESPACE = "warm_storage";
+    @Value("${partition.tablespace.warm}")
+    private String warmTablespace;
 
     /** 기본 Tablespace (개발 환경) */
-    private static final String DEFAULT_TABLESPACE = "pg_default";
+    @Value("${partition.tablespace.default}")
+    private String defaultTablespace;
 
     @PostConstruct
     public void init() {
@@ -133,7 +139,7 @@ public class PartitionMaintenanceScheduler {
             // UTC 기준 날짜 (파티션 경계는 UTC +00으로 정의됨)
             LocalDate today = LocalDate.now(ZoneOffset.UTC);
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            LocalDate warmMonday = monday.minusWeeks(HOT_STORAGE_WEEKS);
+            LocalDate warmMonday = monday.minusWeeks(hotStorageWeeks);
 
             // ISO week-based year 사용 (연말/연초 경계 처리)
             int year = warmMonday.get(IsoFields.WEEK_BASED_YEAR);
@@ -181,7 +187,7 @@ public class PartitionMaintenanceScheduler {
             // UTC 기준 날짜 (파티션 경계는 UTC +00으로 정의됨)
             LocalDate today = LocalDate.now(ZoneOffset.UTC);
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            LocalDate coldMonday = monday.minusWeeks(WARM_STORAGE_WEEKS);
+            LocalDate coldMonday = monday.minusWeeks(warmStorageWeeks);
 
             // ISO week-based year 사용 (연말/연초 경계 처리)
             int year = coldMonday.get(IsoFields.WEEK_BASED_YEAR);
@@ -227,16 +233,16 @@ public class PartitionMaintenanceScheduler {
             }
 
             // Warm Tablespace 존재 확인
-            if (!checkTablespaceExists(WARM_TABLESPACE)) {
+            if (!checkTablespaceExists(warmTablespace)) {
                 log.warn(
                         "[Partition] Warm tablespace not found: {}. Skipping move.",
-                        WARM_TABLESPACE);
+                        warmTablespace);
                 return;
             }
 
             // Tablespace 이동
             String sql =
-                    String.format("ALTER TABLE %s SET TABLESPACE %s", tableName, WARM_TABLESPACE);
+                    String.format("ALTER TABLE %s SET TABLESPACE %s", tableName, warmTablespace);
             jdbcTemplate.execute(sql);
 
             log.info("[Partition] Moved {} to Warm tablespace (SSD→HDD)", tableName);
@@ -270,7 +276,7 @@ public class PartitionMaintenanceScheduler {
                     """;
 
             Boolean isWarm =
-                    jdbcTemplate.queryForObject(sql, Boolean.class, tableName, WARM_TABLESPACE);
+                    jdbcTemplate.queryForObject(sql, Boolean.class, tableName, warmTablespace);
             return Boolean.TRUE.equals(isWarm);
         } catch (Exception e) {
             log.debug("[Partition] Failed to check Warm Storage status: {}", tableName, e);
@@ -325,8 +331,8 @@ public class PartitionMaintenanceScheduler {
                     └─────────────────────────────────────────────┘
                     """);
         } else {
-            boolean hotExists = checkTablespaceExists(HOT_TABLESPACE);
-            boolean warmExists = checkTablespaceExists(WARM_TABLESPACE);
+            boolean hotExists = checkTablespaceExists(hotTablespace);
+            boolean warmExists = checkTablespaceExists(warmTablespace);
 
             log.info(
                     """
@@ -337,9 +343,9 @@ public class PartitionMaintenanceScheduler {
                     │  Warm: {} (존재: {})                         │
                     └─────────────────────────────────────────────┘
                     """,
-                    HOT_TABLESPACE,
+                    hotTablespace,
                     hotExists ? "✅" : "❌",
-                    WARM_TABLESPACE,
+                    warmTablespace,
                     warmExists ? "✅" : "❌");
         }
     }

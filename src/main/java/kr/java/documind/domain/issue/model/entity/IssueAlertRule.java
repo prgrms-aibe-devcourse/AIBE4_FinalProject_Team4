@@ -1,11 +1,11 @@
-package kr.java.documind.domain.notification.model.entity;
+package kr.java.documind.domain.issue.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
-import kr.java.documind.domain.notification.model.enums.IssueAlertRuleKey;
+import kr.java.documind.domain.issue.model.enums.IssueAlertRuleKey;
 import kr.java.documind.global.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Getter;

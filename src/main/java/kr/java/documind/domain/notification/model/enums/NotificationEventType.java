@@ -1,6 +1,7 @@
 package kr.java.documind.domain.notification.model.enums;
 
 public enum NotificationEventType {
+    ISSUE_CREATED("이슈로 이동 >"),
     ISSUE_ASSIGNED("이슈로 이동 >"),
     ISSUE_STATUS_CHANGED("이슈로 이동 >"),
     ISSUE_MENTIONED("이슈로 이동 >"),

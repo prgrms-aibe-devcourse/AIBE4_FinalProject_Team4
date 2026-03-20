@@ -40,6 +40,9 @@ public class LogBufferService {
     private final AtomicBoolean isFlushing = new AtomicBoolean(false);
     private final AtomicBoolean isRetrying = new AtomicBoolean(false);
 
+    @Value("${worker.batch.enabled:true}")
+    private boolean batchEnabled;
+
     @Value("${worker.bulk.size}")
     private int batchSize;
 
@@ -87,7 +90,14 @@ public class LogBufferService {
         }
 
         buffer.offer(new LogWrapper(logEntity, recordId));
-        // 동적 배치 크기 사용
+
+        // Batch 비활성화 시 즉시 flush (단건 처리)
+        if (!batchEnabled) {
+            flush();
+            return;
+        }
+
+        // 동적 배치 크기 사용 (Batch 활성화 시)
         int dynamicBatchSize = backpressureManager.getCurrentBatchSize();
         if (buffer.size() >= dynamicBatchSize) {
             flush();

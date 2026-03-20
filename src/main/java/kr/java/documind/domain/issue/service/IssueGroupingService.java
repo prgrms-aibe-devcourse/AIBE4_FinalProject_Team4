@@ -33,6 +33,7 @@ public class IssueGroupingService {
     private final IssueRepository issueRepository;
     private final IssueSeverityService issueSeverityService;
     private final ProjectMemberRepository projectMemberRepository;
+    private final IssueNotificationService notificationService;
 
     /**
      * 로그에 대한 이슈를 찾거나 생성
@@ -82,6 +83,9 @@ public class IssueGroupingService {
 
                                 // 신규 이슈 심각도 계산
                                 issueSeverityService.calculateAndUpdateSeverity(newIssue, gameLog);
+
+                                // 신규 이슈 생성 알림 발송
+                                notificationService.notifyNewIssue(newIssue);
 
                                 return newIssue;
                             });

@@ -1,13 +1,13 @@
-package kr.java.documind.domain.notification.service;
+package kr.java.documind.domain.issue.service;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import kr.java.documind.domain.notification.model.dto.response.IssueAlertRuleResponse;
-import kr.java.documind.domain.notification.model.entity.IssueAlertRule;
-import kr.java.documind.domain.notification.model.enums.IssueAlertRuleKey;
-import kr.java.documind.domain.notification.model.repository.IssueAlertRuleRepository;
+import kr.java.documind.domain.issue.model.dto.response.IssueAlertRuleResponse;
+import kr.java.documind.domain.issue.model.entity.IssueAlertRule;
+import kr.java.documind.domain.issue.model.enums.IssueAlertRuleKey;
+import kr.java.documind.domain.issue.model.repository.IssueAlertRuleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
