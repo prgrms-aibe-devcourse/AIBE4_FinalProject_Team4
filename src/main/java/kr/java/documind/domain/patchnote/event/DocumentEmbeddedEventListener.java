@@ -1,9 +1,9 @@
 package kr.java.documind.domain.patchnote.event;
 
 import java.util.List;
-
-import kr.java.documind.domain.archive.vector.event.DocumentEmbeddedEvent;
+import kr.java.documind.domain.archive.document.event.DocumentEmbeddedEvent;
 import kr.java.documind.domain.archive.vector.model.repository.VectorStoreRepository;
+import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 import kr.java.documind.domain.patchnote.exception.DocumentEmbeddingEmptyException;
 import kr.java.documind.domain.patchnote.infrastructure.DocumentChangeGenerator;
 import kr.java.documind.domain.patchnote.infrastructure.DocumentSummaryGenerator;
@@ -54,13 +54,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
  *       알림
  *   <li>pending_item 최종 저장 실패 → {@code PendingItemUpsertFailedException} throw → 관리자 알림
  *   <li>기타 예외 → 그대로 전파 → CustomAsyncExceptionHandler 관리자 알림
- *   <li>성공 → {@link DocumentPendingItemCreatedEvent} 발행 → alarm-toast + 헤더 배지
+ *   <li>성공 → {@link PatchNoteNotificationEvent} 발행 → alarm-toast + 헤더 배지
  * </ul>
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DocumentVectorStatusChangedEventListener {
+public class DocumentEmbeddedEventListener {
 
     /** 신규 문서 요약용 청크 조회 건수 — 문서 앞부분을 대표 텍스트로 사용 */
     private static final int CHUNK_RETRIEVAL_LIMIT = 10;
@@ -157,8 +157,15 @@ public class DocumentVectorStatusChangedEventListener {
                 status);
 
         eventPublisher.publishEvent(
-                new DocumentPendingItemCreatedEvent(
-                        event.sourceId(), event.projectId(), summaryResult.title(), status));
+                new PatchNoteNotificationEvent(
+                        event.projectId(),
+                        List.of(event.memberId()),
+                        event.sourceId(),
+                        NotificationEventType.PATCHNOTE_DOC_GENERATED,
+                        summaryResult.title(),
+                        "문서 분석이 완료되어 패치노트 항목이 추가되었습니다.",
+                        null,
+                        true));
     }
 
     private void handleUpdatedDocument(DocumentEmbeddedEvent event) {
@@ -228,8 +235,15 @@ public class DocumentVectorStatusChangedEventListener {
 
         if (lastTitle != null) {
             eventPublisher.publishEvent(
-                    new DocumentPendingItemCreatedEvent(
-                            event.sourceId(), event.projectId(), lastTitle, status));
+                    new PatchNoteNotificationEvent(
+                            event.projectId(),
+                            List.of(event.memberId()),
+                            event.sourceId(),
+                            NotificationEventType.PATCHNOTE_DOC_GENERATED,
+                            lastTitle,
+                            "문서 분석이 완료되어 패치노트 항목이 추가되었습니다.",
+                            null,
+                            true));
         }
     }
 

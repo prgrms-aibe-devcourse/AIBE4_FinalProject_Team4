@@ -23,13 +23,13 @@ import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
+import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 import kr.java.documind.domain.patchnote.exception.IssueInsufficientInfoException;
 import kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException;
 import kr.java.documind.domain.patchnote.infrastructure.IssueSummaryGenerator;
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkingSource;
 import kr.java.documind.domain.patchnote.model.dto.IssueSummaryResult;
 import kr.java.documind.domain.patchnote.model.enums.PatchType;
-import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.domain.patchnote.service.IssueChunkingService;
 import kr.java.documind.domain.patchnote.service.PendingItemRollbackService;
 import kr.java.documind.domain.patchnote.service.PendingItemUpsertService;
@@ -128,11 +128,11 @@ class IssueStatusChangedEventHandlerTest {
         given(choseongUtil.extract(any())).willReturn("ㅍㄹㅇ");
     }
 
-    /** 발행된 IssuePendingItemCreatedEvent 캡처 */
-    private IssuePendingItemCreatedEvent captureCreatedEvent() {
+    /** 발행된 PatchNoteNotificationEvent 캡처 */
+    private PatchNoteNotificationEvent captureCreatedEvent() {
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         then(eventPublisher).should().publishEvent(captor.capture());
-        return (IssuePendingItemCreatedEvent) captor.getValue();
+        return (PatchNoteNotificationEvent) captor.getValue();
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -263,8 +263,8 @@ class IssueStatusChangedEventHandlerTest {
     class HandleIssueResolvedSuccess {
 
         @Test
-        @DisplayName("성공 흐름: excludeFromPatchNote=false → 이벤트 status=PENDING")
-        void handleIssueResolved_excludeFromPatchNote_false_PENDING상태로생성() {
+        @DisplayName("성공 흐름: excludeFromPatchNote=false → PatchNoteNotificationEvent 발행됨")
+        void handleIssueResolved_excludeFromPatchNote_false_이벤트발행됨() {
             // Given
             Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
@@ -274,13 +274,13 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            IssuePendingItemCreatedEvent published = captureCreatedEvent();
-            assertThat(published.status()).isEqualTo(PendingItemStatus.PENDING);
+            PatchNoteNotificationEvent published = captureCreatedEvent();
+            assertThat(published.eventType()).isEqualTo(NotificationEventType.PATCHNOTE_ISSUE_GENERATED);
         }
 
         @Test
-        @DisplayName("성공 흐름: excludeFromPatchNote=true → 이벤트 status=EXCLUDED")
-        void handleIssueResolved_excludeFromPatchNote_true_EXCLUDED상태로생성() {
+        @DisplayName("성공 흐름: excludeFromPatchNote=true → PatchNoteNotificationEvent 발행됨")
+        void handleIssueResolved_excludeFromPatchNote_true_이벤트발행됨() {
             // Given
             Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
@@ -290,13 +290,13 @@ class IssueStatusChangedEventHandlerTest {
             handler.handleIssueResolved(event);
 
             // Then
-            IssuePendingItemCreatedEvent published = captureCreatedEvent();
-            assertThat(published.status()).isEqualTo(PendingItemStatus.EXCLUDED);
+            PatchNoteNotificationEvent published = captureCreatedEvent();
+            assertThat(published.eventType()).isEqualTo(NotificationEventType.PATCHNOTE_ISSUE_GENERATED);
         }
 
         @Test
-        @DisplayName("성공 흐름: saveVectorThenUpsert 완료 후 IssuePendingItemCreatedEvent 1회 발행")
-        void handleIssueResolved_성공시_IssuePendingItemCreatedEvent발행() {
+        @DisplayName("성공 흐름: saveVectorThenUpsert 완료 후 PatchNoteNotificationEvent 1회 발행")
+        void handleIssueResolved_성공시_PatchNoteNotificationEvent발행() {
             // Given
             Issue issue = sufficientIssue("충분한 설명: 이슈 내용입니다", null);
             stubSuccessPath(issue);
@@ -305,9 +305,9 @@ class IssueStatusChangedEventHandlerTest {
             // When
             handler.handleIssueResolved(event);
 
-            // Then — IssuePendingItemCreatedEvent에는 issueId, projectId가 올바르게 세팅
-            IssuePendingItemCreatedEvent published = captureCreatedEvent();
-            assertThat(published.issueId()).isEqualTo(ISSUE_ID);
+            // Then — PatchNoteNotificationEvent에는 sourceId, projectId가 올바르게 세팅
+            PatchNoteNotificationEvent published = captureCreatedEvent();
+            assertThat(published.sourceId()).isEqualTo(ISSUE_ID);
             assertThat(published.projectId()).isEqualTo(PROJECT_ID);
         }
 
@@ -641,8 +641,7 @@ class IssueStatusChangedEventHandlerTest {
             // Then
             ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
             then(eventPublisher).should().publishEvent(captor.capture());
-            IssuePendingItemCreatedEvent published =
-                    (IssuePendingItemCreatedEvent) captor.getValue();
+            PatchNoteNotificationEvent published = (PatchNoteNotificationEvent) captor.getValue();
             assertThat(published.projectId()).isEqualTo(otherProjectId);
         }
     }
