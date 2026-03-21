@@ -46,7 +46,7 @@ public class PatchNoteRagService {
 
     public RagContext buildContext(UUID projectId, List<PendingItem> pendingItems) {
         List<PendingItem> activeItems =
-            pendingItems.stream().filter(item -> !item.isSourceDeleted()).toList();
+                pendingItems.stream().filter(item -> !item.isSourceDeleted()).toList();
 
         TokenEstimation tokenEstimation = tokenEstimator.estimate(activeItems);
 
@@ -57,15 +57,12 @@ public class PatchNoteRagService {
 
         Map<GroupKey, List<PendingItem>> grouped = groupBySource(activeItems);
         Map<GroupKey, List<VectorChunkResult>> topChunksByGroup =
-            resolveVectorChunks(projectId, grouped);
+                resolveVectorChunks(projectId, grouped);
         Map<String, String> sourceRefMap = buildSourceRefMap(grouped);
         List<ItemContext> itemContexts = buildItemContexts(grouped, topChunksByGroup);
 
         return new RagContext(
-            itemContexts,
-            sourceRefMap,
-            List.copyOf(sourceRefMap.keySet()),
-            tokenEstimation);
+                itemContexts, sourceRefMap, List.copyOf(sourceRefMap.keySet()), tokenEstimation);
     }
 
     private Map<GroupKey, List<PendingItem>> groupBySource(List<PendingItem> items) {
@@ -78,7 +75,7 @@ public class PatchNoteRagService {
     }
 
     private Map<GroupKey, List<VectorChunkResult>> resolveVectorChunks(
-        UUID projectId, Map<GroupKey, List<PendingItem>> grouped) {
+            UUID projectId, Map<GroupKey, List<PendingItem>> grouped) {
 
         Map<GroupKey, List<VectorChunkResult>> topChunksByGroup = new LinkedHashMap<>();
         List<GroupKey> vectorGroupKeys = new ArrayList<>();
@@ -88,9 +85,7 @@ public class PatchNoteRagService {
             GroupKey key = entry.getKey();
             List<PendingItem> allGroupItems = entry.getValue();
             List<PendingItem> vectorItems =
-                allGroupItems.stream()
-                    .filter(item -> item.getEvidence() == null)
-                    .toList();
+                    allGroupItems.stream().filter(item -> item.getEvidence() == null).toList();
 
             topChunksByGroup.put(key, List.of());
 
@@ -100,12 +95,12 @@ public class PatchNoteRagService {
 
             if (key.sourceType() == SourceType.DOCUMENT) {
                 long evidenceCount =
-                    allGroupItems.stream().filter(item -> item.getEvidence() != null).count();
+                        allGroupItems.stream().filter(item -> item.getEvidence() != null).count();
                 if (evidenceCount >= EVIDENCE_SUFFICIENT_THRESHOLD) {
                     log.debug(
-                        "문서 그룹 벡터 검색 생략 — sourceId={}, evidenceCount={}개",
-                        key.sourceId(),
-                        evidenceCount);
+                            "문서 그룹 벡터 검색 생략 — sourceId={}, evidenceCount={}개",
+                            key.sourceId(),
+                            evidenceCount);
                     continue;
                 }
             }
@@ -125,16 +120,14 @@ public class PatchNoteRagService {
             ItemQuery query = groupQueries.get(i);
 
             int chunkLimit =
-                key.sourceType() == SourceType.ISSUE ? ISSUE_CHUNK_LIMIT : DOC_CHUNK_LIMIT;
+                    key.sourceType() == SourceType.ISSUE ? ISSUE_CHUNK_LIMIT : DOC_CHUNK_LIMIT;
 
             List<VectorChunkResult> chunks =
-                hybridVectorSearchRepositoryCustom.searchForItem(
-                    projectId.toString(), query, chunkLimit);
+                    hybridVectorSearchRepositoryCustom.searchForItem(
+                            projectId.toString(), query, chunkLimit);
 
             List<VectorChunkResult> topChunks =
-                patchNoteReranker.rerank(chunks).stream()
-                    .limit(MAX_CHUNKS_PER_SOURCE)
-                    .toList();
+                    patchNoteReranker.rerank(chunks).stream().limit(MAX_CHUNKS_PER_SOURCE).toList();
 
             topChunksByGroup.put(key, topChunks);
         }
@@ -159,8 +152,8 @@ public class PatchNoteRagService {
     }
 
     private List<ItemContext> buildItemContexts(
-        Map<GroupKey, List<PendingItem>> grouped,
-        Map<GroupKey, List<VectorChunkResult>> topChunksByGroup) {
+            Map<GroupKey, List<PendingItem>> grouped,
+            Map<GroupKey, List<VectorChunkResult>> topChunksByGroup) {
 
         List<ItemContext> result = new ArrayList<>(grouped.size());
 
@@ -181,14 +174,7 @@ public class PatchNoteRagService {
                 continue;
             }
 
-            result.add(
-                new ItemContext(
-                    ref,
-                    patchType,
-                    title,
-                    summary,
-                    evidences,
-                    List.of(ref)));
+            result.add(new ItemContext(ref, patchType, title, summary, evidences, List.of(ref)));
         }
 
         return result;
@@ -196,10 +182,10 @@ public class PatchNoteRagService {
 
     private PatchType resolveGroupPatchType(List<PendingItem> groupItems) {
         Map<PatchType, Long> counts =
-            groupItems.stream()
-                .map(PendingItem::getPatchType)
-                .filter(Objects::nonNull)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+                groupItems.stream()
+                        .map(PendingItem::getPatchType)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
         if (counts.isEmpty()) {
             return groupItems.get(0).getPatchType();
@@ -208,13 +194,13 @@ public class PatchNoteRagService {
         long maxCount = counts.values().stream().mapToLong(Long::longValue).max().orElse(0L);
 
         Set<PatchType> topTypes =
-            counts.entrySet().stream()
-                .filter(e -> e.getValue() == maxCount)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+                counts.entrySet().stream()
+                        .filter(e -> e.getValue() == maxCount)
+                        .map(Map.Entry::getKey)
+                        .collect(Collectors.toSet());
 
         for (PatchType priority :
-            List.of(PatchType.FIX, PatchType.NEW, PatchType.CHANGE, PatchType.MAINTENANCE)) {
+                List.of(PatchType.FIX, PatchType.NEW, PatchType.CHANGE, PatchType.MAINTENANCE)) {
             if (topTypes.contains(priority)) {
                 return priority;
             }
@@ -224,24 +210,21 @@ public class PatchNoteRagService {
 
     private String resolveRepresentativeTitle(List<PendingItem> groupItems) {
         return groupItems.stream()
-            .map(PendingItem::getTitle)
-            .filter(t -> t != null && !t.isBlank())
-            .max(Comparator.comparingInt(String::length))
-            .orElse(groupItems.get(0).getTitle());
+                .map(PendingItem::getTitle)
+                .filter(t -> t != null && !t.isBlank())
+                .max(Comparator.comparingInt(String::length))
+                .orElse(groupItems.get(0).getTitle());
     }
 
-    /**
-     * 기존 개행 결합 대신, 모델이 "리스트"가 아니라 "한 묶음의 변화"로 이해하도록
-     * 서술형 힌트 문자열로 합친다.
-     */
+    /** 기존 개행 결합 대신, 모델이 "리스트"가 아니라 "한 묶음의 변화"로 이해하도록 서술형 힌트 문자열로 합친다. */
     private String mergeGroupSummary(List<PendingItem> groupItems) {
         List<String> summaries =
-            groupItems.stream()
-                .map(PendingItem::getSummary)
-                .filter(s -> s != null && !s.isBlank())
-                .map(s -> s.strip().replaceAll("\\s+", " "))
-                .distinct()
-                .toList();
+                groupItems.stream()
+                        .map(PendingItem::getSummary)
+                        .filter(s -> s != null && !s.isBlank())
+                        .map(s -> s.strip().replaceAll("\\s+", " "))
+                        .distinct()
+                        .toList();
 
         if (summaries.isEmpty()) {
             return "";
@@ -251,12 +234,11 @@ public class PatchNoteRagService {
         }
 
         // 개행 대신 서술형 연결
-        return "이 소스에는 다음과 같은 관련 변경이 포함됩니다: "
-            + String.join(" / ", summaries);
+        return "이 소스에는 다음과 같은 관련 변경이 포함됩니다: " + String.join(" / ", summaries);
     }
 
     private List<RagEvidence> buildGroupEvidences(
-        List<PendingItem> groupItems, String ref, List<VectorChunkResult> topChunks) {
+            List<PendingItem> groupItems, String ref, List<VectorChunkResult> topChunks) {
 
         List<RagEvidence> evidences = new ArrayList<>();
 
@@ -264,27 +246,27 @@ public class PatchNoteRagService {
             if (item.getEvidence() != null) {
                 double score = item.getScore() != null ? item.getScore() : 1.0;
                 evidences.add(
-                    new RagEvidence(
-                        ref,
-                        "diff_change",
-                        truncateContent(item.getEvidence()),
-                        score,
-                        true,
-                        false,
-                        true));
+                        new RagEvidence(
+                                ref,
+                                "diff_change",
+                                truncateContent(item.getEvidence()),
+                                score,
+                                true,
+                                false,
+                                true));
             }
         }
 
         for (VectorChunkResult chunk : topChunks) {
             evidences.add(
-                new RagEvidence(
-                    ref,
-                    resolveChunkRole(chunk.chunkRole()),
-                    truncateContent(chunk.content()),
-                    chunk.similarity(),
-                    chunk.affectsPlayer(),
-                    chunk.hasNumericChange(),
-                    chunk.hasNumericChange() || chunk.affectsPlayer()));
+                    new RagEvidence(
+                            ref,
+                            resolveChunkRole(chunk.chunkRole()),
+                            truncateContent(chunk.content()),
+                            chunk.similarity(),
+                            chunk.affectsPlayer(),
+                            chunk.hasNumericChange(),
+                            chunk.hasNumericChange() || chunk.affectsPlayer()));
         }
 
         return List.copyOf(evidences);
@@ -308,7 +290,7 @@ public class PatchNoteRagService {
             return "";
         }
         return content.length() > MAX_CONTENT_LENGTH
-            ? content.substring(0, MAX_CONTENT_LENGTH) + "..."
-            : content;
+                ? content.substring(0, MAX_CONTENT_LENGTH) + "..."
+                : content;
     }
 }

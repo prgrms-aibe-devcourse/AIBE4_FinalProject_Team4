@@ -112,11 +112,11 @@ public class PatchNoteReranker {
 
     public List<VectorChunkResult> rerank(List<VectorChunkResult> chunks) {
         return chunks.stream()
-            .map(chunk -> new ScoredChunk(chunk, score(chunk)))
-            .sorted(Comparator.comparingDouble(ScoredChunk::score).reversed())
-            .filter(sc -> sc.score() >= MIN_KEEP_SCORE)
-            .map(ScoredChunk::chunk)
-            .toList();
+                .map(chunk -> new ScoredChunk(chunk, score(chunk)))
+                .sorted(Comparator.comparingDouble(ScoredChunk::score).reversed())
+                .filter(sc -> sc.score() >= MIN_KEEP_SCORE)
+                .map(ScoredChunk::chunk)
+                .toList();
     }
 
     private record ScoredChunk(VectorChunkResult chunk, double score) {}

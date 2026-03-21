@@ -141,11 +141,11 @@ public class ItemQueryBuilder {
     /**
      * 그룹별 대표 {@link ItemQuery}를 배치로 생성한다.
      *
-     * <p>{@link PatchNoteRagService}의 그룹화 결과를 받아, 각 그룹의 모든 vector 항목(evidence=null인 항목) title+summary를
-     * 공백으로 합산한 텍스트를 임베딩한다. 임베딩은 전체 그룹에 대해 한 번의 배치 호출로 처리하여 LLM API 비용을 최소화한다.
+     * <p>{@link PatchNoteRagService}의 그룹화 결과를 받아, 각 그룹의 모든 vector 항목(evidence=null인 항목)
+     * title+summary를 공백으로 합산한 텍스트를 임베딩한다. 임베딩은 전체 그룹에 대해 한 번의 배치 호출로 처리하여 LLM API 비용을 최소화한다.
      *
-     * <p>{@link ItemQuery#sourceId()}는 그룹 내 첫 번째 항목의 sourceId를 사용한다 — 그룹 내 모든 항목이 동일한 sourceId를 공유하므로
-     * 안전하다.
+     * <p>{@link ItemQuery#sourceId()}는 그룹 내 첫 번째 항목의 sourceId를 사용한다 — 그룹 내 모든 항목이 동일한 sourceId를
+     * 공유하므로 안전하다.
      *
      * @param vectorGroups 그룹별 vector 항목 목록 (evidence=null인 항목만 포함, PatchNoteRagService가 분리)
      * @return 그룹별 {@link ItemQuery} 목록 (인덱스 순서 보장)

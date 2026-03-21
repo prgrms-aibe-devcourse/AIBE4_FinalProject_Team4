@@ -72,10 +72,7 @@ public class PatchNoteSseConverter {
                     .build();
         } catch (JsonProcessingException e) {
             log.error("SSE 이벤트 직렬화 실패 — event={}", eventName, e);
-            return ServerSentEvent.<String>builder()
-                    .event(eventName)
-                    .data("{}")
-                    .build();
+            return ServerSentEvent.<String>builder().event(eventName).data("{}").build();
         }
     }
 }

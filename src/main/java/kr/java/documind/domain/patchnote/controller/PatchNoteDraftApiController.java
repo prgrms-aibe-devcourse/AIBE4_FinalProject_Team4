@@ -21,9 +21,9 @@ import reactor.core.publisher.Flux;
  *
  * <p>SSE 스트리밍 방식으로 LLM 초안을 실시간 전달한다.
  *
- * <p>{@code Flux<ServerSentEvent<String>>} 반환 타입을 사용한다. 서비스 레이어의 {@code onErrorResume}이
- * 모든 예외를 {@code error} 이벤트로 변환하므로, 전역 예외 핸들러({@code GlobalApiExceptionHandler})가
- * {@code text/event-stream} 응답에 JSON을 쓰는 상황이 발생하지 않는다.
+ * <p>{@code Flux<ServerSentEvent<String>>} 반환 타입을 사용한다. 서비스 레이어의 {@code onErrorResume}이 모든 예외를
+ * {@code error} 이벤트로 변환하므로, 전역 예외 핸들러({@code GlobalApiExceptionHandler})가 {@code text/event-stream}
+ * 응답에 JSON을 쓰는 상황이 발생하지 않는다.
  *
  * <p>모든 엔드포인트는 {@code @RequireProjectMember}를 통해 프로젝트 멤버만 접근 가능하다.
  */

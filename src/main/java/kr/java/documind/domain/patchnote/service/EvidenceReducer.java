@@ -29,9 +29,9 @@ public class EvidenceReducer {
      *   <li>{@code combined} — 배경+해결 병합 청크. 하나의 청크에 맥락과 해결 정보가 함께 담겨 있어 제거 시 정보 손실이 큼.
      * </ul>
      *
-     * <p>따라서 자동 제거 대상을 역할 미지정 문서 청크({@code chunk})로만 한정한다. {@code chunk} 제거 후에도 토큰 한도를 초과하면
-     * {@link #limitPerItem}의 항목당 최대 1개 제한으로 진행한다. 이 보수적 전략은 패치노트 내용의 완성도를 우선하고, 컨텍스트 윈도우 초과
-     * 위험은 {@code tokenLimit} 설정으로 제어한다.
+     * <p>따라서 자동 제거 대상을 역할 미지정 문서 청크({@code chunk})로만 한정한다. {@code chunk} 제거 후에도 토큰 한도를 초과하면 {@link
+     * #limitPerItem}의 항목당 최대 1개 제한으로 진행한다. 이 보수적 전략은 패치노트 내용의 완성도를 우선하고, 컨텍스트 윈도우 초과 위험은 {@code
+     * tokenLimit} 설정으로 제어한다.
      */
     private static final List<String> DROP_PRIORITY =
             List.of(
@@ -140,35 +140,41 @@ public class EvidenceReducer {
 
     private List<ItemContext> limitPerItem(List<ItemContext> contexts, int maxPerItem) {
         return contexts.stream()
-            .map(ic -> {
-                if (ic.evidences().size() <= maxPerItem) {
-                    return ic;
-                }
+                .map(
+                        ic -> {
+                            if (ic.evidences().size() <= maxPerItem) {
+                                return ic;
+                            }
 
-                List<RagEvidence> limited =
-                    ic.evidences().stream()
-                        .sorted(
-                            Comparator
-                                // 1순위: 이번 릴리즈 관련
-                                .comparing(RagEvidence::releaseSpecific).reversed()
-                                // 2순위: 유저 체감
-                                .thenComparing(RagEvidence::playerVisible).reversed()
-                                // 3순위: 수치 변경 (밸런스 중요)
-                                .thenComparing(RagEvidence::numericChange).reversed()
-                                // 4순위: 유사도 점수
-                                .thenComparing(RagEvidence::score).reversed()
-                        )
-                        .limit(maxPerItem)
-                        .toList();
+                            List<RagEvidence> limited =
+                                    ic.evidences().stream()
+                                            .sorted(
+                                                    Comparator
+                                                            // 1순위: 이번 릴리즈 관련
+                                                            .comparing(RagEvidence::releaseSpecific)
+                                                            .reversed()
+                                                            // 2순위: 유저 체감
+                                                            .thenComparing(
+                                                                    RagEvidence::playerVisible)
+                                                            .reversed()
+                                                            // 3순위: 수치 변경 (밸런스 중요)
+                                                            .thenComparing(
+                                                                    RagEvidence::numericChange)
+                                                            .reversed()
+                                                            // 4순위: 유사도 점수
+                                                            .thenComparing(RagEvidence::score)
+                                                            .reversed())
+                                            .limit(maxPerItem)
+                                            .toList();
 
-                return new ItemContext(
-                    ic.ref(),
-                    ic.patchType(),
-                    ic.title(),
-                    ic.summary(),
-                    limited,
-                    ic.allowedSourceRefs());
-            })
-            .toList();
+                            return new ItemContext(
+                                    ic.ref(),
+                                    ic.patchType(),
+                                    ic.title(),
+                                    ic.summary(),
+                                    limited,
+                                    ic.allowedSourceRefs());
+                        })
+                .toList();
     }
 }

@@ -29,8 +29,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     /**
      * {@code Flux<ServerSentEvent>} 반환 시 Spring MVC가 비동기 처리를 위해 사용하는 실행자.
      *
-     * <p>설정하지 않으면 {@code SimpleAsyncTaskExecutor}(스레드를 매번 생성, 프로덕션 부적합)가 사용된다.
-     * {@code AsyncConfig}에 등록된 커스텀 {@code ThreadPoolTaskExecutor}를 재사용한다.
+     * <p>설정하지 않으면 {@code SimpleAsyncTaskExecutor}(스레드를 매번 생성, 프로덕션 부적합)가 사용된다. {@code AsyncConfig}에
+     * 등록된 커스텀 {@code ThreadPoolTaskExecutor}를 재사용한다.
      */
     @Override
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {

@@ -15,7 +15,8 @@ public class ProjectQueryService {
     private final ProjectRepository projectRepository;
 
     public String getPublicIdByProjectId(UUID projectId) {
-        return projectRepository.findPublicIdById(projectId)
+        return projectRepository
+                .findPublicIdById(projectId)
                 .orElseThrow(ProjectNotFoundException::new);
     }
 }
