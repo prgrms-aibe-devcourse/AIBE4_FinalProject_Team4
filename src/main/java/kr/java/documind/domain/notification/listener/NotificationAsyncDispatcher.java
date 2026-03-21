@@ -7,8 +7,8 @@ import kr.java.documind.domain.issue.model.enums.IssueSeverity;
 import kr.java.documind.domain.notification.event.DocumentNotificationEvent;
 import kr.java.documind.domain.notification.event.LogNotificationEvent;
 import kr.java.documind.domain.notification.event.NotificationEvent;
-import kr.java.documind.domain.notification.event.PatchNoteNotificationEvent;
 import kr.java.documind.domain.notification.infrastructure.NotificationSseManager;
+import kr.java.documind.domain.patchnote.event.PatchNoteNotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -51,7 +51,7 @@ public class NotificationAsyncDispatcher {
     }
 
     @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onPatchNoteNotification(PatchNoteNotificationEvent event) {
         if (!event.isToast()) {
             return;

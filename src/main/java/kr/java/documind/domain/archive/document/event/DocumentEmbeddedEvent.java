@@ -1,4 +1,4 @@
-package kr.java.documind.domain.patchnote.event;
+package kr.java.documind.domain.archive.document.event;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -6,6 +6,7 @@ import java.util.UUID;
 public record DocumentEmbeddedEvent(
         Long sourceId,
         UUID projectId,
+        UUID memberId,
         Long documentGroupId,
         String documentName,
         String documentGroupName,

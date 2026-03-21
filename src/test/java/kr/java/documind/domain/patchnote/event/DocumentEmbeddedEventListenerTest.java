@@ -15,7 +15,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import kr.java.documind.domain.archive.document.event.DocumentEmbeddedEvent;
 import kr.java.documind.domain.archive.vector.model.repository.VectorStoreRepository;
+import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 import kr.java.documind.domain.patchnote.exception.DocumentEmbeddingEmptyException;
 import kr.java.documind.domain.patchnote.exception.PendingItemUpsertFailedException;
 import kr.java.documind.domain.patchnote.infrastructure.DocumentSummaryGenerator;
@@ -40,10 +42,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("DocumentVectorStatusChangedEventListener 단위 테스트")
-class DocumentVectorStatusChangedEventListenerTest {
+@DisplayName("DocumentEmbeddedEventListener 단위 테스트")
+class DocumentEmbeddedEventListenerTest {
 
-    @InjectMocks private DocumentVectorStatusChangedEventListener listener;
+    @InjectMocks private DocumentEmbeddedEventListener listener;
 
     @Mock private VectorStoreRepository vectorStoreRepository;
     @Mock private DocumentMeaningfulnessService meaningfulnessService;
@@ -55,6 +57,7 @@ class DocumentVectorStatusChangedEventListenerTest {
 
     private static final Long SOURCE_ID = 1L;
     private static final UUID PROJECT_ID = UUID.randomUUID();
+    private static final UUID MEMBER_ID = UUID.randomUUID();
     private static final OffsetDateTime SOURCE_CREATED_AT = OffsetDateTime.now(ZoneOffset.UTC);
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -65,6 +68,7 @@ class DocumentVectorStatusChangedEventListenerTest {
         return new DocumentEmbeddedEvent(
                 SOURCE_ID,
                 PROJECT_ID,
+                MEMBER_ID,
                 1L,
                 "design-doc.pdf",
                 "기획서 그룹",
@@ -93,11 +97,11 @@ class DocumentVectorStatusChangedEventListenerTest {
                 new DocumentSummaryResult("기획서 제목", "기획서 요약", "CHANGE", true));
     }
 
-    /** 발행된 DocumentPendingItemCreatedEvent 캡처 */
-    private DocumentPendingItemCreatedEvent captureCreatedEvent() {
+    /** 발행된 PatchNoteNotificationEvent 캡처 */
+    private PatchNoteNotificationEvent captureCreatedEvent() {
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         then(eventPublisher).should().publishEvent(captor.capture());
-        return (DocumentPendingItemCreatedEvent) captor.getValue();
+        return (PatchNoteNotificationEvent) captor.getValue();
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -264,8 +268,8 @@ class DocumentVectorStatusChangedEventListenerTest {
         }
 
         @Test
-        @DisplayName("excludeFromPatchNote=true → 발행된 이벤트 status=EXCLUDED")
-        void handle_excludeFromPatchNote_true_이벤트status_EXCLUDED() {
+        @DisplayName("excludeFromPatchNote=true → PatchNoteNotificationEvent 발행됨")
+        void handle_excludeFromPatchNote_true_이벤트발행됨() {
             // Given
             DocumentEmbeddedEvent event = buildEvent(true, true);
             stubSuccessPath();
@@ -274,8 +278,9 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            DocumentPendingItemCreatedEvent published = captureCreatedEvent();
-            assertThat(published.status()).isEqualTo(PendingItemStatus.EXCLUDED);
+            PatchNoteNotificationEvent published = captureCreatedEvent();
+            assertThat(published.eventType())
+                    .isEqualTo(NotificationEventType.PATCHNOTE_DOC_GENERATED);
         }
     }
 
@@ -435,8 +440,8 @@ class DocumentVectorStatusChangedEventListenerTest {
     class HandleSuccessEvent {
 
         @Test
-        @DisplayName("성공 흐름: upsertPendingItem 완료 후 DocumentPendingItemCreatedEvent 발행")
-        void handle_성공시_DocumentPendingItemCreatedEvent발행() {
+        @DisplayName("성공 흐름: upsertPendingItem 완료 후 PatchNoteNotificationEvent 발행")
+        void handle_성공시_PatchNoteNotificationEvent발행() {
             // Given
             DocumentEmbeddedEvent event = buildEvent(true, false);
             stubSuccessPath();
@@ -445,7 +450,7 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            DocumentPendingItemCreatedEvent published = captureCreatedEvent();
+            PatchNoteNotificationEvent published = captureCreatedEvent();
             assertThat(published.sourceId()).isEqualTo(SOURCE_ID);
             assertThat(published.projectId()).isEqualTo(PROJECT_ID);
         }
@@ -473,7 +478,7 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then
-            DocumentPendingItemCreatedEvent published = captureCreatedEvent();
+            PatchNoteNotificationEvent published = captureCreatedEvent();
             assertThat(published.title()).isEqualTo("LLM생성제목");
         }
     }
@@ -568,7 +573,7 @@ class DocumentVectorStatusChangedEventListenerTest {
             listener.handle(event);
 
             // Then — 성공 이벤트는 정상 발행
-            then(eventPublisher).should().publishEvent(any(DocumentPendingItemCreatedEvent.class));
+            then(eventPublisher).should().publishEvent(any(PatchNoteNotificationEvent.class));
         }
     }
 
@@ -585,10 +590,12 @@ class DocumentVectorStatusChangedEventListenerTest {
         void handle_projectId_dto와이벤트에일관되게전달() {
             // Given
             UUID otherProjectId = UUID.randomUUID();
+            UUID otherMemberId = UUID.randomUUID();
             DocumentEmbeddedEvent event =
                     new DocumentEmbeddedEvent(
                             SOURCE_ID,
                             otherProjectId,
+                            otherMemberId,
                             1L,
                             "doc.pdf",
                             "그룹",
@@ -617,7 +624,7 @@ class DocumentVectorStatusChangedEventListenerTest {
             assertThat(dtoCaptor.getValue().projectId()).isEqualTo(otherProjectId);
 
             // Then — 성공 이벤트 projectId
-            DocumentPendingItemCreatedEvent published = captureCreatedEvent();
+            PatchNoteNotificationEvent published = captureCreatedEvent();
             assertThat(published.projectId()).isEqualTo(otherProjectId);
         }
     }
