@@ -5,11 +5,14 @@ import java.time.ZoneOffset;
 import java.util.List;
 import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClient;
 import kr.java.documind.domain.archive.vector.infrastructure.VectorStoreManager;
+import kr.java.documind.domain.issue.event.IssueDeletedEvent;
+import kr.java.documind.domain.issue.event.IssueStatusChangedEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.entity.IssueComment;
 import kr.java.documind.domain.issue.model.enums.IssueStatus;
 import kr.java.documind.domain.issue.model.repository.CommentRepository;
 import kr.java.documind.domain.issue.model.repository.IssueRepository;
+import kr.java.documind.domain.notification.model.enums.NotificationEventType;
 import kr.java.documind.domain.patchnote.exception.IssueInsufficientInfoException;
 import kr.java.documind.domain.patchnote.infrastructure.IssueSummaryGenerator;
 import kr.java.documind.domain.patchnote.model.dto.IssueChunkingSource;
@@ -149,14 +152,22 @@ public class IssueStatusChangedEventHandler {
         pendingItemUpsertService.saveVectorThenUpsert(issue.getId(), chunks, embeddings, dto);
 
         log.info(
-                "[PatchNote] pending_item 적재 완료 - issueId: {}, status: {}",
+                "[PatchNote] pending_item 적재 완료 - issueId: {}, status: {}, actorId: {}",
                 event.issueId(),
-                status);
+                status,
+                event.actorId());
 
         // 성공 이벤트 발행 — 알림 도메인이 구독하여 alarm-toast + 헤더 배지 전달
         eventPublisher.publishEvent(
-                new IssuePendingItemCreatedEvent(
-                        event.issueId(), event.projectId(), event.actorId(), dto.title(), status));
+                new PatchNoteNotificationEvent(
+                        event.projectId(),
+                        List.of(event.actorId()),
+                        event.issueId(),
+                        NotificationEventType.PATCHNOTE_ISSUE_GENERATED,
+                        dto.title(),
+                        "이슈가 해결되어 패치노트 항목이 추가되었습니다.",
+                        "/projects/" + event.projectId() + "/patch-note/pending-items",
+                        true));
     }
 
     @Async

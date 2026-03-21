@@ -354,7 +354,7 @@ function renderRecommendationDetail(rec, members) {
                         return `
                             <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 ${isActive ? borderColor + ' ' + textColor + ' bg-surface-card ' + shadow : 'border-divider text-docu-tertiary bg-surface-card'} transition-transform hover:-translate-y-0.5 focus-ring">
                                 <span class="w-2 h-2 rounded-full ${isActive ? dotColor : 'bg-gray-300'}" aria-hidden="true"></span>
-                                <span>${label}</span>
+                                <span class="w-14 text-center">${label}</span>
                             </button>
                         `;
                     }).join('')}
@@ -865,7 +865,7 @@ function getSeverityBadge(severity, score) {
     return `
         <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-docu-btn text-xs font-bold border-2 ${config.borderColor} ${config.textColor} bg-surface-card ${config.shadow} transition-transform hover:-translate-y-0.5 focus-ring">
             <span class="w-2 h-2 rounded-full ${config.dotColor}" aria-hidden="true"></span>
-            <span>${config.label}</span>
+            <span class="w-14 text-center">${config.label}</span>
         </button>
     `;
 }

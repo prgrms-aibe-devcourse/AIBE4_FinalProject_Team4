@@ -2,6 +2,7 @@ package kr.java.documind.domain.archive.document.event;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;
@@ -9,7 +10,6 @@ import kr.java.documind.domain.archive.vector.event.EmbeddingCompletedEvent;
 import kr.java.documind.domain.archive.vector.model.enums.EmbeddingStatus;
 import kr.java.documind.domain.notification.event.DocumentNotificationEvent;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
-import kr.java.documind.domain.patchnote.event.DocumentEmbeddedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,7 +36,7 @@ public class EmbeddingCompletedEventHandler {
         publishNotification(event, metadata);
 
         if (event.status() == EmbeddingStatus.SUCCESS) {
-            publishDocumentEmbeddedEvent(metadata, event.excludeFromPatchNote());
+            publishDocumentEmbeddedEvent(metadata, event.excludeFromPatchNote(), event.memberId());
         }
     }
 
@@ -80,7 +80,7 @@ public class EmbeddingCompletedEventHandler {
     }
 
     private void publishDocumentEmbeddedEvent(
-            DocumentMetadata metadata, boolean excludeFromPatchNote) {
+            DocumentMetadata metadata, boolean excludeFromPatchNote, UUID memberId) {
         DocumentGroup group = metadata.getDocumentGroup();
         boolean isNewDocument = metadata.getReuploadedAt() == null;
 
@@ -93,6 +93,7 @@ public class EmbeddingCompletedEventHandler {
                 new DocumentEmbeddedEvent(
                         metadata.getId(),
                         group.getProjectId(),
+                        memberId,
                         group.getId(),
                         metadata.getDocumentName(),
                         group.getGroupName(),
