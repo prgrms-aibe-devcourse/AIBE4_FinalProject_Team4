@@ -17,10 +17,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class DashboardPresetService {
 
-    // ── 공통 더미 쿼리 파라미터 ──────────────────────────────────────────────────
-
-    private static final String DUMMY_TIME = "2000-01-01T00:00:00Z";
-
     // ── FPS 게임 프리셋 ──────────────────────────────────────────────────────────
 
     private static final List<WidgetConfig> FPS_WIDGETS =
