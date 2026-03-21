@@ -51,7 +51,7 @@ public class NotificationAsyncDispatcher {
     }
 
     @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onPatchNoteNotification(PatchNoteNotificationEvent event) {
         if (!event.isToast()) {
             return;

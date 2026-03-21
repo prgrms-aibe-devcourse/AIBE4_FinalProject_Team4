@@ -46,7 +46,7 @@ public class NotificationSyncListener {
         persist(event, null);
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onPatchNoteNotification(PatchNoteNotificationEvent event) {
         persist(event, null);
