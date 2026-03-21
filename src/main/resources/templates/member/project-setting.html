@@ -479,7 +479,7 @@
                                                             onchange="
                                                                 changeRole(this)
                                                             "
-                                                            class="text-xs border border-divider rounded-docu-btn px-2 py-1 bg-surface-base text-docu-ink focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20 cursor-pointer"
+                                                            class="text-xs border border-divider rounded-docu-btn px-2 py-1 bg-surface-input text-docu-ink focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20 cursor-pointer"
                                                         >
                                                             <option
                                                                 value="MANAGER"
@@ -654,65 +654,64 @@
                 <div
                     th:if="${data.isManager()}"
                     id="invite-modal"
-                    class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
+                    class="hidden fixed inset-0 z-[100] flex items-center justify-center"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="invite-modal-title"
                 >
-                    <div class="card-modal w-96 p-8 flex flex-col gap-5">
-                        <div>
-                            <h3 class="text-h2 text-docu-ink mb-1">
-                                멤버 초대
-                            </h3>
-                            <p class="text-sm text-docu-secondary">
-                                이메일로 초대 링크를 전송합니다.
-                            </p>
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label
-                                for="invite-email"
-                                class="form-label uppercase tracking-wide"
-                            >
-                                이메일
-                            </label>
-                            <input
-                                type="email"
-                                id="invite-email"
-                                placeholder="email@example.com"
-                                class="form-input"
-                            />
-                        </div>
+                    <!-- 배경 오버레이 -->
+                    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-                        <!-- 역할 선택 -->
-                        <div class="flex flex-col gap-1.5">
-                            <label
-                                for="invite-role"
-                                class="form-label uppercase tracking-wide"
-                            >
-                                역할
-                            </label>
-                            <select id="invite-role" class="form-select">
-                                <option value="MEMBER" selected>구성원</option>
-                                <option value="MANAGER">관리자</option>
-                            </select>
-                        </div>
+                    <!-- 다이얼로그 -->
+                    <div class="relative z-10 w-full max-w-sm mx-4 bg-surface-card rounded-docu-card shadow-docu-modal border border-divider">
 
-                        <p
-                            id="invite-error"
-                            class="hidden form-error -mt-2"
-                        ></p>
-
-                        <div class="flex gap-3">
+                        <!-- 헤더 -->
+                        <div class="flex items-start justify-between px-6 py-5 border-b border-divider bg-surface-sub rounded-t-docu-card">
+                            <div>
+                                <h3 id="invite-modal-title" class="text-h2 text-docu-ink">멤버 초대</h3>
+                                <p class="text-sm text-docu-secondary mt-1">이메일로 초대 링크를 전송합니다.</p>
+                            </div>
                             <button
                                 type="button"
                                 onclick="closeInviteModal()"
-                                class="btn-ghost flex-1"
+                                aria-label="모달 닫기"
+                                class="text-docu-secondary hover:text-docu-ink transition-colors ml-4 shrink-0 rounded-docu-btn focus-ring"
                             >
-                                취소
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
                             </button>
-                            <button
-                                type="button"
-                                id="invite-send-btn"
-                                onclick="sendInvite()"
-                                class="btn-primary flex-1"
-                            >
+                        </div>
+
+                        <!-- 본문 -->
+                        <div class="px-6 py-5 space-y-4">
+                            <div class="flex flex-col gap-1.5">
+                                <label for="invite-email" class="form-label uppercase tracking-wide">
+                                    이메일
+                                </label>
+                                <input
+                                    type="email"
+                                    id="invite-email"
+                                    placeholder="email@example.com"
+                                    class="form-input"
+                                />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label for="invite-role" class="form-label uppercase tracking-wide">
+                                    역할
+                                </label>
+                                <select id="invite-role" class="form-select">
+                                    <option value="MEMBER" selected>구성원</option>
+                                    <option value="MANAGER">관리자</option>
+                                </select>
+                            </div>
+                            <p id="invite-error" class="hidden form-error"></p>
+                        </div>
+
+                        <!-- 푸터 -->
+                        <div class="flex justify-end gap-3 px-6 py-4 border-t border-divider bg-surface-sub rounded-b-docu-card">
+                            <button type="button" onclick="closeInviteModal()" class="btn-ghost">취소</button>
+                            <button type="button" id="invite-send-btn" onclick="sendInvite()" class="btn-primary">
                                 초대 전송
                             </button>
                         </div>
@@ -722,66 +721,78 @@
                 <!-- API Key 평문 노출 모달 (발급/재발급 직후 1회만 표시) -->
                 <div
                     id="api-key-reveal-modal"
-                    class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+                    class="hidden fixed inset-0 z-[100] flex items-center justify-center"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="api-key-reveal-modal-title"
                 >
-                    <div class="card-modal w-[480px] p-8 flex flex-col gap-5">
-                        <div>
-                            <h3 class="text-h2 text-docu-ink mb-1">
-                                API 키가 발급되었습니다
-                            </h3>
-                            <p class="text-sm text-docu-danger font-semibold">
-                                이 화면을 벗어나면 키 원문을 다시 확인할 수
-                                없습니다. 지금 바로 복사해 두세요.
+                    <!-- 배경 오버레이 -->
+                    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+                    <!-- 다이얼로그 -->
+                    <div class="relative z-10 w-full max-w-md mx-4 bg-surface-card rounded-docu-card shadow-docu-modal border border-divider">
+
+                        <!-- 헤더 -->
+                        <div class="px-6 py-5 border-b border-divider bg-surface-sub rounded-t-docu-card">
+                            <div class="flex items-center gap-3 mb-1">
+                                <div class="w-8 h-8 rounded-docu-btn bg-docu-warning-light flex items-center justify-center shrink-0">
+                                    <svg class="w-4 h-4 text-docu-warning-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                    </svg>
+                                </div>
+                                <h3 id="api-key-reveal-modal-title" class="text-h2 text-docu-ink">API 키가 발급되었습니다</h3>
+                            </div>
+                            <p class="text-sm text-docu-danger font-semibold mt-2">
+                                이 화면을 벗어나면 키 원문을 다시 확인할 수 없습니다.
                             </p>
                         </div>
-                        <div
-                            class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn"
-                        >
-                            <code
-                                id="plain-api-key-display"
-                                class="flex-1 text-sm font-mono text-docu-ink break-all select-all"
-                            ></code>
-                            <button
-                                type="button"
-                                onclick="copyPlainApiKey()"
-                                title="복사"
-                                class="btn-icon w-8 h-8 shrink-0"
-                            >
-                                <svg
-                                    class="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8
-                                 a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                    />
+
+                        <!-- 본문 -->
+                        <div class="px-6 py-5 space-y-4">
+                            <!-- 경고 배너 -->
+                            <div class="flex items-center gap-3 p-3 bg-docu-warning-light/40 border border-docu-warning rounded-docu-btn">
+                                <svg class="w-4 h-4 text-docu-warning-dark shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
+                                <p class="text-xs font-semibold text-docu-warning-dark">지금 바로 복사해 안전한 곳에 보관하세요.</p>
+                            </div>
+
+                            <!-- 키 표시 영역 -->
+                            <div class="flex items-center gap-3 px-4 py-3 bg-surface-base border border-divider rounded-docu-btn">
+                                <code id="plain-api-key-display" class="flex-1 text-sm font-mono text-docu-ink break-all select-all"></code>
+                                <button
+                                    type="button"
+                                    onclick="copyPlainApiKey()"
+                                    aria-label="API 키 복사"
+                                    title="복사"
+                                    class="btn-icon w-8 h-8 shrink-0"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 푸터 -->
+                        <div class="flex justify-end gap-3 px-6 py-4 border-t border-divider bg-surface-sub rounded-b-docu-card">
+                            <button type="button" onclick="closeApiKeyRevealModal()" class="btn-primary">
+                                확인 (페이지 새로고침)
                             </button>
                         </div>
-                        <button
-                            type="button"
-                            onclick="closeApiKeyRevealModal()"
-                            class="btn-primary"
-                        >
-                            확인 (페이지 새로고침)
-                        </button>
                     </div>
                 </div>
 
                 <!-- 공통 비동기 다목적 모달 (Confirm / Prompt 통합) -->
-                <div id="docu-async-modal-wrapper" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div id="docu-async-modal-wrapper" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div th:replace="~{common/fragments/ui-components :: modal-shell('docu-async-modal', '알림', '')}">
                         <th:block th:fragment="modal-body">
                             <div class="py-2 space-y-4">
                                 <p id="docu-async-message" class="text-sm text-docu-ink whitespace-pre-line"></p>
                                 <!-- Prompt 모드에서만 보여질 입력창 (기본은 hidden) -->
                                 <input type="text" id="docu-async-input"
-                                       class="hidden w-full px-3 py-2 bg-surface-base border border-divider rounded-docu-btn text-sm text-docu-ink focus:border-docu-primary focus:ring-1 focus:ring-docu-primary outline-none transition-all"
+                                       class="hidden w-full px-3 py-2 bg-surface-input border border-divider rounded-docu-btn text-sm text-docu-ink focus:border-docu-primary focus:ring-1 focus:ring-docu-primary outline-none transition-all"
                                        autocomplete="off" />
                             </div>
                         </th:block>

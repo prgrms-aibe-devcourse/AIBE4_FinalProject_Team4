@@ -31,20 +31,24 @@
                     <div th:if="${headerInfo.companyProfileUrl() != null}"
                          class="w-10 h-10 rounded-full overflow-hidden shrink-0 border-2 border-divider shadow-docu-sm bg-white">
                         <img th:src="${headerInfo.companyProfileUrl()}"
+                             id="sidebar-mypage-company-img"
                              th:alt="${headerInfo.companyName() + ' 회사 프로필 이미지'}"
                              class="w-full h-full object-cover"/>
                     </div>
 
                     <div th:unless="${headerInfo.companyProfileUrl() != null}"
+                         id="sidebar-mypage-company-fallback"
                          class="w-10 h-10 rounded-full bg-docu-primary flex items-center justify-center shrink-0 border-2 border-divider shadow-docu-sm"
                          th:aria-label="${headerInfo.companyName() + ' 회사 기본 이미지'}">
                         <span th:text="${#strings.substring(headerInfo.companyName(),0,1)}"
+                              id="sidebar-mypage-company-initial"
                               class="text-white text-sm font-bold"></span>
                     </div>
 
                     <div class="min-w-0 flex-1">
                         <p class="text-[10px] text-gray-400 font-mono tracking-widest mb-0.5">COMPANY</p>
                         <span th:text="${headerInfo.companyName()}"
+                              id="sidebar-mypage-company-name"
                               class="block text-sm font-semibold text-docu-ink truncate"></span>
                     </div>
                 </div>

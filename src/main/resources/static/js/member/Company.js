@@ -1,5 +1,29 @@
 let pendingCompanyIconFile = null;
 
+/* ── 사이드바 즉시 반영 ── */
+function _syncSidebarCompanyName(name) {
+    const el = document.getElementById('sidebar-mypage-company-name');
+    if (el) el.textContent = name;
+}
+
+function _syncSidebarCompanyImage(url) {
+    const img      = document.getElementById('sidebar-mypage-company-img');
+    const fallback = document.getElementById('sidebar-mypage-company-fallback');
+    if (img) {
+        img.src = url;
+    } else if (fallback) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'w-10 h-10 rounded-full overflow-hidden shrink-0 border-2 border-divider shadow-docu-sm bg-white';
+        const newImg = document.createElement('img');
+        newImg.id        = 'sidebar-mypage-company-img';
+        newImg.src       = url;
+        newImg.className = 'w-full h-full object-cover';
+        newImg.alt       = '회사 프로필 이미지';
+        wrapper.appendChild(newImg);
+        fallback.replaceWith(wrapper);
+    }
+}
+
 function previewCompanyIcon(input) {
     if (!input.files || !input.files[0]) return;
     pendingCompanyIconFile = input.files[0];
@@ -39,6 +63,9 @@ async function uploadCompanyIcon() {
         const origInput = document.getElementById('company-icon-original-src');
         if (origInput && body.data?.profileImageUrl) {
             origInput.value = body.data.profileImageUrl;
+        }
+        if (body.data?.profileImageUrl) {
+            _syncSidebarCompanyImage(body.data.profileImageUrl);
         }
     }
     return body;
@@ -85,6 +112,7 @@ async function updateCompany() {
             });
             if (body.success) {
                 nameInput.defaultValue = name; // 취소 기준값 갱신
+                _syncSidebarCompanyName(name);
                 const msg = document.getElementById('success-message');
                 msg.textContent = '회사 정보가 저장되었습니다.';
                 msg.classList.remove('hidden');

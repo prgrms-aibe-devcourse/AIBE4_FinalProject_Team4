@@ -117,15 +117,35 @@
                         th:text="${p.name()}">프로젝트</h3>
                 </div>
 
-                <!-- 프로젝트 입장 버튼 -->
-                <a th:href="@{/projects/{publicId}/groups(publicId=${p.publicId()})}"
-                   class="shrink-0 inline-flex items-center gap-1 text-sm font-semibold
-                          text-docu-primary hover:text-docu-primary-dark transition-colors">
-                    프로젝트 입장
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18l6-6-6-6"/>
-                    </svg>
-                </a>
+                <!-- 버튼 영역 -->
+                <div class="shrink-0 flex items-center gap-4">
+                    <!-- 설정 바로가기 버튼 -->
+                    <a th:href="@{/projects/{publicId}/settings(publicId=${p.publicId()})}"
+                       aria-label="프로젝트 설정"
+                       class="btn-icon text-docu-secondary hover:text-docu-ink hover:bg-surface-base transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066
+                                     c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756
+                                     2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724
+                                     1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573
+                                     -1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426
+                                     -1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37
+                                     .996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </a>
+                    <!-- 프로젝트 입장 버튼 -->
+                    <a th:href="@{/projects/{publicId}/groups(publicId=${p.publicId()})}"
+                       class="inline-flex items-center gap-1 text-sm font-semibold
+                              text-docu-primary hover:text-docu-primary-dark transition-colors">
+                        프로젝트 입장
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </a>
+                </div>
             </article>
 
         </div>

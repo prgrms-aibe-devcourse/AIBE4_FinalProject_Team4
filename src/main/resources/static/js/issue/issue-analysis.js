@@ -230,8 +230,8 @@ async function renderOccurrenceTrend(issue) {
                 datasets: [{
                     label: '발생 횟수',
                     data: data,
-                    borderColor: 'rgb(99, 102, 241)',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    borderColor: '#4A9EE8',
+                    backgroundColor: 'rgba(74, 158, 232, 0.1)',
                     tension: 0.4,
                     fill: true
                 }]
@@ -1244,10 +1244,10 @@ async function submitStatusChange() {
 
 function getStatusBadge(status) {
     const statusMap = {
-        RECOMMENDED: { label: '추천 대기', color: 'bg-blue-100 text-blue-700' },
-        TODO: { label: '대기중', color: 'bg-gray-100 text-docu-ink' },
-        IN_PROGRESS: { label: '처리중', color: 'bg-blue-100 text-blue-700' },
-        RESOLVED: { label: '해결됨', color: 'bg-docu-success-light text-docu-success' }
+        RECOMMENDED: { label: '추천 대기', color: 'bg-docu-primary-light text-docu-primary-dark' },
+        TODO: { label: '대기중', color: 'bg-surface-base text-docu-ink' },
+        IN_PROGRESS: { label: '처리중', color: 'bg-docu-primary-light text-docu-primary-dark' },
+        RESOLVED: { label: '해결됨', color: 'bg-docu-success-light text-docu-success-dark' }
     };
     const { label, color } = statusMap[status] || { label: status, color: 'bg-gray-100 text-docu-ink' };
     return `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium ${color}">${label}</span>`;

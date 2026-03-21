@@ -1,6 +1,27 @@
 /* ── 대기 중인 파일 (저장 전까지 업로드하지 않음) ── */
 let pendingProfileFile = null;
 
+/* ── 헤더 즉시 반영 ── */
+function _syncHeaderNickname(nickname) {
+    const el = document.getElementById('header-user-nickname');
+    if (el) el.textContent = nickname;
+}
+
+function _syncHeaderProfileImage(url) {
+    const img      = document.getElementById('header-user-profile-img');
+    const fallback = document.getElementById('header-user-profile-fallback');
+    if (img) {
+        img.src = url;
+    } else if (fallback) {
+        const newImg = document.createElement('img');
+        newImg.id        = 'header-user-profile-img';
+        newImg.src       = url;
+        newImg.className = 'w-9 h-9 object-cover border-2 border-divider shadow-docu-sm bg-surface-base rounded-full';
+        newImg.alt       = '프로필 이미지';
+        fallback.replaceWith(newImg);
+    }
+}
+
 /* 파일 선택 시: 로컬 미리보기만, S3 업로드는 '변경 사항 저장' 시 처리 */
 function previewImage(input) {
     if (!input.files || !input.files[0]) return;
@@ -78,6 +99,9 @@ async function saveProfile() {
             if (origInput && body.data?.profileImageUrl) {
                 origInput.value = body.data.profileImageUrl;
             }
+            if (body.data?.profileImageUrl) {
+                _syncHeaderProfileImage(body.data.profileImageUrl);
+            }
         } catch (err) {
             showGlobalError(err.message, 'global-error');
             return;
@@ -102,7 +126,10 @@ async function saveProfile() {
                 body: JSON.stringify(payload),
             });
             if (body.success) {
-                if (nicknameChanged) nicknameInput.defaultValue = nickname;
+                if (nicknameChanged) {
+                    nicknameInput.defaultValue = nickname;
+                    _syncHeaderNickname(nickname);
+                }
                 if (positionInput && positionChanged) {
                     positionInput.defaultValue = position ?? positionInput.defaultValue;
                 }

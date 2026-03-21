@@ -51,9 +51,8 @@
                         새 경보 만들기
                     </button>
                 </div>
-                <div class="card-base card-shadow p-8 flex flex-col items-center justify-center min-h-[160px] bg-surface-sub border-dashed">
-                    <span class="text-2xl mb-2">📊</span>
-                    <p class="text-sm text-docu-secondary">아직 등록된 커스텀 로그 경보 규칙이 없습니다.</p>
+                <div class="card-base card-shadow overflow-hidden">
+                    <div th:replace="~{common/fragments/ui-components :: empty-state('📊', '로그 경보 없음', '아직 등록된 커스텀 로그 경보 규칙이 없습니다.')}"></div>
                 </div>
             </section>
 
@@ -225,8 +224,17 @@
                     </div>
                 </template>
 
-                <div x-show="!isLoading && notifications.length === 0" class="py-12 text-center text-sm text-docu-secondary">
-                    알림 내역이 비어 있습니다.
+                <div x-show="!isLoading && notifications.length === 0"
+                     class="flex flex-col items-center justify-center py-16 px-8 text-center">
+                    <div class="w-16 h-16 rounded-full bg-surface-point border border-divider
+                                flex items-center justify-center mb-5"
+                         aria-hidden="true">
+                        <span class="text-2xl leading-none">📭</span>
+                    </div>
+                    <h3 class="text-h2 text-docu-ink mb-2">알림 내역이 없습니다</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed max-w-xs">
+                        새로운 알림이 발생하면 여기에 표시됩니다.
+                    </p>
                 </div>
 
                 <!-- Loading Spinner -->
