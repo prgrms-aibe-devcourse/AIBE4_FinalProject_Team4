@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -246,7 +247,8 @@ class MemberServiceTest {
             Member member = createMember(GlobalRole.EMPLOYEE);
             given(memberRepository.findWithCompanyById(memberId)).willReturn(Optional.of(member));
             MultipartFile file = mock(MultipartFile.class);
-            given(fileStore.save(file)).willReturn(new FileStoreResult("new-key", "jpg"));
+            given(fileStore.save(anyString(), eq(file)))
+                    .willReturn(new FileStoreResult("new-key", "jpg"));
             given(fileStore.getAccessUrl("new-key")).willReturn("https://cdn.example.com/new-key");
 
             // When
@@ -266,7 +268,8 @@ class MemberServiceTest {
             member.updateProfile(null, "old-key", null); // 기존 키 설정
             given(memberRepository.findWithCompanyById(memberId)).willReturn(Optional.of(member));
             MultipartFile file = mock(MultipartFile.class);
-            given(fileStore.save(file)).willReturn(new FileStoreResult("new-key", "jpg"));
+            given(fileStore.save(anyString(), eq(file)))
+                    .willReturn(new FileStoreResult("new-key", "jpg"));
             given(fileStore.getAccessUrl("new-key")).willReturn("https://cdn.example.com/new-key");
 
             // When

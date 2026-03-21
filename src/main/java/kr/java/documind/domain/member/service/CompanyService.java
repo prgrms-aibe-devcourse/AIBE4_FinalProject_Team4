@@ -172,7 +172,8 @@ public class CompanyService {
         String oldKey = company.getProfileKey();
 
         // 1. 새 파일 먼저 업로드
-        String newKey = fileStore.save(file).storedKey();
+        String directory = String.format("profiles/companies/%s", company.getId());
+        String newKey = fileStore.save(directory, file).storedKey();
         // 2. 롤백 시 newKey 자동 삭제 (orphan 방지)
         fileStore.deleteOnRollback(newKey);
         // 3. DB 업데이트

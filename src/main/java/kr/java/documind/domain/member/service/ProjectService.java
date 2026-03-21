@@ -108,7 +108,8 @@ public class ProjectService {
                         .orElseThrow(ProjectNotFoundException::new);
 
         String oldKey = project.getProfileKey();
-        String newKey = fileStore.save(file).storedKey();
+        String directory = String.format("profiles/projects/%s", project.getId());
+        String newKey = fileStore.save(directory, file).storedKey();
 
         project.updateInfo(null, newKey);
 

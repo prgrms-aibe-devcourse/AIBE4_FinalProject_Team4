@@ -149,7 +149,8 @@ public class MemberService {
         Member member = getMemberWithCompany(memberId);
         String oldKey = member.getProfileKey();
 
-        String newKey = fileStore.save(file).storedKey();
+        String directory = String.format("profiles/members/%s", memberId);
+        String newKey = fileStore.save(directory, file).storedKey();
         fileStore.deleteOnRollback(newKey);
         member.updateProfile(null, newKey, null);
         if (oldKey != null) {

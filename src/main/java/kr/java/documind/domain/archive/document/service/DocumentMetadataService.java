@@ -235,7 +235,9 @@ public class DocumentMetadataService {
         String hash = documentFileStorage.computeHash(file);
         validateHashUniqueness(hash, group.getProjectId());
 
-        DocumentFileStorage.StoredDocumentFile storedFile = documentFileStorage.store(file);
+        String directory = String.format("documents/%s/%s", projectId, memberId);
+        DocumentFileStorage.StoredDocumentFile storedFile =
+                documentFileStorage.store(directory, file);
         DocumentMetadata documentMetadata =
                 documentMetadataManager.createMetadata(
                         group,
@@ -274,8 +276,9 @@ public class DocumentMetadataService {
             MultipartFile file,
             String newHash,
             boolean excludeFromPatchNote) {
+        String directory = String.format("documents/%s/%s", projectId, memberId);
         DocumentFileStorage.StoredDocumentFile storedFile =
-                documentFileStorage.replace(documentMetadata.getStoredKey(), file);
+                documentFileStorage.replace(documentMetadata.getStoredKey(), directory, file);
 
         documentMetadataManager.updateFile(
                 documentMetadata,

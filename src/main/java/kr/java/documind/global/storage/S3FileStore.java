@@ -47,10 +47,10 @@ public class S3FileStore implements FileStore {
     }
 
     @Override
-    public FileStoreResult save(MultipartFile file) {
+    public FileStoreResult save(String directory, MultipartFile file) {
         ResolvedFile resolved = validateAndResolve(file);
 
-        String storedKey = UUID.randomUUID() + "." + resolved.extension();
+        String storedKey = directory + "/" + UUID.randomUUID() + "." + resolved.extension();
 
         try (InputStream is = file.getInputStream()) {
             s3Template.upload(
