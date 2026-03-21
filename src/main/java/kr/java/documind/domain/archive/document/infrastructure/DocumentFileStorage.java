@@ -15,8 +15,8 @@ public class DocumentFileStorage {
 
     private final FileStore fileStore;
 
-    public StoredDocumentFile store(MultipartFile file) {
-        FileStoreResult storeResult = fileStore.save(file);
+    public StoredDocumentFile store(String directory, MultipartFile file) {
+        FileStoreResult storeResult = fileStore.save(directory, file);
         fileStore.deleteOnRollback(storeResult.storedKey());
 
         return new StoredDocumentFile(
@@ -30,8 +30,8 @@ public class DocumentFileStorage {
         return fileStore.load(storedKey);
     }
 
-    public StoredDocumentFile replace(String oldStoredKey, MultipartFile file) {
-        StoredDocumentFile storedFile = store(file);
+    public StoredDocumentFile replace(String oldStoredKey, String directory, MultipartFile file) {
+        StoredDocumentFile storedFile = store(directory, file);
         fileStore.deleteOnCommit(oldStoredKey);
         return storedFile;
     }
