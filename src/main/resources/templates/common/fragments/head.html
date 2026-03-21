@@ -19,7 +19,7 @@
     <meta property="og:title" content="Documind" />
     <meta property="og:description" content="Documind는 프로젝트 문서, 이슈, 패치노트, 로그, 알림을 통합 관리하는 협업 플랫폼입니다." />
     <meta property="og:image" content="/images/og-image.png" />
-    <meta property="og:url" content="http://localhost:8080" />
+    <meta property="og:url" th:content="${#request.requestURL}" />
 
     <title th:text="${title} + ' | Documind'">Documind</title>
 </th:block>
