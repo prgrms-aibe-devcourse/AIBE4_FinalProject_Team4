@@ -164,7 +164,18 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
         if (field.aggregation() == AggregationFunction.COUNT_DISTINCT) {
             return "COUNT(DISTINCT " + colRef + ")" + alias;
         }
-        return field.aggregation().getSqlFunction() + "(" + colRef + ")" + alias;
+
+        String expr = colRef;
+        String aggName = field.aggregation().name();
+        if (colRef.contains("->>")
+                && (aggName.equals("AVG")
+                        || aggName.equals("SUM")
+                        || aggName.equals("MIN")
+                        || aggName.equals("MAX"))) {
+            expr = "CAST(" + colRef + " AS numeric)";
+        }
+
+        return field.aggregation().getSqlFunction() + "(" + expr + ")" + alias;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -335,6 +346,10 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
     private String resolveColumnRef(String columnRef) {
         QueryableColumn col = QueryableColumn.parseColumn(columnRef);
 
+        if (col == QueryableColumn.VIRTUAL_ALIAS) {
+            return "\"" + columnRef + "\"";
+        }
+
         if (!col.isJsonb()) {
             return col.getDbName();
         }
@@ -346,9 +361,7 @@ public class GameLogQueryRepositoryImpl implements GameLogQueryRepositoryCustom 
             return col.getDbName() + "::text";
         }
 
-        // 데이터가 'system.init_type'처럼 단일 키인 경우를 대응
-        // 원본 경로(columnRef)에서 컬럼명을 제외한 나머지 전체 경로 문자열을 추출
-        String fullPath = columnRef.substring(col.name().length() + 1);
+        String fullPath = columnRef.substring(col.getDbName().length() + 1);
 
         if (pathParts.length == 1) {
             // SQL: (attributes->>'key')

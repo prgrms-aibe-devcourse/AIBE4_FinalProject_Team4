@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layout/service-layout}">
+<head>
+    <title>대시보드</title>
+</head>
+<body>
+<th:block layout:fragment="content">
+
+    <!-- publicId 전달용 hidden input -->
+    <input type="hidden" id="publicId" th:value="${publicId}"/>
+
+    <div x-data="dashboardApp()" x-init="init()" class="space-y-4">
+
+        <!-- ── 헤더 바 ──────────────────────────────────────────────────────── -->
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+                <div th:replace="~{common/fragments/ui-components :: breadcrumb('대시보드')}"></div>
+                <h1 class="text-h1 text-docu-ink mt-3">대시보드</h1>
+                <p class="text-sm text-docu-secondary mt-1">위젯을 추가하고 로그 데이터를 시각화하세요.</p>
+            </div>
+
+            <!-- 뷰 선택 + 액션 -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- 글로벌 시간 범위 -->
+                <select class="form-select w-auto"
+                        x-model="globalTimeRange"
+                        @change="onGlobalTimeRangeChange()">
+                    <option value="15m">최근 15분</option>
+                    <option value="1h">최근 1시간</option>
+                    <option value="6h">최근 6시간</option>
+                    <option value="24h">최근 24시간</option>
+                    <option value="7d">최근 7일</option>
+                    <option value="30d">최근 30일</option>
+                </select>
+
+                <!-- 자동 새로고침 -->
+                <select class="form-select w-auto" @change="onRefreshChange($event)">
+                    <option value="">새로고침 없음</option>
+                    <option value="10000">10초</option>
+                    <option value="30000">30초</option>
+                    <option value="60000">1분</option>
+                    <option value="300000">5분</option>
+                </select>
+
+                <!-- 뷰 선택 드롭다운 -->
+                <select class="form-select w-auto"
+                        x-show="views.length > 0"
+                        @change="switchView($event.target.value)">
+                    <template x-for="v in views" :key="v.id">
+                        <option :value="v.id" :selected="currentView && currentView.id === v.id"
+                                x-text="v.name"></option>
+                    </template>
+                </select>
+
+                <!-- 편집 모드 토글 -->
+                <button class="btn-secondary btn-sm"
+                        x-show="currentView"
+                        @click="toggleEditMode()"
+                        :class="editMode ? 'bg-docu-warning-light border-docu-warning text-docu-warning-dark' : ''">
+                    <span x-text="editMode ? '편집 중' : '레이아웃 편집'"></span>
+                </button>
+
+                <!-- 저장 (편집 모드) -->
+                <button class="btn-primary btn-sm"
+                        x-show="editMode && isDirty"
+                        @click="saveView()">
+                    저장
+                </button>
+
+                <!-- 새 뷰 생성 -->
+                <button class="btn-primary btn-sm" @click="openCreateViewModal()">
+                    + 새 뷰
+                </button>
+
+                <!-- 뷰 삭제 -->
+                <button class="btn-secondary btn-sm text-docu-danger border-docu-danger hover:bg-docu-danger-light transition-colors"
+                        x-show="currentView"
+                        @click="deleteView()">
+                    삭제
+                </button>
+            </div>
+        </div>
+
+        <!-- ── 빈 상태 / 프리셋 선택 ───────────────────────────────────────── -->
+        <div x-show="views.length === 0 && !isLoadingViews" class="card-base card-shadow p-widget-p">
+            <div class="text-center py-12">
+                <div class="text-4xl mb-4">📊</div>
+                <h2 class="text-h2 text-docu-ink mb-2">첫 번째 대시보드를 만들어보세요</h2>
+                <p class="text-sm text-docu-secondary mb-6">프리셋으로 빠르게 시작하거나 직접 위젯을 추가하세요.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                    <template x-for="preset in presets" :key="preset.id">
+                        <button class="card-base border-2 border-divider p-4 text-left hover:border-docu-primary hover:shadow-docu-primary transition-all"
+                                @click="createViewFromPreset(preset)">
+                            <div class="font-semibold text-docu-ink" x-text="preset.name"></div>
+                            <div class="text-xs text-docu-secondary mt-1" x-text="preset.description"></div>
+                            <div class="text-xs text-docu-primary mt-2"
+                                 x-text="preset.layoutConfig.length + '개 위젯'"></div>
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 뷰 로딩 중 ──────────────────────────────────────────────────── -->
+        <div x-show="isLoadingViews" class="text-center py-12 text-docu-secondary text-sm">
+            로딩 중...
+        </div>
+
+        <!-- ── 위젯 그리드 ─────────────────────────────────────────────────── -->
+        <div x-show="currentView && widgets.length > 0">
+
+            <!-- 위젯 추가 버튼 (편집 모드) -->
+            <div x-show="editMode" class="mb-3">
+                <button class="btn-secondary btn-sm" @click="openWidgetModal()">
+                    + 위젯 추가
+                </button>
+            </div>
+
+            <!-- 그리드 컨테이너 (12열 CSS Grid) -->
+            <div class="grid grid-cols-12 gap-4" style="grid-auto-rows: 80px;">
+                <template x-for="widget in widgets" :key="widget.id">
+                    <div class="relative rounded-docu-card border-2 border-divider bg-surface-card shadow-docu-sm overflow-hidden"
+                         :style="`grid-column: ${widget.layout.x} / span ${widget.layout.w}; grid-row: ${widget.layout.y} / span ${widget.layout.h};`"
+                         :class="editMode ? 'cursor-move border-docu-warning' : ''">
+
+                        <!-- 위젯 헤더 -->
+                        <div class="flex items-center justify-between px-3 py-2 border-b border-divider bg-white">
+                            <span class="text-xs font-semibold text-docu-ink truncate"
+                                  x-text="widget.title"></span>
+                            <div class="flex items-center gap-1">
+                                <span x-show="widgetLoading[widget.id]"
+                                      class="text-xs text-docu-secondary">로딩...</span>
+                                <button x-show="editMode"
+                                        class="btn-icon w-6 h-6"
+                                        title="위젯 수정"
+                                        @click="editWidget(widget.id)">
+                                    <span class="text-xs">✎</span>
+                                </button>
+                                <button x-show="editMode"
+                                        class="btn-icon w-6 h-6"
+                                        title="위젯 삭제"
+                                        @click="removeWidget(widget.id)">
+                                    <span class="text-xs">✕</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 위젯 바디 -->
+                        <div class="absolute inset-0 top-9 p-2">
+                            <!-- 에러 상태 -->
+                            <div x-show="widgetErrors[widget.id]"
+                                 class="flex items-center justify-center h-full text-xs text-docu-danger">
+                                <span x-text="widgetErrors[widget.id]"></span>
+                            </div>
+
+                            <!-- stat 차트 -->
+                            <div x-show="!widgetErrors[widget.id] && widget.type === 'stat'"
+                                 class="flex items-center justify-center h-full">
+                                <span class="text-display font-bold text-docu-primary"
+                                      x-text="getStatValue(widget.id)"></span>
+                            </div>
+
+                            <!-- 차트 캔버스 (bar/line/pie/heatmap) -->
+                            <div x-show="!widgetErrors[widget.id] && widget.type !== 'stat' && widget.type !== 'table'"
+                                 class="w-full h-full"
+                                 :id="'chart-' + widget.id"></div>
+
+                            <!-- 테이블 -->
+                            <div x-show="!widgetErrors[widget.id] && widget.type === 'table'"
+                                 class="h-full overflow-auto">
+                                <table class="w-full text-xs text-docu-ink border-collapse"
+                                       x-show="widgetData[widget.id] && widgetData[widget.id].rows">
+                                    <thead>
+                                    <tr>
+                                        <template x-for="col in getTableColumns(widget.id)" :key="col">
+                                            <th class="sticky top-0 bg-surface-sub px-2 py-1 text-left font-semibold border-b border-divider"
+                                                x-text="col"></th>
+                                        </template>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <template x-for="(row, ri) in getTableRows(widget.id)" :key="ri">
+                                        <tr class="border-b border-divider hover:bg-surface-point">
+                                            <template x-for="col in getTableColumns(widget.id)" :key="col">
+                                                <td class="px-2 py-1 truncate max-w-32"
+                                                    x-text="formatCell(row[col])"></td>
+                                            </template>
+                                        </tr>
+                                    </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- ── 뷰에 위젯 없음 ─────────────────────────────────────────────── -->
+        <div x-show="currentView && widgets.length === 0" class="card-base card-shadow p-widget-p">
+            <div class="text-center py-10">
+                <div class="text-3xl mb-3">📈</div>
+                <p class="text-sm text-docu-secondary mb-4">위젯이 없습니다. 위젯을 추가해보세요.</p>
+                <button class="btn-primary btn-sm" @click="openWidgetModal()">+ 위젯 추가</button>
+            </div>
+        </div>
+
+        <!-- ── 위젯 생성 모달 ─────────────────────────────────────────────── -->
+        <div x-show="modal.open"
+             class="fixed inset-0 z-50 flex items-center justify-center p-4"
+             style="display:none;">
+            <!-- 오버레이 -->
+            <div class="absolute inset-0 bg-black/40" @click="closeModal()"></div>
+
+            <!-- 모달 패널 -->
+            <div class="relative bg-white rounded-docu-modal shadow-docu-modal w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+
+                <!-- 모달 헤더 -->
+                <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
+                    <div>
+                        <h2 class="text-h2 text-docu-ink"
+                            x-text="modal.step === 1 ? '쿼리 빌더' : '차트 설정'"></h2>
+                        <p class="text-xs text-docu-secondary mt-0.5">
+                            <span x-show="modal.step === 1">데이터를 조회하고 미리보기를 확인하세요.</span>
+                            <span x-show="modal.step === 2">차트 타입과 축 매핑을 설정하세요.</span>
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-docu-secondary">Step <span x-text="modal.step"></span> / 2</span>
+                        <button class="btn-icon" @click="closeModal()">✕</button>
+                    </div>
+                </div>
+
+                <!-- Step 1: 쿼리 빌더 -->
+                <div x-show="modal.step === 1" class="flex-1 overflow-y-auto p-6 space-y-4">
+
+                    <!-- 위젯 제목 -->
+                    <div>
+                        <label class="form-label">위젯 제목</label>
+                        <input type="text"
+                               class="form-input mt-1"
+                               placeholder="위젯 제목을 입력하세요"
+                               x-model="modal.draftWidget.title"/>
+                    </div>
+
+                    <!-- SELECT 필드 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="form-label">SELECT 항목</label>
+                            <button class="btn-ghost btn-sm" @click="addDraftSelect()">+ 추가</button>
+                        </div>
+                        <template x-for="(sel, idx) in modal.draftWidget.query.selects" :key="sel._id">
+                            <div class="flex gap-2 mb-2">
+                                <select class="form-select flex-1" x-model="sel.column">
+                                    <option value="">컬럼 선택</option>
+                                    <template x-for="opt in columnOptions" :key="opt.value">
+                                        <option :value="opt.value" x-text="opt.label"></option>
+                                    </template>
+                                </select>
+                                <select class="form-select w-36" x-model="sel.aggregation">
+                                    <option value="">집계 없음</option>
+                                    <option value="COUNT">COUNT</option>
+                                    <option value="COUNT_DISTINCT">COUNT DISTINCT</option>
+                                    <option value="SUM">SUM</option>
+                                    <option value="AVG">AVG</option>
+                                    <option value="MIN">MIN</option>
+                                    <option value="MAX">MAX</option>
+                                </select>
+                                <input type="text"
+                                       class="form-input w-32"
+                                       placeholder="별칭(alias)"
+                                       x-model="sel.alias"/>
+                                <button class="btn-icon" @click="removeDraftSelect(idx)">✕</button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- WHERE 필터 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="form-label">WHERE 필터</label>
+                            <div class="flex items-center gap-2">
+                                <select class="form-select w-20" x-model="modal.draftWidget.query.whereLogic">
+                                    <option value="AND">AND</option>
+                                    <option value="OR">OR</option>
+                                </select>
+                                <button class="btn-ghost btn-sm" @click="addDraftWhere()">+ 추가</button>
+                            </div>
+                        </div>
+                        <template x-for="(wh, idx) in modal.draftWidget.query.wheres" :key="wh._id">
+                            <div class="flex gap-2 mb-2">
+                                <select class="form-select flex-1" x-model="wh.column">
+                                    <option value="">컬럼</option>
+                                    <template x-for="opt in columnOptions" :key="opt.value">
+                                        <option :value="opt.value" x-text="opt.label"></option>
+                                    </template>
+                                </select>
+                                <select class="form-select w-32" x-model="wh.operator">
+                                    <option value="EQ">= (같음)</option>
+                                    <option value="NEQ">≠ (다름)</option>
+                                    <option value="GT">&gt;</option>
+                                    <option value="LT">&lt;</option>
+                                    <option value="GTE">≥</option>
+                                    <option value="LTE">≤</option>
+                                    <option value="CONTAINS">포함</option>
+                                    <option value="NOT_CONTAINS">미포함</option>
+                                    <option value="IS_NULL">NULL</option>
+                                    <option value="IS_NOT_NULL">NOT NULL</option>
+                                </select>
+                                <input type="text"
+                                       class="form-input flex-1"
+                                       placeholder="값"
+                                       x-model="wh.value"
+                                       x-show="!['IS_NULL','IS_NOT_NULL'].includes(wh.operator)"/>
+                                <button class="btn-icon" @click="removeDraftWhere(idx)">✕</button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- GROUP BY -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="form-label">GROUP BY</label>
+                            <button class="btn-ghost btn-sm"
+                                    x-show="modal.draftWidget.query.groupBy.length < 3"
+                                    @click="modal.draftWidget.query.groupBy.push('')">+ 추가</button>
+                        </div>
+                        <template x-for="(gb, idx) in modal.draftWidget.query.groupBy" :key="idx">
+                            <div class="flex gap-2 mb-2">
+                                <select class="form-select flex-1"
+                                        :value="gb"
+                                        @change="modal.draftWidget.query.groupBy[idx] = $event.target.value">
+                                    <option value="">컬럼 선택</option>
+                                    <template x-for="opt in columnOptions" :key="opt.value">
+                                        <option :value="opt.value" x-text="opt.label"></option>
+                                    </template>
+                                </select>
+                                <button class="btn-icon"
+                                        @click="modal.draftWidget.query.groupBy.splice(idx,1)">✕</button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- ORDER BY + LIMIT -->
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <label class="form-label">정렬 컬럼</label>
+                            <select class="form-select mt-1"
+                                    x-model="modal.draftWidget.query.orderBy.column">
+                                <option value="">없음</option>
+                                <template x-for="opt in columnOptions" :key="opt.value">
+                                    <option :value="opt.value" x-text="opt.label"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div class="w-28">
+                            <label class="form-label">정렬 방향</label>
+                            <select class="form-select mt-1"
+                                    x-model="modal.draftWidget.query.orderBy.direction">
+                                <option value="DESC">DESC</option>
+                                <option value="ASC">ASC</option>
+                            </select>
+                        </div>
+                        <div class="w-24">
+                            <label class="form-label">Limit</label>
+                            <input type="number"
+                                   class="form-input mt-1"
+                                   min="1"
+                                   max="2000"
+                                   x-model.number="modal.draftWidget.query.limit"/>
+                        </div>
+                    </div>
+
+                    <!-- 에러 메시지 -->
+                    <div x-show="modal.error"
+                         class="text-sm text-docu-danger bg-docu-danger-light rounded-docu-btn px-3 py-2"
+                         x-text="modal.error"></div>
+
+                    <!-- 미리보기 결과 -->
+                    <div x-show="modal.queryResult">
+                        <label class="form-label mb-2">미리보기 결과</label>
+                        <div class="overflow-auto max-h-40 border border-divider rounded-docu-btn">
+                            <table class="w-full text-xs text-docu-ink border-collapse">
+                                <thead>
+                                <tr>
+                                    <template x-for="col in (modal.queryResult?.columnNames || [])" :key="col">
+                                        <th class="sticky top-0 bg-surface-sub px-2 py-1 text-left font-semibold border-b border-divider"
+                                            x-text="col"></th>
+                                    </template>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <template x-for="(row, ri) in (modal.queryResult?.rows?.slice(0,10) || [])" :key="ri">
+                                    <tr class="border-b border-divider">
+                                        <template x-for="col in (modal.queryResult?.columnNames || [])" :key="col">
+                                            <td class="px-2 py-1 truncate max-w-32"
+                                                x-text="formatCell(row[col])"></td>
+                                        </template>
+                                    </tr>
+                                </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: 차트 설정 -->
+                <div x-show="modal.step === 2" class="flex-1 overflow-y-auto p-6 space-y-4">
+
+                    <!-- 차트 타입 -->
+                    <div>
+                        <label class="form-label">차트 타입</label>
+                        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-2">
+                            <template x-for="ct in ['stat','table','bar','line','pie','heatmap']" :key="ct">
+                                <button class="border-2 rounded-docu-btn py-2 px-3 text-xs font-semibold transition-all"
+                                        :class="modal.draftWidget.type === ct
+                                            ? 'border-docu-primary bg-docu-primary-light text-docu-primary-dark'
+                                            : 'border-divider bg-surface-card text-docu-secondary hover:border-docu-primary'"
+                                        @click="modal.draftWidget.type = ct"
+                                        x-text="chartTypeLabel(ct)"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- X축 -->
+                    <div x-show="!['stat','table'].includes(modal.draftWidget.type)">
+                        <label class="form-label">X축 (차원)</label>
+                        <select class="form-select mt-1"
+                                x-model="modal.draftWidget.visualization.xAxis">
+                            <option value="">선택</option>
+                            <template x-for="col in (modal.queryResult?.columnNames || [])" :key="col">
+                                <option :value="col" x-text="col"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Y축 -->
+                    <div x-show="!['table'].includes(modal.draftWidget.type)">
+                        <label class="form-label">
+                            <span x-show="modal.draftWidget.type === 'stat'">값 컬럼</span>
+                            <span x-show="modal.draftWidget.type !== 'stat'">Y축 (지표, 다중 선택 가능)</span>
+                        </label>
+                        <div class="mt-1 flex flex-wrap gap-2">
+                            <template x-for="col in (modal.queryResult?.columnNames || [])" :key="col">
+                                <label class="flex items-center gap-1 text-xs cursor-pointer">
+                                    <input type="checkbox"
+                                           :value="col"
+                                           :checked="modal.draftWidget.visualization.yAxis.includes(col)"
+                                           @change="toggleYAxis(col)"/>
+                                    <span x-text="col"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- 옵션 -->
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox"
+                                   id="showLegend"
+                                   x-model="modal.draftWidget.visualization.showLegend"/>
+                            <label for="showLegend" class="form-label font-normal cursor-pointer">범례 표시</label>
+                        </div>
+                        <div class="flex items-center gap-2"
+                             x-show="['bar','line'].includes(modal.draftWidget.type)">
+                            <input type="checkbox"
+                                   id="stacked"
+                                   x-model="modal.draftWidget.visualization.stacked"/>
+                            <label for="stacked" class="form-label font-normal cursor-pointer">누적 차트</label>
+                        </div>
+                    </div>
+
+                    <!-- ECharts 미리보기 -->
+                    <div x-show="modal.draftWidget.type !== 'stat' && modal.draftWidget.type !== 'table'">
+                        <label class="form-label mb-2">미리보기</label>
+                        <div id="modal-chart-preview"
+                             class="w-full h-48 border border-divider rounded-docu-btn bg-white"></div>
+                    </div>
+
+                    <!-- 에러 -->
+                    <div x-show="modal.error"
+                         class="text-sm text-docu-danger bg-docu-danger-light rounded-docu-btn px-3 py-2"
+                         x-text="modal.error"></div>
+                </div>
+
+                <!-- 모달 푸터 -->
+                <div class="flex items-center justify-between px-6 py-4 border-t border-divider bg-surface-point">
+                    <div>
+                        <button class="btn-secondary btn-sm"
+                                x-show="modal.step === 2"
+                                @click="modal.step = 1; modal.error = null">
+                            ← 이전
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-secondary btn-sm" @click="closeModal()">취소</button>
+
+                        <!-- Step 1: 미리보기 실행 -->
+                        <button class="btn-primary btn-sm"
+                                x-show="modal.step === 1"
+                                :disabled="modal.isPreviewLoading"
+                                @click="previewQuery()">
+                            <span x-show="!modal.isPreviewLoading">데이터 미리보기 →</span>
+                            <span x-show="modal.isPreviewLoading">조회 중...</span>
+                        </button>
+
+                        <!-- Step 2: 위젯 추가 -->
+                        <button class="btn-primary btn-sm"
+                                x-show="modal.step === 2"
+                                @click="confirmWidget()">
+                            위젯 추가
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 새 뷰 생성 모달 ─────────────────────────────────────────────── -->
+        <div x-show="createViewModal.open"
+             class="fixed inset-0 z-50 flex items-center justify-center p-4"
+             style="display:none;">
+            <div class="absolute inset-0 bg-black/40" @click="createViewModal.open = false"></div>
+            <div class="relative bg-white rounded-docu-modal shadow-docu-modal w-full max-w-md p-6">
+                <h2 class="text-h2 text-docu-ink mb-4">새 대시보드 뷰 만들기</h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="form-label">뷰 이름 <span class="text-docu-danger">*</span></label>
+                        <input type="text"
+                               class="form-input mt-1"
+                               placeholder="예: 메인 대시보드"
+                               x-model="createViewModal.name"/>
+                    </div>
+                    <div>
+                        <label class="form-label">설명</label>
+                        <textarea class="form-textarea mt-1"
+                                  rows="2"
+                                  placeholder="선택 사항"
+                                  x-model="createViewModal.description"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-6">
+                    <button class="btn-secondary btn-sm"
+                            @click="createViewModal.open = false">취소</button>
+                    <button class="btn-primary btn-sm"
+                            @click="submitCreateView()"
+                            :disabled="!createViewModal.name.trim()">생성</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/js/dashboard/ChartRenderer.js"></script>
+    <script src="/js/dashboard/Dashboard.js"></script>
+
+</th:block>
+</body>
+</html>
