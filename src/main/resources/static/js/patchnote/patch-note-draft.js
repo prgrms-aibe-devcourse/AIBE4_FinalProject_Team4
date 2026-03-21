@@ -23,6 +23,9 @@ let isOverwriteMode = false;
 // 스트리밍 타이프라이터 애니메이션
 let typewriterDisplayed = 0;  // 현재 화면에 표시된 글자 수
 let typewriterAnimId = null;  // requestAnimationFrame ID
+let typewriterTimer = null;   // setTimeout ID
+let firstTokenReceived = false; // 첫 token 수신 여부 (오버레이 숨기기 트리거)
+let isDone = false;             // done 이벤트 수신 여부 (타이핑 완료 후 finalizeDraft 트리거)
 
 // 완료 시 markdown 페이드 애니메이션용
 let finalRenderAnimated = false;
@@ -106,6 +109,13 @@ const markdownRenderer = (() => {
     function enhanceHtml(root) {
         if (!root) return;
 
+        root.querySelectorAll('h1').forEach(el =>
+            el.classList.add('mt-7', 'mb-3', 'text-xl', 'font-extrabold', 'text-docu-ink'));
+        root.querySelectorAll('h2').forEach(el =>
+            el.classList.add('mt-6', 'mb-3', 'text-lg', 'font-bold', 'text-docu-ink'));
+        root.querySelectorAll('h3').forEach(el =>
+            el.classList.add('mt-5', 'mb-2', 'text-base', 'font-semibold', 'text-docu-ink'));
+
         root.querySelectorAll('a').forEach(a => {
             a.setAttribute('target', '_blank');
             a.setAttribute('rel', 'noopener noreferrer nofollow');
@@ -143,7 +153,7 @@ const markdownRenderer = (() => {
         root.querySelectorAll('sup[data-ref]').forEach(el => {
             el.classList.add(
                 'citation-badge',
-                'align-super',
+                'align-middle',
                 'ml-1'
             );
         });
@@ -335,8 +345,6 @@ function handleProgress(data) {
     } else if (step === 'GENERATING') {
         updateOverlay('AI 초안 생성 중...', 'LLM이 패치노트를 작성하고 있습니다.', 70);
         setStepActive(2);
-        hideOverlay();
-        showStreamCursor(true);
     }
 }
 
@@ -347,47 +355,84 @@ function handleSources(data) {
 }
 
 function handleToken(data) {
-    const content = data.content ?? '';
-    rawContent += content;
-    scheduleTypewriter();
+    // token 이벤트는 LLM이 생성하는 구조화 JSON 원문을 포함한다.
+    // 이를 그대로 타이핑하면 JSON이 화면에 출력되므로 표시하지 않는다.
+    // done 이벤트의 cleanedContent(렌더링된 마크다운)를 받은 뒤 타이핑을 시작한다.
+
+    if (!firstTokenReceived) {
+        firstTokenReceived = true;
+        hideOverlay();
+        updateStreamingBadge(true);
+        showGeneratingPlaceholder();
+    }
 }
 
-// 타이프라이터: 스트리밍 중 plain text를 글자 단위로 점진적 노출
+function showGeneratingPlaceholder() {
+    const el = document.getElementById('draftContent');
+    if (el) {
+        el.innerHTML = '<p id="generatingPlaceholder" class="text-sm text-docu-tertiary animate-pulse py-6 text-center">패치노트를 작성하고 있어요...</p>';
+    }
+}
+
+function hideGeneratingPlaceholder() {
+    const el = document.getElementById('generatingPlaceholder');
+    if (el) el.remove();
+}
+
 function scheduleTypewriter() {
-    if (typewriterAnimId !== null) return;
+    if (typewriterAnimId !== null || typewriterTimer !== null) return;
     typewriterAnimId = requestAnimationFrame(runTypewriter);
 }
 
 function runTypewriter() {
     typewriterAnimId = null;
+
     const plainText = stripSourceTags(rawContent);
     const target = plainText.length;
-    if (typewriterDisplayed >= target) return;
 
-    // 누적된 글자가 많을수록 더 빠르게 따라잡기
-    const gap = target - typewriterDisplayed;
-    const step = Math.max(1, Math.min(gap, Math.ceil(gap / 4)));
+    // 타이핑 완료 — done 이벤트가 도착했으면 마크다운 최종 렌더링
+    if (typewriterDisplayed >= target) {
+        if (isDone) finalizeDraft();
+        return;
+    }
+
+    const nextChar = plainText[typewriterDisplayed];
+    let step = 2;
+
+    // 문장부호/줄바꿈/공백은 천천히
+    if (nextChar === '\n' || nextChar === '.' || nextChar === '!' || nextChar === '?') {
+        step = 1;
+    } else if (nextChar === ' ') {
+        step = 1;
+    }
+
     typewriterDisplayed = Math.min(target, typewriterDisplayed + step);
 
     const draftContentEl = document.getElementById('draftContent');
     if (draftContentEl) {
-        draftContentEl.textContent = plainText.slice(0, typewriterDisplayed);
+        const visibleText = plainText.slice(0, typewriterDisplayed);
+        draftContentEl.innerHTML = renderStreamingText(visibleText);
+        attachStreamingCursor(draftContentEl);
     }
 
     if (typewriterDisplayed < target) {
-        typewriterAnimId = requestAnimationFrame(runTypewriter);
+        const delay =
+            (nextChar === '\n' || nextChar === '.' || nextChar === '!' || nextChar === '?')
+                ? 40
+                : 16;
+
+        typewriterTimer = setTimeout(() => {
+            typewriterTimer = null;
+            typewriterAnimId = requestAnimationFrame(runTypewriter);
+        }, delay);
+    } else if (isDone) {
+        // 마지막 글자를 타이핑한 반복에서 target 도달 — 다음 호출 없으므로 여기서 직접 마무리
+        finalizeDraft();
     }
 }
 
 function handleDone(data) {
-    // 타이프라이터 중단
-    if (typewriterAnimId !== null) {
-        cancelAnimationFrame(typewriterAnimId);
-        typewriterAnimId = null;
-    }
-    typewriterDisplayed = 0;
-
-    cleanedContent = data.cleanedContent ?? rawContent;
+    cleanedContent = data.cleanedContent ?? '';
     sourceRefs = data.sourceRefs ?? [];
 
     // 실제 사용된 ref 기준으로 sourceList 재구성 (정확한 인덱스·링크 보장)
@@ -398,11 +443,34 @@ function handleDone(data) {
         renderSourcePanel();
     }
 
+    // "작성 중..." 플레이스홀더 제거
+    hideGeneratingPlaceholder();
+
+    if (!cleanedContent) {
+        // 렌더링된 콘텐츠가 없으면 바로 마무리
+        finalizeDraft();
+        return;
+    }
+
+    // token 이벤트는 무시했으므로 rawContent를 cleanedContent로 교체한다.
+    // runTypewriter()는 stripSourceTags(rawContent)를 타이핑하므로,
+    // 이 시점부터 cleanedContent의 평문이 타이핑된다.
+    rawContent = cleanedContent;
+    typewriterDisplayed = 0;
+    isDone = true; // 타이핑 완료 시 finalizeDraft() 호출 신호
+
+    scheduleTypewriter();
+}
+
+// 타이핑 완료 후 마크다운 확정 렌더링 + UI 마무리
+function finalizeDraft() {
+    isDone = false;
+
+    hideOverlay();
     updateWordCount(stripSourceTags(cleanedContent));
     renderFinalContent(cleanedContent);
 
     generationComplete = true;
-    showStreamCursor(false);
     updateStreamingBadge(false);
     enableActionButtons();
     setGeneratedAt(new Date());
@@ -410,6 +478,7 @@ function handleDone(data) {
 }
 
 function handleError(data) {
+    hideOverlay();
     const message = data.message ?? '초안 생성 중 오류가 발생했습니다.';
 
     if (message.includes('이미 존재하는 버전')) {
@@ -521,12 +590,17 @@ function retryGeneration() {
     generationComplete = false;
     activeHighlightRef = null;
     finalRenderAnimated = false;
+    firstTokenReceived = false;
+    isDone = false;
 
-    // 타이프라이터 상태 초기화
     typewriterDisplayed = 0;
     if (typewriterAnimId !== null) {
         cancelAnimationFrame(typewriterAnimId);
         typewriterAnimId = null;
+    }
+    if (typewriterTimer !== null) {
+        clearTimeout(typewriterTimer);
+        typewriterTimer = null;
     }
 
     const draftContentEl = document.getElementById('draftContent');
@@ -590,6 +664,80 @@ function renderMarkdownToElement(el, text, sources = []) {
         node.setAttribute('tabindex', '0');
         node.setAttribute('role', 'button');
     });
+}
+
+function renderStreamingText(text) {
+    const escaped = escapeHtml(text ?? '');
+
+    // 빈 줄 기준으로 문단 분리
+    const paragraphs = escaped.split(/\n{2,}/);
+
+    return paragraphs
+        .map(paragraph => {
+            const lines = paragraph.split('\n');
+
+            const renderedLines = lines.map(line => {
+                const trimmed = line.trim();
+
+                if (!trimmed) {
+                    return '';
+                }
+
+                // ### heading
+                if (trimmed.startsWith('### ')) {
+                    const content = trimmed.slice(4);
+                    return `<h3 class="mt-5 mb-2 text-base font-semibold text-docu-ink">${inlineMarkdown(content)}</h3>`;
+                }
+
+                // ## heading
+                if (trimmed.startsWith('## ')) {
+                    const content = trimmed.slice(3);
+                    return `<h2 class="mt-6 mb-3 text-lg font-bold text-docu-ink">${inlineMarkdown(content)}</h2>`;
+                }
+
+                // # heading
+                if (trimmed.startsWith('# ')) {
+                    const content = trimmed.slice(2);
+                    return `<h1 class="mt-7 mb-3 text-xl font-extrabold text-docu-ink">${inlineMarkdown(content)}</h1>`;
+                }
+
+                // 일반 줄
+                return `<span>${inlineMarkdown(trimmed)}</span>`;
+            });
+
+            // 문단 안에 헤더만 있는 경우는 p로 감싸지 않음
+            const onlyBlockTags = renderedLines.every(line =>
+                line === '' || /^<h[1-3]\b/.test(line)
+            );
+
+            if (onlyBlockTags) {
+                return renderedLines.join('');
+            }
+
+            return `<p class="mb-4 last:mb-0 text-docu-secondary leading-7">${renderedLines.join('<br>')}</p>`;
+        })
+        .join('');
+}
+
+function inlineMarkdown(text) {
+    return (text ?? '')
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-docu-ink">$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+}
+
+function attachStreamingCursor(container) {
+    container.querySelectorAll('.typing-cursor').forEach(el => el.remove());
+
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor inline-block w-[2px] h-[1em] ml-[2px] align-[-2px] bg-docu-primary animate-pulse';
+    cursor.setAttribute('aria-hidden', 'true');
+
+    const lastParagraph = container.querySelector('p:last-of-type');
+    if (lastParagraph) {
+        lastParagraph.appendChild(cursor);
+    } else {
+        container.appendChild(cursor);
+    }
 }
 
 function renderFinalContent(text) {
@@ -729,7 +877,7 @@ function renderSourcePanel() {
         row.className = 'flex items-start gap-3';
 
         const numBadge = document.createElement('span');
-        numBadge.className = 'flex-shrink-0 inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full border border-docu-primary/15 bg-gradient-to-b from-docu-primary/10 to-docu-primary/5 text-docu-primary text-[11px] font-semibold shadow-sm mt-0.5';
+        numBadge.className = 'flex-shrink-0 text-docu-primary text-[11px] font-bold mt-0.5';
         numBadge.textContent = `[${source.index}]`;
         row.appendChild(numBadge);
 
@@ -792,14 +940,17 @@ function highlightSource(ref) {
 
 function buildSourceTypeBadge(type) {
     const span = document.createElement('span');
-    span.className = 'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium';
+    span.className = 'badge-base';
 
-    if (type === 'ISSUE') {
-        span.classList.add('bg-orange-100', 'text-orange-700');
+    if (type === 'DOCUMENT') {
+        span.classList.add('bg-docu-primary-light', 'text-docu-primary-dark', 'border-docu-primary');
+        span.textContent = '문서';
+    } else if (type === 'ISSUE') {
+        span.classList.add('bg-docu-warning-light', 'text-docu-warning-dark', 'border-docu-warning');
         span.textContent = '이슈';
     } else {
-        span.classList.add('bg-indigo-100', 'text-indigo-700');
-        span.textContent = '문서';
+        span.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-300');
+        span.textContent = type ?? '-';
     }
 
     return span;
@@ -807,29 +958,27 @@ function buildSourceTypeBadge(type) {
 
 function buildPatchTypeBadge(patchType) {
     const span = document.createElement('span');
-    span.className = 'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium';
+    span.className = 'badge-base';
 
     const config = {
-        NEW:         { cls: ['bg-emerald-100', 'text-emerald-700'], label: '신규' },
-        CHANGE:      { cls: ['bg-blue-100', 'text-blue-700'], label: '변경' },
-        FIX:         { cls: ['bg-red-100', 'text-red-700'], label: '수정' },
-        MAINTENANCE: { cls: ['bg-slate-100', 'text-slate-600'], label: '유지보수' },
+        NEW:         { cls: ['bg-docu-success-light', 'text-docu-success-dark', 'border-docu-success'],   label: '신규' },
+        CHANGE:      { cls: ['bg-docu-primary-light', 'text-docu-primary-dark', 'border-docu-primary'],   label: '변경' },
+        FIX:         { cls: ['bg-docu-danger-light',  'text-docu-danger',       'border-docu-danger'],    label: '수정' },
+        MAINTENANCE: { cls: ['bg-gray-100',           'text-gray-600',          'border-gray-300'],       label: '유지보수' },
     }[patchType];
 
     if (config) {
         span.classList.add(...config.cls);
         span.textContent = config.label;
+    } else {
+        span.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-300');
+        span.textContent = patchType ?? '-';
     }
 
     return span;
 }
 
 // ── UI 헬퍼 ──────────────────────────────────────────────────────────
-
-function showStreamCursor(visible) {
-    const cursor = document.getElementById('streamCursor');
-    if (cursor) cursor.classList.toggle('hidden', !visible);
-}
 
 function updateStreamingBadge(isStreaming) {
     const badge = document.getElementById('streamingBadge');

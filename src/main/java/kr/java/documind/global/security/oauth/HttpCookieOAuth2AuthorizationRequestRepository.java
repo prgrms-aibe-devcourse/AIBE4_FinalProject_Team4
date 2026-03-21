@@ -104,11 +104,12 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
         boolean secure = jwtProperties.isCookieSecure();
         cookieUtil.deleteCookie(response, REQUEST_ID_COOKIE, secure);
-        cookieUtil.deleteCookie(response, REDIRECT_AFTER_LOGIN_COOKIE, secure);
+        // redirect_after_login은 onAuthenticationSuccess()에서 읽은 뒤 삭제하므로 여기서 제거하지 않음
 
         return stored;
     }
 
+    /** 성공 핸들러 전용: OAuth2 상태 쿠키와 리다이렉트 쿠키를 모두 삭제한다. 로그인이 완료된 후에만 호출해야 한다. */
     public void removeAuthorizationRequestCookies(
             HttpServletRequest request, HttpServletResponse response) {
 
@@ -119,6 +120,19 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
         boolean secure = jwtProperties.isCookieSecure();
         cookieUtil.deleteCookie(response, REQUEST_ID_COOKIE, secure);
         cookieUtil.deleteCookie(response, REDIRECT_AFTER_LOGIN_COOKIE, secure);
+    }
+
+    /**
+     * 실패 핸들러 전용: OAuth2 상태 쿠키만 삭제하고 redirect_after_login은 보존한다. 초대 플로우에서 재시도 시 리다이렉트 목적지를 유지하기 위해
+     * 사용한다.
+     */
+    public void removeOAuth2StateOnly(HttpServletRequest request, HttpServletResponse response) {
+
+        cookieUtil
+                .getCookieValue(request, REQUEST_ID_COOKIE)
+                .ifPresent(redisTokenService::deleteOAuth2State);
+
+        cookieUtil.deleteCookie(response, REQUEST_ID_COOKIE, jwtProperties.isCookieSecure());
     }
 
     private String toJson(OAuth2AuthorizationRequest req) {

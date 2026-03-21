@@ -1,19 +1,16 @@
 package kr.java.documind.domain.patchnote.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import kr.java.documind.domain.chatbot.infrastructure.ChatModelResolver;
 import kr.java.documind.domain.chatbot.model.vo.ResolvedChatModel;
+import kr.java.documind.domain.patchnote.infrastructure.PatchNoteSseConverter;
 import kr.java.documind.domain.patchnote.model.dto.DraftResult;
 import kr.java.documind.domain.patchnote.model.dto.DraftStreamRequest;
 import kr.java.documind.domain.patchnote.model.dto.PatchNoteDraftResponse;
@@ -22,20 +19,25 @@ import kr.java.documind.domain.patchnote.model.entity.PendingItem;
 import kr.java.documind.domain.patchnote.model.enums.PendingItemStatus;
 import kr.java.documind.domain.patchnote.model.repository.PatchNoteRepository;
 import kr.java.documind.domain.patchnote.model.repository.PendingItemRepository;
+import kr.java.documind.domain.patchnote.util.PatchNoteOutputParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter.SseEventBuilder;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PatchNoteDraftService {
 
-    private static final long SSE_TIMEOUT_MS = 5 * 60 * 1_000L;
+    /** LLM 스트리밍 최대 대기 시간. GitHub Models 등 응답이 느린 API 대응. */
+    private static final Duration LLM_STREAM_TIMEOUT = Duration.ofMinutes(5);
 
+    /** 프로젝트당 동시 초안 생성 방지 락. */
     private final Set<UUID> activeGenerations =
             Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -48,14 +50,15 @@ public class PatchNoteDraftService {
     private final PatchNoteRefValidator refValidator;
     private final PatchNoteRenderer renderer;
     private final ChatModelResolver chatModelResolver;
-    private final ObjectMapper objectMapper;
+    private final PatchNoteSseConverter sseConverter;
 
-    /** AsyncConfig에서 {@code @Bean("taskExecutor")}로 노출된 커스텀 스레드 풀. */
-    private final Executor taskExecutor;
-
-    public SseEmitter streamDraft(UUID projectId, DraftStreamRequest request) {
-
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+    /**
+     * 패치노트 초안을 SSE 스트리밍으로 생성한다.
+     *
+     * <p>모든 예외는 {@code onErrorResume}으로 흡수해 {@code error} 이벤트로 변환한다. 전역 {@code
+     * GlobalApiExceptionHandler}가 {@code text/event-stream} 응답에 JSON을 쓰는 상황이 발생하지 않는다.
+     */
+    public Flux<ServerSentEvent<String>> streamDraft(UUID projectId, DraftStreamRequest request) {
 
         // ── 버전 중복 확인 (overwrite 모드에서는 스킵) ─────────────────────────
         if (!request.overwrite()
@@ -64,201 +67,154 @@ public class PatchNoteDraftService {
                         request.majorVersion(),
                         request.minorVersion(),
                         request.patchVersion())) {
-
-            sendError(
-                    emitter,
-                    "이미 존재하는 버전입니다. v%d.%d.%d"
-                            .formatted(
-                                    request.majorVersion(),
-                                    request.minorVersion(),
-                                    request.patchVersion()));
-            return emitter;
+            return Flux.just(
+                    sseConverter.errorEvent(
+                            "이미 존재하는 버전입니다. v%d.%d.%d"
+                                    .formatted(
+                                            request.majorVersion(),
+                                            request.minorVersion(),
+                                            request.patchVersion())));
         }
 
         // ── PENDING 항목 조회 ──────────────────────────────────────────────────
         List<PendingItem> items =
                 pendingItemRepository.findByProjectIdAndStatus(
                         projectId, PendingItemStatus.PENDING);
-
         if (items.isEmpty()) {
-            sendError(emitter, "패치노트에 포함할 대기 중인 항목이 없습니다.");
-            return emitter;
+            return Flux.just(sseConverter.errorEvent("패치노트에 포함할 대기 중인 항목이 없습니다."));
         }
 
         // ── 동시 생성 락 ───────────────────────────────────────────────────────
         if (!activeGenerations.add(projectId)) {
-            sendError(emitter, "현재 다른 사용자가 초안을 생성 중입니다. 잠시 후 다시 시도해주세요.");
-            return emitter;
+            return Flux.just(sseConverter.errorEvent("현재 다른 사용자가 초안을 생성 중입니다. 잠시 후 다시 시도해주세요."));
         }
 
-        AtomicBoolean aborted = new AtomicBoolean(false);
-        emitter.onCompletion(() -> aborted.set(true));
-        emitter.onTimeout(() -> aborted.set(true));
-        emitter.onError(e -> aborted.set(true));
-
-        // AsyncConfig에 등록된 커스텀 ThreadPoolTaskExecutor 사용 (ForkJoinPool 사용 금지)
-        try {
-            CompletableFuture.runAsync(
-                    () -> generateDraft(emitter, projectId, items, request, aborted), taskExecutor);
-        } catch (Exception e) {
-            activeGenerations.remove(projectId);
-            sendError(emitter, "초안 생성을 시작할 수 없습니다: " + e.getMessage());
-            completeQuietly(emitter);
-        }
-
-        return emitter;
+        return buildPipelineFlux(projectId, items, request)
+                .doFinally(signal -> activeGenerations.remove(projectId))
+                .onErrorResume(
+                        e -> {
+                            log.error("패치노트 초안 생성 실패 — projectId={}", projectId, e);
+                            return Flux.just(
+                                    sseConverter.errorEvent(
+                                            "초안 생성 중 오류가 발생했습니다: " + e.getMessage()));
+                        });
     }
 
-    private void generateDraft(
-            SseEmitter emitter,
-            UUID projectId,
-            List<PendingItem> items,
-            DraftStreamRequest request,
-            AtomicBoolean aborted) {
+    /**
+     * RAG 컨텍스트 빌드 → LLM 스트리밍 → 후처리 → done 이벤트를 하나의 Flux로 연결한다.
+     *
+     * <p>{@code Flux.create}로 명령형 로직과 반응형 LLM 스트리밍을 브리징한다. {@code
+     * subscribeOn(Schedulers.boundedElastic())}으로 블로킹 작업(RAG, blockLast)을 HTTP 요청 스레드가 아닌 전용 스레드에서
+     * 실행한다.
+     */
+    private Flux<ServerSentEvent<String>> buildPipelineFlux(
+            UUID projectId, List<PendingItem> items, DraftStreamRequest request) {
 
-        try {
-            if (aborted.get()) return;
+        return Flux.<ServerSentEvent<String>>create(
+                        sink -> {
+                            try {
+                                // ── Step 1–2. RAG 컨텍스트 빌드 ─────────────────
+                                sink.next(sseConverter.progressEvent("BUILDING_CONTEXT"));
+                                RagContext ragContext =
+                                        patchNoteRagService.buildContext(projectId, items);
 
-            // ── Step 1–2. RAG 컨텍스트 빌드 ──────────────────────────────────
-            sendProgress(emitter, "BUILDING_CONTEXT");
+                                if (!ragContext.sourceRefs().isEmpty()) {
+                                    sink.next(sseConverter.sourcesEvent(ragContext.sourceRefs()));
+                                }
 
-            RagContext ragContext = patchNoteRagService.buildContext(projectId, items);
+                                // ── Step 3. 컨텍스트 오버플로우 처리 ────────────
+                                if (ragContext.tokenEstimation().exceeded()) {
+                                    int beforePercent =
+                                            (int)
+                                                    Math.round(
+                                                            ragContext
+                                                                            .tokenEstimation()
+                                                                            .usageRatio()
+                                                                    * 100);
+                                    ragContext = evidenceReducer.reduce(ragContext);
+                                    int afterPercent =
+                                            (int)
+                                                    Math.round(
+                                                            ragContext
+                                                                            .tokenEstimation()
+                                                                            .usageRatio()
+                                                                    * 100);
+                                    log.info(
+                                            "컨텍스트 감소 완료 — projectId={}, 감소 전: {}%, 감소 후: {}%",
+                                            projectId, beforePercent, afterPercent);
+                                    sink.next(
+                                            sseConverter.contextOverflowEvent(
+                                                    beforePercent, afterPercent));
+                                }
 
-            if (aborted.get()) return;
+                                // ── Step 4. 프롬프트 빌드 ───────────────────────
+                                String systemPrompt =
+                                        patchNotePromptService.buildSystemPrompt(ragContext);
+                                String userPrompt =
+                                        patchNotePromptService.buildUserPrompt(
+                                                request.majorVersion(),
+                                                request.minorVersion(),
+                                                request.patchVersion(),
+                                                request.additionalPrompt());
 
-            if (!ragContext.sourceRefs().isEmpty()) {
-                sendSources(emitter, ragContext.sourceRefs());
-            }
+                                ResolvedChatModel resolvedModel =
+                                        chatModelResolver.resolveForPatchNote(request.modelAlias());
 
-            // ── Step 3. 컨텍스트 오버플로우 처리 — 실제 증거 축소 ────────────
-            if (ragContext.tokenEstimation().exceeded()) {
-                int beforePercent =
-                        (int) Math.round(ragContext.tokenEstimation().usageRatio() * 100);
-                ragContext = evidenceReducer.reduce(ragContext);
-                int afterPercent =
-                        (int) Math.round(ragContext.tokenEstimation().usageRatio() * 100);
+                                sink.next(sseConverter.progressEvent("GENERATING"));
 
-                log.info(
-                        "컨텍스트 감소 완료 — projectId={}, 감소 전: {}%, 감소 후: {}%",
-                        projectId, beforePercent, afterPercent);
+                                // ── Step 5. LLM 스트리밍 호출 ──────────────────
+                                // boundedElastic 스레드에서 blockLast() 블로킹 허용.
+                                // doOnNext는 LLM HTTP 응답 스레드에서 실행되며,
+                                // FluxSink는 스레드 안전하므로 sink.next() 호출이 안전하다.
+                                final List<String> parts = new ArrayList<>();
+                                final RagContext finalRagContext = ragContext;
 
-                // 실제 감소가 완료된 후에 이벤트 전송
-                sendContextOverflow(emitter, beforePercent, afterPercent);
-            }
+                                ChatClient.create(resolvedModel.chatModel())
+                                        .prompt()
+                                        .system(systemPrompt)
+                                        .user(userPrompt)
+                                        .options(resolvedModel.chatOptions())
+                                        .stream()
+                                        .chatClientResponse()
+                                        .doOnNext(
+                                                response -> {
+                                                    String text = extractText(response);
+                                                    if (text != null && !text.isEmpty()) {
+                                                        parts.add(text);
+                                                        sink.next(sseConverter.tokenEvent(text));
+                                                    }
+                                                })
+                                        .blockLast(LLM_STREAM_TIMEOUT);
 
-            // ── Step 4. 프롬프트 빌드 ─────────────────────────────────────────
-            String systemPrompt = patchNotePromptService.buildSystemPrompt(ragContext);
-            String userPrompt =
-                    patchNotePromptService.buildUserPrompt(
-                            request.majorVersion(),
-                            request.minorVersion(),
-                            request.patchVersion(),
-                            request.additionalPrompt());
+                                // ── Step 6. JSON 파싱 (fail-safe) ───────────────
+                                PatchNoteDraftResponse parsed =
+                                        outputParser.parse(String.join("", parts));
 
-            ResolvedChatModel resolvedModel =
-                    chatModelResolver.resolveForPatchNote(request.modelAlias());
+                                // ── Step 7. 소스 REF 검증 (환각 REF 제거) ───────
+                                PatchNoteDraftResponse validated =
+                                        refValidator.validate(parsed, finalRagContext);
 
-            if (aborted.get()) return;
+                                // ── Step 8. 서버 사이드 렌더링 ──────────────────
+                                DraftResult result = renderer.render(validated);
 
-            // ── Step 5. LLM 단일 호출 (구조화 JSON 수신) ─────────────────────
-            sendProgress(emitter, "GENERATING");
+                                // ── Step 9. 완료 전송 ────────────────────────────
+                                sink.next(sseConverter.doneEvent(result));
+                                sink.complete();
 
-            String rawOutput =
-                    ChatClient.create(resolvedModel.chatModel())
-                            .prompt()
-                            .system(systemPrompt)
-                            .user(userPrompt)
-                            .options(resolvedModel.chatOptions())
-                            .call()
-                            .content();
-
-            if (aborted.get()) return;
-
-            // ── Step 6. JSON 파싱 (fail-safe) ─────────────────────────────────
-            PatchNoteDraftResponse parsed = outputParser.parse(rawOutput);
-
-            // ── Step 7. 소스 REF 검증 (환각 REF 제거) ────────────────────────
-            PatchNoteDraftResponse validated = refValidator.validate(parsed, ragContext);
-
-            // ── Step 8. 서버 사이드 렌더링 ────────────────────────────────────
-            DraftResult result = renderer.render(validated);
-
-            // ── Step 9. 완료 전송 ─────────────────────────────────────────────
-            sendDone(emitter, result);
-            completeQuietly(emitter);
-
-        } catch (Exception e) {
-            log.error("패치노트 초안 생성 실패 — projectId={}", projectId, e);
-            if (!aborted.get()) {
-                sendError(emitter, "초안 생성 중 오류가 발생했습니다: " + e.getMessage());
-            }
-        } finally {
-            // 정상/비정상 종료 모두에서 락 해제
-            activeGenerations.remove(projectId);
-        }
+                            } catch (Exception e) {
+                                sink.error(e);
+                            }
+                        })
+                // 블로킹 RAG 작업과 blockLast()를 boundedElastic 스레드에서 실행
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
-    private void sendProgress(SseEmitter emitter, String step) {
-        send(emitter, SseEmitter.event().name("progress").data(toJson(Map.of("step", step))));
-    }
-
-    private void sendSources(SseEmitter emitter, List<String> refs) {
-        send(emitter, SseEmitter.event().name("sources").data(toJson(Map.of("refs", refs))));
-    }
-
-    private void sendContextOverflow(SseEmitter emitter, int beforePercent, int afterPercent) {
-        send(
-                emitter,
-                SseEmitter.event()
-                        .name("context_overflow")
-                        .data(
-                                toJson(
-                                        Map.of(
-                                                "beforePercent", beforePercent,
-                                                "afterPercent", afterPercent,
-                                                "recommendedPercent", 100))));
-    }
-
-    private void sendDone(SseEmitter emitter, DraftResult result) {
-        send(
-                emitter,
-                SseEmitter.event()
-                        .name("done")
-                        .data(
-                                toJson(
-                                        Map.of(
-                                                "cleanedContent", result.cleanedContent(),
-                                                "sourceRefs", result.sourceRefs()))));
-    }
-
-    private void sendError(SseEmitter emitter, String message) {
-        send(emitter, SseEmitter.event().name("error").data(toJson(Map.of("message", message))));
-        completeQuietly(emitter);
-    }
-
-    private void send(SseEmitter emitter, SseEventBuilder event) {
-        try {
-            emitter.send(event);
-        } catch (IOException e) {
-            // 클라이언트 연결 끊김 시 정상적인 상황
-            log.debug("SSE 전송 실패 (클라이언트 연결 끊김): {}", e.getMessage());
-        }
-    }
-
-    private void completeQuietly(SseEmitter emitter) {
-        try {
-            emitter.complete();
-        } catch (Exception e) {
-            log.debug("SseEmitter.complete() 호출 중 예외 (클라이언트 연결 끊김으로 무시)", e);
-        }
-    }
-
-    private String toJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            log.warn("SSE 이벤트 JSON 직렬화 실패", e);
-            return "{}";
-        }
+    private String extractText(ChatClientResponse response) {
+        return Optional.ofNullable(response.chatResponse())
+                .map(r -> r.getResult())
+                .map(r -> r.getOutput())
+                .map(r -> r.getText())
+                .filter(text -> !text.isEmpty())
+                .orElse(null);
     }
 }

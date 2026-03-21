@@ -60,6 +60,8 @@ public class PatchNoteReranker {
     private static final double BONUS_PLAYER = 0.15;
     private static final double BONUS_ACTION = 0.10;
     private static final double BONUS_DELTA = 0.10;
+    private static final double PENALTY_NOT_PLAYER = 0.35;
+    private static final double MIN_KEEP_SCORE = 0.18;
 
     private static final double PENALTY_ROLE_PENALIZED = 0.30;
     private static final double PENALTY_SUPPORT = 0.15;
@@ -109,29 +111,35 @@ public class PatchNoteReranker {
             Set.of("internal", "private", "note", "memo", "draft_internal");
 
     public List<VectorChunkResult> rerank(List<VectorChunkResult> chunks) {
-        return chunks.stream().sorted(Comparator.comparingDouble(this::score).reversed()).toList();
+        return chunks.stream()
+                .map(chunk -> new ScoredChunk(chunk, score(chunk)))
+                .sorted(Comparator.comparingDouble(ScoredChunk::score).reversed())
+                .filter(sc -> sc.score() >= MIN_KEEP_SCORE)
+                .map(ScoredChunk::chunk)
+                .toList();
     }
+
+    private record ScoredChunk(VectorChunkResult chunk, double score) {}
 
     double score(VectorChunkResult chunk) {
         double s = 0.0;
 
-        // 기본 점수 (벡터 유사도 + RRF)
         s += W_SIMILARITY * clamp01(chunk.similarity());
         s += W_RRF * clamp01(chunk.rrfScore() / RRF_NORMALIZER);
 
-        // 역할 보너스
         s += roleBonus(chunk.chunkRole());
 
-        // 메타데이터 신호 보너스
         if (chunk.hasNumericChange()) s += BONUS_NUMERIC;
-        if (chunk.affectsPlayer()) s += BONUS_PLAYER;
+        if (chunk.affectsPlayer()) {
+            s += BONUS_PLAYER;
+        } else {
+            s -= PENALTY_NOT_PLAYER;
+        }
 
-        // 컨텐츠 토큰 보너스
         String content = chunk.content() != null ? chunk.content() : "";
         if (containsAny(content, ACTION_TOKENS)) s += BONUS_ACTION;
         if (containsAny(content, DELTA_TOKENS)) s += BONUS_DELTA;
 
-        // 역할 페널티
         if (chunk.chunkRole() != null && PENALIZED_ROLES.contains(chunk.chunkRole())) {
             s -= PENALTY_ROLE_PENALIZED;
         }
@@ -139,7 +147,6 @@ public class PatchNoteReranker {
             s -= PENALTY_INTERNAL;
         }
 
-        // 컨텐츠 토큰 페널티
         if (containsAny(content, SUPPORT_TOKENS)) s -= PENALTY_SUPPORT;
 
         return clamp01(s);

@@ -59,6 +59,10 @@ spring:
     # OpenAI API
     openai:
       api-key: ${OPENAI_API_KEY}
+      # 패치노트 생성 등 장시간 LLM 호출 대응: 연결 10초, 읽기 1분
+      http:
+        connect-timeout: PT10S
+        read-timeout: PT1M
       embedding:
         options:
           model: text-embedding-3-large

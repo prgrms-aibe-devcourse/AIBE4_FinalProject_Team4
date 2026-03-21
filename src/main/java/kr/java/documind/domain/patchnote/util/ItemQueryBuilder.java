@@ -1,12 +1,14 @@
-package kr.java.documind.domain.patchnote.service;
+package kr.java.documind.domain.patchnote.util;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import kr.java.documind.domain.archive.vector.infrastructure.EmbeddingModelClient;
 import kr.java.documind.domain.patchnote.model.dto.ItemQuery;
 import kr.java.documind.domain.patchnote.model.entity.PendingItem;
+import kr.java.documind.domain.patchnote.service.PatchNoteRagService;
 import kr.java.documind.global.enums.SourceType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -135,6 +137,87 @@ public class ItemQueryBuilder {
                     "기존");
 
     private final EmbeddingModelClient embeddingModelClient;
+
+    /**
+     * 그룹별 대표 {@link ItemQuery}를 배치로 생성한다.
+     *
+     * <p>{@link PatchNoteRagService}의 그룹화 결과를 받아, 각 그룹의 모든 vector 항목(evidence=null인 항목)
+     * title+summary를 공백으로 합산한 텍스트를 임베딩한다. 임베딩은 전체 그룹에 대해 한 번의 배치 호출로 처리하여 LLM API 비용을 최소화한다.
+     *
+     * <p>{@link ItemQuery#sourceId()}는 그룹 내 첫 번째 항목의 sourceId를 사용한다 — 그룹 내 모든 항목이 동일한 sourceId를
+     * 공유하므로 안전하다.
+     *
+     * @param vectorGroups 그룹별 vector 항목 목록 (evidence=null인 항목만 포함, PatchNoteRagService가 분리)
+     * @return 그룹별 {@link ItemQuery} 목록 (인덱스 순서 보장)
+     */
+    public List<ItemQuery> buildForGroups(List<List<PendingItem>> vectorGroups) {
+        if (vectorGroups.isEmpty()) {
+            return List.of();
+        }
+
+        // 그룹별 합산 텍스트 생성 — 배치 임베딩 입력
+        List<String> embeddingTexts =
+                vectorGroups.stream()
+                        .map(
+                                groupItems ->
+                                        groupItems.stream()
+                                                .map(
+                                                        item -> {
+                                                            String t =
+                                                                    item.getTitle() != null
+                                                                            ? item.getTitle()
+                                                                            : "";
+                                                            String s =
+                                                                    item.getSummary() != null
+                                                                            ? item.getSummary()
+                                                                            : "";
+                                                            return (t + " " + s).trim();
+                                                        })
+                                                .filter(text -> !text.isBlank())
+                                                .collect(Collectors.joining(" ")))
+                        .toList();
+
+        List<float[]> embeddings = batchEmbed(embeddingTexts);
+
+        List<ItemQuery> queries = new ArrayList<>(vectorGroups.size());
+        for (int i = 0; i < vectorGroups.size(); i++) {
+            List<PendingItem> groupItems = vectorGroups.get(i);
+            PendingItem representative = groupItems.get(0); // sourceId 추출용 (그룹 내 동일)
+            String combinedText = embeddingTexts.get(i);
+            float[] embedding =
+                    (embeddings != null && i < embeddings.size()) ? embeddings.get(i) : null;
+
+            List<String> tokens = extractTokens(combinedText);
+            String keyword = tokens.isEmpty() ? null : String.join(" ", tokens);
+            String tsquery = tokens.isEmpty() ? null : String.join(" | ", tokens);
+
+            // itemRef는 로깅용 — 그룹 대표 REF (첫 번째 항목 기반, changeIndex 미포함)
+            String ref = buildGroupRef(representative);
+
+            queries.add(
+                    new ItemQuery(
+                            representative.getSourceId(),
+                            ref,
+                            keyword,
+                            tokens,
+                            tsquery,
+                            embedding));
+        }
+
+        log.debug(
+                "그룹별 ItemQuery 빌드 완료 — groupCount={}, embeddingSuccess={}",
+                vectorGroups.size(),
+                embeddings != null);
+        return queries;
+    }
+
+    /** 그룹 대표 REF 생성 — changeIndex 없는 형식. 로깅 전용. */
+    private String buildGroupRef(PendingItem representative) {
+        if (representative.getSourceType() == SourceType.ISSUE) {
+            return "ISSUE-" + representative.getSourceId();
+        }
+        return "DOC-" + representative.getSourceId();
+    }
 
     public List<ItemQuery> buildAll(List<PendingItem> items) {
         if (items.isEmpty()) {

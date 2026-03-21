@@ -2,12 +2,13 @@ package kr.java.documind.domain.patchnote.model.dto;
 
 import java.util.List;
 import kr.java.documind.domain.patchnote.model.repository.HybridVectorSearchRepositoryCustom;
+import kr.java.documind.domain.patchnote.util.ItemQueryBuilder;
 
 /**
  * 단일 PendingItem에 대한 벡터/키워드 검색 쿼리 아티팩트.
  *
- * <p>{@link kr.java.documind.domain.patchnote.service.ItemQueryBuilder}가 PendingItem 하나에서 생성하며,
- * {@link HybridVectorSearchRepositoryCustom}의 항목별 검색 API에 전달된다.
+ * <p>{@link ItemQueryBuilder}가 PendingItem 하나에서 생성하며, {@link HybridVectorSearchRepositoryCustom}의
+ * 항목별 검색 API에 전달된다.
  *
  * <p>이전의 모든 항목 요약을 하나로 합치던 방식과 달리, 항목 단위로 독립적인 쿼리를 보유하여 노이즈를 최소화하고 검색 정확도를 높인다.
  *

@@ -1,4 +1,4 @@
-package kr.java.documind.domain.patchnote.service;
+package kr.java.documind.domain.patchnote.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
