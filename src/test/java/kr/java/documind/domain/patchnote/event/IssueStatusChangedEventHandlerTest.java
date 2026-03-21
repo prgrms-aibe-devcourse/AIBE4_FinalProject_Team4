@@ -275,7 +275,8 @@ class IssueStatusChangedEventHandlerTest {
 
             // Then
             PatchNoteNotificationEvent published = captureCreatedEvent();
-            assertThat(published.eventType()).isEqualTo(NotificationEventType.PATCHNOTE_ISSUE_GENERATED);
+            assertThat(published.eventType())
+                    .isEqualTo(NotificationEventType.PATCHNOTE_ISSUE_GENERATED);
         }
 
         @Test
@@ -291,7 +292,8 @@ class IssueStatusChangedEventHandlerTest {
 
             // Then
             PatchNoteNotificationEvent published = captureCreatedEvent();
-            assertThat(published.eventType()).isEqualTo(NotificationEventType.PATCHNOTE_ISSUE_GENERATED);
+            assertThat(published.eventType())
+                    .isEqualTo(NotificationEventType.PATCHNOTE_ISSUE_GENERATED);
         }
 
         @Test

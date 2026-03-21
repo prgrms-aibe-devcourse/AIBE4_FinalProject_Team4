@@ -15,7 +15,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
-
 import kr.java.documind.domain.archive.document.event.DocumentEmbeddedEvent;
 import kr.java.documind.domain.archive.vector.model.repository.VectorStoreRepository;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
@@ -280,7 +279,8 @@ class DocumentEmbeddedEventListenerTest {
 
             // Then
             PatchNoteNotificationEvent published = captureCreatedEvent();
-            assertThat(published.eventType()).isEqualTo(NotificationEventType.PATCHNOTE_DOC_GENERATED);
+            assertThat(published.eventType())
+                    .isEqualTo(NotificationEventType.PATCHNOTE_DOC_GENERATED);
         }
     }
 

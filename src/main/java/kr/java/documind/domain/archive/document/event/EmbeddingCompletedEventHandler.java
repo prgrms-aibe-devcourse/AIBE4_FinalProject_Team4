@@ -3,7 +3,6 @@ package kr.java.documind.domain.archive.document.event;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-
 import kr.java.documind.domain.archive.document.infrastructure.DocumentMetadataManager;
 import kr.java.documind.domain.archive.document.model.entity.DocumentGroup;
 import kr.java.documind.domain.archive.document.model.entity.DocumentMetadata;

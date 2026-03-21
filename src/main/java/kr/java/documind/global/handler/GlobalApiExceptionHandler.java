@@ -140,8 +140,8 @@ public class GlobalApiExceptionHandler {
     }
 
     /**
-     * SSE 연결 타임아웃 — Content-Type: text/event-stream 상태에서 JSON 응답 쓰기 불가.
-     * 클라이언트가 재연결하는 정상 흐름이므로 응답 본문 없이 종료한다.
+     * SSE 연결 타임아웃 — Content-Type: text/event-stream 상태에서 JSON 응답 쓰기 불가. 클라이언트가 재연결하는 정상 흐름이므로 응답 본문
+     * 없이 종료한다.
      */
     @ExceptionHandler(AsyncRequestTimeoutException.class)
     public ResponseEntity<Void> handleAsyncRequestTimeout(

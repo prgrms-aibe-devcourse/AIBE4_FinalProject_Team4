@@ -166,7 +166,7 @@ public class IssueStatusChangedEventHandler {
                         NotificationEventType.PATCHNOTE_ISSUE_GENERATED,
                         dto.title(),
                         "이슈가 해결되어 패치노트 항목이 추가되었습니다.",
-                    "/projects/" + event.projectId() + "/patch-note/pending-items",
+                        "/projects/" + event.projectId() + "/patch-note/pending-items",
                         true));
     }
 

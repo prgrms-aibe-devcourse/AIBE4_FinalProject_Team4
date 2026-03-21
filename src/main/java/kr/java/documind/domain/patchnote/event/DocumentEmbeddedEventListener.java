@@ -164,7 +164,7 @@ public class DocumentEmbeddedEventListener {
                         NotificationEventType.PATCHNOTE_DOC_GENERATED,
                         summaryResult.title(),
                         "문서 분석이 완료되어 패치노트 항목이 추가되었습니다.",
-                    "/projects/" + event.projectId() + "/patch-note/pending-items",
+                        "/projects/" + event.projectId() + "/patch-note/pending-items",
                         true));
     }
 
@@ -242,7 +242,7 @@ public class DocumentEmbeddedEventListener {
                             NotificationEventType.PATCHNOTE_DOC_GENERATED,
                             lastTitle,
                             "문서 분석이 완료되어 패치노트 항목이 추가되었습니다.",
-                        "/projects/" + event.projectId() + "/patch-note/pending-items",
+                            "/projects/" + event.projectId() + "/patch-note/pending-items",
                             true));
         }
     }

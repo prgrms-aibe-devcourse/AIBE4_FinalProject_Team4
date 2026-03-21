@@ -53,7 +53,8 @@ public class PendingItemQueryService {
         return switch (item.getSourceType()) {
             case DOCUMENT -> "/projects/%s/documents/%d".formatted(publicId, item.getSourceId());
             case ISSUE -> "/projects/%s/issues/%d/analysis".formatted(publicId, item.getSourceId());
-            case LOG -> throw new IllegalArgumentException("지원하지 않는 SourceType 입니다: " + item.getSourceType());
+            case LOG -> throw new IllegalArgumentException(
+                    "지원하지 않는 SourceType 입니다: " + item.getSourceType());
         };
     }
 }
