@@ -41,7 +41,7 @@
                         <span class="block mt-2">하세요</span>
                     </h1>
 
-                    <p class="text-base md:text-lg leading-relaxed text-docu-secondary max-w-2xl mb-8">
+                    <p class="text-base md:text-lg leading-relaxed text-docu-ink max-w-2xl mb-8">
                         DocuMind는 게임 개발 문서와 실시간 로그를 하나로 연결해
                         이슈를 자동 그룹핑하고, 해결 내역을 패치노트 초안까지 이어주는
                         게임사 전용 All-in-One LiveOps 플랫폼입니다.
@@ -87,13 +87,23 @@
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                            <div class="bg-surface-sub min-h-[150px] flex items-center justify-center text-center px-4 text-xs font-bold text-docu-secondary rounded-docu-card border border-divider">
-                                문서 검색 화면 이미지 필요<br/>
-                                (RAG 검색 결과 / 출처 표시 UI)
+                            <div class="bg-surface-card border border-divider shadow-docu-sm rounded-docu-card overflow-hidden">
+                                <div class="px-3 py-2 border-b border-divider">
+                                    <div class="text-xs font-bold uppercase tracking-wide text-docu-secondary">▷ RAG CHATBOT</div>
+                                </div>
+                                <img th:src="@{/images/chatbot-screen.png}"
+                                     src="/images/chatbot-screen.png"
+                                     alt="RAG 기반 문서 검색 및 AI 챗봇 화면"
+                                     class="w-full object-cover object-top min-h-[130px]">
                             </div>
-                            <div class="bg-surface-sub min-h-[150px] flex items-center justify-center text-center px-4 text-xs font-bold text-docu-secondary rounded-docu-card border border-divider">
-                                로그 대시보드 이미지 필요<br/>
-                                (차트 / 에러 레벨 / 실시간 지표 UI)
+                            <div class="bg-surface-card border border-divider shadow-docu-sm rounded-docu-card overflow-hidden">
+                                <div class="px-3 py-2 border-b border-divider">
+                                    <div class="text-xs font-bold uppercase tracking-wide text-docu-secondary">▷ LOG DASHBOARD</div>
+                                </div>
+                                <div class="bg-surface-sub min-h-[130px] flex items-center justify-center text-center px-4 text-xs font-bold text-docu-secondary">
+                                    로그 대시보드 이미지 필요<br/>
+                                    (차트 / 에러 레벨 / 실시간 지표 UI)
+                                </div>
                             </div>
                         </div>
 
@@ -123,7 +133,7 @@
                                     ▷ PATCH NOTE DRAFT
                                 </div>
                                 <p class="text-xs text-docu-secondary leading-relaxed mb-2">v1.2.0 긴급 패치</p>
-                                <div class="text-sm leading-relaxed font-medium text-docu-ink space-y-1">
+                                <div class="text-xs leading-relaxed font-medium text-docu-ink space-y-1">
                                     <p>- 로그인 진입 시 발생하던 크래시를 수정했습니다.</p>
                                     <p>- 로비 메모리 사용량을 최적화했습니다.</p>
                                     <p>- 일부 튜토리얼 문구를 최신 기획 기준으로 업데이트했습니다.</p>
@@ -147,7 +157,7 @@
             <div class="mb-10">
                 <p class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">▶ PAIN POINTS</p>
                 <h2 id="pain-points-title" class="text-h1 md:text-display text-docu-ink mb-3">게임 운영에서 반복되는 비효율</h2>
-                <p class="text-sm md:text-base text-docu-secondary max-w-3xl leading-relaxed">
+                <p class="text-sm md:text-base text-docu-ink max-w-3xl leading-relaxed">
                     문서, 로그, 이슈, 공지 작성이 각각 따로 관리되면 원인 파악도 늦어지고 운영 비용도 커집니다.<br/>
                     <span class="font-semibold text-docu-ink">DocuMind는</span> 이 분절된 흐름을 하나의 LiveOps 파이프라인으로 묶습니다.
                 </p>
@@ -157,7 +167,7 @@
                 <div class="bg-surface-sub border border-divider shadow-docu-card p-6 rounded-docu-card h-full flex flex-col">
                     <div class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">01</div>
                     <h3 class="text-h2 text-docu-ink mb-3 min-h-[3.5rem]">문서가 흩어져 있어 답을 찾기 어렵습니다</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         기획서, API 명세서, 운영 문서가 제각각 관리되어 필요한 정보를 찾는 데 시간이 오래 걸립니다.
                     </p>
                 </div>
@@ -165,7 +175,7 @@
                 <div class="bg-surface-sub border border-divider shadow-docu-card p-6 rounded-docu-card h-full flex flex-col">
                     <div class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">02</div>
                     <h3 class="text-h2 text-docu-ink mb-3 min-h-[3.5rem]">로그는 쌓이는데 원인 파악은 느립니다</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         크래시, 성능 저하, 세션 정보가 분산되어 있어 실제 원인을 찾기까지 많은 수작업이 필요합니다.
                     </p>
                 </div>
@@ -173,7 +183,7 @@
                 <div class="bg-surface-sub border border-divider shadow-docu-card p-6 rounded-docu-card h-full flex flex-col">
                     <div class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">03</div>
                     <h3 class="text-h2 text-docu-ink mb-3 min-h-[3.5rem]">유사 이슈가 반복 등록됩니다</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         같은 유형의 에러가 여러 건으로 흩어져 관리되면 대응 우선순위 판단과 협업 효율이 떨어집니다.
                     </p>
                 </div>
@@ -181,7 +191,7 @@
                 <div class="bg-surface-sub border border-divider shadow-docu-card p-6 rounded-docu-card h-full flex flex-col">
                     <div class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">04</div>
                     <h3 class="text-h2 text-docu-ink mb-3 min-h-[3.5rem]">패치노트 작성이 릴리즈 직전 병목이 됩니다</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         해결된 이슈와 변경 문서를 다시 정리해 공지 문구를 만드는 작업이 마지막까지 운영팀 부담으로 남습니다.
                     </p>
                 </div>
@@ -195,7 +205,7 @@
             <div class="text-center mb-12">
                 <p class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">▶ LIVEOPS PIPELINE</p>
                 <h2 id="pipeline-title" class="text-h1 md:text-display text-docu-ink mb-3">분리된 작업을 하나의 운영 흐름으로</h2>
-                <p class="text-sm md:text-base text-docu-secondary max-w-3xl mx-auto">
+                <p class="text-sm md:text-base text-docu-ink max-w-3xl mx-auto">
                     DocuMind는 문서 관리, 로그 수집, 이슈 추적, 패치노트 작성까지 이어지는 전체 워크플로우를 끊김 없이 연결합니다.
                 </p>
             </div>
@@ -206,7 +216,7 @@
                     <div class="pl-3">
                         <div class="text-xs font-bold uppercase tracking-wide text-docu-secondary mb-3">STEP 01</div>
                         <h3 class="text-h2 text-docu-ink mb-3">문서 업로드 & 지식 검색</h3>
-                        <p class="text-sm text-docu-secondary leading-relaxed">
+                        <p class="text-sm text-docu-ink leading-relaxed">
                             기획서, API 명세서, 운영 문서를 업로드하면 AI가 문서 내용을 기반으로 답변합니다.
                         </p>
                     </div>
@@ -217,7 +227,7 @@
                     <div class="pl-3">
                         <div class="text-xs font-bold uppercase tracking-wide text-docu-secondary mb-3">STEP 02</div>
                         <h3 class="text-h2 text-docu-ink mb-3">실시간 로그 수집 & 탐색</h3>
-                        <p class="text-sm text-docu-secondary leading-relaxed">
+                        <p class="text-sm text-docu-ink leading-relaxed">
                             게임 클라이언트 로그와 성능 지표를 안정적으로 수집하고 필터와 메트릭으로 빠르게 탐색합니다.
                         </p>
                     </div>
@@ -228,7 +238,7 @@
                     <div class="pl-3">
                         <div class="text-xs font-bold uppercase tracking-wide text-docu-secondary mb-3">STEP 03</div>
                         <h3 class="text-h2 text-docu-ink mb-3">이슈 그룹핑 & 협업 관리</h3>
-                        <p class="text-sm text-docu-secondary leading-relaxed">
+                        <p class="text-sm text-docu-ink leading-relaxed">
                             유사 에러를 자동으로 묶고 심각도를 판정해 상태 변경, 담당자 지정, 코멘트 협업까지 이어집니다.
                         </p>
                     </div>
@@ -239,7 +249,7 @@
                     <div class="pl-3">
                         <div class="text-xs font-bold uppercase tracking-wide text-docu-secondary mb-3">STEP 04</div>
                         <h3 class="text-h2 text-docu-ink mb-3">패치노트 초안 자동 생성</h3>
-                        <p class="text-sm text-docu-secondary leading-relaxed">
+                        <p class="text-sm text-docu-ink leading-relaxed">
                             해결된 이슈와 최신 문서 변경점을 모아 AI가 유저 친화적인 패치노트 초안을 자동으로 작성합니다.
                         </p>
                     </div>
@@ -254,7 +264,7 @@
             <div class="mb-12">
                 <p class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">▶ CORE FEATURES</p>
                 <h2 id="features-title" class="text-h1 md:text-display text-docu-ink mb-3">게임 개발 조직을 위한 4가지 핵심 모듈</h2>
-                <p class="text-sm md:text-base text-docu-secondary max-w-3xl">
+                <p class="text-sm md:text-base text-docu-ink max-w-3xl">
                     단일 기능이 아니라, 실제 개발과 운영에서 이어지는 업무 흐름을 기준으로 핵심 기능을 구성했습니다.
                 </p>
             </div>
@@ -272,12 +282,12 @@
                         <div>
                             <p class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-2">▷ KNOWLEDGE SEARCH</p>
                             <h3 class="text-h1 text-docu-ink mb-3">RAG 기반 문서 지식 검색</h3>
-                            <p class="text-sm text-docu-secondary leading-relaxed mb-4">
+                            <p class="text-sm text-docu-ink leading-relaxed mb-4">
                                 게임 기획서, API 명세서, 운영 문서를 업로드하면 AI가 문맥 기반으로 답변하고,
                                 참조한 문서를 함께 제시해 빠르고 신뢰도 높은 지식 검색을 지원합니다.
                             </p>
                             <div class="flex flex-wrap gap-2">
-                                <span class="px-2.5 py-1 text-xs font-semibold bg-surface-card text-docu-secondary shadow-docu-sm rounded-docu-btn">PDF / PNG / JPG</span>
+                                <span class="px-2.5 py-1 text-xs font-semibold bg-surface-card text-docu-secondary shadow-docu-sm rounded-docu-btn">PDF</span>
                                 <span class="px-2.5 py-1 text-xs font-semibold bg-surface-card text-docu-secondary shadow-docu-sm rounded-docu-btn">출처 추적</span>
                                 <span class="px-2.5 py-1 text-xs font-semibold bg-surface-card text-docu-secondary shadow-docu-sm rounded-docu-btn">카테고리 / 그룹</span>
                                 <span class="px-2.5 py-1 text-xs font-semibold bg-surface-card text-docu-secondary shadow-docu-sm rounded-docu-btn">문서 버전 관리</span>
@@ -297,7 +307,7 @@
                         <div>
                             <p class="text-xs font-bold uppercase tracking-wide text-docu-success mb-2">▷ LOG INGESTION</p>
                             <h3 class="text-h1 text-docu-ink mb-3">실시간 로그 수집 및 탐색</h3>
-                            <p class="text-sm text-docu-secondary leading-relaxed mb-4">
+                            <p class="text-sm text-docu-ink leading-relaxed mb-4">
                                 게임 클라이언트 로그를 API Key 기반으로 수집하고, 세션 정보, 성능 지표,
                                 OS 및 기기 정보, 스택트레이스, 커스텀 필드를 구조적으로 저장해 빠르게 분석할 수 있습니다.
                             </p>
@@ -322,7 +332,7 @@
                         <div>
                             <p class="text-xs font-bold uppercase tracking-wide text-docu-warning-dark mb-2">▷ ISSUE TRACKING</p>
                             <h3 class="text-h1 text-docu-ink mb-3">인텔리전트 이슈 트래킹</h3>
-                            <p class="text-sm text-docu-secondary leading-relaxed mb-4">
+                            <p class="text-sm text-docu-ink leading-relaxed mb-4">
                                 Sentry Fingerprinting 방식에서 착안한 자동 그룹핑으로 유사 에러를 하나의 이슈로 묶고,
                                 심각도 판정과 상태 관리, 담당자 지정, 타임라인 추적까지 지원합니다.
                             </p>
@@ -347,7 +357,7 @@
                         <div>
                             <p class="text-xs font-bold uppercase tracking-wide text-docu-danger mb-2">▷ PATCH NOTE AI</p>
                             <h3 class="text-h1 text-docu-ink mb-3">AI 패치노트 초안 생성</h3>
-                            <p class="text-sm text-docu-secondary leading-relaxed mb-4">
+                            <p class="text-sm text-docu-ink leading-relaxed mb-4">
                                 해결된 이슈와 신규 문서, 버전 업데이트 내역을 자동 수집해
                                 FIX, CHANGE, NEW 등으로 분류하고 실시간 스트리밍 기반 패치노트 초안을 생성합니다.
                             </p>
@@ -371,7 +381,7 @@
             <div class="mb-12">
                 <p class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">▶ TEAM VALUE</p>
                 <h2 id="team-value-title" class="text-h1 md:text-display text-docu-ink mb-3">팀마다 다른 업무를 하나의 플랫폼으로</h2>
-                <p class="text-sm md:text-base text-docu-secondary max-w-3xl">
+                <p class="text-sm md:text-base text-docu-ink max-w-3xl">
                     기획, 개발, QA, 운영이 같은 데이터를 보면서 더 빠르게 판단하고 협업할 수 있도록 구성했습니다.
                 </p>
             </div>
@@ -381,7 +391,7 @@
                     <div class="inline-flex items-center px-3 py-1 mb-4 text-xs font-bold uppercase tracking-wide bg-docu-primary-light text-docu-ink rounded-docu-btn">
                         ▶ PM / 기획
                     </div>
-                    <ul class="space-y-3 text-sm text-docu-secondary leading-relaxed">
+                    <ul class="space-y-3 text-sm text-docu-ink leading-relaxed">
                         <li>최신 기획서와 변경 문서를 자연어로 빠르게 검색</li>
                         <li>문서 기반 답변과 출처를 함께 확인</li>
                         <li>릴리즈 전 변경 사항과 패치노트 초안 검수 시간 단축</li>
@@ -392,7 +402,7 @@
                     <div class="inline-flex items-center px-3 py-1 mb-4 text-xs font-bold uppercase tracking-wide bg-docu-success-light text-docu-ink rounded-docu-btn">
                         ▶ DEV / 개발
                     </div>
-                    <ul class="space-y-3 text-sm text-docu-secondary leading-relaxed">
+                    <ul class="space-y-3 text-sm text-docu-ink leading-relaxed">
                         <li>세션, 환경 정보, 스택트레이스를 함께 보며 빠른 원인 분석</li>
                         <li>유사 이슈 그룹을 기준으로 우선순위 판단</li>
                         <li>해결된 이슈를 문서와 연결해 지식 자산화</li>
@@ -403,7 +413,7 @@
                     <div class="inline-flex items-center px-3 py-1 mb-4 text-xs font-bold uppercase tracking-wide bg-docu-warning-light text-docu-ink rounded-docu-btn">
                         ▶ QA / 운영
                     </div>
-                    <ul class="space-y-3 text-sm text-docu-secondary leading-relaxed">
+                    <ul class="space-y-3 text-sm text-docu-ink leading-relaxed">
                         <li>실시간 대시보드와 필터 기반 로그 탐색으로 이상 징후 감지</li>
                         <li>심각도 높은 이슈를 빠르게 파악하고 담당자 협업 진행</li>
                         <li>릴리즈 공지와 업데이트 피드 정리를 더 빠르게 수행</li>
@@ -419,7 +429,7 @@
             <div class="mb-12">
                 <p class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">▶ TRUST & SECURITY</p>
                 <h2 id="security-title" class="text-h1 md:text-display text-docu-ink mb-3">엔터프라이즈 환경을 고려한 설계</h2>
-                <p class="text-sm md:text-base text-docu-secondary max-w-3xl">
+                <p class="text-sm md:text-base text-docu-ink max-w-3xl">
                     보안, 권한 체계, 멀티테넌트 운영, AI 모델 유연성까지 실제 서비스 환경을 고려해 설계했습니다.
                 </p>
             </div>
@@ -427,21 +437,21 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-surface-sub border border-divider shadow-docu-card p-6 rounded-docu-card">
                     <h3 class="text-h2 text-docu-ink mb-3">프로젝트별 데이터 격리</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         회사와 프로젝트 단위로 데이터를 분리해 다른 프로젝트의 문서와 로그에 접근할 수 없도록 설계했습니다.
                     </p>
                 </div>
 
                 <div class="bg-surface-sub border border-divider shadow-docu-card p-6 rounded-docu-card">
                     <h3 class="text-h2 text-docu-ink mb-3">역할 기반 권한 관리</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         CEO / Employee, Manager / Member 구조를 바탕으로 프로젝트 관리와 실무 기능 접근 권한을 구분합니다.
                     </p>
                 </div>
 
                 <div class="bg-surface-sub border border-divider shadow-docu-card p-6 rounded-docu-card">
                     <h3 class="text-h2 text-docu-ink mb-3">유연한 AI 운영 아키텍처</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         Spring AI 기반 구조로 Public AI에서 내부 LLM 환경으로 전환할 때도 비즈니스 로직 변경을 최소화할 수 있습니다.
                     </p>
                 </div>
@@ -469,7 +479,7 @@
             <div class="mb-12">
                 <p class="text-xs font-bold uppercase tracking-wide text-docu-primary mb-3">▶ EXPECTED BENEFITS</p>
                 <h2 id="benefits-title" class="text-h1 md:text-display text-docu-ink mb-3">도입 후 기대할 수 있는 변화</h2>
-                <p class="text-sm md:text-base text-docu-secondary max-w-3xl">
+                <p class="text-sm md:text-base text-docu-ink max-w-3xl">
                     문서 탐색부터 이슈 대응, 공지 작성까지 반복되던 수작업을 줄여 개발과 운영의 속도를 함께 높입니다.
                 </p>
             </div>
@@ -478,7 +488,7 @@
                 <div class="bg-surface-card border border-divider shadow-docu-card p-6 rounded-docu-card">
                     <div class="text-2xl font-extrabold text-docu-primary mb-2">01</div>
                     <h3 class="text-h2 text-docu-ink mb-3">문서 탐색 시간 단축</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         자연어 기반 검색으로 필요한 문서와 근거를 빠르게 확인할 수 있습니다.
                     </p>
                 </div>
@@ -486,7 +496,7 @@
                 <div class="bg-surface-card border border-divider shadow-docu-card p-6 rounded-docu-card">
                     <div class="text-2xl font-extrabold text-docu-success mb-2">02</div>
                     <h3 class="text-h2 text-docu-ink mb-3">이슈 대응 속도 향상</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         로그 수집부터 그룹핑, 원인 파악, 담당자 협업까지의 흐름을 단축합니다.
                     </p>
                 </div>
@@ -494,7 +504,7 @@
                 <div class="bg-surface-card border border-divider shadow-docu-card p-6 rounded-docu-card">
                     <div class="text-2xl font-extrabold text-docu-warning-dark mb-2">03</div>
                     <h3 class="text-h2 text-docu-ink mb-3">중복 이슈 감소</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         유사 에러 자동 그룹핑으로 반복되는 이슈 관리 비용을 줄일 수 있습니다.
                     </p>
                 </div>
@@ -502,7 +512,7 @@
                 <div class="bg-surface-card border border-divider shadow-docu-card p-6 rounded-docu-card">
                     <div class="text-2xl font-extrabold text-docu-danger mb-2">04</div>
                     <h3 class="text-h2 text-docu-ink mb-3">패치노트 작성 부담 완화</h3>
-                    <p class="text-sm text-docu-secondary leading-relaxed">
+                    <p class="text-sm text-docu-ink leading-relaxed">
                         해결된 이슈와 문서 변경점을 기반으로 초안을 자동 생성해 릴리즈 커뮤니케이션을 효율화합니다.
                     </p>
                 </div>

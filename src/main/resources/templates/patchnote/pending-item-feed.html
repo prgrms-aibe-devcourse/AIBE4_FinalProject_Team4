@@ -126,12 +126,11 @@
                         <div class="col-span-1 text-right">작업</div>
                     </div>
 
-                    <!-- 로딩 스켈레톤 -->
+                    <!-- 로딩 스피너 -->
                     <div id="feedLoading" class="py-16 text-center text-docu-secondary text-sm">
-                        <svg class="w-6 h-6 mx-auto mb-2 animate-spin text-docu-primary" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                        </svg>
+                        <div class="flex justify-center mb-3">
+                            <div th:replace="~{common/fragments/ui-components :: spinner('lg')}"></div>
+                        </div>
                         <p>불러오는 중...</p>
                     </div>
 
@@ -476,10 +475,9 @@
             <!-- 탐색기 목록 -->
             <div class="flex-1 overflow-y-auto">
                 <div id="explorerLoading" class="py-12 text-center text-docu-secondary text-sm">
-                    <svg class="w-5 h-5 mx-auto mb-2 animate-spin text-docu-primary" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                    </svg>
+                    <div class="flex justify-center mb-3">
+                        <div th:replace="~{common/fragments/ui-components :: spinner('')}"></div>
+                    </div>
                     <p>불러오는 중...</p>
                 </div>
                 <div id="explorerList" class="hidden divide-y divide-divider"></div>

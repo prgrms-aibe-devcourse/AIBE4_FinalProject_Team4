@@ -16,10 +16,10 @@
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon"/>
     <link rel="apple-touch-icon" href="/images/favicon.png"/>
 
-<!--    <meta property="og:title" content="Documind" />-->
-<!--    <meta property="og:description" content="Documind는 프로젝트 문서, 이슈, 패치노트, 로그, 알림을 통합 관리하는 협업 플랫폼입니다." />-->
-<!--    <meta property="og:image" content="/images/og-image.png" />-->
-<!--    <meta property="og:url" content="http://localhost:8080" />-->
+    <meta property="og:title" content="Documind" />
+    <meta property="og:description" content="Documind는 프로젝트 문서, 이슈, 패치노트, 로그, 알림을 통합 관리하는 협업 플랫폼입니다." />
+    <meta property="og:image" content="/images/og-image.png" />
+    <meta property="og:url" content="http://localhost:8080" />
 
     <title th:text="${title} + ' | Documind'">Documind</title>
 </th:block>
@@ -240,7 +240,7 @@
             }
 
             .form-textarea {
-                @apply w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-base text-sm text-docu-ink placeholder-gray-400 resize-none transition-colors focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20;
+                @apply w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-input text-sm text-docu-ink placeholder-gray-400 resize-none transition-colors focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20;
             }
 
             .form-textarea-error {
@@ -248,7 +248,7 @@
             }
 
             .form-select {
-                @apply w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-base text-sm text-docu-ink transition-colors focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20;
+                @apply w-full px-3 py-2 border border-divider rounded-docu-btn bg-surface-input text-sm text-docu-ink transition-colors focus:outline-none focus:border-docu-primary focus:ring-2 focus:ring-docu-primary/20;
             }
 
             .form-select-error {
@@ -338,7 +338,7 @@
             }
 
             .card-modal {
-                @apply bg-surface-card border border-divider rounded-docu-modal shadow-docu-modal;
+                @apply bg-surface-card border border-divider rounded-docu-modal shadow-docu-modal overflow-hidden;
             }
 
             .panel-base {

@@ -162,9 +162,9 @@
                                 </div>
                             </div>
 
-                            <!-- 입사일 -->
+                            <!-- 가입일 -->
                             <p class="text-xs text-docu-secondary pt-1 border-t border-divider">
-                                입사일: <span th:if="${profile?.joinedAt() != null}" th:text="${profile.joinedAt()}" class="font-mono text-docu-ink ml-1">2021.05.12</span>
+                                가입일: <span th:if="${profile?.joinedAt() != null}" th:text="${profile.joinedAt()}" class="font-mono text-docu-ink ml-1">2021.05.12</span>
                                 <span th:unless="${profile?.joinedAt() != null}">-</span>
                             </p>
                         </div>
