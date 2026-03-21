@@ -26,7 +26,9 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
             AuthenticationException exception)
             throws IOException {
 
-        authRequestRepository.removeAuthorizationRequestCookies(request, response);
+        // OAuth2 상태 쿠키만 삭제하고 redirect_after_login은 보존한다.
+        // 초대 플로우에서 email_conflict 등으로 재시도할 때 리다이렉트 목적지를 유지해야 한다.
+        authRequestRepository.removeOAuth2StateOnly(request, response);
         log.warn(
                 "[OAuth2FailureHandler] OAuth2 로그인 실패: reason={} ip={}",
                 exception.getMessage(),

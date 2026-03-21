@@ -1,6 +1,7 @@
 package kr.java.documind.domain.patchnote.service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -165,7 +166,7 @@ public class PatchNoteDraftService {
                                 // boundedElastic 스레드에서 blockLast() 블로킹 허용.
                                 // doOnNext는 LLM HTTP 응답 스레드에서 실행되며,
                                 // FluxSink는 스레드 안전하므로 sink.next() 호출이 안전하다.
-                                final StringBuilder rawOutput = new StringBuilder();
+                                final List<String> parts = new ArrayList<>();
                                 final RagContext finalRagContext = ragContext;
 
                                 ChatClient.create(resolvedModel.chatModel())
@@ -179,7 +180,7 @@ public class PatchNoteDraftService {
                                                 response -> {
                                                     String text = extractText(response);
                                                     if (text != null && !text.isEmpty()) {
-                                                        rawOutput.append(text);
+                                                        parts.add(text);
                                                         sink.next(sseConverter.tokenEvent(text));
                                                     }
                                                 })
@@ -187,7 +188,7 @@ public class PatchNoteDraftService {
 
                                 // ── Step 6. JSON 파싱 (fail-safe) ───────────────
                                 PatchNoteDraftResponse parsed =
-                                        outputParser.parse(rawOutput.toString());
+                                        outputParser.parse(String.join("", parts));
 
                                 // ── Step 7. 소스 REF 검증 (환각 REF 제거) ───────
                                 PatchNoteDraftResponse validated =

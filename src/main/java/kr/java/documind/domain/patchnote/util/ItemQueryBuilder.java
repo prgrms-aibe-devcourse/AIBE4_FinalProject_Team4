@@ -162,10 +162,18 @@ public class ItemQueryBuilder {
                                 groupItems ->
                                         groupItems.stream()
                                                 .map(
-                                                        item ->
-                                                                item.getTitle()
-                                                                        + " "
-                                                                        + item.getSummary())
+                                                        item -> {
+                                                            String t =
+                                                                    item.getTitle() != null
+                                                                            ? item.getTitle()
+                                                                            : "";
+                                                            String s =
+                                                                    item.getSummary() != null
+                                                                            ? item.getSummary()
+                                                                            : "";
+                                                            return (t + " " + s).trim();
+                                                        })
+                                                .filter(text -> !text.isBlank())
                                                 .collect(Collectors.joining(" ")))
                         .toList();
 
