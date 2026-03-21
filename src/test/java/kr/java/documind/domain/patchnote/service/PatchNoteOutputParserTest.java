@@ -11,6 +11,7 @@ import java.util.List;
 import kr.java.documind.domain.patchnote.model.dto.PatchNoteDraftResponse;
 import kr.java.documind.domain.patchnote.model.dto.PatchNoteItemResponse;
 import kr.java.documind.domain.patchnote.model.dto.PatchNoteSectionResponse;
+import kr.java.documind.domain.patchnote.util.PatchNoteOutputParser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

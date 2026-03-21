@@ -1,5 +1,6 @@
 package kr.java.documind.domain.patchnote.service;
 
+import java.util.Comparator;
 import java.util.List;
 import kr.java.documind.domain.patchnote.config.TokenRagProperties;
 import kr.java.documind.domain.patchnote.model.dto.ItemContext;
@@ -18,11 +19,25 @@ public class EvidenceReducer {
     /** 한국어 텍스트 기준 보수적 문자-토큰 비율. */
     private static final int CHARS_PER_TOKEN = 3;
 
+    /**
+     * 토큰 오버플로우 시 제거할 증거 역할 우선순위.
+     *
+     * <p>이전에는 {@code background}와 {@code combined}도 자동 제거 대상에 포함했으나, 실제 운영에서 다음 문제가 관찰되었다:
+     *
+     * <ul>
+     *   <li>{@code background} — 이슈 배경 정보. LLM이 변경 맥락을 이해하는 데 핵심적이며, 제거 시 출력이 단편적이 됨.
+     *   <li>{@code combined} — 배경+해결 병합 청크. 하나의 청크에 맥락과 해결 정보가 함께 담겨 있어 제거 시 정보 손실이 큼.
+     * </ul>
+     *
+     * <p>따라서 자동 제거 대상을 역할 미지정 문서 청크({@code chunk})로만 한정한다. {@code chunk} 제거 후에도 토큰 한도를 초과하면
+     * {@link #limitPerItem}의 항목당 최대 1개 제한으로 진행한다. 이 보수적 전략은 패치노트 내용의 완성도를 우선하고, 컨텍스트 윈도우 초과
+     * 위험은 {@code tokenLimit} 설정으로 제어한다.
+     */
     private static final List<String> DROP_PRIORITY =
             List.of(
-                    "chunk", // 1순위 제거: 역할 미지정 문서 청크
-                    "background", // 2순위 제거: 배경 정보
-                    "combined" // 3순위 제거: 배경+해결 병합 (배경 성분 포함)
+                    "chunk" // 1순위(유일) 제거: 역할 미지정 문서 청크
+                    // background — 이슈 맥락의 핵심. 제거 시 출력 품질 저하로 자동 제거 대상 제외.
+                    // combined   — 맥락+해결 정보 병합 청크. 제거 시 정보 손실 과대로 자동 제거 대상 제외.
                     );
 
     private final TokenRagProperties properties;
@@ -125,21 +140,35 @@ public class EvidenceReducer {
 
     private List<ItemContext> limitPerItem(List<ItemContext> contexts, int maxPerItem) {
         return contexts.stream()
-                .map(
-                        ic -> {
-                            if (ic.evidences().size() <= maxPerItem) {
-                                return ic;
-                            }
-                            List<RagEvidence> limited =
-                                    ic.evidences().stream().limit(maxPerItem).toList();
-                            return new ItemContext(
-                                    ic.ref(),
-                                    ic.patchType(),
-                                    ic.title(),
-                                    ic.summary(),
-                                    limited,
-                                    ic.allowedSourceRefs());
-                        })
-                .toList();
+            .map(ic -> {
+                if (ic.evidences().size() <= maxPerItem) {
+                    return ic;
+                }
+
+                List<RagEvidence> limited =
+                    ic.evidences().stream()
+                        .sorted(
+                            Comparator
+                                // 1순위: 이번 릴리즈 관련
+                                .comparing(RagEvidence::releaseSpecific).reversed()
+                                // 2순위: 유저 체감
+                                .thenComparing(RagEvidence::playerVisible).reversed()
+                                // 3순위: 수치 변경 (밸런스 중요)
+                                .thenComparing(RagEvidence::numericChange).reversed()
+                                // 4순위: 유사도 점수
+                                .thenComparing(RagEvidence::score).reversed()
+                        )
+                        .limit(maxPerItem)
+                        .toList();
+
+                return new ItemContext(
+                    ic.ref(),
+                    ic.patchType(),
+                    ic.title(),
+                    ic.summary(),
+                    limited,
+                    ic.allowedSourceRefs());
+            })
+            .toList();
     }
 }

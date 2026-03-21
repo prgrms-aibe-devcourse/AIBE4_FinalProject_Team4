@@ -64,6 +64,10 @@ spring:
     # OpenAI 호환 API (GitHub Models 경유)
     openai:
       api-key: ${GITHUB_PAT:not-configured}
+      # GitHub Models 응답 지연 대응: 연결 10초, 읽기 5분
+      http:
+        connect-timeout: PT10S
+        read-timeout: PT1M
       chat:
         base-url: https://models.github.ai/inference
         completions-path: /chat/completions

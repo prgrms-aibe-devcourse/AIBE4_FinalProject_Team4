@@ -61,8 +61,7 @@ public class DocumentChangeGenerator {
 
         } catch (Exception e) {
             log.warn(
-                    "[DocumentChangeGenerator] LLM 변경 요약 생성 실패, 기본값 사용 - documentName: {},"
-                            + " changeType: {}",
+                    "[DocumentChangeGenerator] LLM 변경 요약 생성 실패, 기본값 사용 - documentName: {}, changeType: {}",
                     documentName,
                     candidate.changeType(),
                     e);
@@ -84,13 +83,16 @@ public class DocumentChangeGenerator {
             String title = node.path("title").asText("").trim();
             String summary = node.path("summary").asText("").trim();
             String categoryFromLlm = node.path("category").asText("").trim().toUpperCase();
+
+            // 보수적 처리: 명시적으로 true일 때만 true
             boolean affectsPlayer =
-                    !node.has("isUserFacing") || node.path("isUserFacing").asBoolean(true);
+                    node.has("isUserFacing") && node.path("isUserFacing").asBoolean(false);
 
             if (title.isBlank()) title = documentName;
             if (summary.isBlank()) summary = documentName;
-            if (categoryFromLlm.isBlank())
+            if (categoryFromLlm.isBlank()) {
                 categoryFromLlm = (fallbackCategory != null) ? fallbackCategory.toUpperCase() : "";
+            }
 
             return new DocumentSummaryResult(title, summary, categoryFromLlm, affectsPlayer);
 
@@ -115,6 +117,8 @@ public class DocumentChangeGenerator {
                 (changeType != null && !changeType.isBlank())
                         ? changeType + " 변경: " + documentName
                         : documentName;
-        return new DocumentSummaryResult(title, title, safeCategory, true);
+
+        // 보수적 fallback: 플레이어 노출 여부는 false
+        return new DocumentSummaryResult(title, title, safeCategory, false);
     }
 }

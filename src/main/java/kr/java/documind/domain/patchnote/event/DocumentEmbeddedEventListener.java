@@ -156,6 +156,8 @@ public class DocumentEmbeddedEventListener {
                 patchType,
                 status);
 
+
+
         eventPublisher.publishEvent(
                 new PatchNoteNotificationEvent(
                         event.projectId(),

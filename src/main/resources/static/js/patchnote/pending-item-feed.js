@@ -492,9 +492,10 @@ function closeDetailModal() {
 }
 
 function detailExclude() {
-    if (!currentDetailItemId) return;
+    const itemId = currentDetailItemId;
+    if (!itemId) return;
     closeDetailModal();
-    openExcludeModal(currentDetailItemId);
+    openExcludeModal(itemId);
 }
 
 async function detailRestore() {
