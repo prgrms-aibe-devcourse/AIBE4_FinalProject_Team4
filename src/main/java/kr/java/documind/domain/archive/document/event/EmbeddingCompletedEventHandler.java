@@ -36,7 +36,8 @@ public class EmbeddingCompletedEventHandler {
         publishNotification(event, metadata);
 
         if (event.status() == EmbeddingStatus.SUCCESS) {
-            publishDocumentEmbeddedEvent(metadata, event.excludeFromPatchNote(), event.memberId(), event.publicId());
+            publishDocumentEmbeddedEvent(
+                    metadata, event.excludeFromPatchNote(), event.memberId(), event.publicId());
         }
     }
 
@@ -80,7 +81,10 @@ public class EmbeddingCompletedEventHandler {
     }
 
     private void publishDocumentEmbeddedEvent(
-            DocumentMetadata metadata, boolean excludeFromPatchNote, UUID memberId, String publicId) {
+            DocumentMetadata metadata,
+            boolean excludeFromPatchNote,
+            UUID memberId,
+            String publicId) {
         DocumentGroup group = metadata.getDocumentGroup();
         boolean isNewDocument = metadata.getReuploadedAt() == null;
 
