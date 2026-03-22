@@ -16,6 +16,7 @@ import kr.java.documind.global.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ public class IssueGroupingService {
     private final IssueSeverityService issueSeverityService;
     private final ProjectMemberRepository projectMemberRepository;
     private final IssueNotificationService notificationService;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
      * 로그에 대한 이슈를 찾거나 생성
@@ -74,6 +76,10 @@ public class IssueGroupingService {
                                 // 새 이슈 생성
                                 Issue newIssue = createNewIssue(gameLog, fingerprintResult);
                                 issueRepository.save(newIssue);
+                                // 알림 FK 만족을 위해 domain_source(ISSUE) 동일 ID로 삽입
+                                jdbcTemplate.update(
+                                        "INSERT INTO domain_source (id, source_type, created_at, updated_at) VALUES (?, 'ISSUE', NOW(), NOW()) ON CONFLICT (id) DO NOTHING",
+                                        newIssue.getId());
                                 log.debug(
                                         "New issue created. issueId={}, fingerprint={}, quality={}, status={}",
                                         newIssue.getId(),

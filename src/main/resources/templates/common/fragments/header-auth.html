@@ -139,21 +139,29 @@
                         role="menuitem"
                         class="relative flex flex-col gap-2.5 px-4 py-3.5 hover:bg-surface-sub cursor-pointer transition-colors border-b border-divider">
 
-                        <!-- 헤더 영역: [출처 배지 + 이벤트 배지 + 미읽음 점 + 시간] -->
+                        <!-- 헤더 영역: [메인 배지 + 서브 배지 + 미읽음 점 + 시간] -->
                         <div class="flex items-center justify-between pl-1">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <!-- 미읽음 표시 점 -->
                                 <span x-show="!n.isRead"
-                                      class="w-1.5 h-1.5 rounded-full bg-docu-danger"
+                                      class="w-1.5 h-1.5 rounded-full bg-docu-danger flex-shrink-0"
                                       aria-hidden="true"></span>
 
-                                <!-- 소스 타입 배지 -->
-                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-surface-sub text-docu-secondary-dark border border-divider"
-                                      x-text="n.sourceType"></span>
+                                <!-- 메인 타입 배지 (ISSUE/LOG/DOCUMENT/PATCHNOTE) -->
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full"
+                                      :class="{
+                                          'bg-docu-danger text-white':        n.mainType === 'ISSUE',
+                                          'bg-docu-warning-dark text-white':  n.mainType === 'LOG',
+                                          'bg-docu-primary text-white':       n.mainType === 'DOCUMENT',
+                                          'bg-docu-success text-white':       n.mainType === 'PATCHNOTE',
+                                          'bg-surface-sub text-docu-secondary-dark border border-divider': !['ISSUE','LOG','DOCUMENT','PATCHNOTE'].includes(n.mainType)
+                                      }"
+                                      x-text="{ ISSUE: '이슈', LOG: '로그', DOCUMENT: '문서', PATCHNOTE: '패치노트' }[n.mainType] || n.mainType">
+                                </span>
 
-                                <!-- 이벤트 타입 배지 -->
-                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-docu-primary-light text-docu-primary border border-docu-primary-light"
-                                      x-text="n.eventType"></span>
+                                <!-- 서브 타입 배지 (이슈 생성 / 담당자 할당 / ...) -->
+                                <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-surface-sub text-docu-secondary-dark border border-divider"
+                                      x-text="n.subLabel"></span>
                             </div>
 
                             <!-- 시간 정보 -->

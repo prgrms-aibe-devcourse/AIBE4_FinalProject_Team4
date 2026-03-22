@@ -158,6 +158,7 @@ public class IssueStatusChangedEventHandler {
                 event.actorId());
 
         // 성공 이벤트 발행 — 알림 도메인이 구독하여 alarm-toast + 헤더 배지 전달
+        // 이슈 생성 시점에 domain_source(ISSUE) 행이 삽입되므로 FK 만족
         eventPublisher.publishEvent(
                 new PatchNoteNotificationEvent(
                         event.projectId(),
@@ -166,7 +167,7 @@ public class IssueStatusChangedEventHandler {
                         NotificationEventType.PATCHNOTE_ISSUE_GENERATED,
                         dto.title(),
                         "이슈가 해결되어 패치노트 항목이 추가되었습니다.",
-                        "/projects/" + event.projectId() + "/patch-note/pending-items",
+                        "/projects/" + event.publicId() + "/patch-note/pending-items",
                         true));
     }
 

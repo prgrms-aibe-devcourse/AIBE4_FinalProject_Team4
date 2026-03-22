@@ -108,7 +108,8 @@
 
             function createAlarmToast({
                                           title = '알림',
-                                          badgeLabel = '새 알림',
+                                          mainTypeLabel = '',
+                                          subLabel = '',
                                           message = '',
                                           actionLabel = '바로가기 >',
                                           actionHref = '#',
@@ -135,6 +136,21 @@
                     meta.card +
                     ' translate-y-6 opacity-0 transition-all duration-300';
 
+                const mainBadgeHtml = mainTypeLabel
+                    ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${meta.badge}">${escapeHtml(mainTypeLabel)}</span>`
+                    : '';
+
+                const subBadgeHtml = subLabel
+                    ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-sub text-docu-secondary-dark border border-divider">${escapeHtml(subLabel)}</span>`
+                    : '';
+
+                const actionHtml = safeHref && safeHref !== '#'
+                    ? `<a href="${escapeAttribute(safeHref)}"
+                           class="inline-flex items-center gap-1 mt-3 text-xs font-semibold ${meta.action} hover:underline">
+                            ${escapeHtml(actionLabel)}
+                       </a>`
+                    : '';
+
                 toast.innerHTML = `
                     <div class="flex items-start gap-3">
                         <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${meta.iconWrap}">
@@ -144,21 +160,18 @@
                         </div>
 
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <p class="text-sm font-bold ${meta.title}">${escapeHtml(title)}</p>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${meta.badge}">
-                                    ${escapeHtml(badgeLabel)}
-                                </span>
+                            <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
+                                ${mainBadgeHtml}
+                                ${subBadgeHtml}
                             </div>
 
-                            <p class="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2">
+                            <p class="text-sm font-bold ${meta.title} truncate">${escapeHtml(title)}</p>
+
+                            <p class="mt-1 text-xs text-docu-secondary leading-relaxed line-clamp-2">
                                 ${escapeHtml(message)}
                             </p>
 
-                            <a href="${escapeAttribute(safeHref)}"
-                               class="inline-flex items-center gap-1 mt-3 text-xs font-semibold ${meta.action} hover:underline">
-                                ${escapeHtml(actionLabel)}
-                            </a>
+                            ${actionHtml}
                         </div>
                     </div>
                 `;
