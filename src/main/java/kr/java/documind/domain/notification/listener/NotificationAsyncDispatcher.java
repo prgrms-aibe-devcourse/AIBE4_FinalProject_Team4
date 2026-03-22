@@ -62,6 +62,10 @@ public class NotificationAsyncDispatcher {
     private void dispatch(NotificationEvent event, String type, IssueSeverity severity) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("type", type);
+        payload.put("mainType", event.eventType().getMainType().name());
+        payload.put("mainTypeLabel", event.eventType().getMainType().getLabel());
+        payload.put("subLabel", event.eventType().getSubLabel());
+        payload.put("actionText", event.eventType().getActionText());
         payload.put("title", event.title());
         payload.put("message", event.message());
         if (severity != null) {

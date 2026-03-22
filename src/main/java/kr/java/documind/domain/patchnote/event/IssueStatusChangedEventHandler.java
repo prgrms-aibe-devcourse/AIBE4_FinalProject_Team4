@@ -25,7 +25,9 @@ import kr.java.documind.domain.patchnote.service.IssueChunkingService;
 import kr.java.documind.domain.patchnote.service.PendingItemRollbackService;
 import kr.java.documind.domain.patchnote.service.PendingItemUpsertService;
 import kr.java.documind.domain.patchnote.util.PatchTypeResolver;
+import kr.java.documind.global.entity.DomainSource;
 import kr.java.documind.global.enums.SourceType;
+import kr.java.documind.global.repository.DomainSourceRepository;
 import kr.java.documind.global.util.ChoseongUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +57,7 @@ public class IssueStatusChangedEventHandler {
     private final PatchTypeResolver patchTypeResolver;
     private final ChoseongUtil choseongUtil;
     private final ApplicationEventPublisher eventPublisher;
+    private final DomainSourceRepository domainSourceRepository;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -158,15 +161,17 @@ public class IssueStatusChangedEventHandler {
                 event.actorId());
 
         // 성공 이벤트 발행 — 알림 도메인이 구독하여 alarm-toast + 헤더 배지 전달
+        // DomainSource는 ISSUE/DOCUMENT 타입만 사용; 이슈 기반 패치노트 알림은 SourceType.ISSUE로 생성
+        DomainSource domainSource = domainSourceRepository.save(DomainSource.create(SourceType.ISSUE));
         eventPublisher.publishEvent(
                 new PatchNoteNotificationEvent(
                         event.projectId(),
                         List.of(event.actorId()),
-                        event.issueId(),
+                        domainSource.getId(),
                         NotificationEventType.PATCHNOTE_ISSUE_GENERATED,
                         dto.title(),
                         "이슈가 해결되어 패치노트 항목이 추가되었습니다.",
-                        "/projects/" + event.projectId() + "/patch-note/pending-items",
+                        "/projects/" + event.publicId() + "/patch-note/pending-items",
                         true));
     }
 

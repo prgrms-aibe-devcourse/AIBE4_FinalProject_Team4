@@ -7,6 +7,8 @@ import kr.java.documind.global.enums.SourceType;
 public record NotificationResponse(
         Long id,
         String eventType,
+        String mainType,
+        String subLabel,
         String title,
         String message,
         String severity,
@@ -22,6 +24,8 @@ public record NotificationResponse(
         return new NotificationResponse(
                 n.getId(),
                 n.getEventType().name(),
+                n.getEventType().getMainType().name(),
+                n.getEventType().getSubLabel(),
                 n.getTitle(),
                 n.getMessage(),
                 n.getSeverity(),

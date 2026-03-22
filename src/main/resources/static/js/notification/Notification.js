@@ -145,11 +145,12 @@ document.addEventListener('alpine:init', () => {
 
             window.showAlarmToast?.({
                 title: payload.title || '새 알림',
-                badgeLabel: payload.badgeLabel || '알림',
+                mainTypeLabel: payload.mainTypeLabel || '',
+                subLabel: payload.subLabel || '',
                 message: payload.message || '',
                 actionLabel: payload.actionText || '확인하기 >',
                 actionHref: payload.relatedUrl || '#',
-                type: TYPE_MAP[payload.sourceType] || 'issue'
+                type: TYPE_MAP[payload.mainType] || payload.type || 'issue'
             });
         },
 

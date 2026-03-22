@@ -460,7 +460,7 @@ function renderGroups(groups) {
                         </button>
                     </span>
                     <!-- 카테고리 드롭다운 -->
-                    <div id="category-dropdown-${group.groupId}" class="hidden fixed bg-surface-card border border-divider rounded-docu-btn shadow-docu-card z-50 w-48">
+                    <div id="category-dropdown-${group.groupId}" class="hidden fixed bg-surface-input border border-divider rounded-docu-btn shadow-docu-card z-50 w-48">
                         ${['기획서','보고서','기술문서','기타'].map(cat => `
                             <button data-action="submitCategory" data-group-id="${group.groupId}" data-category="${cat}"
                                     class="block w-full text-left px-4 py-2 text-sm hover:bg-docu-primary-light hover:text-docu-primary ${group.category === cat ? 'text-docu-primary font-medium bg-docu-primary-light' : 'text-docu-ink'}">

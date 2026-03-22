@@ -6,6 +6,7 @@ import java.util.UUID;
 public record DocumentEmbeddedEvent(
         Long sourceId,
         UUID projectId,
+        String publicId,
         UUID memberId,
         Long documentGroupId,
         String documentName,

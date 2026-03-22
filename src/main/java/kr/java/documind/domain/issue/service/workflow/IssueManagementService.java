@@ -3,6 +3,7 @@ package kr.java.documind.domain.issue.service.workflow;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import kr.java.documind.domain.auth.service.ProjectQueryService;
 import kr.java.documind.domain.issue.event.IssueStatusChangedEvent;
 import kr.java.documind.domain.issue.model.entity.Issue;
 import kr.java.documind.domain.issue.model.enums.IssuePriority;
@@ -34,6 +35,7 @@ public class IssueManagementService {
     private final IssueHistoryService historyService;
     private final ApplicationEventPublisher eventPublisher;
     private final IssueNotificationService notificationService;
+    private final ProjectQueryService projectQueryService;
 
     /**
      * 이슈 담당자 지정
@@ -115,10 +117,12 @@ public class IssueManagementService {
         // 상태 변경 이벤트 발행
         // - RESOLVED 전환 시 → IssueStatusChangedEventHandler.handleIssueResolved() 가 pending_item 적재
         // - RESOLVED → 다른 상태 전환 시 → handleIssueRollback() 이 벡터·pending_item 정리
+        String projectPublicId = projectQueryService.getPublicIdByProjectId(issue.getProjectId());
         IssueStatusChangedEvent statusChangedEvent =
                 new IssueStatusChangedEvent(
                         issue.getId(),
                         issue.getProjectId(),
+                        projectPublicId,
                         beforeStatus,
                         newStatus,
                         !includeInPatchNote,
