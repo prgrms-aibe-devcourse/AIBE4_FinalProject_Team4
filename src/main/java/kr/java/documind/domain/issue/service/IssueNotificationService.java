@@ -17,9 +17,6 @@ import kr.java.documind.domain.issue.model.repository.IssueAlertRuleRepository;
 import kr.java.documind.domain.member.model.enums.AccountStatus;
 import kr.java.documind.domain.member.model.repository.ProjectMemberRepository;
 import kr.java.documind.domain.notification.model.enums.NotificationEventType;
-import kr.java.documind.global.entity.DomainSource;
-import kr.java.documind.global.enums.SourceType;
-import kr.java.documind.global.repository.DomainSourceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -41,7 +38,6 @@ public class IssueNotificationService {
     private final IssueAlertRuleRepository alertRuleRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectRepository projectRepository;
-    private final DomainSourceRepository domainSourceRepository;
 
     /**
      * 신규 이슈 생성 알림
@@ -70,13 +66,11 @@ public class IssueNotificationService {
             return;
         }
 
-        DomainSource domainSource = domainSourceRepository.save(DomainSource.create(SourceType.ISSUE));
-
         IssueNotificationEvent event =
                 new IssueNotificationEvent(
                         issue.getProjectId(),
                         info.receivers(),
-                        domainSource.getId(),
+                        issue.getId(),
                         NotificationEventType.ISSUE_CREATED,
                         "[신규 이슈] " + issue.getTitle(),
                         String.format("%s 심각도 이슈가 생성되었습니다.", issue.getSeverity().getValue()),
@@ -108,12 +102,11 @@ public class IssueNotificationService {
         }
 
         String publicId = getProjectPublicId(issue.getProjectId());
-        DomainSource domainSource = domainSourceRepository.save(DomainSource.create(SourceType.ISSUE));
         IssueNotificationEvent event =
                 new IssueNotificationEvent(
                         issue.getProjectId(),
                         List.of(newAssigneeId),
-                        domainSource.getId(),
+                        issue.getId(),
                         NotificationEventType.ISSUE_ASSIGNED,
                         "[담당자 배정] " + issue.getTitle(),
                         "이슈가 회원님에게 배정되었습니다.",
@@ -161,12 +154,11 @@ public class IssueNotificationService {
         }
 
         String publicId = getProjectPublicId(issue.getProjectId());
-        DomainSource domainSource = domainSourceRepository.save(DomainSource.create(SourceType.ISSUE));
         IssueNotificationEvent event =
                 new IssueNotificationEvent(
                         issue.getProjectId(),
                         receivers,
-                        domainSource.getId(),
+                        issue.getId(),
                         NotificationEventType.ISSUE_STATUS_CHANGED,
                         "[상태 변경] " + issue.getTitle(),
                         String.format("%s → %s", beforeStatus.getValue(), newStatus.getValue()),
@@ -219,12 +211,11 @@ public class IssueNotificationService {
         }
 
         String publicId = getProjectPublicId(issue.getProjectId());
-        DomainSource domainSource = domainSourceRepository.save(DomainSource.create(SourceType.ISSUE));
         IssueNotificationEvent event =
                 new IssueNotificationEvent(
                         issue.getProjectId(),
                         receivers,
-                        domainSource.getId(),
+                        issue.getId(),
                         NotificationEventType.ISSUE_MENTIONED,
                         "[댓글] " + issue.getTitle(),
                         "새 댓글이 달렸습니다.",
