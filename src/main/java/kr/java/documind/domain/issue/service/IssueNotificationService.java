@@ -124,45 +124,31 @@ public class IssueNotificationService {
     /**
      * 상태 변경 알림
      *
+     * <p>프로젝트 멤버 중 상태 변경 알림을 켠 사람에게만 발송
+     *
      * @param issue 이슈
      * @param beforeStatus 이전 상태
      * @param newStatus 새 상태
      */
     public void notifyStatusChange(Issue issue, IssueStatus beforeStatus, IssueStatus newStatus) {
-        // 알림 대상: 담당자 (있으면)
-        List<UUID> receivers = new ArrayList<>();
-        if (issue.getAssigneeId() != null) {
-            receivers.add(issue.getAssigneeId());
-        }
+        ReceiverInfo info = getReceiversForRule(issue.getProjectId(), IssueAlertRuleKey.ISSUE_STATUS_CHANGED);
 
-        // 알림 규칙 필터링
-        receivers =
-                receivers.stream()
-                        .filter(
-                                r ->
-                                        isRuleEnabled(
-                                                issue.getProjectId(),
-                                                r,
-                                                IssueAlertRuleKey.ISSUE_STATUS_CHANGED))
-                        .toList();
-
-        if (receivers.isEmpty()) {
+        if (info.receivers().isEmpty()) {
             log.debug(
                     "[IssueNotification] No receivers for status change notification. issueId={}",
                     issue.getId());
             return;
         }
 
-        String publicId = getProjectPublicId(issue.getProjectId());
         IssueNotificationEvent event =
                 new IssueNotificationEvent(
                         issue.getProjectId(),
-                        receivers,
+                        info.receivers(),
                         issue.getId(),
                         NotificationEventType.ISSUE_STATUS_CHANGED,
                         "[상태 변경] " + issue.getTitle(),
                         String.format("%s → %s", beforeStatus.getValue(), newStatus.getValue()),
-                        buildIssueUrl(publicId, issue.getId()),
+                        buildIssueUrl(info.publicId(), issue.getId()),
                         true,
                         issue.getSeverity());
 
@@ -170,7 +156,7 @@ public class IssueNotificationService {
         log.info(
                 "[IssueNotification] Status change notification sent. issueId={}, receiverCount={}",
                 issue.getId(),
-                receivers.size());
+                info.receivers().size());
     }
 
     /**
