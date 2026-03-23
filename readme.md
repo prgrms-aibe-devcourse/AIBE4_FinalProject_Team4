@@ -3,9 +3,9 @@
 <h3 align="center">
 게임 서비스의 오류 로그를 실시간으로 수집·분석하고, AI가 이슈를 분류하고 패치노트까지 자동 생성하는 품질 관리 코파일럿
 </h3>
-<br />
+
 <p align="center">
-[대문이미지 — DocuMind 메인 대시보드 화면 캡처](./docs/mainpage.png)
+  <img src="./docs/mainpage.png" alt="DocuMind 메인 대시보드" width="800" />
 </p>
 
 
