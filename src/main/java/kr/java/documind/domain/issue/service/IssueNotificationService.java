@@ -137,8 +137,7 @@ public class IssueNotificationService {
                 getReceiversForRule(issue.getProjectId(), IssueAlertRuleKey.ISSUE_STATUS_CHANGED);
 
         // 상태를 변경한 본인은 알림 제외
-        List<UUID> receivers =
-                info.receivers().stream().filter(id -> !id.equals(actorId)).toList();
+        List<UUID> receivers = info.receivers().stream().filter(id -> !id.equals(actorId)).toList();
 
         if (receivers.isEmpty()) {
             log.debug(
