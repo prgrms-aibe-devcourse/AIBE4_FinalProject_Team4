@@ -7,8 +7,11 @@ services:
     container_name: documind-api
     ports:
       - "8080:8080"
+    volumes:
+      - ./application-prod.yml:/app/config/application-prod.yml:ro
     environment:
       - SPRING_PROFILES_ACTIVE=prod # 배포 시에는 prod 사용
+      - SPRING_CONFIG_IMPORT=optional:file:/app/config/application-prod.yml
       - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       - redis
