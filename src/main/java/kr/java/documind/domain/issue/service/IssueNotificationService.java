@@ -131,7 +131,8 @@ public class IssueNotificationService {
      * @param newStatus 새 상태
      */
     public void notifyStatusChange(Issue issue, IssueStatus beforeStatus, IssueStatus newStatus) {
-        ReceiverInfo info = getReceiversForRule(issue.getProjectId(), IssueAlertRuleKey.ISSUE_STATUS_CHANGED);
+        ReceiverInfo info =
+                getReceiversForRule(issue.getProjectId(), IssueAlertRuleKey.ISSUE_STATUS_CHANGED);
 
         if (info.receivers().isEmpty()) {
             log.debug(
