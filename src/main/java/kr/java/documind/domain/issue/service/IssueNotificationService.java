@@ -129,12 +129,18 @@ public class IssueNotificationService {
      * @param issue 이슈
      * @param beforeStatus 이전 상태
      * @param newStatus 새 상태
+     * @param actorId 상태를 변경한 사용자 ID (본인은 알림 제외)
      */
-    public void notifyStatusChange(Issue issue, IssueStatus beforeStatus, IssueStatus newStatus) {
+    public void notifyStatusChange(
+            Issue issue, IssueStatus beforeStatus, IssueStatus newStatus, UUID actorId) {
         ReceiverInfo info =
                 getReceiversForRule(issue.getProjectId(), IssueAlertRuleKey.ISSUE_STATUS_CHANGED);
 
-        if (info.receivers().isEmpty()) {
+        // 상태를 변경한 본인은 알림 제외
+        List<UUID> receivers =
+                info.receivers().stream().filter(id -> !id.equals(actorId)).toList();
+
+        if (receivers.isEmpty()) {
             log.debug(
                     "[IssueNotification] No receivers for status change notification. issueId={}",
                     issue.getId());
@@ -144,7 +150,7 @@ public class IssueNotificationService {
         IssueNotificationEvent event =
                 new IssueNotificationEvent(
                         issue.getProjectId(),
-                        info.receivers(),
+                        receivers,
                         issue.getId(),
                         NotificationEventType.ISSUE_STATUS_CHANGED,
                         "[상태 변경] " + issue.getTitle(),
@@ -157,7 +163,7 @@ public class IssueNotificationService {
         log.info(
                 "[IssueNotification] Status change notification sent. issueId={}, receiverCount={}",
                 issue.getId(),
-                info.receivers().size());
+                receivers.size());
     }
 
     /**

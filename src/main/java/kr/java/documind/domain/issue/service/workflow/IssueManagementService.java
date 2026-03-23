@@ -131,7 +131,7 @@ public class IssueManagementService {
         eventPublisher.publishEvent(statusChangedEvent);
 
         // 상태 변경 알림 발송
-        notificationService.notifyStatusChange(issue, beforeStatus, newStatus);
+        notificationService.notifyStatusChange(issue, beforeStatus, newStatus, modifierId);
     }
 
     /**
